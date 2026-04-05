@@ -1,0 +1,85 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isInOrg(orgId) {
+      return isSignedIn() && getUserData().orgId == orgId;
+    }
+
+    function isOwnerInOrg(orgId) {
+      return isInOrg(orgId) && getUserData().role == 'owner';
+    }
+
+    // --- Users ---
+    match /users/{userId} {
+      // Read own document or org members
+      allow read: if isSignedIn() && (
+        request.auth.uid == userId ||
+        resource.data.orgId == getUserData().orgId
+      );
+      // Create own document on signup
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Update own document
+      allow update: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Organizations ---
+    match /organizations/{orgId} {
+      allow read: if isInOrg(orgId);
+      allow create: if isSignedIn();
+      allow update: if isOwnerInOrg(orgId);
+      allow delete: if false; // No deletion in MVP
+    }
+
+    // --- Projects ---
+    match /projects/{projectId} {
+      allow read: if isSignedIn() && isInOrg(resource.data.orgId);
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && isOwnerInOrg(resource.data.orgId);
+      allow delete: if false;
+    }
+
+    // --- Tasks ---
+    match /tasks/{taskId} {
+      // All org members can read tasks
+      allow read: if isSignedIn() && isInOrg(resource.data.orgId);
+
+      // Owners can create tasks
+      allow create: if isSignedIn() && isOwnerInOrg(request.resource.data.orgId);
+
+      // Owners can update anything; members can only update status
+      allow update: if isSignedIn() && isInOrg(resource.data.orgId) && (
+        isOwnerInOrg(resource.data.orgId) ||
+        (
+          // Members can only change status, updatedAt, lastUpdatedAt, completedAt
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'updatedAt', 'lastUpdatedAt', 'completedAt']) &&
+          resource.data.assignedTo == request.auth.uid
+        )
+      );
+
+      allow delete: if isOwnerInOrg(resource.data.orgId);
+    }
+
+    // --- Member Invites ---
+    match /memberInvites/{inviteId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isOwnerInOrg(request.resource.data.orgId);
+      allow update: if isSignedIn() && (
+        resource.data.status == 'pending' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+      );
+      allow delete: if false;
+    }
+  }
+}

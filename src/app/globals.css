@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Architectural Void Base */
+    --background: 0 0% 2%; /* #050505 - near black base */
+    --foreground: 0 0% 93%; /* #ededed - off-white */
+
+    /* Elevated Surfaces */
+    --card: 0 0% 4%; /* #0A0A0A */
+    --card-foreground: 0 0% 93%;
+
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 93%;
+
+    /* Premium Accents */
+    --primary: 0 0% 93%; /* #ededed */
+    --primary-foreground: 0 0% 4%; /* #0A0A0A */
+
+    --secondary: 0 0% 7%; /* #111111 */
+    --secondary-foreground: 0 0% 60%; /* #888888 */
+
+    --muted: 0 0% 7%;
+    --muted-foreground: 0 0% 53%; /* #888888 */
+
+    --accent: 0 0% 7%;
+    --accent-foreground: 0 0% 93%;
+
+    --destructive: 0 84% 60%; /* #FF6B6B */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 12%; /* #1A1A1A */
+    --input: 0 0% 12%;
+    --ring: 0 0% 93%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  ::selection {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1A1A1A;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #333333;
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation-duration: 0.3s;
+    animation-fill-mode: both;
+  }
+  .fade-in-0 {
+    --tw-enter-opacity: 0;
+  }
+  .zoom-in-95 {
+    --tw-enter-scale: 0.95;
+  }
+  .slide-in-from-top-2 {
+    --tw-enter-translate-y: -0.5rem;
+  }
+  .data-\[state\=open\]\:animate-in[data-state="open"] {
+    animation-name: enterAnimation;
+  }
+  .data-\[state\=closed\]\:animate-out[data-state="closed"] {
+    animation-name: exitAnimation;
+    animation-direction: reverse;
+  }
+
+  @keyframes enterAnimation {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      transform: scale(var(--tw-enter-scale, 1)) translateY(var(--tw-enter-translate-y, 0));
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes exitAnimation {
+    from {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+    to {
+      opacity: var(--tw-enter-opacity, 0);
+      transform: scale(var(--tw-enter-scale, 0.95)) translateY(var(--tw-enter-translate-y, 0));
+    }
+  }
+}
