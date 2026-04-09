@@ -193,9 +193,6 @@ export default function MethodologyPage() {
               <Link href="/signup" className="bg-[#ededed] text-[#050505] px-10 py-4 rounded-xl font-medium text-[15px] hover:bg-white hover:-translate-y-[2px] hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
                 Get Started
               </Link>
-              <Link href="/contact" className="bg-[#111111] text-[#ededed] px-10 py-4 rounded-xl font-medium text-[15px] hover:bg-[#1a1a1a] hover:-translate-y-[2px] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                Book a Demo
-              </Link>
             </div>
           </div>
         </ScrollReveal>
@@ -209,10 +206,10 @@ export default function MethodologyPage() {
             <p className="font-mono text-[10px] tracking-widest uppercase text-[#555555]">© {new Date().getFullYear()} OrbitOS. Built for the architectural void.</p>
           </div>
           <div className="flex gap-8 md:gap-12">
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="#">Privacy</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="#">Terms</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="#">Security</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="#">GitHub</Link>
+            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/privacy">Privacy</Link>
+            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/terms">Terms</Link>
+            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/security">Security</Link>
+            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="https://github.com/MiraiStack">GitHub</Link>
           </div>
         </div>
       </footer>

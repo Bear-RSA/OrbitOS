@@ -302,9 +302,6 @@ export default function PricingPage() {
               <Link href="/signup" className="inline-block bg-[#ededed] text-[#050505] px-10 py-4 rounded-xl font-medium text-[15px] hover:bg-white hover:-translate-y-[2px] transition-all duration-300">
                 Get Started
               </Link>
-              <Link href="/contact" className="inline-block bg-[#111111] text-[#ededed] px-10 py-4 rounded-xl font-medium text-[15px] hover:bg-[#1a1a1a] hover:-translate-y-[2px] transition-all duration-300">
-                Book a Demo
-              </Link>
             </div>
           </div>
         </ScrollReveal>
@@ -318,10 +315,10 @@ export default function PricingPage() {
             <p className="font-mono text-[10px] tracking-widest uppercase text-[#555555]">© {new Date().getFullYear()} OrbitOS. Built for the architectural void.</p>
           </div>
           <div className="flex gap-8 md:gap-12">
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="#">Privacy</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="#">Terms</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="#">Security</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="#">GitHub</Link>
+            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/privacy">Privacy</Link>
+            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/terms">Terms</Link>
+            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/security">Security</Link>
+            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="https://github.com/MiraiStack">GitHub</Link>
           </div>
         </div>
       </footer>
