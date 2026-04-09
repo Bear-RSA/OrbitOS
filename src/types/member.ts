@@ -15,7 +15,10 @@ export interface MemberInvite {
   email: string;
   invitedBy: string;
   role: "member";
-  status: "pending" | "accepted";
+  status: "pending" | "accepted" | "expired";
   token: string;
   createdAt: Timestamp;
+  expiresAt: Timestamp;
+  acceptedBy?: string;
+  acceptedAt?: Timestamp;
 }

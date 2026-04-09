@@ -29,8 +29,9 @@ service cloud.firestore {
       );
       // Create own document on signup
       allow create: if isSignedIn() && request.auth.uid == userId;
-      // Update own document
-      allow update: if isSignedIn() && request.auth.uid == userId;
+      // Update own document, but block escalating privileges or stealing orgs
+      allow update: if isSignedIn() && request.auth.uid == userId &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['orgId', 'role']);
     }
 
     // --- Organizations ---
@@ -46,7 +47,7 @@ service cloud.firestore {
       allow read: if isSignedIn() && isInOrg(resource.data.orgId);
       allow create: if isSignedIn();
       allow update: if isSignedIn() && isOwnerInOrg(resource.data.orgId);
-      allow delete: if false;
+      allow delete: if isSignedIn() && isOwnerInOrg(resource.data.orgId);
     }
 
     // --- Tasks ---
@@ -73,12 +74,12 @@ service cloud.firestore {
 
     // --- Member Invites ---
     match /memberInvites/{inviteId} {
+      // Owners and invited users can read invites
       allow read: if isSignedIn();
+      // Owners can create
       allow create: if isSignedIn() && isOwnerInOrg(request.resource.data.orgId);
-      allow update: if isSignedIn() && (
-        resource.data.status == 'pending' &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-      );
+      // Invites are now mutated ONLY securely via Server Action (admin SDK bounds it)
+      allow update: if false; 
       allow delete: if false;
     }
   }

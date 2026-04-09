@@ -7,22 +7,28 @@ import { cn } from "@/lib/utils/classnames";
 import { Loader } from "@/components/ui/loader";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-[13px] font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 disabled:pointer-events-none disabled:opacity-50 disabled:hover:translate-y-0 ring-offset-[#0A0A0A]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-[13px] font-medium transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.985]",
   {
     variants: {
       variant: {
-        default: "bg-[#ededed] text-[#0A0A0A] shadow-lg hover:bg-[#ffffff] active:scale-[0.98]",
-        destructive: "bg-[#E57A7A]/10 text-[#E57A7A] hover:bg-[#E57A7A]/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] active:scale-[0.98]",
-        outline: "border border-white/[0.06] bg-transparent text-[#ededed] hover:bg-white/[0.02] active:scale-[0.98]",
-        secondary: "bg-[#111111] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_rgba(0,0,0,0.2)] hover:bg-[#1a1a1a] active:scale-[0.98]",
-        ghost: "text-[#888888] hover:text-[#ededed] hover:bg-white/[0.02] active:scale-[0.98]",
-        link: "text-[#ededed] underline-offset-4 hover:underline",
+        default: 
+          "bg-primary text-primary-foreground shadow-sm hover:brightness(1.04) active:scale-[0.985]",
+        destructive: 
+          "bg-destructive/10 text-destructive hover:bg-destructive/20 active:scale-[0.985]",
+        outline: 
+          "border border-outline-variant bg-transparent text-on-surface hover:bg-surface-low hover:border-outline-variant/60 active:scale-[0.985]",
+        secondary: 
+          "bg-surface-container text-on-surface hover:bg-surface-highest/60 active:scale-[0.985]",
+        ghost: 
+          "text-on-surface-variant hover:text-on-surface hover:bg-surface-low active:scale-[0.985]",
+        link: 
+          "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-[12px]",
-        lg: "h-11 rounded-xl px-8 text-[14px]",
-        icon: "h-9 w-9",
+        default: "h-10 px-6 py-2",
+        sm: "h-8 rounded-sm px-3 text-[12px]",
+        lg: "h-12 rounded-lg px-8 text-[14px]",
+        icon: "h-10 w-10",
       },
     },
     defaultVariants: {

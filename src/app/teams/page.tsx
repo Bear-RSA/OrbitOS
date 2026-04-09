@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
 import { Member } from "@/types/member";
-import { getDashboardData } from "@/lib/queries/dashboard";
 
 const MOCK_TEAM = [
   {

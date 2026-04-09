@@ -8,19 +8,19 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
   ({ className, variant = "default", ...props }, ref) => {
     const variants = {
-      default: "bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] text-[#ededed]",
-      secondary: "bg-[#1A1A1A] text-[#888888] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
-      destructive: "bg-[#1A0A0A] text-[#E57A7A] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
-      outline: "ring-1 ring-white/[0.06] text-[#888888]",
-      success: "bg-[#0F1A13] text-[#85C89B] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
-      warning: "bg-[#1A150A] text-[#E5B567] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
+      default: "bg-surface-highest/10 text-on-surface-variant border border-on-surface-variant/10",
+      secondary: "bg-surface-low text-on-surface-variant border border-outline-variant/10",
+      destructive: "bg-destructive/10 text-destructive border border-destructive/10",
+      outline: "bg-transparent border border-outline-variant text-on-surface-variant",
+      success: "bg-orbit-green/10 text-orbit-green border border-orbit-green/10",
+      warning: "bg-orbit-amber/10 text-orbit-amber border border-orbit-amber/10",
     };
 
     return (
       <div
         ref={ref}
         className={cn(
-          "inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-semibold tracking-wider uppercase transition-colors",
+          "inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-mono tracking-[0.1em] uppercase transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
           variants[variant],
           className
         )}

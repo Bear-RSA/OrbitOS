@@ -38,14 +38,19 @@ export async function createInvite(
   invitedBy: string
 ): Promise<MemberInvite> {
   const token = nanoid(32);
+  const now = new Date();
+  const expires = new Date();
+  expires.setDate(now.getDate() + 7);
+
   const invite: Omit<MemberInvite, "id"> = {
     orgId,
-    email,
+    email: email.toLowerCase().trim(),
     invitedBy,
     role: "member",
     status: "pending",
     token,
-    createdAt: Timestamp.now(),
+    createdAt: Timestamp.fromDate(now),
+    expiresAt: Timestamp.fromDate(expires),
   };
   const ref = await addDoc(collection(db, INVITES_COLLECTION), invite);
   return { id: ref.id, ...invite };
@@ -62,8 +67,4 @@ export async function getInviteByToken(token: string): Promise<MemberInvite | nu
   return { id: doc.id, ...doc.data() } as MemberInvite;
 }
 
-export async function acceptInvite(inviteId: string): Promise<void> {
-  await updateDoc(doc(db, INVITES_COLLECTION, inviteId), {
-    status: "accepted",
-  });
-}
+

@@ -35,6 +35,7 @@ export async function createTask(
     updatedAt: now,
     lastUpdatedAt: now,
     completedAt: null,
+    isBlocked: false,
   };
   const ref = await addDoc(collection(db, TASKS_COLLECTION), taskData);
   return { id: ref.id, ...taskData } as Task;
@@ -70,4 +71,18 @@ export async function updateTask(
     updatedAt: now,
     lastUpdatedAt: now,
   } as Record<string, unknown>);
+}
+
+export async function toggleTaskBlocked(
+  taskId: string,
+  isBlocked: boolean,
+  blockedReason?: string
+): Promise<void> {
+  const now = Timestamp.now();
+  await updateDoc(doc(db, TASKS_COLLECTION, taskId), {
+    isBlocked,
+    blockedReason: isBlocked ? blockedReason : "",
+    updatedAt: now,
+    lastUpdatedAt: now,
+  });
 }

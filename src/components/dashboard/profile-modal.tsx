@@ -21,7 +21,7 @@ interface ProfileModalProps {
 export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
   const router = useRouter();
   const [name, setName] = useState(user.name);
-  const [role, setRole] = useState(user.role);
+  const [role, setRole] = useState<string>(user.role);
   const [isSaving, setIsSaving] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 

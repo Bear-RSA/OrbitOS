@@ -22,9 +22,9 @@ export default function LandingPage() {
           </div>
           <div className="hidden md:flex items-center gap-8">
             <Link className="font-sans tracking-tight font-medium text-[#ededed] border-b border-[#ededed] pb-1 hover:text-white transition-colors duration-300" href="#">Features</Link>
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="#">Methodology</Link>
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="#">Pricing</Link>
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="#">Changelog</Link>
+            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="/methodology">Methodology</Link>
+            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="/pricing">Pricing</Link>
+            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="/changelog">Changelog</Link>
           </div>
           <div className="flex items-center gap-6">
             <Link href="/login" className="text-[#888888] font-sans font-medium text-sm hover:text-[#ededed] transition-colors">Sign In</Link>
@@ -36,9 +36,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="pt-48 pb-32 px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
         <ScrollReveal className="flex flex-col items-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] mb-8">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-[#ededed] uppercase">v2.4.0 Codename: Void</span>
-          </div>
+          <span className="font-mono text-[10px] tracking-[0.3em] text-[#555555] uppercase mb-8 block">OSO Beta v1.1 Void</span>
           <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 max-w-4xl text-[#ededed]">
             The Calm Control Center for Digital Studios.
           </h1>
@@ -189,7 +187,7 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className="pt-8">
-                <Link className="inline-flex items-center gap-3 text-[#ededed] font-medium hover:gap-5 transition-all text-[15px]" href="#">
+                <Link className="inline-flex items-center gap-3 text-[#ededed] font-medium hover:gap-5 transition-all text-[15px]" href="/methodology">
                   Read the full methodology 
                   <ArrowRight className="w-4 h-4" />
                 </Link>

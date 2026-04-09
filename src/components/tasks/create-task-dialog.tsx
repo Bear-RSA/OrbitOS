@@ -71,6 +71,7 @@ export function CreateTaskDialog({
         assignedTo: data.assignedTo ?? null,
         createdBy: currentUserId,
         dueDate: data.dueDate ? Timestamp.fromDate(new Date(data.dueDate)) : null,
+        isBlocked: false,
       });
       reset();
       onOpenChange(false);

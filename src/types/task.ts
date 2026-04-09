@@ -16,6 +16,8 @@ export interface Task {
   updatedAt: Timestamp;
   lastUpdatedAt: Timestamp;
   completedAt: Timestamp | null;
+  isBlocked: boolean;
+  blockedReason?: string;
 }
 
 export interface CreateTaskInput {

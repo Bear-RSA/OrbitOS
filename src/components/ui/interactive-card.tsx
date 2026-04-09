@@ -12,58 +12,71 @@ export function InteractiveCard({
   children,
   className,
 }: InteractiveCardProps) {
-  const [position, setPosition] = React.useState({ x: 50, y: 50 });
-  const [isHovered, setIsHovered] = React.useState(false);
+  const cardRef = React.useRef<HTMLDivElement>(null);
 
-  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
+  const [isTracking, setIsTracking] = React.useState(false);
 
-    setPosition({ x, y });
-  };
+  React.useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || 
+          window.matchMedia("(pointer: coarse)").matches) return;
+
+      if (!isTracking) setIsTracking(true);
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const moveX = (x - centerX) / 20;
+      const moveY = (y - centerY) / 20;
+
+      card.style.setProperty("--magnetic-x", `${(moveX * 0.15).toFixed(2)}px`);
+      card.style.setProperty("--magnetic-y", `${(moveY * 0.15).toFixed(2)}px`);
+    };
+
+    const handleMouseLeave = () => {
+      setIsTracking(false);
+      card.style.setProperty("--magnetic-x", "0px");
+      card.style.setProperty("--magnetic-y", "0px");
+    };
+
+    card.addEventListener("mousemove", handleMouseMove, { passive: true });
+    card.addEventListener("mouseleave", handleMouseLeave);
+    return () => {
+      card.removeEventListener("mousemove", handleMouseMove);
+      card.removeEventListener("mouseleave", handleMouseLeave);
+    };
+  }, [isTracking]);
 
   return (
     <div
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      ref={cardRef}
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A0A0A]",
-        "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-        "hover:-translate-y-4 hover:scale-[1.03] hover:border-[#A078FF]/30",
-        "hover:shadow-[0_30px_80px_rgba(0,0,0,0.65)]",
+        "focus-item group relative overflow-hidden rounded-[32px] bg-surface-lowest transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform intent-hover surface-warm",
+        !isTracking && "transition-all duration-700", // Smooth reset
+        "hover:bg-surface-low hover:shadow-[0_24px_80px_rgba(0,0,0,0.5)] hover:scale-[1.005]",
         className
       )}
+      style={{
+        transform: `translate(var(--magnetic-x, 0px), var(--magnetic-y, 0px))`
+      }}
     >
-      {/* Cursor Glow */}
+      {/* Performance-Optimized Cursor Aware Glow */}
       <div
-        className={cn(
-          "pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500",
-          isHovered && "opacity-100"
-        )}
+        className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"
         style={{
-          background: `radial-gradient(600px circle at ${position.x}% ${position.y}%, rgba(160, 120, 255, 0.22), transparent 40%)`,
+          background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.03), transparent 70%)`,
         }}
       />
 
-      {/* Secondary highlight */}
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500",
-          isHovered && "opacity-100"
-        )}
-        style={{
-          background: `radial-gradient(300px circle at ${position.x}% ${position.y}%, rgba(255,255,255,0.08), transparent 35%)`,
-          mixBlendMode: "screen",
-        }}
-      />
+      {/* Surface Depth Shimmer (Tone vs Glow) */}
+      <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 bg-gradient-to-tr from-white/[0.01] to-transparent" />
 
-      {/* Subtle inner surface */}
-      <div className="pointer-events-none absolute inset-[1px] rounded-[inherit] bg-gradient-to-b from-white/[0.03] to-transparent opacity-60" />
-
-      {/* Content */}
-      <div className="relative z-10">
+      {/* Content Overlay with Temporal Staggering (Sequence: container -> content) */}
+      <div className="relative z-10 transition-opacity duration-500 group-hover:opacity-100 stagger-1">
         {children}
       </div>
     </div>

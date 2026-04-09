@@ -2,15 +2,25 @@ import * as React from "react";
 import { cn } from "@/lib/utils/classnames";
 
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+  ({ className, children, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        "rounded-2xl bg-[#0A0A0A] ring-1 ring-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
+        "group focus-item relative overflow-hidden rounded-[32px] bg-surface-lowest transition-all duration-300",
+        "hover:bg-surface-low hover:shadow-[0_20px_60px_rgba(0,0,0,0.4)]",
         className
       )}
       {...props}
-    />
+    >
+      {/* Performance-Optimized Cursor Aware Glow */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+        style={{
+          background: `radial-gradient(400px circle at var(--mouse-x) var(--mouse-y), hsla(257,100%,87%,0.04), transparent 85%)`,
+        }}
+      />
+      <div className="relative z-10">{children}</div>
+    </div>
   )
 );
 Card.displayName = "Card";
@@ -19,7 +29,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex flex-col space-y-1.5 p-8", className)}
+      className={cn("flex flex-col space-y-1.5 p-12", className)}
       {...props}
     />
   )
@@ -30,7 +40,7 @@ const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HT
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn("text-[17px] font-light leading-none tracking-tight text-[#ededed]", className)}
+      className={cn("text-2xl font-light tracking-tight text-on-surface", className)}
       {...props}
     />
   )
@@ -41,7 +51,7 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttribu
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={cn("text-[13px] font-light text-[#888888]", className)}
+      className={cn("text-[14px] font-light text-on-surface-variant/80 leading-relaxed", className)}
       {...props}
     />
   )
@@ -50,7 +60,7 @@ CardDescription.displayName = "CardDescription";
 
 const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("p-8 pt-0", className)} {...props} />
+    <div ref={ref} className={cn("p-12 pt-0", className)} {...props} />
   )
 );
 CardContent.displayName = "CardContent";
@@ -59,7 +69,7 @@ const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex items-center p-8 pt-0", className)}
+      className={cn("flex items-center p-12 pt-0", className)}
       {...props}
     />
   )

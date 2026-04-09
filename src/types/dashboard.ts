@@ -2,59 +2,80 @@ import { Task } from "./task";
 import { Project } from "./project";
 import { Member } from "./member";
 
-export type ProjectRiskStatus = "healthy" | "watch" | "at-risk";
+export type ProjectHealthStatus = "healthy" | "watch" | "at-risk";
+export type WorkloadStatus = "light" | "balanced" | "heavy" | "needs-attention";
 
-export interface AttentionMetrics {
-  overdueCount: number;
-  inactiveCount: number;
+export interface UrgencyBuckets {
+  overdue: Task[];
+  dueToday: Task[];
+  dueTomorrow: Task[];
+  dueThisWeek: Task[];
+  upcoming: Task[];
+  noDueDate: Task[];
 }
 
-export interface ProjectRisk {
+export interface ProjectHealth {
   project: Project;
-  status: ProjectRiskStatus;
+  status: ProjectHealthStatus;
   overduePercent: number;
   overdueCount: number;
-  totalTasks: number;
+  blockedCount: number;
+  totalActiveTasks: number;
 }
 
-export interface ProjectProgress {
-  project: Project;
-  percentComplete: number;
-  doneTasks: number;
-  remainingTasks: number;
-  totalTasks: number;
+export interface MemberWorkload {
+  member: Member;
+  status: WorkloadStatus;
+  metrics: {
+    activeTasks: number;
+    overdueTasks: number;
+    blockedTasks: number;
+    completedThisWeek: number;
+  };
 }
 
-export interface WeeklyProgressDay {
-  day: string;
-  shortDay: string;
-  count: number;
-  date: Date;
+export interface DashboardMetric {
+  label: string;
+  value: number;
+  trend?: number;
+  status?: "positive" | "negative" | "neutral";
 }
 
-export interface RecentWin {
-  task: Task;
-  assigneeName: string;
-  completedAt: Date;
+export interface ActivityFeedItem {
+  id: string;
+  type: "task_completed" | "task_blocked" | "project_created" | "member_joined";
+  user: Member;
+  targetLink: string;
+  timestamp: Date;
+  metadata: Record<string, any>;
 }
 
-export interface TeamWorkloadItem {
-  memberId: string;
-  memberName: string;
-  tasks: Task[];
-  activeTasks: number;
+export interface OwnerDashboardData {
+  role: "owner";
+  metrics: {
+    activeProjects: number;
+    overdueTasks: number;
+    teamCapacity: number;
+    completedThisWeek: number;
+  };
+  projectsHealth: ProjectHealth[];
+  urgencyBuckets: UrgencyBuckets;
+  teamWorkload: MemberWorkload[];
+  recentActivity: ActivityFeedItem[];
 }
 
-export interface DashboardData {
-  tasks: Task[];
-  project: Project | null;
-  members: Member[];
-  currentUser: Member;
-  // Computed metrics
-  attention: AttentionMetrics;
-  projectRisk: ProjectRisk | null;
-  projectProgress: ProjectProgress | null;
-  weeklyProgress: WeeklyProgressDay[];
-  recentWins: RecentWin[];
-  teamWorkload: TeamWorkloadItem[];
+export interface MemberDashboardData {
+  role: "member";
+  metrics: {
+    myActiveTasks: number;
+    myOverdueTasks: number;
+    myBlockedTasks: number;
+    myCompletedThisWeek: number;
+  };
+  myProjects: Project[];
+  myUrgencyBuckets: UrgencyBuckets;
+  myWorkload: MemberWorkload;
+  recentActivity: ActivityFeedItem[];
 }
+
+export type OrbitalDashboardData = OwnerDashboardData | MemberDashboardData;

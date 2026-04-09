@@ -16,8 +16,8 @@ export function ScrollReveal({
   children,
   className,
   delay = 0,
-  yOffset = 64,
-  duration = 1200,
+  yOffset = 40,
+  duration = 700,
   once = true,
 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -67,8 +67,8 @@ export function ScrollReveal({
     <div
       ref={ref}
       className={cn(
-        "transition-all ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[opacity,transform]",
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0",
+        "transition-all ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[opacity,transform,filter]",
+        isVisible ? "opacity-100 translate-y-0 blur-0" : "opacity-0 blur-[4px]",
         className
       )}
       style={{

@@ -1,0 +1,3 @@
+﻿src/components/dashboard/project-progress-card.tsx(4,10): error TS2305: Module '"@/types/dashboard"' has no exported member 'ProjectProgress'.
+src/components/dashboard/recent-wins-card.tsx(4,10): error TS2305: Module '"@/types/dashboard"' has no exported member 'RecentWin'.
+src/components/dashboard/weekly-progress-card.tsx(3,10): error TS2305: Module '"@/types/dashboard"' has no exported member 'WeeklyProgressDay'.

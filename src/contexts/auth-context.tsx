@@ -1,8 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { User as FirebaseUser } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, Unsubscribe } from "firebase/firestore";
 import { onAuthChange } from "@/lib/firebase/auth";
 import { db } from "@/lib/firebase/client";
 import { User } from "@/types/auth";
@@ -23,27 +23,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const profileUnsubRef = useRef<Unsubscribe | null>(null);
 
   useEffect(() => {
-    const unsub = onAuthChange(async (fbUser) => {
+    const unsubAuth = onAuthChange((fbUser) => {
+      // Clean up any existing profile subscription
+      if (profileUnsubRef.current) {
+        profileUnsubRef.current();
+        profileUnsubRef.current = null;
+      }
+
       setFirebaseUser(fbUser);
+
       if (fbUser) {
-        try {
-          const userDoc = await getDoc(doc(db, "users", fbUser.uid));
-          if (userDoc.exists()) {
-            setUser({ id: userDoc.id, ...userDoc.data() } as User);
-          } else {
+        // Subscribe to live profile updates
+        const unsubProfile = onSnapshot(
+          doc(db, "users", fbUser.uid),
+          (snap) => {
+            if (snap.exists()) {
+              setUser({ id: snap.id, ...snap.data() } as User);
+            } else {
+              setUser(null);
+            }
+            setLoading(false);
+          },
+          (error) => {
+            console.error("[AuthProvider] Profile snapshot error:", error);
             setUser(null);
+            setLoading(false);
           }
-        } catch {
-          setUser(null);
-        }
+        );
+        profileUnsubRef.current = unsubProfile;
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
-    return unsub;
+
+    return () => {
+      unsubAuth();
+      if (profileUnsubRef.current) {
+        profileUnsubRef.current();
+        profileUnsubRef.current = null;
+      }
+    };
   }, []);
 
   return (
@@ -56,3 +79,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   return useContext(AuthContext);
 }
+
