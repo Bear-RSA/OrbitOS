@@ -78,4 +78,25 @@ export interface MemberDashboardData {
   recentActivity: ActivityFeedItem[];
 }
 
+export interface ProjectProgress {
+  project: Project;
+  percentComplete: number;
+  doneTasks: number;
+  remainingTasks: number;
+}
+
+export interface RecentWin {
+  task: Task;
+  assigneeName: string;
+  completedAt: Date;
+}
+
+export interface WeeklyProgressDay {
+  count: number;
+  date: Date;
+  day: string;
+  shortDay: string;
+}
+
 export type OrbitalDashboardData = OwnerDashboardData | MemberDashboardData;
+

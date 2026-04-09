@@ -1,6 +1,8 @@
 "use client";
 
+import React from "react";
 import { FolderPlus, UserPlus, Plus, SignalLow } from "lucide-react";
+
 import { cn } from "@/lib/utils/classnames";
 
 interface EmptyDashboardStateProps {
