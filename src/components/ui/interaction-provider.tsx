@@ -3,11 +3,25 @@
 import * as React from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
+function TransitionHandler() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Route Transition Continuity
+  React.useEffect(() => {
+    document.documentElement.style.setProperty("--page-transition-opacity", "0");
+    const timer = setTimeout(() => {
+      document.documentElement.style.setProperty("--page-transition-opacity", "1");
+    }, 50); // Soft crossfade trigger
+    return () => clearTimeout(timer);
+  }, [pathname, searchParams]);
+
+  return null;
+}
+
 export function InteractionProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = React.useState(false);
   const [lastInteractedId, setLastInteractedId] = React.useState<string | null>(null);
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const idleTimer = React.useRef<NodeJS.Timeout | null>(null);
 
   const resetIdle = React.useCallback(() => {
@@ -69,19 +83,13 @@ export function InteractionProvider({ children }: { children: React.ReactNode })
     };
   }, [resetIdle]);
 
-  // Route Transition Continuity
-  React.useEffect(() => {
-    document.documentElement.style.setProperty("--page-transition-opacity", "0");
-    const timer = setTimeout(() => {
-      document.documentElement.style.setProperty("--page-transition-opacity", "1");
-    }, 50); // Soft crossfade trigger
-    return () => clearTimeout(timer);
-  }, [pathname, searchParams]);
-
   if (!mounted) return <>{children}</>;
 
   return (
     <>
+      <React.Suspense fallback={null}>
+        <TransitionHandler />
+      </React.Suspense>
       <style dangerouslySetInnerHTML={{ __html: `
         [data-interaction-id="${lastInteractedId}"] {
           animation: interaction-memory-fade 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
