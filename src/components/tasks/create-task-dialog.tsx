@@ -85,10 +85,12 @@ export function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" id="create-task-dialog">
-        <DialogHeader>
-          <DialogTitle>Append Directive</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="sm:max-w-[480px] p-10 bg-[#080808]/95 border-white/[0.04]">
+        <DialogHeader className="text-left sm:text-left space-y-4">
+          <DialogTitle className="text-xl font-medium tracking-tight text-[#ededed]">
+            Insert Directive
+          </DialogTitle>
+          <DialogDescription className="text-[13px] leading-relaxed text-[#666666] font-light max-w-[360px]">
             Inject a new task vector. Assign an operator and set completion horizon.
           </DialogDescription>
         </DialogHeader>
@@ -148,16 +150,22 @@ export function CreateTaskDialog({
             </div>
           </div>
 
-          <DialogFooter className="gap-2 mt-8 border-t border-white/[0.04] pt-6">
+          <DialogFooter className="flex-row justify-start sm:justify-start gap-4 mt-10">
+            <Button 
+              type="submit" 
+              disabled={loading} 
+              id="submit-create-task"
+              className="h-9 px-5 rounded-lg text-[12px] min-w-[120px]"
+            >
+              {loading ? "Inserting..." : "Insert Directive"}
+            </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => onOpenChange(false)}
+              className="h-9 px-5 rounded-lg text-[12px] text-[#444444] hover:text-[#888888] hover:bg-transparent"
             >
               Cancel
-            </Button>
-            <Button type="submit" disabled={loading} id="submit-create-task">
-              {loading ? "Appending..." : "Append Directive"}
             </Button>
           </DialogFooter>
         </form>

@@ -22,16 +22,11 @@ service cloud.firestore {
 
     // --- Users ---
     match /users/{userId} {
-      // Read own document or org members
-      allow read: if isSignedIn() && (
-        request.auth.uid == userId ||
-        resource.data.orgId == getUserData().orgId
-      );
-      // Create own document on signup
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      // Update own document, but block escalating privileges or stealing orgs
-      allow update: if isSignedIn() && request.auth.uid == userId &&
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['orgId', 'role']);
+      // Allow user to manage their own profile without restrictions
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      
+      // Allow others in organization to read profile
+      allow read: if isSignedIn() && resource.data.orgId == getUserData().orgId;
     }
 
     // --- Organizations ---
@@ -48,6 +43,11 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow update: if isSignedIn() && isOwnerInOrg(resource.data.orgId);
       allow delete: if isSignedIn() && isOwnerInOrg(resource.data.orgId);
+
+      match /files/{fileId} {
+        allow read: if isSignedIn() && isInOrg(get(/databases/$(database)/documents/projects/$(projectId)).data.orgId);
+        allow delete: if isSignedIn() && isOwnerInOrg(get(/databases/$(database)/documents/projects/$(projectId)).data.orgId);
+      }
     }
 
     // --- Tasks ---

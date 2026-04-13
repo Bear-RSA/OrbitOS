@@ -3,6 +3,7 @@
 import { Users } from "lucide-react";
 import { MemberWorkload } from "@/types/dashboard";
 import { cn } from "@/lib/utils/classnames";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 interface TeamWorkloadCardProps {
   memberWorkloads: MemberWorkload[];
@@ -39,12 +40,12 @@ export function TeamWorkloadCard({ memberWorkloads }: TeamWorkloadCardProps) {
               )}>
                 {/* Operator Identity */}
                 <div className="flex items-center gap-3.5">
-                  <div className="w-9 h-9 rounded-lg bg-white/[0.03] ring-1 ring-white/[0.05] flex items-center justify-center flex-shrink-0 group-hover/operator:bg-white/[0.05] transition-all duration-500 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] to-transparent pointer-events-none" />
-                    <span className="text-[13px] font-medium text-[#ccc] relative">
-                      {workload.member.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                  <UserAvatar
+                    photoURL={workload.member.photoURL}
+                    name={workload.member.name}
+                    size="md"
+                    className="ring-1 ring-white/[0.05]"
+                  />
                   <div className="min-w-0">
                     <span className="text-[14px] font-medium text-[#e0e0e0] leading-tight block tracking-tight truncate group-hover/operator:text-white transition-colors duration-300">
                       {workload.member.name}

@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { onboardingSchema, OnboardingInput } from "@/lib/validations/auth";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase/client";
-import { doc, updateDoc, Timestamp, addDoc, collection } from "firebase/firestore";
+import { doc, setDoc, Timestamp, addDoc, collection } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,13 +55,18 @@ export default function OnboardingPage() {
       });
       const orgId = orgRef.id;
 
-      await updateDoc(doc(db, "users", uid), {
+      await setDoc(doc(db, "users", uid), {
         name: data.name,
+        email: firebaseUser.email,
         orgId,
         role: "owner",
-      });
+        createdAt: now,
+      }, { merge: true });
 
-      router.push("/dashboard");
+      // Wait for Firestore replication before navigating
+      setTimeout(() => {
+        window.location.assign("/dashboard");
+      }, 500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Initialization failed. Check network.";
       setError(msg);
@@ -83,7 +88,7 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-[#0A0A0A] ring-1 ring-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] p-8">
+        <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2.5">
               <Label htmlFor="onboard-name">Operator Designation (Name)</Label>

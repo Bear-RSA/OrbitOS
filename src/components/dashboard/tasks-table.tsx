@@ -10,6 +10,7 @@ import { CreateTaskDialog } from "@/components/tasks/create-task-dialog";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { toggleTaskBlocked } from "@/lib/queries/tasks";
 import { cn } from "@/lib/utils/classnames";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 interface TasksTableProps {
   tasks: Task[];
@@ -69,7 +70,7 @@ export function TasksTable({
             className="flex items-center justify-center gap-2.5 bg-[#111111] hover:bg-[#161616] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_rgba(0,0,0,0.3)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[1px] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_rgba(0,0,0,0.4)] border-0 rounded-lg px-5 h-9 text-[12px] font-medium focus:outline-none ring-0 disabled:opacity-50 disabled:cursor-not-allowed group"
           >
             <Plus className="w-3.5 h-3.5 text-[#666666] group-hover:text-[#aaa] transition-colors duration-300" />
-            Append Directive
+            Insert Directive
           </button>
         )}
       </div>
@@ -240,11 +241,11 @@ export function TasksTable({
                       <div className="flex items-center gap-3">
                         {task.assignedTo ? (
                           <>
-                            <div className="w-6 h-6 rounded-md bg-[#131313] ring-1 ring-white/[0.06] flex items-center justify-center flex-shrink-0 group-hover/row:ring-white/[0.1] transition-all duration-300">
-                              <span className="text-[10px] font-semibold text-[#ccc]">
-                                {getMemberName(task.assignedTo).charAt(0)}
-                              </span>
-                            </div>
+                            <UserAvatar
+                              photoURL={members.find(m => m.id === task.assignedTo)?.photoURL}
+                              name={getMemberName(task.assignedTo)}
+                              size="sm"
+                            />
                             <span className="text-[13px] text-[#bbb] group-hover/row:text-[#ededed] font-medium transition-colors duration-300">
                               {getMemberName(task.assignedTo)}
                             </span>

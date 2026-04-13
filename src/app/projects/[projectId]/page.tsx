@@ -14,6 +14,7 @@ import { Loader } from "@/components/ui/loader";
 import { TasksTable } from "@/components/dashboard/tasks-table";
 import { ProjectSettingsMenu } from "@/components/projects/project-settings";
 import { ArrowLeft, RefreshCw, Folder } from "lucide-react";
+import { ProjectFiles } from "@/components/projects/project-files";
 import { cn } from "@/lib/utils/classnames";
 
 export default function ProjectDashboardPage({ params }: { params: { projectId: string } }) {
@@ -129,6 +130,11 @@ export default function ProjectDashboardPage({ params }: { params: { projectId: 
             projectId={project.id}
             onTaskUpdated={loadProjectData}
          />
+      </div>
+
+      {/* Asset Repository Plane */}
+      <div className="mt-24">
+         <ProjectFiles projectId={project.id} members={members} isOwner={user!.role === 'owner'} uid={user!.id} />
       </div>
     </DashboardShell>
   );

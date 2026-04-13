@@ -55,7 +55,7 @@ function assembleOwnerDashboard(
   const metrics = {
     activeProjects: projects.length,
     overdueTasks: tasks.filter(t => t.dueDate && t.status !== "done" && isAfter(new Date(), t.dueDate.toDate()) && !isSameDay(new Date(), t.dueDate.toDate())).length,
-    teamCapacity: members.length * 5, // Simple baseline
+    activeWorkload: activeTasks.length,
     completedThisWeek: tasks.filter(t => t.status === "done" && t.completedAt && isAfter(t.completedAt.toDate(), weekStart)).length
   };
 

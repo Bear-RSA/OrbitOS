@@ -39,17 +39,17 @@ export async function sendDailyDigest(data: DigestData) {
 <head>
   <meta charset="utf-8">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0f; color: #e8e8ed; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #050505; color: #ededed; margin: 0; padding: 0; }
     .container { max-width: 560px; margin: 0 auto; padding: 40px 24px; }
     .header { margin-bottom: 32px; }
-    .header h1 { font-size: 20px; font-weight: 600; color: #e8e8ed; margin: 0 0 4px; }
-    .header p { font-size: 14px; color: #6b7280; margin: 0; }
+    .header h1 { font-size: 20px; font-weight: 600; color: #ededed; margin: 0 0 4px; }
+    .header p { font-size: 14px; color: #888888; margin: 0; }
     .section { margin-bottom: 28px; }
     .section-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 10px; }
     ul { margin: 0; padding: 0; list-style: none; }
     li { font-size: 15px; color: #d1d5db; padding: 4px 0; }
     .cta { margin-top: 40px; }
-    .cta a { display: inline-block; background: #6366f1; color: #fff; text-decoration: none; font-size: 14px; font-weight: 500; padding: 12px 24px; border-radius: 8px; }
+    .cta a { display: inline-block; background: #ededed; color: #050505; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 8px; }
     .footer { margin-top: 40px; font-size: 12px; color: #4b5563; border-top: 1px solid #1f2937; padding-top: 20px; }
   </style>
 </head>

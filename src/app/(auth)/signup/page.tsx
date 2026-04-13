@@ -38,13 +38,13 @@ function SignupForm() {
       router.push(redirectPath);
     }
     return (
-      <div className="fixed inset-0 min-h-[100dvh] w-full bg-background flex flex-col items-center justify-center gap-6 z-[100]">
+      <div className="fixed inset-0 min-h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center gap-6 z-[100]">
         <Loader />
         <div className="flex flex-col items-center gap-3">
-          <span className="font-mono text-[10px] tracking-[0.4em] uppercase text-on-surface-variant/40">
+          <span className="font-mono text-[10px] tracking-[0.4em] uppercase text-[#555555]">
             Node Initialization
           </span>
-          <div className="w-24 h-px bg-gradient-to-r from-transparent via-outline-variant/20 to-transparent"></div>
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.04] to-transparent"></div>
         </div>
       </div>
     );
@@ -79,11 +79,11 @@ function SignupForm() {
   return (
     <div className="animate-in fade-in duration-1000 slide-in-from-bottom-4">
       <div className="mb-12 text-center space-y-3">
-        <h1 className="text-3xl font-light text-on-surface tracking-tight">Initialize Workspace</h1>
-        <p className="text-[13px] text-on-surface-variant/60 font-medium tracking-wide">Get operational in under 5 minutes</p>
+        <h1 className="text-3xl font-light text-[#ededed] tracking-tight">Initialize Workspace</h1>
+        <p className="text-[13px] text-[#888888] font-medium tracking-wide">Get operational in under 5 minutes</p>
       </div>
 
-      <div className="rounded-2xl bg-surface-lowest/80 backdrop-blur-3xl ring-1 ring-white/[0.03] shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
+      <div className="rounded-[40px] bg-surface-container/95 backdrop-blur-2xl ring-1 ring-white/[0.04] shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           <div className="space-y-3">
             <Label htmlFor="signup-name">Operator Identity</Label>
@@ -144,11 +144,11 @@ function SignupForm() {
         </form>
       </div>
 
-      <p className="text-center text-[13px] text-on-surface-variant/40 font-medium mt-12 tracking-wide">
+      <p className="text-center text-[13px] text-[#555555] font-medium mt-12 tracking-wide">
         Already have clearance?{" "}
         <Link 
           href={searchParams.get("redirect") ? `/login?redirect=${encodeURIComponent(searchParams.get("redirect") as string)}` : "/login"} 
-          className="text-on-surface hover:text-primary transition-colors underline-offset-8 hover:underline" 
+          className="text-[#ededed] hover:text-white transition-colors underline-offset-8 hover:underline" 
           id="go-to-login"
         >
           Authenticate Session
@@ -161,7 +161,7 @@ function SignupForm() {
 export default function SignupPage() {
   return (
     <Suspense fallback={
-      <div className="fixed inset-0 min-h-[100dvh] w-full bg-background flex flex-col items-center justify-center gap-6 z-[100]">
+      <div className="fixed inset-0 min-h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center gap-6 z-[100]">
         <Loader />
       </div>
     }>

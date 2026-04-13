@@ -9,7 +9,7 @@ interface OwnerAttentionCardProps {
 }
 
 export function OwnerAttentionCard({ metrics, hasProject }: OwnerAttentionCardProps) {
-  const { activeProjects, teamCapacity } = metrics;
+  const { activeProjects, activeWorkload } = metrics;
 
   return (
     <div className={cn(
@@ -59,9 +59,9 @@ export function OwnerAttentionCard({ metrics, hasProject }: OwnerAttentionCardPr
             <div className="group/metric">
               <p className={cn(
                 "text-[56px] font-extralight tracking-tighter leading-none mb-3 transition-all duration-700",
-                teamCapacity > 0 ? "text-[#ededed]" : "text-[#ededed]/20"
+                activeWorkload > 0 ? "text-[#ededed]" : "text-[#ededed]/20"
               )}>
-                {teamCapacity}
+                {activeWorkload}
               </p>
               <p className="text-[10px] text-[#444444] group-hover/metric:text-[#666666] uppercase tracking-[0.2em] font-mono transition-colors duration-500">
                 Active Workload

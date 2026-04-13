@@ -1,12 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { db } from "@/lib/firebase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { addDoc, collection, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -46,9 +53,14 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, ownerId, onSucc
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Initialize Project</DialogTitle>
+      <DialogContent className="sm:max-w-[480px] p-10 bg-[#080808]/95 border-white/[0.04]">
+        <DialogHeader className="text-left sm:text-left space-y-4">
+          <DialogTitle className="text-xl font-medium tracking-tight text-[#ededed]">
+            Initialize Project
+          </DialogTitle>
+          <DialogDescription className="text-[13px] leading-relaxed text-[#666666] font-light max-w-[360px]">
+            Define a new project designation to launch a workspace vector.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 pt-2">
           <div className="space-y-2.5">
@@ -63,23 +75,25 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, ownerId, onSucc
             />
           </div>
           {error && <p className="text-[13px] text-[#E57A7A]">{error}</p>}
-          <div className="flex justify-end gap-3 pt-6 border-t border-white/[0.04]">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
+          <DialogFooter className="flex-row justify-start sm:justify-start gap-4 mt-10">
             <Button 
               type="submit" 
               disabled={!name.trim()} 
               isLoading={loading}
+              className="h-9 px-5 rounded-lg text-[12px] min-w-[120px]"
             >
               Create Vector
             </Button>
-          </div>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+              className="h-9 px-5 rounded-lg text-[12px] text-[#444444] hover:text-[#888888] hover:bg-transparent"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

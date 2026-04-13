@@ -7,18 +7,18 @@ import { cn } from "@/lib/utils/classnames";
 import { Loader } from "@/components/ui/loader";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-[13px] font-medium transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.985]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-[13px] font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
   {
     variants: {
       variant: {
         default: 
-          "bg-primary text-primary-foreground shadow-sm hover:brightness(1.04) active:scale-[0.985]",
+          "bg-primary text-primary-foreground shadow-[0_2px_12px_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.3)] hover:brightness(1.04) active:scale-[0.97]",
         destructive: 
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 active:scale-[0.985]",
+          "bg-destructive/10 text-destructive hover:bg-destructive/20 active:scale-[0.97]",
         outline: 
-          "border border-outline-variant bg-transparent text-on-surface hover:bg-surface-low hover:border-outline-variant/60 active:scale-[0.985]",
+          "border border-outline-variant bg-transparent text-on-surface hover:bg-surface-low hover:border-outline-variant/60 active:scale-[0.97]",
         secondary: 
-          "bg-surface-container text-on-surface hover:bg-surface-highest/60 active:scale-[0.985]",
+          "bg-gradient-to-b from-[#222222] to-[#151515] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] hover:from-[#2a2a2a] hover:to-[#1a1a1a] active:scale-[0.97]",
         ghost: 
           "text-on-surface-variant hover:text-on-surface hover:bg-surface-low active:scale-[0.985]",
         link: 

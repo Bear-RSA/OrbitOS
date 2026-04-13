@@ -55,7 +55,7 @@ export interface OwnerDashboardData {
   metrics: {
     activeProjects: number;
     overdueTasks: number;
-    teamCapacity: number;
+    activeWorkload: number;
     completedThisWeek: number;
   };
   projectsHealth: ProjectHealth[];

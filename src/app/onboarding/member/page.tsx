@@ -96,7 +96,7 @@ export default function MemberOnboardingPage() {
           <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#555555]">
             Preparing Workspace
           </span>
-          <div className="w-24 h-px bg-gradient-to-r from-transparent via-[#111111] to-transparent"></div>
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.04] to-transparent"></div>
         </div>
       </div>
     );
@@ -107,7 +107,7 @@ export default function MemberOnboardingPage() {
     return (
       <div className="min-h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000 p-4">
         <div className="w-full max-w-sm text-center">
-          <div className="rounded-2xl bg-[#0A0A0A] ring-1 ring-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] p-8">
+          <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
             <div className="mx-auto w-12 h-12 rounded-full bg-[#1A0A0A] flex items-center justify-center mb-6">
               <AlertCircle className="w-5 h-5 text-[#E57A7A]" />
             </div>
@@ -117,7 +117,7 @@ export default function MemberOnboardingPage() {
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="text-[12px] font-medium text-[#ededed] bg-[#111111] px-4 py-2 rounded-lg hover:bg-white/[0.04] transition-colors inline-block tracking-wide"
+              className="text-[12px] font-medium text-[#ededed] bg-[#111111] px-5 py-2.5 rounded-lg border border-white/[0.04] hover:bg-white/[0.04] transition-all inline-block tracking-wide"
             >
               Retry
             </button>
@@ -177,7 +177,7 @@ export default function MemberOnboardingPage() {
         </div>
 
         {/* Form Card */}
-        <div className="rounded-2xl bg-[#0A0A0A] ring-1 ring-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] p-8">
+        <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
           <form onSubmit={handleSubmit} className="space-y-6">
 
             {/* Full Name — required */}

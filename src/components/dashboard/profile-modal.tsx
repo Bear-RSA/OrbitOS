@@ -11,6 +11,8 @@ import { signOut as firebaseSignOut } from "@/lib/firebase/auth";
 import { Member } from "@/types/member";
 import { Camera, X, LogOut, Check } from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
+import { ProfilePictureManager } from "@/components/profile/profile-picture-manager";
+import { User } from "@/types/auth";
 
 interface ProfileModalProps {
   open: boolean;
@@ -70,18 +72,7 @@ export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
             </button>
 
             <div className="absolute -bottom-16 left-12 flex items-end gap-8 z-10">
-              <div className="relative group">
-                <div className="w-32 h-32 rounded-[28px] bg-[#1f2021] p-1 shadow-2xl">
-                  <div className="w-full h-full rounded-[26px] bg-[#0d0e0f] flex items-center justify-center overflow-hidden relative">
-                    <span className="text-3xl font-light text-[#ededed] group-hover:opacity-20 transition-opacity">
-                      {user.name.charAt(0).toUpperCase()}
-                    </span>
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Camera className="w-6 h-6 text-[#a078ff]" />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <ProfilePictureManager user={user as unknown as User} />
               <div className="mb-4">
                 <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.3em] mb-1">Identity Vector</p>
                 <h3 className="text-2xl font-light text-white tracking-tight">{name || "Unnamed Node"}</h3>

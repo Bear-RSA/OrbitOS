@@ -7,19 +7,19 @@
 @layer base {
   :root {
     /* Architectural Void Base - High-End Monochromatic */
-    --background: 220 7% 8%; /* #121315 */
+    --background: 0 0% 2%; /* #050505 */
     --foreground: 0 0% 93%; /* #ededed */
 
     /* Tonal Surface Hierarchy */
-    --surface-lowest: 210 7% 6%; /* #0d0e0f */
-    --surface-low: 210 4% 11%; /* #1b1c1d */
-    --surface-container: 210 3% 13%; /* #1f2021 */
+    --surface-lowest: 0 0% 4%; /* #0a0a0a */
+    --surface-low: 0 0% 7%; /* #111111 */
+    --surface-container: 0 0% 8%; /* #151515 */
     --surface-highest: 0 0% 21%; /* #343536 */
     
     /* Premium Accents - Monochromatic & Neutral */
-    --primary: 0 0% 100%; /* Pure White */
-    --primary-container: 0 0% 15%; /* Dark Tonal Container */
-    --on-primary: 220 7% 8%; /* Background color for contrast */
+    --primary: 0 0% 93%; /* #ededed */
+    --primary-container: 0 0% 15%; /* #262626 */
+    --on-primary: 0 0% 2%; /* #050505 */
 
     --tertiary: 60 100% 50%; /* Luminous Yellow for precision */
     
@@ -27,14 +27,14 @@
     --muted-foreground: 0 0% 53%; /* #888888 */
 
     --on-surface: 0 0% 93%; /* #ededed */
-    --on-surface-variant: 0 0% 60%; /* Bumped from 53% for WCAG AA (4.5:1 ratio) */
+    --on-surface-variant: 0 0% 60%; 
     
-    --outline-variant: 0 0% 18%; /* Neutralized border/outline */
+    --outline-variant: 0 0% 18%; /* #2e2e2e */
 
-    --destructive: 0 84% 65%; /* Refined for visibility */
+    --destructive: 0 84% 65%; /* #E57A7A */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 18%; /* Aligned with outline-variant */
+    --border: 0 0% 18%; 
     --radius: 0.5rem;
 
     /* Operational Interaction Tokens */

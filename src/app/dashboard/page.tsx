@@ -20,6 +20,7 @@ import { Task } from "@/types/task";
 import { Member } from "@/types/member";
 import { OrbitalDashboardData, OwnerDashboardData, MemberDashboardData } from "@/types/dashboard";
 import { RefreshCw, Plus, UserPlus } from "lucide-react";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils/classnames";
 
 export default function DashboardPage() {
@@ -60,17 +61,23 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
-        router.push("/login");
+        // Give a tiny buffer for Firestore sync if Auth is present but profile is null
+        const timer = setTimeout(() => {
+          if (!user) router.push("/login");
+        }, 1500);
+        return () => clearTimeout(timer);
       } else if (!user.orgId) {
         // No org — route based on role
         if (user.role === "owner") {
           router.push("/onboarding");
         } else {
-          // Member without org shouldn't reach dashboard
-          router.push("/login");
+          // If role is missing (syncing), wait a bit more
+          const timer = setTimeout(() => {
+            if (!user.orgId) router.push("/login");
+          }, 1500);
+          return () => clearTimeout(timer);
         }
       } else if (user.role === "member" && !user.name) {
-        // Member with org but incomplete profile — member onboarding
         router.push("/onboarding/member");
       } else {
         loadOperationalData();
@@ -146,11 +153,13 @@ export default function DashboardPage() {
 
           <button
             onClick={() => router.push("/profile")}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-[#111111] hover:bg-[#1a1a1a] hover:-translate-y-[2px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] focus:outline-none ring-0 relative overflow-hidden group"
+            className="focus:outline-none hover:-translate-y-[2px] transition-transform duration-300"
           >
-            <span className="text-[13px] font-medium relative z-10">
-              {user.name.charAt(0).toUpperCase()}
-            </span>
+            <UserAvatar 
+              photoURL={user.photoURL} 
+              name={user.name} 
+              size="md" 
+            />
           </button>
         </div>
       </div>

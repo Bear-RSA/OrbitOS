@@ -96,10 +96,12 @@ export function EditTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" id="edit-task-dialog">
-        <DialogHeader>
-          <DialogTitle>Modify Directive</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="sm:max-w-[480px] p-10 bg-[#080808]/95 border-white/[0.04]">
+        <DialogHeader className="text-left sm:text-left space-y-4">
+          <DialogTitle className="text-xl font-medium tracking-tight text-[#ededed]">
+            Modify Directive
+          </DialogTitle>
+          <DialogDescription className="text-[13px] leading-relaxed text-[#666666] font-light max-w-[360px]">
             Update operating parameters for this vector.
           </DialogDescription>
         </DialogHeader>
@@ -160,16 +162,22 @@ export function EditTaskDialog({
             </div>
           </div>
 
-          <DialogFooter className="gap-2 mt-8 border-t border-white/[0.04] pt-6">
+          <DialogFooter className="flex-row justify-start sm:justify-start gap-4 mt-10">
+            <Button 
+              type="submit" 
+              disabled={loading} 
+              id="submit-edit-task"
+              className="h-9 px-5 rounded-lg text-[12px] min-w-[120px]"
+            >
+              {loading ? "Modifying..." : "Save Modifications"}
+            </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => onOpenChange(false)}
+              className="h-9 px-5 rounded-lg text-[12px] text-[#444444] hover:text-[#888888] hover:bg-transparent"
             >
               Cancel
-            </Button>
-            <Button type="submit" disabled={loading} id="submit-edit-task">
-              {loading ? "Modifying..." : "Save Modifications"}
             </Button>
           </DialogFooter>
         </form>

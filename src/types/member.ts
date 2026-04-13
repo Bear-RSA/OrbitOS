@@ -6,6 +6,8 @@ export interface Member {
   name: string;
   orgId: string;
   role: "owner" | "member";
+  photoURL?: string | null;
+  photoPublicId?: string | null;
   createdAt: Timestamp;
 }
 

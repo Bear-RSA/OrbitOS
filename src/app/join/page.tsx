@@ -129,20 +129,20 @@ function JoinForm() {
   const renderContent = () => {
     if (status === "error") {
       return (
-        <div className="w-full rounded-2xl bg-[#0A0A0A] ring-1 ring-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] p-8">
+        <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
           <div className="mx-auto w-12 h-12 rounded-full bg-[#1A0A0A] flex items-center justify-center mb-6">
              <AlertCircle className="w-5 h-5 text-[#E57A7A]" />
           </div>
           <h1 className="text-[17px] font-light tracking-tight text-[#ededed] mb-2">Integration Failed</h1>
-          <p className="text-[13px] text-[#888888] font-light leading-relaxed mb-6">{errorMsg}</p>
-          <Link href="/" className="text-[12px] font-medium text-[#ededed] bg-[#111111] px-4 py-2 rounded-lg hover:bg-white/[0.04] transition-colors inline-block tracking-wide">Return to Core</Link>
+          <p className="text-[13px] text-[#888888] font-light leading-relaxed mb-8">{errorMsg}</p>
+          <Link href="/" className="text-[12px] font-medium text-[#ededed] bg-[#111111] px-5 py-2.5 rounded-lg border border-white/[0.04] hover:bg-white/[0.04] transition-all inline-block tracking-wide">Return to Core</Link>
         </div>
       );
     }
 
     if (status === "done") {
       return (
-        <div className="w-full rounded-2xl bg-[#0A0A0A] ring-1 ring-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] p-8">
+        <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
           <div className="mx-auto w-12 h-12 rounded-full bg-[#0F1A13] flex items-center justify-center mb-6">
              <CheckCircle2 className="w-5 h-5 text-[#85C89B]" />
           </div>
@@ -155,12 +155,12 @@ function JoinForm() {
     if (!isInviteReady) return null;
 
     return (
-      <div className="w-full rounded-2xl bg-[#0A0A0A] ring-1 ring-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] p-8">
+      <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
         <div className="mx-auto w-12 h-12 rounded-full bg-[#111111] border border-white/[0.04] flex items-center justify-center mb-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
           <UserPlus className="w-5 h-5 text-[#ededed]" />
         </div>
         <h1 className="text-[17px] font-light tracking-tight text-[#ededed] mb-1">Workspace Request</h1>
-        <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#444] mb-8">Access Token Verified</p>
+        <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#555555] mb-8">Access Token Verified</p>
 
         {/* Priority 1: Authentication Required */}
         {needsAuth ? (
@@ -277,7 +277,7 @@ function JoinForm() {
           <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#555555]">
             Verifying Link
           </span>
-          <div className="w-24 h-px bg-gradient-to-r from-transparent via-[#111111] to-transparent"></div>
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.04] to-transparent"></div>
         </div>
       </div>
     );
@@ -306,7 +306,7 @@ export default function JoinPage() {
           <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#555555]">
             System Rendering
           </span>
-          <div className="w-24 h-px bg-gradient-to-r from-transparent via-[#111111] to-transparent"></div>
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.04] to-transparent"></div>
         </div>
       </div>
     }>

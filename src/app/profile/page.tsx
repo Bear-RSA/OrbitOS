@@ -36,6 +36,8 @@ import {
   EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
+import { ProfilePictureManager } from "@/components/profile/profile-picture-manager";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 // ─── Workload Status Computation ───────────────────────────────────────────
 
@@ -331,20 +333,9 @@ export default function ProfilePage() {
           </span>
           <div className="flex flex-col lg:flex-row items-start gap-12">
 
-            {/* Avatar */}
-            <div className="relative group flex-shrink-0">
-              <div className="w-32 h-32 rounded-3xl overflow-hidden bg-[#0A0A0A] p-1 transition-all duration-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] ring-1 ring-white/[0.04]">
-                <div className="w-full h-full rounded-[20px] bg-[#111111] border border-white/[0.02] flex items-center justify-center overflow-hidden relative">
-                  <span className="text-4xl font-light text-[#ededed] group-hover:opacity-20 transition-opacity">
-                    {user.name.charAt(0).toUpperCase()}
-                  </span>
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center bg-[#050505]/60 backdrop-blur-sm">
-                    <Camera className="w-6 h-6 text-[#888888]" />
-                  </div>
-                </div>
-              </div>
-              {/* Online pulse */}
-              <div className="absolute top-2 right-2 w-3 h-3 rounded-full bg-[#ededed]/60" />
+            {/* Avatar Management */}
+            <div className="flex-shrink-0">
+              <ProfilePictureManager user={user} />
             </div>
 
             {/* Identity Block */}
