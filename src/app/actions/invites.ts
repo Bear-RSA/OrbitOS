@@ -7,22 +7,28 @@ import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 export async function getInviteInfoAction(token: string) {
   try {
     const invitesRef = adminDb.collection("memberInvites");
-    const snapshot = await invitesRef.where("token", "==", token).get();
+    // Query by token field as specified
+    const snapshot = await invitesRef.where("token", "==", token).limit(1).get();
 
     if (snapshot.empty) {
       return null;
     }
 
     const inviteDoc = snapshot.docs[0];
-    const invite = inviteDoc.data() as MemberInvite;
-
-    const isExpired = invite.expiresAt && invite.expiresAt.toDate() < new Date();
+    const data = inviteDoc.data() as MemberInvite;
+    
+    const isExpired = data.expiresAt && data.expiresAt.toDate() < new Date();
 
     return {
-      token: invite.token,
-      email: invite.email,
-      orgId: invite.orgId,
-      status: invite.status,
+      id: inviteDoc.id,
+      token: data.token,
+      email: data.email,
+      orgId: data.orgId,
+      status: data.status,
+      invitedBy: data.invitedBy,
+      role: data.role,
+      createdAt: data.createdAt?.toDate().toISOString(),
+      expiresAt: data.expiresAt?.toDate().toISOString(),
       isExpired: !!isExpired
     };
   } catch (error) {
@@ -40,7 +46,8 @@ interface RedeemPayload {
 export async function redeemInviteAction(payload: RedeemPayload): Promise<{ success: boolean; error?: string }> {
   try {
     const invitesRef = adminDb.collection("memberInvites");
-    const snapshot = await invitesRef.where("token", "==", payload.token).get();
+    // Ensure consistent query logic
+    const snapshot = await invitesRef.where("token", "==", payload.token).limit(1).get();
 
     if (snapshot.empty) {
       return { success: false, error: "This link is invalid or authorization has expired." };
