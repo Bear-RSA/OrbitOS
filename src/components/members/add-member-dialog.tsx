@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { addMemberSchema, AddMemberInput } from "@/lib/validations/member";
 import { createInvite } from "@/lib/queries/members";
+import { sendInviteEmail } from "@/lib/email/sendInviteEmail";
 import { UserPlus, Copy, Check } from "lucide-react";
 import {
   Dialog,
@@ -23,6 +24,7 @@ interface AddMemberDialogProps {
   onOpenChange: (open: boolean) => void;
   orgId: string;
   invitedBy: string;
+  projectName?: string;
 }
 
 export function AddMemberDialog({
@@ -30,6 +32,7 @@ export function AddMemberDialog({
   onOpenChange,
   orgId,
   invitedBy,
+  projectName = "OrbitOS",
 }: AddMemberDialogProps) {
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
@@ -49,7 +52,18 @@ export function AddMemberDialog({
     try {
       const invite = await createInvite(orgId, data.email, invitedBy);
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
-      setInviteLink(`${appUrl}/join?token=${invite.token}`);
+      const currentInviteLink = `${appUrl}/join?token=${invite.token}`;
+      setInviteLink(currentInviteLink);
+
+      // Dispatch invitation email without blocking the UI flow
+      sendInviteEmail({ 
+        email: data.email, 
+        inviteLink: currentInviteLink,
+        projectName
+      }).catch(err => {
+        console.error("[Email Failure Notice]:", err);
+      });
+
       reset();
     } catch (err) {
       console.error("Failed to create invite:", err);

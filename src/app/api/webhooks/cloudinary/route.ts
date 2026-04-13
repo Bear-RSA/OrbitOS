@@ -27,6 +27,13 @@ function getWebhookToken(): string {
   return crypto.createHmac("sha256", secret).update("orbitos-webhook").digest("hex");
 }
 
+export async function GET() {
+  return NextResponse.json({ 
+    status: "active", 
+    message: "OrbitOS Cloudinary Webhook is operational. Use POST with ?token=... for ingestion." 
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     // ─── Step 1: Verify URL token ─────────────────────────────────────────
@@ -34,8 +41,10 @@ export async function POST(req: NextRequest) {
     const token = url.searchParams.get("token");
     const expectedToken = getWebhookToken();
 
+    console.log("[Webhook] Received notification. Token present:", !!token);
+
     if (!token || token !== expectedToken) {
-      console.error("[Webhook] Invalid or missing URL token");
+      console.error("[Webhook] Invalid or missing URL token:", token);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
