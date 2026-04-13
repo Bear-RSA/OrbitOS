@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { redeemInviteAction, getInviteInfoAction } from "@/app/actions/invites";
+import { Logo } from "@/components/brand/logo";
+
 import type { MemberInvite } from "@/types/member";
 import { signOut as firebaseSignOut } from "@/lib/firebase/auth";
 
@@ -285,9 +287,7 @@ function JoinForm() {
     <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
       <div className="w-full max-w-sm animate-fade-in text-center flex flex-col items-center">
         <div className="flex flex-col items-center gap-3 mb-10 justify-center">
-          <div className="w-10 h-10 rounded-xl bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] flex items-center justify-center">
-            <span className="text-lg font-bold text-[#ededed]">O</span>
-          </div>
+          <Logo size={40} />
           <span className="font-semibold text-[#ededed] text-lg tracking-tight">OrbitOS</span>
         </div>
 

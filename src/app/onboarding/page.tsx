@@ -11,6 +11,8 @@ import { doc, updateDoc, Timestamp, addDoc, collection } from "firebase/firestor
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Logo } from "@/components/brand/logo";
+
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -70,9 +72,7 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="flex flex-col items-center gap-3 mb-12 justify-center">
-          <div className="w-10 h-10 rounded-xl bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] flex items-center justify-center">
-            <span className="text-lg font-bold text-[#ededed]">O</span>
-          </div>
+          <Logo size={40} />
           <span className="font-semibold text-[#ededed] text-lg tracking-tight">OrbitOS</span>
         </div>
 

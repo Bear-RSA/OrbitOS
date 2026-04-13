@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { Logo } from "@/components/brand/logo";
+
 import { AlertCircle, EyeOff, ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
@@ -15,9 +17,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 w-full z-50 bg-[#050505]/70 backdrop-blur-xl border-b border-white/[0.04]">
         <div className="flex justify-between items-center max-w-7xl mx-auto px-8 h-16">
           <div className="font-mono text-lg tracking-tighter text-[#ededed] flex items-center gap-3">
-             <div className="w-6 h-6 rounded-md bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden">
-               <Image src="/logo.png" alt="OrbitOS" fill className="object-cover" />
-             </div>
+             <Logo size="sm" className="rounded-md" />
              OrbitOS
           </div>
           <div className="hidden md:flex items-center gap-8">

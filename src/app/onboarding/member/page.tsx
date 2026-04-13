@@ -7,7 +7,9 @@ import { db } from "@/lib/firebase/client";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Loader } from "@/components/ui/loader";
 import { Users, ArrowRight, ChevronRight, AlertCircle } from "lucide-react";
+import { Logo } from "@/components/brand/logo";
 import type { User } from "@/types/auth";
+
 
 export default function MemberOnboardingPage() {
   const router = useRouter();
@@ -156,9 +158,7 @@ export default function MemberOnboardingPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center gap-3 mb-12 justify-center">
-          <div className="w-10 h-10 rounded-xl bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] flex items-center justify-center">
-            <span className="text-lg font-bold text-[#ededed]">O</span>
-          </div>
+          <Logo size={40} />
           <span className="font-semibold text-[#ededed] text-lg tracking-tight">OrbitOS</span>
         </div>
 
