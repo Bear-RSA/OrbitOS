@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
-import { FieldValue } from "firebase-admin/firestore";
 import crypto from "crypto";
 
 // Force Node.js runtime
@@ -56,44 +54,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Ignored notification type" });
     }
 
-    const { public_id, secure_url, bytes, format, resource_type } = payload;
+    // ─── File registration is handled by registerProjectFileAction ────────
+    // The client-side upload flow already registers the file via the server
+    // action. This webhook previously created a duplicate "System" record.
+    // We acknowledge the notification and return immediately.
+    console.log("[Webhook] Upload notification acknowledged. File registration handled by server action.");
 
-    // ─── Step 3: Parse Project ID from path ───────────────────────────────
-    // Expected public_id format: "projects/{projectId}/assets/{filename}"
-    const pathParts = public_id.split("/");
-    if (pathParts[0] !== "projects" || pathParts[2] !== "assets") {
-      console.warn("[Webhook] Non-project asset, ignoring:", public_id);
-      return NextResponse.json({ message: "Not a project asset" });
-    }
-
-    const projectId = pathParts[1];
-
-    // ─── Step 4: Validate project exists ──────────────────────────────────
-    const projectDoc = await adminDb.collection("projects").doc(projectId).get();
-    if (!projectDoc.exists) {
-      console.error("[Webhook] Project not found:", projectId);
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    }
-
-    // ─── Step 5: Write to Firestore ───────────────────────────────────────
-    const fileId = public_id.replace(/\//g, "_");
-    const fileRef = adminDb.collection("projects").doc(projectId).collection("files").doc(fileId);
-
-    await fileRef.set({
-      id: fileId,
-      projectId,
-      name: payload.original_filename || public_id.split("/").pop(),
-      url: secure_url,
-      publicId: public_id,
-      size: bytes,
-      type: `${resource_type}/${format}`,
-      uploadedBy: "system_webhook",
-      createdAt: FieldValue.serverTimestamp(),
-      ingestedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
-
-    console.log("[Webhook] ✓ File ingested:", fileId, "→ project:", projectId);
-    return NextResponse.json({ success: true, fileId: fileRef.id });
+    return NextResponse.json({ success: true, message: "Acknowledged. Registration handled by server action." });
   } catch (error) {
     console.error("[Webhook] Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

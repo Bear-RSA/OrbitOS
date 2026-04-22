@@ -41,7 +41,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           doc(db, "users", fbUser.uid),
           (snap) => {
             if (snap.exists()) {
-              setUser({ id: snap.id, ...snap.data() } as User);
+              const data = snap.data();
+              const normalizedRole = data?.role?.toUpperCase() === "OWNER" ? "OWNER" : "MEMBER";
+              setUser({ id: snap.id, ...data, role: normalizedRole } as User);
             } else {
               setUser(null);
             }

@@ -2,6 +2,7 @@
 
 import { adminDb } from "@/lib/firebase/admin";
 import { cloudinary } from "@/lib/cloudinary";
+import { logActivity } from "@/lib/telemetry";
 
 interface DeleteFilePayload {
   projectId: string;
@@ -9,6 +10,57 @@ interface DeleteFilePayload {
   publicId: string;
   resourceType: string;
   uid: string;
+  fileName?: string;
+}
+
+interface RegisterFilePayload {
+  projectId: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+  publicId: string;
+  uid: string;
+}
+
+export async function registerProjectFileAction(
+  payload: RegisterFilePayload
+): Promise<{ success: boolean; fileId?: string; error?: string }> {
+  const { projectId, name, type, size, url, publicId, uid } = payload;
+
+  try {
+    const userSnap = await adminDb.collection("users").doc(uid).get();
+    if (!userSnap.exists) return { success: false, error: "User not found" };
+    const userData = userSnap.data()!;
+
+    const fileRef = await adminDb
+      .collection("projects")
+      .doc(projectId)
+      .collection("files")
+      .add({
+        name,
+        type,
+        size,
+        url,
+        publicId,
+        uploadedBy: uid,
+        createdAt: new Date(),
+      });
+
+    // Log activity
+    await logActivity({
+      eventType: "ASSET_INGESTED",
+      orgId: userData.orgId,
+      projectId,
+      actor: { uid, name: userData.name || "System" },
+      metadata: { fileName: name, fileId: fileRef.id },
+    });
+
+    return { success: true, fileId: fileRef.id };
+  } catch (err) {
+    console.error("[RegisterFile] Error:", err);
+    return { success: false, error: "Failed to index asset" };
+  }
 }
 
 export async function deleteProjectFileAction(
@@ -27,9 +79,9 @@ export async function deleteProjectFileAction(
     }
 
     const userData = userSnap.data()!;
-    if (userData.role !== "owner") {
-      console.error("[DeleteFile] Non-owner attempted file deletion:", uid, userData.role);
-      return { success: false, error: "Only workspace owners can delete files." };
+    if (!["OWNER", "owner", "MEMBER", "member"].includes(userData.role)) {
+      console.error("[DeleteFile] Unauthorized attempted file deletion:", uid, userData.role);
+      return { success: false, error: "Only workspace members can delete files." };
     }
 
     if (!userData.orgId) {
@@ -76,6 +128,20 @@ export async function deleteProjectFileAction(
       .delete();
 
     console.log("[DeleteFile] ✓ File record deleted:", fileId, "→ project:", projectId);
+
+    // 5. Log activity
+    try {
+      await logActivity({
+        eventType: "ASSET_DESTROYED",
+        orgId: userData.orgId,
+        projectId,
+        actor: { uid, name: userData.name || "System" },
+        metadata: { fileName: payload.fileName || "unknown", fileId },
+      });
+    } catch (telemetryError) {
+      console.error("TELEMETRY WRITE ERROR:", telemetryError);
+    }
+
     return { success: true };
   } catch (error: any) {
     console.error("[DeleteFile] Deletion failed:", error);

@@ -8,15 +8,18 @@ interface SendInviteEmailParams {
   email: string;
   inviteLink: string;
   projectName?: string;
+  inviterName: string;
 }
 
 /**
  * Sends an invitation email to a new project member using Resend.
+ * Minimal and clean styling.
  */
 export async function sendInviteEmail({
   email,
   inviteLink,
   projectName = "OrbitOS",
+  inviterName,
 }: SendInviteEmailParams) {
   try {
     if (!process.env.RESEND_API_KEY) {
@@ -25,29 +28,25 @@ export async function sendInviteEmail({
     }
 
     const { data, error } = await resend.emails.send({
-      from: "OrbitOS <onboarding@resend.dev>", // Using Resend's default testing domain
+      from: "OrbitOS <onboarding@resend.dev>",
       to: [email],
-      subject: `You're invited to join a project on ${projectName}`,
+      subject: `${inviterName} invited you to join ${projectName} on OrbitOS`,
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-          <h2 style="font-weight: 300; font-size: 24px; color: #000;">Project Invitation</h2>
-          <p style="font-size: 16px; line-height: 1.5;">
-            You have been invited to join <strong>${projectName}</strong> on OrbitOS. 
-            Click the button below to verify your identity and access the workspace.
-          </p>
-          <div style="margin-top: 32px; margin-bottom: 32px;">
-            <a href="${inviteLink}" 
-               style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; display: inline-block;">
-               Accept Invitation
+        <div style="font-family: sans-serif; line-height: 1.5; color: #333;">
+          <p>Hello,</p>
+          <p><strong>${inviterName}</strong> has invited you to collaborate on the project <strong>${projectName}</strong>.</p>
+          <p>Click the link below to accept the invitation and securely join the workspace (this link expires in 48 hours):</p>
+          <div style="margin: 24px 0;">
+            <a href="${inviteLink}" style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Join Project
             </a>
           </div>
-          <p style="font-size: 14px; color: #666;">
+          <p style="font-size: 14px; margin-top: 32px; color: #666;">
             Or copy and paste this link into your browser:<br />
-            <a href="${inviteLink}" style="color: #000;">${inviteLink}</a>
+            <a href="${inviteLink}" style="color: #666; word-break: break-all;">${inviteLink}</a>
           </p>
-          <hr style="border: 0; border-top: 1px solid #eee; margin-top: 40px;" />
-          <p style="font-size: 12px; color: #999;">
-            This invitation was sent to ${email}. If you weren't expecting this, you can safely ignore this email.
+          <p style="font-size: 14px; margin-top: 24px; color: #999;">
+            If you weren't expecting this, you can ignore this email.
           </p>
         </div>
       `,
@@ -60,7 +59,7 @@ export async function sendInviteEmail({
 
     console.log("[Email Sent Successfully]:", data?.id);
     return { success: true, id: data?.id };
-  } catch (err) {
+  } catch (err: any) {
     console.error("[Email Error]:", err);
     return { success: false, error: "Internal server error during email dispatch" };
   }

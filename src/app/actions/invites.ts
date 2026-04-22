@@ -3,6 +3,138 @@
 import { adminDb } from "@/lib/firebase/admin";
 import type { MemberInvite } from "@/types/member";
 import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
+import { getAppUrl } from "@/lib/utils/getAppUrl";
+import { sendInviteEmail } from "@/lib/email/sendInviteEmail";
+import { nanoid } from "@/lib/utils/nanoid";
+import { logActivity } from "@/lib/telemetry";
+
+/* ------------------------------------------------------------------ */
+/*  Create Invite — server action                                     */
+/*  Creates the invite doc, builds the join link using env-aware URL,  */
+/*  and dispatches the invitation email in a single server round-trip. */
+/* ------------------------------------------------------------------ */
+
+interface CreateInvitePayload {
+  orgId: string;
+  email: string;
+  invitedBy: string;
+  projectName?: string;
+}
+
+interface CreateInviteResult {
+  success: boolean;
+  reused?: boolean;
+  regenerated?: boolean;
+  inviteLink?: string;
+  email?: string;
+  emailSent?: boolean;
+  error?: string;
+}
+
+export async function createInviteAction(
+  payload: CreateInvitePayload
+): Promise<CreateInviteResult> {
+  try {
+    const email = payload.email.toLowerCase().trim();
+    const now = new Date();
+    const expires = new Date();
+    expires.setDate(now.getDate() + 7);
+
+    // Atomic transaction: lookup → reuse/regenerate/create
+    const txResult = await adminDb.runTransaction(async (tx) => {
+      const freshToken = nanoid(32);
+      let token = freshToken;
+      let reused = false;
+      let regenerated = false;
+
+      const existingSnap = await tx.get(
+        adminDb.collection("memberInvites")
+          .where("orgId", "==", payload.orgId)
+          .where("email", "==", email)
+          .where("status", "==", "pending")
+          .limit(1)
+      );
+
+      if (!existingSnap.empty) {
+        reused = true;
+        const inviteDoc = existingSnap.docs[0];
+        const inviteData = inviteDoc.data() as MemberInvite;
+
+        const isExpired = inviteData.expiresAt && inviteData.expiresAt.toDate() < now;
+
+        if (isExpired) {
+          // Expired invite — regenerate token + expiry
+          regenerated = true;
+          tx.update(inviteDoc.ref, {
+            token,
+            expiresAt: AdminTimestamp.fromDate(expires),
+          });
+        } else {
+          // Valid pending invite — reuse existing token
+          token = inviteData.token;
+        }
+      } else {
+        // No existing invite — create new document
+        const newRef = adminDb.collection("memberInvites").doc();
+        tx.set(newRef, {
+          orgId: payload.orgId,
+          email,
+          invitedBy: payload.invitedBy,
+          role: "MEMBER",
+          status: "pending",
+          token,
+          createdAt: AdminTimestamp.fromDate(now),
+          expiresAt: AdminTimestamp.fromDate(expires),
+        });
+      }
+
+      return { token, reused, regenerated };
+    });
+
+    // Build link using env-aware base URL
+    const appUrl = getAppUrl();
+    const inviteLink = `${appUrl}/join?token=${txResult.token}`;
+
+    const inviterSnap = await adminDb.collection("users").doc(payload.invitedBy).get();
+    const inviterName = inviterSnap.exists ? inviterSnap.data()!.name || "Operator" : "System";
+
+    // Dispatch email — await result to surface success/failure
+    const emailResult = await sendInviteEmail({
+      email,
+      inviteLink,
+      projectName: payload.projectName ?? "OrbitOS",
+      inviterName,
+    });
+
+    const emailSent = emailResult.success;
+
+    if (!emailSent) {
+      console.error("[INVITE_EMAIL_FAILED]", { email, projectId: payload.orgId, error: emailResult.error });
+    }
+
+    // Log activity (non-blocking)
+    await logActivity({
+      eventType: "INVITE_DISPATCHED",
+      orgId: payload.orgId,
+      projectId: null,
+      actor: { uid: payload.invitedBy, name: inviterName },
+      metadata: { email, emailSent, reused: txResult.reused, regenerated: txResult.regenerated },
+    });
+
+    return {
+      success: true,
+      reused: txResult.reused,
+      regenerated: txResult.regenerated,
+      inviteLink,
+      email,
+      emailSent,
+      error: emailSent ? undefined : emailResult.error,
+    };
+  } catch (error: any) {
+    console.error("[Create Invite Error]:", error);
+    return { success: false, error: "Failed to generate integration link." };
+  }
+}
 
 export async function getInviteInfoAction(token: string) {
   try {
@@ -82,7 +214,7 @@ export async function redeemInviteAction(payload: RedeemPayload): Promise<{ succ
       // Existing user — only attach org membership
       batch.set(userRef, {
         orgId: invite.orgId,
-        role: "member",
+        role: "MEMBER",
       }, { merge: true });
     } else {
       // First-time invited user — create a complete minimal profile
@@ -91,7 +223,7 @@ export async function redeemInviteAction(payload: RedeemPayload): Promise<{ succ
         email: payload.email.toLowerCase().trim(),
         name: "",
         orgId: invite.orgId,
-        role: "member",
+        role: "MEMBER",
         createdAt: AdminTimestamp.now(),
       });
     }

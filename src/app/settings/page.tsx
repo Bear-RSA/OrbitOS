@@ -88,7 +88,7 @@ export default function SettingsPage() {
           </div>
 
           <nav className="space-y-1.5">
-            {SETTINGS_TABS.map((tab) => (
+            {SETTINGS_TABS.filter(tab => tab.id !== 'billing' || user.role === 'OWNER').map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -254,25 +254,27 @@ export default function SettingsPage() {
             </ScrollReveal>
 
             {/* Danger Zone */}
-            <ScrollReveal delay={300}>
-              <div className="pt-24 border-t border-white/[0.04]">
-                <div className="flex flex-col gap-8 p-10 bg-[#0A0A0A] rounded-[24px] ring-1 ring-white/[0.04]">
-                  <div>
-                    <h3 className="text-lg font-light text-[#ededed]">Terminal Decommissioning</h3>
-                    <p className="text-[13px] text-[#666666] font-light mt-1">Permanently remove this workspace and all telemetry data.</p>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <button className="px-6 py-3 bg-[#E57A7A]/10 hover:bg-[#E57A7A]/20 text-[#E57A7A] rounded-xl text-[13px] font-medium transition-all">
-                      Initialize Wipe
-                    </button>
-                    <div className="flex items-center gap-2 text-[#444444]">
-                      <Lock className="w-3.5 h-3.5" />
-                      <span className="text-[10px] font-mono uppercase tracking-widest">Protocol Locked</span>
+            {user.role === 'OWNER' && (
+              <ScrollReveal delay={300}>
+                <div className="pt-24 border-t border-white/[0.04]">
+                  <div className="flex flex-col gap-8 p-10 bg-[#0A0A0A] rounded-[24px] ring-1 ring-white/[0.04]">
+                    <div>
+                      <h3 className="text-lg font-light text-[#ededed]">Terminal Decommissioning</h3>
+                      <p className="text-[13px] text-[#666666] font-light mt-1">Permanently remove this workspace and all telemetry data.</p>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <button className="px-6 py-3 bg-[#E57A7A]/10 hover:bg-[#E57A7A]/20 text-[#E57A7A] rounded-xl text-[13px] font-medium transition-all">
+                        Initialize Wipe
+                      </button>
+                      <div className="flex items-center gap-2 text-[#444444]">
+                        <Lock className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-mono uppercase tracking-widest">Protocol Locked</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </ScrollReveal>
+              </ScrollReveal>
+            )}
 
           </div>
         </div>

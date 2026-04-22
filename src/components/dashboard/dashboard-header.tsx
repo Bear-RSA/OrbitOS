@@ -35,12 +35,12 @@ export function DashboardHeader({ currentUser, orgName }: DashboardHeaderProps) 
         {/* Role Badge */}
         <div className="flex items-center gap-3 mb-6">
           <div className="px-3 py-1.5 flex items-center gap-2 rounded-md border border-white/[0.04] bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] text-[12px] font-medium text-[#ededed]">
-            {currentUser.role === "owner" ? (
+            {currentUser.role === "OWNER" ? (
               <Crown className="w-3.5 h-3.5 text-[#888888]" />
             ) : (
               <Users className="w-3.5 h-3.5 text-[#888888]" />
             )}
-            <span className="capitalize">{currentUser.role}</span>
+            <span className="capitalize">{currentUser.role.toLowerCase()}</span>
           </div>
         </div>
         
@@ -51,7 +51,7 @@ export function DashboardHeader({ currentUser, orgName }: DashboardHeaderProps) 
         
         {/* Subline */}
         <p className="text-[14px] text-[#666666] mt-4 font-light max-w-lg leading-relaxed tracking-wide">
-          {currentUser.role === "owner"
+          {currentUser.role === "OWNER"
             ? "Telemetry is active. Here is the operational state of your workspace modules."
             : "Here is your assigned work and project activity."}
         </p>

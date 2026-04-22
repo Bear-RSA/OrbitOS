@@ -32,6 +32,7 @@ export default function DashboardPage() {
   const [rawMembers, setRawMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
@@ -68,7 +69,7 @@ export default function DashboardPage() {
         return () => clearTimeout(timer);
       } else if (!user.orgId) {
         // No org — route based on role
-        if (user.role === "owner") {
+        if (user.role === "OWNER") {
           router.push("/onboarding");
         } else {
           // If role is missing (syncing), wait a bit more
@@ -77,7 +78,7 @@ export default function DashboardPage() {
           }, 1500);
           return () => clearTimeout(timer);
         }
-      } else if (user.role === "member" && !user.name) {
+      } else if (user.role === "MEMBER" && !user.name) {
         router.push("/onboarding/member");
       } else {
         loadOperationalData();
@@ -101,7 +102,7 @@ export default function DashboardPage() {
 
   if (!user || !user.orgId) return null;
 
-  const isOwner = user.role === "owner";
+  const isOwner = user.role === "OWNER";
   // Safe resolution if data fails to load due to index propagation
   const hasProject = data 
     ? (isOwner 
@@ -122,7 +123,7 @@ export default function DashboardPage() {
         
         <div className="flex items-center gap-5">
           <button
-            onClick={() => { setRefreshing(true); loadOperationalData(); }}
+            onClick={() => { setRefreshing(true); setRefreshKey(prev => prev + 1); loadOperationalData(); }}
             disabled={refreshing}
             className={cn(
               "flex items-center justify-center w-10 h-10 rounded-full bg-transparent hover:bg-[#111111] text-[#888888] hover:text-[#ededed] transition-all focus:outline-none ring-0",
@@ -135,17 +136,10 @@ export default function DashboardPage() {
           {isOwner && (
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setAddMemberOpen(true)}
-                className="gap-2.5 hidden sm:flex items-center justify-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[2px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-lg px-5 h-10 text-[13px] font-medium focus:outline-none ring-0"
-              >
-                <UserPlus className="w-4 h-4 text-[#888888]" />
-                Invite Team
-              </button>
-              <button
                 onClick={() => setCreateProjectOpen(true)}
-                className="gap-2.5 hidden sm:flex items-center justify-center bg-[#ededed] hover:bg-white hover:-translate-y-[2px] text-[#050505] shadow-[0_2px_12px_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.3)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-lg px-6 h-10 text-[13px] font-bold tracking-tight focus:outline-none ring-0"
+                className="flex items-center gap-2.5 bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[1px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-md px-5 h-9 text-[10px] font-mono uppercase tracking-[0.2em] focus:outline-none ring-0"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5 text-[#888888]" />
                 Create Project
               </button>
             </div>
@@ -173,19 +167,21 @@ export default function DashboardPage() {
       </div>
 
       {/* Content Rendering Layer */}
-      {!data || !hasProject ? (
+      <div key={refreshKey} className="flex-1">
+        {!data || !hasProject ? (
         <EmptyDashboardState 
           type="no_projects" 
           isOwner={isOwner} 
           onCreateProject={() => setCreateProjectOpen(true)} 
         />
-      ) : data.role === 'owner' ? (
+      ) : data.role === 'OWNER' ? (
         <OwnerDashboardView 
           data={data as OwnerDashboardData} 
           members={rawMembers} 
           tasks={rawTasks} 
           orgId={user.orgId} 
           onRefresh={loadOperationalData} 
+          onInviteClick={() => setAddMemberOpen(true)}
         />
       ) : (
         <MemberDashboardView 
@@ -197,6 +193,7 @@ export default function DashboardPage() {
           onRefresh={loadOperationalData} 
         />
       )}
+      </div>
 
       {/* Telemetry Modals */}
       {isOwner && (

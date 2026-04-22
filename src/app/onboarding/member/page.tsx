@@ -39,7 +39,7 @@ export default function MemberOnboardingPage() {
         const data = { id: snap.id, ...snap.data() } as User;
 
         // Guard: owners should not see member onboarding
-        if (data.role === "owner") {
+        if (data.role === "OWNER") {
           router.push("/dashboard");
           return;
         }

@@ -8,12 +8,35 @@ import {
   addDoc,
   updateDoc,
   Timestamp,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { Member, MemberInvite } from "@/types/member";
 import { nanoid } from "../utils/nanoid";
 
 const USERS_COLLECTION = "users";
+
+export function subscribeToMembersByOrg(
+  orgId: string,
+  callback: (members: Member[]) => void
+) {
+  const q = query(
+    collection(db, USERS_COLLECTION),
+    where("orgId", "==", orgId)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const members = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      const normalizedRole = data.role?.toUpperCase() === "OWNER" ? "OWNER" : "MEMBER";
+      return { id: doc.id, ...data, role: normalizedRole } as Member;
+    });
+    callback(members);
+  }, (err) => {
+    console.error("[Members Subscription Error]:", err);
+    callback([]);
+  });
+}
 const INVITES_COLLECTION = "memberInvites";
 
 export async function getMembersByOrg(orgId: string): Promise<Member[]> {
@@ -22,14 +45,20 @@ export async function getMembersByOrg(orgId: string): Promise<Member[]> {
     where("orgId", "==", orgId)
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Member));
+  return snapshot.docs.map((doc) => {
+    const data = doc.data();
+    const normalizedRole = data.role?.toUpperCase() === "OWNER" ? "OWNER" : "MEMBER";
+    return { id: doc.id, ...data, role: normalizedRole } as Member;
+  });
 }
 
 export async function getUserById(userId: string): Promise<Member | null> {
   const ref = doc(db, USERS_COLLECTION, userId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as Member;
+  const data = snap.data();
+  const normalizedRole = data.role?.toUpperCase() === "OWNER" ? "OWNER" : "MEMBER";
+  return { id: snap.id, ...data, role: normalizedRole } as Member;
 }
 
 export async function createInvite(
@@ -46,7 +75,7 @@ export async function createInvite(
     orgId,
     email: email.toLowerCase().trim(),
     invitedBy,
-    role: "member",
+    role: "MEMBER",
     status: "pending",
     token,
     createdAt: Timestamp.fromDate(now),

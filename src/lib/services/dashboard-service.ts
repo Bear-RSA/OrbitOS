@@ -36,7 +36,7 @@ export async function getDashboardData(userId: string): Promise<OrbitalDashboard
   const projects = projectResult.status === 'fulfilled' ? projectResult.value : [];
   const members = membersResult.status === 'fulfilled' ? membersResult.value : [];
   
-  if (user.role === "owner") {
+  if (user.role === "OWNER") {
     return assembleOwnerDashboard(user, tasks, projects, members);
   } else {
     return assembleMemberDashboard(user, tasks, projects, members);
@@ -64,7 +64,7 @@ function assembleOwnerDashboard(
   const teamWorkload = members.map(m => calculateMemberWorkload(m, tasks));
 
   return {
-    role: "owner",
+    role: "OWNER",
     metrics,
     projectsHealth,
     urgencyBuckets,
@@ -95,7 +95,7 @@ function assembleMemberDashboard(
   const myWorkload = calculateMemberWorkload(member, tasks);
 
   return {
-    role: "member",
+    role: "MEMBER",
     metrics,
     myProjects,
     myUrgencyBuckets,

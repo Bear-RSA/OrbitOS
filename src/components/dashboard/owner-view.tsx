@@ -16,9 +16,10 @@ interface OwnerDashboardViewProps {
   tasks: Task[];
   orgId: string;
   onRefresh: () => void;
+  onInviteClick?: () => void;
 }
 
-export function OwnerDashboardView({ data, members, tasks, orgId, onRefresh }: OwnerDashboardViewProps) {
+export function OwnerDashboardView({ data, members, tasks, orgId, onRefresh, onInviteClick }: OwnerDashboardViewProps) {
   const hasProject = data.projectsHealth.length > 0;
 
   return (
@@ -41,7 +42,7 @@ export function OwnerDashboardView({ data, members, tasks, orgId, onRefresh }: O
       {/* Team Load Grid */}
       <ScrollReveal delay={160}>
         <div className="pt-4">
-          <TeamWorkloadCard memberWorkloads={data.teamWorkload} />
+          <TeamWorkloadCard memberWorkloads={data.teamWorkload} onInviteClick={onInviteClick} />
         </div>
       </ScrollReveal>
 

@@ -179,7 +179,7 @@ export default function TeamsPage() {
           <h2 className="text-5xl font-light tracking-tighter text-[#ededed] mb-6">Core Team</h2>
           <div className="flex items-center gap-4">
             <div className="px-3 py-1 bg-[#111111] rounded-full ring-1 ring-white/[0.04] flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#A078FF] shadow-[0_0_8px_rgba(160,120,255,0.4)]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
               <span className="text-[10px] font-mono uppercase tracking-widest text-[#888888]">Active Deployment</span>
             </div>
             <span className="text-[13px] text-[#666666] font-mono">{MOCK_TEAM.length + 1} Active Members</span>
@@ -199,7 +199,7 @@ export default function TeamsPage() {
                   </div>
                   <div className={cn(
                     "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-4 border-[#0A0A0A] z-10",
-                    member.status === "active" ? "bg-emerald-500" : member.status === "busy" ? "bg-[#A078FF]" : "bg-zinc-600"
+                    member.status === "active" ? "bg-emerald-500" : member.status === "busy" ? "bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]" : "bg-zinc-600"
                   )} />
                 </div>
                 <div className="text-right">
@@ -213,11 +213,11 @@ export default function TeamsPage() {
                 <div className="bg-[#050505]/40 rounded-xl p-4 ring-1 ring-white/[0.04]">
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-[13px] font-light text-[#ededed]">{member.focus}</span>
-                    <span className="text-[11px] font-mono text-[#A078FF]">{member.progress}%</span>
+                    <span className="text-[11px] font-mono text-white">{member.progress}%</span>
                   </div>
                   <div className="w-full h-1 bg-[#111111] rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-[#A078FF] rounded-full transition-all duration-1000" 
+                      className="h-full bg-white rounded-full transition-all duration-1000" 
                       style={{ width: `${member.progress}%` }} 
                     />
                   </div>
@@ -270,7 +270,7 @@ export default function TeamsPage() {
                   <span className="text-[10px] font-mono text-[#666666] uppercase tracking-widest">{partner.status}</span>
                 </div>
                 <div className="text-right">
-                  <button className="text-[10px] font-mono uppercase tracking-widest text-[#A078FF] hover:text-white transition-colors">
+                  <button className="text-[10px] font-mono uppercase tracking-widest text-[#ededed] hover:text-white transition-colors">
                     Assign Task
                   </button>
                 </div>
@@ -289,7 +289,7 @@ export default function TeamsPage() {
           </div>
           <div>
             <p className="text-[10px] font-mono text-[#444444] uppercase tracking-widest mb-3">Velocity</p>
-            <p className="text-4xl font-light tracking-tighter text-[#A078FF]">1.4x</p>
+            <p className="text-4xl font-light tracking-tighter text-[#ededed]">1.4x</p>
           </div>
           <div>
             <p className="text-[10px] font-mono text-[#444444] uppercase tracking-widest mb-3">System Health</p>

@@ -80,7 +80,8 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, ownerId, onSucc
               type="submit" 
               disabled={!name.trim()} 
               isLoading={loading}
-              className="h-9 px-5 rounded-lg text-[12px] min-w-[120px]"
+              variant="secondary"
+              className="h-9 px-5 rounded-md text-[10px] font-mono uppercase tracking-[0.2em] min-w-[140px]"
             >
               Create Vector
             </Button>

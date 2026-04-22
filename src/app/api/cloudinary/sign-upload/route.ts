@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
 
-    const { projectId, folder } = await req.json();
+    const { projectId, folder, name, type } = await req.json();
 
     if (!projectId) {
       return NextResponse.json({ error: "Project ID is required" }, { status: 400 });
@@ -40,12 +40,26 @@ export async function POST(req: NextRequest) {
       process.env.CLOUDINARY_API_SECRET!
     );
 
+    // Dynamically determine resource_type based on file extension or type
+    let resource_type = "auto";
+    if (name) {
+      const lowerName = name.toLowerCase();
+      if (/\.(zip|rar|7z|tar|gz)$/i.test(lowerName)) {
+        resource_type = "raw";
+      } else if (type?.startsWith("image/") || /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(lowerName)) {
+        resource_type = "image";
+      } else if (type?.startsWith("video/") || /\.(mp4|mov|webm|avi)$/i.test(lowerName)) {
+        resource_type = "video";
+      }
+    }
+
     return NextResponse.json({
       timestamp,
       signature,
       apiKey: process.env.CLOUDINARY_API_KEY,
       cloudName: process.env.CLOUDINARY_CLOUD_NAME,
       folder: uploadFolder,
+      resource_type,
     });
   } catch (error) {
     console.error("Error generating Cloudinary signature:", error);

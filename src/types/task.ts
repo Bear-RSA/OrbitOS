@@ -2,6 +2,13 @@ import { Timestamp } from "firebase/firestore";
 
 export type TaskStatus = "todo" | "doing" | "done";
 
+export interface TaskNote {
+  id: string;
+  content: string;
+  createdAt: Timestamp;
+  createdBy: string;
+}
+
 export interface Task {
   id: string;
   orgId: string;
@@ -10,6 +17,7 @@ export interface Task {
   description: string;
   status: TaskStatus;
   assignedTo: string | null;
+  milestone?: string | null;
   createdBy: string;
   dueDate: Timestamp | null;
   createdAt: Timestamp;
@@ -18,17 +26,20 @@ export interface Task {
   completedAt: Timestamp | null;
   isBlocked: boolean;
   blockedReason?: string;
+  taskNotes?: TaskNote[];
 }
 
 export interface CreateTaskInput {
   title: string;
   description: string;
   assignedTo: string | null;
+  milestone?: string | null;
   dueDate: string | null;
 }
 
 export interface UpdateTaskInput {
   status?: TaskStatus;
   assignedTo?: string | null;
+  milestone?: string | null;
   dueDate?: string | null;
 }

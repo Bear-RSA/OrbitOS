@@ -23,9 +23,9 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
       action: isOwner ? (
         <button 
           onClick={onCreateProject} 
-          className="gap-3 inline-flex items-center justify-center bg-[#ededed] hover:bg-white hover:-translate-y-[2px] text-[#050505] shadow-[0_2px_12px_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_20px_rgba(255,255,255,0.12),0_12px_32px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-xl px-10 h-12 text-[13px] font-bold tracking-tight focus:outline-none ring-0 group"
+          className="gap-3 inline-flex items-center justify-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[2px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-xl px-10 h-12 text-[11px] font-mono uppercase tracking-[0.25em] focus:outline-none ring-0 group"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 text-[#888888]" />
           Create Project
         </button>
       ) : null
@@ -36,9 +36,9 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
       icon: SignalLow,
       action: isOwner ? (
         <button 
-          className="gap-3 inline-flex items-center justify-center bg-[#ededed] hover:bg-white hover:-translate-y-[2px] text-[#050505] shadow-[0_2px_12px_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.3)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-xl px-10 h-12 text-[13px] font-bold tracking-tight focus:outline-none ring-0 group"
+          className="gap-3 inline-flex items-center justify-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[2px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-xl px-10 h-12 text-[11px] font-mono uppercase tracking-[0.25em] focus:outline-none ring-0 group"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 text-[#888888]" />
           Add First Task
         </button>
       ) : null
@@ -56,9 +56,9 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
       action: isOwner ? (
         <button 
           onClick={onInviteMember}
-          className="gap-3 inline-flex items-center justify-center bg-[#ededed] hover:bg-white hover:-translate-y-[2px] text-[#050505] shadow-[0_2px_12px_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.3)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-xl px-10 h-12 text-[13px] font-bold tracking-tight focus:outline-none ring-0 group"
+          className="gap-3 inline-flex items-center justify-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[2px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-xl px-10 h-12 text-[11px] font-mono uppercase tracking-[0.25em] focus:outline-none ring-0 group"
         >
-          <UserPlus className="w-4 h-4" />
+          <UserPlus className="w-4 h-4 text-[#888888]" />
           Invite Team
         </button>
       ) : null

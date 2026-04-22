@@ -5,7 +5,7 @@ export interface User {
   email: string;
   name: string;
   orgId: string;
-  role: "owner" | "member";
+  role: "OWNER" | "MEMBER";
   photoURL?: string | null;
   photoPublicId?: string | null;
   createdAt: Timestamp;

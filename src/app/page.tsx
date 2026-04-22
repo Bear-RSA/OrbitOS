@@ -36,7 +36,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="pt-48 pb-32 px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
         <ScrollReveal className="flex flex-col items-center">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-[#555555] uppercase mb-8 block">OSO Beta v1.1 Void</span>
+          <span className="font-mono text-[10px] tracking-[0.3em] text-[#555555] uppercase mb-8 block">OS beta v1.2</span>
           <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 max-w-4xl text-[#ededed]">
             The Calm Control Center for Digital Studios.
           </h1>

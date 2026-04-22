@@ -17,7 +17,11 @@ service cloud.firestore {
     }
 
     function isOwnerInOrg(orgId) {
-      return isInOrg(orgId) && getUserData().role == 'owner';
+      return isInOrg(orgId) && (getUserData().role == 'OWNER' || getUserData().role == 'owner');
+    }
+
+    function isOperationalInOrg(orgId) {
+      return isInOrg(orgId) && (getUserData().role == 'OWNER' || getUserData().role == 'owner' || getUserData().role == 'MEMBER' || getUserData().role == 'member');
     }
 
     // --- Users ---
@@ -46,7 +50,7 @@ service cloud.firestore {
 
       match /files/{fileId} {
         allow read: if isSignedIn() && isInOrg(get(/databases/$(database)/documents/projects/$(projectId)).data.orgId);
-        allow delete: if isSignedIn() && isOwnerInOrg(get(/databases/$(database)/documents/projects/$(projectId)).data.orgId);
+        allow delete: if isSignedIn() && isOperationalInOrg(get(/databases/$(database)/documents/projects/$(projectId)).data.orgId);
       }
     }
 
@@ -55,21 +59,14 @@ service cloud.firestore {
       // All org members can read tasks
       allow read: if isSignedIn() && isInOrg(resource.data.orgId);
 
-      // Owners can create tasks
-      allow create: if isSignedIn() && isOwnerInOrg(request.resource.data.orgId);
+      // Both OWNER and MEMBER can create tasks
+      allow create: if isSignedIn() && isOperationalInOrg(request.resource.data.orgId);
 
-      // Owners can update anything; members can only update status
-      allow update: if isSignedIn() && isInOrg(resource.data.orgId) && (
-        isOwnerInOrg(resource.data.orgId) ||
-        (
-          // Members can only change status, updatedAt, lastUpdatedAt, completedAt
-          request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['status', 'updatedAt', 'lastUpdatedAt', 'completedAt']) &&
-          resource.data.assignedTo == request.auth.uid
-        )
-      );
+      // Both OWNER and MEMBER can update tasks
+      allow update: if isSignedIn() && isOperationalInOrg(resource.data.orgId);
 
-      allow delete: if isOwnerInOrg(resource.data.orgId);
+      // Both OWNER and MEMBER can delete tasks
+      allow delete: if isSignedIn() && isOperationalInOrg(resource.data.orgId);
     }
 
     // --- Member Invites ---
@@ -81,6 +78,13 @@ service cloud.firestore {
       // Invites are now mutated ONLY securely via Server Action (admin SDK bounds it)
       allow update: if false; 
       allow delete: if false;
+    }
+
+    // --- Activity Telemetry ---
+    match /activity/{activityId} {
+      allow read: if isSignedIn();
+      // Writes are gated by Server Actions (Admin SDK)
+      allow write: if false;
     }
   }
 }

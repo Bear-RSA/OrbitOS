@@ -1,6 +1,8 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase/admin";
+import { validateOwner } from "@/lib/auth/permissions";
+import { logActivity } from "@/lib/telemetry";
 
 interface DeleteProjectPayload {
   projectId: string;
@@ -16,22 +18,12 @@ export async function deleteProjectAction(
 
   try {
     // 1. Validate the authenticated user exists and is an owner
-    const userSnap = await adminDb.collection("users").doc(uid).get();
-    if (!userSnap.exists) {
-      console.error("[DeleteProject] User not found:", uid);
-      return { success: false, error: "Authenticated user profile not found." };
+    const authStatus = await validateOwner(uid);
+    if (!authStatus.isOwner) {
+      console.error("[DeleteProject] Unauthorized deletion:", uid);
+      return { success: false, error: authStatus.error };
     }
-
-    const userData = userSnap.data()!;
-    if (userData.role !== "owner") {
-      console.error("[DeleteProject] Non-owner attempted deletion:", uid, userData.role);
-      return { success: false, error: "Only workspace owners can delete projects." };
-    }
-
-    if (!userData.orgId) {
-      console.error("[DeleteProject] User has no org:", uid);
-      return { success: false, error: "User is not assigned to a workspace." };
-    }
+    const userOrgId = authStatus.orgId;
 
     // 2. Validate the project exists and belongs to the user's org
     const projectSnap = await adminDb.collection("projects").doc(projectId).get();
@@ -41,13 +33,25 @@ export async function deleteProjectAction(
     }
 
     const projectData = projectSnap.data()!;
-    if (projectData.orgId !== userData.orgId) {
+    if (projectData.orgId !== userOrgId) {
       console.error("[DeleteProject] Org mismatch:", {
         projectOrg: projectData.orgId,
-        userOrg: userData.orgId,
+        userOrg: userOrgId,
       });
       return { success: false, error: "Project does not belong to your workspace." };
     }
+    const projectName = projectData.name || "Unknown Project";
+    const userSnap = await adminDb.collection("users").doc(uid).get();
+    const userName = userSnap.data()?.name || "System";
+
+    // 2b. Log termination event (before deletion so info is still there)
+    await logActivity({
+      eventType: "PROJECT_TERMINATED",
+      orgId: userOrgId,
+      projectId,
+      actor: { uid, name: userName },
+      metadata: { projectId, projectName },
+    });
 
     // 3. Find all tasks linked to this project
     const tasksSnapshot = await adminDb

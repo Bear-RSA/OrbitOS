@@ -5,7 +5,9 @@ export interface Member {
   email: string;
   name: string;
   orgId: string;
-  role: "owner" | "member";
+  role: "OWNER" | "MEMBER";
+  operationalStatus?: "available" | "focused" | "offline";
+  lastActivity?: Timestamp;
   photoURL?: string | null;
   photoPublicId?: string | null;
   createdAt: Timestamp;
@@ -16,7 +18,7 @@ export interface MemberInvite {
   orgId: string;
   email: string;
   invitedBy: string;
-  role: "member";
+  role: "MEMBER";
   status: "pending" | "accepted" | "expired";
   token: string;
   createdAt: Timestamp;

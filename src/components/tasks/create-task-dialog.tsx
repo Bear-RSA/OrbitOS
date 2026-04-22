@@ -5,8 +5,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createTaskSchema, CreateTaskInput } from "@/lib/validations/task";
 import { createTask } from "@/lib/queries/tasks";
+import { recordTelemetryAction } from "@/app/actions/telemetry";
 import { Member } from "@/types/member";
 import { Timestamp } from "firebase/firestore";
+import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { SuccessModal } from "@/components/ui/success-modal";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -47,6 +50,7 @@ export function CreateTaskDialog({
   onCreated,
 }: CreateTaskDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const {
     register,
@@ -56,8 +60,13 @@ export function CreateTaskDialog({
     formState: { errors },
   } = useForm<CreateTaskInput>({
     resolver: zodResolver(createTaskSchema),
-    defaultValues: { assignedTo: null, dueDate: null },
+    defaultValues: { assignedTo: null, dueDate: null, milestone: null },
   });
+  useEffect(() => {
+    if (open) {
+      setValue("milestone", null);
+    }
+  }, [open, setValue]);
 
   const onSubmit = async (data: CreateTaskInput) => {
     setLoading(true);
@@ -69,13 +78,31 @@ export function CreateTaskDialog({
         description: data.description ?? "",
         status: "todo",
         assignedTo: data.assignedTo ?? null,
+        milestone: data.milestone || "Unassigned",
         createdBy: currentUserId,
         dueDate: data.dueDate ? Timestamp.fromDate(new Date(data.dueDate)) : null,
         isBlocked: false,
       });
+
+      const actorName = members.find((m) => m.id === currentUserId)?.name || "System";
+      await recordTelemetryAction({
+        eventType: "DIRECTIVE_CREATED",
+        orgId,
+        projectId,
+        actor: { uid: currentUserId, name: actorName },
+        metadata: { taskTitle: data.title },
+      });
+
       reset();
       onOpenChange(false);
       onCreated();
+      setShowSuccess(true);
+
+      // Auto-sync operative status based on new workload
+      if (data.assignedTo) {
+        const { syncOperationalStatusAction } = await import("@/app/actions/personnel");
+        syncOperationalStatusAction(data.assignedTo, orgId);
+      }
     } catch (err) {
       console.error("Failed to create task:", err);
     } finally {
@@ -84,8 +111,9 @@ export function CreateTaskDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] p-10 bg-[#080808]/95 border-white/[0.04]">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[480px] p-10 bg-[#080808]/95 border-white/[0.04]">
         <DialogHeader className="text-left sm:text-left space-y-4">
           <DialogTitle className="text-xl font-medium tracking-tight text-[#ededed]">
             Insert Directive
@@ -150,6 +178,7 @@ export function CreateTaskDialog({
             </div>
           </div>
 
+
           <DialogFooter className="flex-row justify-start sm:justify-start gap-4 mt-10">
             <Button 
               type="submit" 
@@ -170,6 +199,13 @@ export function CreateTaskDialog({
           </DialogFooter>
         </form>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      <SuccessModal
+        open={showSuccess}
+        onOpenChange={setShowSuccess}
+        title="Directive Inserted"
+        description="The task vector has been successfully registered."
+      />
+    </>
   );
 }

@@ -12,9 +12,18 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils/classnames";
 
+import { recordTelemetryAction } from "@/app/actions/telemetry";
+
 interface TaskStatusSelectProps {
   taskId: string;
+  taskTitle: string;
   currentStatus: TaskStatus;
+  orgId: string;
+  projectId: string;
+  currentUserId: string;
+  memberName: string;
+  milestoneName: string;
+  isCompletingMilestone: boolean;
   onUpdated: () => void;
 }
 
@@ -24,7 +33,18 @@ const statusConfig = {
   done: { label: "Done", className: "text-[#85C89B]", bg: "bg-[#0c1410]", ring: "ring-[#85C89B]/[0.08]" },
 };
 
-export function TaskStatusSelect({ taskId, currentStatus, onUpdated }: TaskStatusSelectProps) {
+export function TaskStatusSelect({ 
+  taskId, 
+  taskTitle,
+  currentStatus, 
+  orgId,
+  projectId,
+  currentUserId,
+  memberName,
+  milestoneName,
+  isCompletingMilestone,
+  onUpdated 
+}: TaskStatusSelectProps) {
   const [status, setStatus] = useState<TaskStatus>(currentStatus);
   const [loading, setLoading] = useState(false);
 
@@ -35,6 +55,30 @@ export function TaskStatusSelect({ taskId, currentStatus, onUpdated }: TaskStatu
     setLoading(true);
     try {
       await updateTaskStatus(taskId, newStatus, prevStatus);
+      
+      const transitionLogged = recordTelemetryAction({
+        eventType: "DIRECTIVE_TRANSITION",
+        orgId,
+        projectId,
+        actor: { uid: currentUserId, name: memberName },
+        metadata: { taskTitle, from: prevStatus, to: newStatus }
+      });
+
+      const promises = [transitionLogged];
+
+      if (newStatus === "done" && isCompletingMilestone) {
+        promises.push(
+          recordTelemetryAction({
+            eventType: "MILESTONE_COMPLETE",
+            orgId,
+            projectId,
+            actor: { uid: currentUserId, name: memberName },
+            metadata: { milestone: milestoneName }
+          })
+        );
+      }
+
+      await Promise.all(promises);
       onUpdated();
     } catch (err) {
       console.error("Failed to update status:", err);

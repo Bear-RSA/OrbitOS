@@ -212,7 +212,7 @@ export default function ProfilePage() {
   if (!user) return null;
 
   // ── Operational metrics (role-aware) ──────────────────────────────────────
-  const isOwner = user.role === "owner";
+  const isOwner = user.role === "OWNER";
   const now = new Date();
   const weekStart = startOfWeek(now);
 
@@ -355,7 +355,7 @@ export default function ProfilePage() {
                   </div>
                   {(user as any).roleDescriptor && (
                     <span className="text-[13px] text-[#888888] font-light italic">
-                      {(user as any).roleDescriptor}
+                      {user.role === "OWNER" ? "Lead Architect" : "Operator"}
                     </span>
                   )}
                 </div>

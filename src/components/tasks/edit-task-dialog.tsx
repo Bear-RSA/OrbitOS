@@ -28,11 +28,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { recordTelemetryAction } from "@/app/actions/telemetry";
+
 interface EditTaskDialogProps {
   task: Task | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   members: Member[];
+  orgId: string;
+  projectId: string;
+  currentUserId: string;
   onUpdated: () => void;
 }
 
@@ -41,6 +46,9 @@ export function EditTaskDialog({
   open,
   onOpenChange,
   members,
+  orgId,
+  projectId,
+  currentUserId,
   onUpdated,
 }: EditTaskDialogProps) {
   const [loading, setLoading] = useState(false);
@@ -57,6 +65,7 @@ export function EditTaskDialog({
       title: "",
       description: "",
       assignedTo: null,
+      milestone: null,
       dueDate: null,
     },
   });
@@ -68,6 +77,7 @@ export function EditTaskDialog({
          title: task.title,
          description: task.description || "",
          assignedTo: task.assignedTo || null,
+         milestone: task.milestone || null,
          dueDate: task.dueDate ? task.dueDate.toDate().toISOString().split("T")[0] : null,
       });
     }
@@ -81,10 +91,28 @@ export function EditTaskDialog({
         title: data.title,
         description: data.description ?? "",
         assignedTo: data.assignedTo ?? null,
+        milestone: data.milestone || "Unassigned",
         dueDate: data.dueDate ? Timestamp.fromDate(new Date(data.dueDate)) : null,
       });
+
+      const actorName = members.find((m) => m.id === currentUserId)?.name || "System";
+      await recordTelemetryAction({
+        eventType: "DIRECTIVE_TRANSITION",
+        orgId,
+        projectId,
+        actor: { uid: currentUserId, name: actorName },
+        metadata: { taskTitle: data.title, from: "Edited", to: "Updated" },
+      });
+
       onOpenChange(false);
       onUpdated();
+
+      // Auto-sync operative status based on new workload
+      if (data.assignedTo || task.assignedTo) {
+        const { syncOperationalStatusAction } = await import("@/app/actions/personnel");
+        if (data.assignedTo) syncOperationalStatusAction(data.assignedTo, orgId);
+        if (task.assignedTo && task.assignedTo !== data.assignedTo) syncOperationalStatusAction(task.assignedTo, orgId);
+      }
     } catch (err) {
       console.error("Failed to update task:", err);
     } finally {
@@ -161,6 +189,7 @@ export function EditTaskDialog({
               />
             </div>
           </div>
+
 
           <DialogFooter className="flex-row justify-start sm:justify-start gap-4 mt-10">
             <Button 

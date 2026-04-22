@@ -51,7 +51,7 @@ export interface ActivityFeedItem {
 }
 
 export interface OwnerDashboardData {
-  role: "owner";
+  role: "OWNER";
   metrics: {
     activeProjects: number;
     overdueTasks: number;
@@ -65,7 +65,7 @@ export interface OwnerDashboardData {
 }
 
 export interface MemberDashboardData {
-  role: "member";
+  role: "MEMBER";
   metrics: {
     myActiveTasks: number;
     myOverdueTasks: number;
