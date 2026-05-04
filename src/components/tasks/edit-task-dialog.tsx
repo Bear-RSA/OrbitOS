@@ -4,10 +4,9 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createTaskSchema, CreateTaskInput } from "@/lib/validations/task";
-import { updateTask } from "@/lib/queries/tasks";
+import { updateTaskAction } from "@/app/actions/tasks";
 import { Member } from "@/types/member";
 import { Task } from "@/types/task";
-import { Timestamp } from "firebase/firestore";
 import {
   Dialog,
   DialogContent,
@@ -87,31 +86,38 @@ export function EditTaskDialog({
     if (!task) return;
     setLoading(true);
     try {
-      await updateTask(task.id, {
-        title: data.title,
-        description: data.description ?? "",
-        assignedTo: data.assignedTo ?? null,
-        milestone: data.milestone || "Unassigned",
-        dueDate: data.dueDate ? Timestamp.fromDate(new Date(data.dueDate)) : null,
+      const result = await updateTaskAction({
+        taskId: task.id,
+        uid: currentUserId,
+        updates: {
+          title: data.title,
+          description: data.description ?? "",
+          assignedTo: data.assignedTo ?? null,
+          milestone: data.milestone || "Unassigned",
+          dueDate: data.dueDate || null,
+        },
       });
+      if (!result.success) throw new Error(result.error);
 
+      // Update UI immediately
+      onOpenChange(false);
+      onUpdated();
+
+      // Background telemetry and sync
       const actorName = members.find((m) => m.id === currentUserId)?.name || "System";
-      await recordTelemetryAction({
+      recordTelemetryAction({
         eventType: "DIRECTIVE_TRANSITION",
         orgId,
         projectId,
         actor: { uid: currentUserId, name: actorName },
         metadata: { taskTitle: data.title, from: "Edited", to: "Updated" },
-      });
+      }).catch(err => console.error("[Telemetry Error]:", err));
 
-      onOpenChange(false);
-      onUpdated();
-
-      // Auto-sync operative status based on new workload
       if (data.assignedTo || task.assignedTo) {
-        const { syncOperationalStatusAction } = await import("@/app/actions/personnel");
-        if (data.assignedTo) syncOperationalStatusAction(data.assignedTo, orgId);
-        if (task.assignedTo && task.assignedTo !== data.assignedTo) syncOperationalStatusAction(task.assignedTo, orgId);
+        import("@/app/actions/personnel").then(({ syncOperationalStatusAction }) => {
+          if (data.assignedTo) syncOperationalStatusAction(data.assignedTo, orgId).catch(err => console.error("[Sync Error]:", err));
+          if (task.assignedTo && task.assignedTo !== data.assignedTo) syncOperationalStatusAction(task.assignedTo, orgId).catch(err => console.error("[Sync Error]:", err));
+        });
       }
     } catch (err) {
       console.error("Failed to update task:", err);

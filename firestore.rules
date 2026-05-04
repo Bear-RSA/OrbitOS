@@ -3,88 +3,77 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper functions ---
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    function userPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function hasUserDoc() {
+      return isSignedIn() && exists(userPath());
+    }
+
+    function userData() {
+      return get(userPath()).data;
+    }
+
+    function userOrg() {
+      return hasUserDoc() ? userData().orgId : null;
+    }
+
+    function userRole() {
+      return hasUserDoc() ? userData().role : null;
     }
 
     function isInOrg(orgId) {
-      return isSignedIn() && getUserData().orgId == orgId;
+      return hasUserDoc() && userOrg() == orgId;
     }
 
-    function isOwnerInOrg(orgId) {
-      return isInOrg(orgId) && (getUserData().role == 'OWNER' || getUserData().role == 'owner');
+    function isOwner(orgId) {
+      return isInOrg(orgId) &&
+        (userRole() == 'OWNER' || userRole() == 'owner');
     }
 
-    function isOperationalInOrg(orgId) {
-      return isInOrg(orgId) && (getUserData().role == 'OWNER' || getUserData().role == 'owner' || getUserData().role == 'MEMBER' || getUserData().role == 'member');
+    function isMember(orgId) {
+      return isInOrg(orgId) &&
+        (
+          userRole() == 'OWNER' ||
+          userRole() == 'owner' ||
+          userRole() == 'MEMBER' ||
+          userRole() == 'member'
+        );
     }
 
-    // --- Users ---
+    match /tasks/{taskId} {
+      allow read: if isMember(resource.data.orgId);
+      allow create: if isMember(request.resource.data.orgId);
+      allow update: if isMember(resource.data.orgId);
+      allow delete: if isMember(resource.data.orgId);
+    }
+
+    match /projects/{projectId} {
+      allow read: if isMember(resource.data.orgId);
+      allow create: if isMember(request.resource.data.orgId);
+      allow update: if isOwner(resource.data.orgId);
+      allow delete: if isOwner(resource.data.orgId);
+    }
+
     match /users/{userId} {
-      // Allow user to manage their own profile without restrictions
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
-      
-      // Allow others in organization to read profile
-      allow read: if isSignedIn() && resource.data.orgId == getUserData().orgId;
+      allow read: if isSignedIn();
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId;
     }
 
-    // --- Organizations ---
     match /organizations/{orgId} {
       allow read: if isInOrg(orgId);
       allow create: if isSignedIn();
-      allow update: if isOwnerInOrg(orgId);
-      allow delete: if false; // No deletion in MVP
+      allow update: if isOwner(orgId);
     }
 
-    // --- Projects ---
-    match /projects/{projectId} {
-      allow read: if isSignedIn() && isInOrg(resource.data.orgId);
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && isOwnerInOrg(resource.data.orgId);
-      allow delete: if isSignedIn() && isOwnerInOrg(resource.data.orgId);
-
-      match /files/{fileId} {
-        allow read: if isSignedIn() && isInOrg(get(/databases/$(database)/documents/projects/$(projectId)).data.orgId);
-        allow delete: if isSignedIn() && isOperationalInOrg(get(/databases/$(database)/documents/projects/$(projectId)).data.orgId);
-      }
-    }
-
-    // --- Tasks ---
-    match /tasks/{taskId} {
-      // All org members can read tasks
-      allow read: if isSignedIn() && isInOrg(resource.data.orgId);
-
-      // Both OWNER and MEMBER can create tasks
-      allow create: if isSignedIn() && isOperationalInOrg(request.resource.data.orgId);
-
-      // Both OWNER and MEMBER can update tasks
-      allow update: if isSignedIn() && isOperationalInOrg(resource.data.orgId);
-
-      // Both OWNER and MEMBER can delete tasks
-      allow delete: if isSignedIn() && isOperationalInOrg(resource.data.orgId);
-    }
-
-    // --- Member Invites ---
-    match /memberInvites/{inviteId} {
-      // Owners and invited users can read invites
-      allow read: if isSignedIn();
-      // Owners can create
-      allow create: if isSignedIn() && isOwnerInOrg(request.resource.data.orgId);
-      // Invites are now mutated ONLY securely via Server Action (admin SDK bounds it)
-      allow update: if false; 
-      allow delete: if false;
-    }
-
-    // --- Activity Telemetry ---
-    match /activity/{activityId} {
-      allow read: if isSignedIn();
-      // Writes are gated by Server Actions (Admin SDK)
-      allow write: if false;
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

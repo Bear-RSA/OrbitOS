@@ -4,10 +4,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createTaskSchema, CreateTaskInput } from "@/lib/validations/task";
-import { createTask } from "@/lib/queries/tasks";
+import { createTaskAction } from "@/app/actions/tasks";
 import { recordTelemetryAction } from "@/app/actions/telemetry";
 import { Member } from "@/types/member";
-import { Timestamp } from "firebase/firestore";
 import { useEffect } from "react";
 import {
   Dialog,
@@ -71,38 +70,38 @@ export function CreateTaskDialog({
   const onSubmit = async (data: CreateTaskInput) => {
     setLoading(true);
     try {
-      await createTask({
+      const result = await createTaskAction({
         orgId,
         projectId,
         title: data.title,
         description: data.description ?? "",
-        status: "todo",
         assignedTo: data.assignedTo ?? null,
         milestone: data.milestone || "Unassigned",
         createdBy: currentUserId,
-        dueDate: data.dueDate ? Timestamp.fromDate(new Date(data.dueDate)) : null,
-        isBlocked: false,
+        dueDate: data.dueDate || null,
       });
+      if (!result.success) throw new Error(result.error);
 
+      // Fire background sync and telemetry
       const actorName = members.find((m) => m.id === currentUserId)?.name || "System";
-      await recordTelemetryAction({
+      recordTelemetryAction({
         eventType: "DIRECTIVE_CREATED",
         orgId,
         projectId,
         actor: { uid: currentUserId, name: actorName },
         metadata: { taskTitle: data.title },
-      });
+      }).catch(err => console.error("[Telemetry Error]:", err));
+
+      if (data.assignedTo) {
+        import("@/app/actions/personnel").then(({ syncOperationalStatusAction }) => {
+          syncOperationalStatusAction(data.assignedTo!, orgId).catch(err => console.error("[Sync Error]:", err));
+        });
+      }
 
       reset();
       onOpenChange(false);
       onCreated();
       setShowSuccess(true);
-
-      // Auto-sync operative status based on new workload
-      if (data.assignedTo) {
-        const { syncOperationalStatusAction } = await import("@/app/actions/personnel");
-        syncOperationalStatusAction(data.assignedTo, orgId);
-      }
     } catch (err) {
       console.error("Failed to create task:", err);
     } finally {

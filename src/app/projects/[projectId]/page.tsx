@@ -207,7 +207,6 @@ export default function ProjectDashboardPage({ params }: { params: { projectId: 
             onClearFilter={() => setSelectedAssignee(null)}
             members={members}
             currentUserId={user!.id}
-            isOwner={user!.role === 'OWNER'}
             orgId={user!.orgId!}
             projectId={project.id}
              onTaskUpdated={() => {

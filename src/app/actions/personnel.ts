@@ -10,7 +10,8 @@ const MAX_SYSTEM_LOAD = 5;
  * Monitors a member's active workload and auto-transitions status.
  * Triggered whenever a directive status changes.
  */
-export async function syncOperationalStatusAction(userId: string, orgId: string) {
+export async function syncOperationalStatusAction(userId: string | null, orgId: string) {
+  if (!userId) return; // Silent return for unassigned tasks
   try {
     const userRef = adminDb.collection("users").doc(userId);
     const userSnap = await userRef.get();

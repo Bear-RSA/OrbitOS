@@ -8,7 +8,7 @@ import { Member } from "@/types/member";
 import { CreateTaskDialog } from "@/components/tasks/create-task-dialog";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { DeleteTaskDialog } from "@/components/tasks/delete-task-dialog";
-import { toggleTaskBlocked } from "@/lib/queries/tasks";
+import { addTaskNoteAction, updateTaskStatusAction, toggleTaskBlockedAction, deleteTaskAction } from "@/app/actions/tasks";
 import { cn } from "@/lib/utils/classnames";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { recordTelemetryAction } from "@/app/actions/telemetry";
@@ -27,7 +27,6 @@ interface TasksTableProps {
   onClearFilter?: () => void;
   members: Member[];
   currentUserId: string;
-  isOwner: boolean;
   orgId: string;
   projectId: string;
   onTaskUpdated: () => void;
@@ -39,7 +38,6 @@ export function TasksTable({
   onClearFilter,
   members,
   currentUserId,
-  isOwner,
   orgId,
   projectId,
   onTaskUpdated,
@@ -66,36 +64,39 @@ export function TasksTable({
 
     const actorName = getMemberName(currentUserId);
     try {
-      const { updateTaskStatus } = await import("@/lib/queries/tasks");
+      const result = await updateTaskStatusAction({
+        taskId: task.id,
+        status: newStatus,
+        previousStatus: prevStatus,
+        uid: currentUserId,
+      });
+      if (!result.success) throw new Error(result.error);
       
-      await updateTaskStatus(task.id, newStatus, prevStatus);
+      // Update UI immediately
+      onTaskUpdated();
       
       if (task.assignedTo) {
-        syncOperationalStatusAction(task.assignedTo, orgId);
+        syncOperationalStatusAction(task.assignedTo, orgId).catch(err => console.error("[Sync Error]:", err));
       }
 
-      const promises = [
-        recordTelemetryAction({
-          eventType: "DIRECTIVE_TRANSITION",
-          orgId,
-          projectId,
-          actor: { uid: currentUserId, name: actorName },
-          metadata: { taskTitle: task.title, from: prevStatus, to: newStatus }
-        })
-      ];
+      // Background telemetry
+      recordTelemetryAction({
+        eventType: "DIRECTIVE_TRANSITION",
+        orgId,
+        projectId,
+        actor: { uid: currentUserId, name: actorName },
+        metadata: { taskTitle: task.title, from: prevStatus, to: newStatus }
+      }).catch(err => console.error("[Telemetry Error]:", err));
 
       if (newStatus === "done" && isCompletingMilestone) {
-        promises.push(recordTelemetryAction({
+        recordTelemetryAction({
           eventType: "MILESTONE_COMPLETE",
           orgId,
           projectId,
           actor: { uid: currentUserId, name: actorName },
           metadata: { milestone: milestoneName }
-        }));
+        }).catch(err => console.error("[Telemetry Error]:", err));
       }
-
-      await Promise.all(promises);
-      onTaskUpdated();
     } catch (err) {
       console.error(err);
     }
@@ -103,16 +104,25 @@ export function TasksTable({
 
   const handleToggleBlocked = async (taskId: string, currentBlocked: boolean, taskTitle: string) => {
     try {
-      await toggleTaskBlocked(taskId, !currentBlocked);
+      const result = await toggleTaskBlockedAction({
+        taskId,
+        isBlocked: !currentBlocked,
+        uid: currentUserId,
+      });
+      if (!result.success) throw new Error(result.error);
+      
+      // Update UI immediately
+      onTaskUpdated();
+
+      // Background telemetry
       const actorName = getMemberName(currentUserId);
-      await recordTelemetryAction({
+      recordTelemetryAction({
         eventType: "DIRECTIVE_TRANSITION",
         orgId,
         projectId,
         actor: { uid: currentUserId, name: actorName },
         metadata: { taskTitle, from: currentBlocked ? "Blocked" : "Clear", to: !currentBlocked ? "Blocked" : "Clear" }
-      });
-      onTaskUpdated();
+      }).catch(err => console.error("[Telemetry Error]:", err));
     } catch (err) {
       console.error("Failed to toggle blocked state:", err);
     }
@@ -120,19 +130,24 @@ export function TasksTable({
 
   const handleDeleteTask = async (task: Task) => {
     try {
-      const { deleteTask } = await import("@/lib/queries/tasks");
-      await deleteTask(task.id);
+      const result = await deleteTaskAction({
+        taskId: task.id,
+        uid: currentUserId,
+      });
+      if (!result.success) throw new Error(result.error);
       
+      // Update UI immediately
+      onTaskUpdated();
+
+      // Background telemetry
       const actorName = getMemberName(currentUserId);
-      await recordTelemetryAction({
+      recordTelemetryAction({
         eventType: "DIRECTIVE_DELETED",
         orgId,
         projectId,
         actor: { uid: currentUserId, name: actorName },
         metadata: { taskTitle: task.title }
-      });
-
-      onTaskUpdated();
+      }).catch(err => console.error("[Telemetry Error]:", err));
     } catch (err) {
       console.error("Failed to delete task:", err);
       throw err; // Re-throw to handle in the dialog
@@ -239,9 +254,7 @@ export function TasksTable({
                   <p className="text-[13px] text-[#888888] font-light mt-1 font-mono">
                     {selectedAssignee 
                       ? "The selected operator has no directives in this sector."
-                      : isOwner 
-                        ? projectId ? "Append your first directive to begin." : "Initialize a project first."
-                        : "Directives assigned to you will appear in this sector."}
+                      : projectId ? "Append your first directive to begin." : "Initialize a project first."}
                   </p>
                   {selectedAssignee && (
                     <button
@@ -290,7 +303,8 @@ export function TasksTable({
                   }
                 }
 
-                const canEdit = true; // Both owner and members permitted as requested
+                const canEdit = true; // Full operational clearance for all org members
+                const canAddNote = true;
                 const isDone = task.status === "done";
                 const isExpanded = expandedTasks[task.id];
                 const taskId = task.id.slice(0, 4).toUpperCase();
@@ -389,8 +403,18 @@ export function TasksTable({
                                 <button onClick={(e) => { e.stopPropagation(); setActiveNoteInputId(task.id); setNoteContent(""); }} className="px-2 py-1 rounded bg-white/[0.02] text-[#555] border border-white/[0.05] hover:text-[#888] hover:border-white/[0.1] text-[9px] uppercase tracking-widest transition-all">
                                   [ADD NOTE]
                                 </button>
-                                <button onClick={(e) => { e.stopPropagation(); setEditingTask(task); }} className="px-2 py-1 rounded bg-white/[0.02] text-[#555] border border-white/[0.05] hover:text-[#888] hover:border-white/[0.1] text-[9px] uppercase tracking-widest transition-all">[AMEND]</button>
-                                <button onClick={(e) => { e.stopPropagation(); setDeletingTask(task); }} className="px-2 py-1 rounded bg-white/[0.02] text-orbit-red/50 border border-white/[0.05] hover:text-orbit-red hover:border-orbit-red/20 text-[9px] uppercase tracking-widest transition-all">[REMOVE]</button>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); setEditingTask(task); }} 
+                                  className="px-2 py-1 rounded bg-white/[0.02] text-[#555] border border-white/[0.05] hover:text-[#888] hover:border-white/[0.1] text-[9px] uppercase tracking-widest transition-all"
+                                >
+                                  [AMEND]
+                                </button>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); setDeletingTask(task); }} 
+                                  className="px-2 py-1 rounded bg-white/[0.02] text-orbit-red/50 border border-white/[0.05] hover:text-orbit-red hover:border-orbit-red/20 text-[9px] uppercase tracking-widest transition-all"
+                                >
+                                  [REMOVE]
+                                </button>
                               </div>
                             </div>
                             <div className="mb-8">
@@ -454,15 +478,35 @@ export function TasksTable({
                                     <button
                                       className="px-3 py-1 text-[9px] uppercase tracking-widest bg-white/[0.05] hover:bg-white/[0.1] text-white rounded transition-colors"
                                       disabled={!noteContent.trim() || isSubmittingNote}
-                                      onClick={async () => {
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
                                         if (!noteContent.trim()) return;
                                         setIsSubmittingNote(true);
-                                        try {
-                                          const { addTaskNote } = await import("@/lib/queries/tasks");
-                                          await addTaskNote(task.id, noteContent.trim(), currentUserId);
-                                          setNoteContent("");
-                                          setActiveNoteInputId(null);
-                                          onTaskUpdated();
+                                          try {
+                                            const noteResult = await addTaskNoteAction({
+                                              taskId: task.id,
+                                              content: noteContent.trim(),
+                                              createdBy: currentUserId,
+                                            });
+                                            if (!noteResult.success) {
+                                              throw new Error(noteResult.error || "Failed to add note");
+                                            }
+                                            
+                                            // Clear UI immediately for responsiveness
+                                            const savedContent = noteContent.trim();
+                                            setNoteContent("");
+                                            setActiveNoteInputId(null);
+                                            onTaskUpdated();
+
+                                            const actorName = getMemberName(currentUserId);
+                                            // Background telemetry (fire-and-forget)
+                                            recordTelemetryAction({
+                                              eventType: "DIRECTIVE_TRANSITION",
+                                              orgId,
+                                              projectId,
+                                              actor: { uid: currentUserId, name: actorName },
+                                              metadata: { taskTitle: task.title, from: "Note Added", to: "Updated", content: savedContent }
+                                            }).catch(err => console.error("[Telemetry Error]:", err));
                                         } catch (err) {
                                           console.error("Failed to add note", err);
                                         } finally {

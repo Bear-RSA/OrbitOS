@@ -11,6 +11,30 @@ export const metadata: Metadata = {
 export default function ChangelogPage() {
   const entries = [
     {
+      title: "Workspace Security Hardening",
+      desc: "Migrated member invitations to atomic server-side transactions. Implemented identity parity validation to prevent unauthorized privilege escalation."
+    },
+    {
+      title: "Collaborative Directive Log",
+      desc: "Unlocked task note contributions for all workspace members. Hardened Firestore security rules to permit operational updates while maintaining strict organizational isolation."
+    },
+    {
+      title: "Architectural Void Evolution",
+      desc: "Finalized the transition to a high-fidelity monochromatic aesthetic. Purged legacy accent colors in favor of a curated silver-white and black design system."
+    },
+    {
+      title: "Destructive Protocol Stabilization",
+      desc: "Standardized warning modals and confirmation flows for system-wide deletions. Improved state management and error feedback during resource removal."
+    },
+    {
+      title: "Integrated Directive Deletion",
+      desc: "Implemented secure task removal capabilities for both owners and authorized members within the Master Objective List."
+    },
+    {
+      title: "Telemetry Feed Optimization",
+      desc: "Enhanced real-time activity logs with high-fidelity glow effects and Bold Metadata Terminology for improved operational clarity."
+    },
+    {
       title: "Identity & Access Stabilization",
       desc: "Reworked authentication flow to prevent cross-workspace identity corruption. Strengthened role enforcement across the system."
     },

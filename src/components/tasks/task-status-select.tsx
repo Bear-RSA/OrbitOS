@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { TaskStatus } from "@/types/task";
-import { updateTaskStatus } from "@/lib/queries/tasks";
+import { updateTaskStatusAction } from "@/app/actions/tasks";
 import {
   Select,
   SelectContent,
@@ -54,32 +54,35 @@ export function TaskStatusSelect({
     setStatus(newStatus);
     setLoading(true);
     try {
-      await updateTaskStatus(taskId, newStatus, prevStatus);
+      const result = await updateTaskStatusAction({
+        taskId,
+        status: newStatus,
+        previousStatus: prevStatus,
+        uid: currentUserId,
+      });
+      if (!result.success) throw new Error(result.error);
       
-      const transitionLogged = recordTelemetryAction({
+      // Update UI immediately — don't block on telemetry
+      onUpdated();
+
+      // Background telemetry (fire-and-forget)
+      recordTelemetryAction({
         eventType: "DIRECTIVE_TRANSITION",
         orgId,
         projectId,
         actor: { uid: currentUserId, name: memberName },
         metadata: { taskTitle, from: prevStatus, to: newStatus }
-      });
-
-      const promises = [transitionLogged];
+      }).catch(err => console.error("[Telemetry Error]:", err));
 
       if (newStatus === "done" && isCompletingMilestone) {
-        promises.push(
-          recordTelemetryAction({
-            eventType: "MILESTONE_COMPLETE",
-            orgId,
-            projectId,
-            actor: { uid: currentUserId, name: memberName },
-            metadata: { milestone: milestoneName }
-          })
-        );
+        recordTelemetryAction({
+          eventType: "MILESTONE_COMPLETE",
+          orgId,
+          projectId,
+          actor: { uid: currentUserId, name: memberName },
+          metadata: { milestone: milestoneName }
+        }).catch(err => console.error("[Telemetry Error]:", err));
       }
-
-      await Promise.all(promises);
-      onUpdated();
     } catch (err) {
       console.error("Failed to update status:", err);
       setStatus(prevStatus);

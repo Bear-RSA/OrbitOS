@@ -134,23 +134,57 @@ export async function getTasksByOrg(orgId: string): Promise<Task[]> {
 export async function createTask(
   data: Omit<Task, "id" | "createdAt" | "updatedAt" | "lastUpdatedAt" | "completedAt">
 ): Promise<Task> {
-  console.log("[Telemetry] Dispatching new directive vector:", { 
+  const { auth } = await import("@/lib/firebase/client");
+  const currentUser = auth.currentUser;
+  
+  if (!currentUser) {
+    throw new Error("[Security] Authentication missing. Write aborted.");
+  }
+
+  // Source of Truth: Derive orgId from the actual user document
+  const userSnap = await getDoc(doc(db, "users", currentUser.uid));
+  if (!userSnap.exists()) {
+    throw new Error("[Security] User document not found. Org context undefined.");
+  }
+  const actualOrgId = userSnap.data().orgId;
+
+  // Validation: Ensure the target project segment exists
+  const projectSnap = await getDoc(doc(db, "projects", data.projectId));
+  if (!projectSnap.exists()) {
+    throw new Error(`[Validation] Target project ${data.projectId} is not registered in the system.`);
+  }
+
+  console.log("[Telemetry] Dispatching hardened directive vector:", { 
     title: data.title, 
     project: data.projectId,
-    org: data.orgId 
+    org: actualOrgId 
   });
+
   const now = Timestamp.now();
   const taskData = {
-    ...data,
+    title: data.title,
+    description: data.description || "",
+    projectId: data.projectId,
+    orgId: actualOrgId,
+    assignedTo: data.assignedTo || null,
+    milestone: data.milestone || "Unassigned",
+    createdBy: currentUser.uid,
+    dueDate: data.dueDate || null,
+    status: data.status || "todo",
+    isBlocked: false,
+    taskNotes: [],
     createdAt: now,
     updatedAt: now,
     lastUpdatedAt: now,
     completedAt: null,
-    isBlocked: false,
-    taskNotes: [],
   };
-  const ref = await addDoc(collection(db, TASKS_COLLECTION), taskData);
+
+  // Clean payload: Remove any potentially undefined fields
+  const cleanData = JSON.parse(JSON.stringify(taskData, (k, v) => v === undefined ? null : v));
+
+  const ref = await addDoc(collection(db, TASKS_COLLECTION), cleanData);
   console.log("[Telemetry] Vector stabilized. Document ID:", ref.id);
+  
   return { id: ref.id, ...taskData } as Task;
 }
 

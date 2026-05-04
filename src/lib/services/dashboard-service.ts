@@ -90,7 +90,7 @@ function assembleMemberDashboard(
     myCompletedThisWeek: myTasks.filter(t => t.status === "done" && t.completedAt && isAfter(t.completedAt.toDate(), weekStart)).length
   };
 
-  const myProjects = projects.filter(p => tasks.some(t => t.projectId === p.id && t.assignedTo === member.id));
+  const myProjects = projects;
   const myUrgencyBuckets = categorizeTasksByUrgency(myTasks);
   const myWorkload = calculateMemberWorkload(member, tasks);
 

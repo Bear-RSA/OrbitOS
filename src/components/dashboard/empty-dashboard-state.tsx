@@ -34,14 +34,14 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
       title: "Clean Slate Output",
       description: "Project infrastructure is online, but no operational tasks have been mapped. Define your first delivery nodes to start tracking performance.",
       icon: SignalLow,
-      action: isOwner ? (
+      action: (
         <button 
           className="gap-3 inline-flex items-center justify-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[2px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-xl px-10 h-12 text-[11px] font-mono uppercase tracking-[0.25em] focus:outline-none ring-0 group"
         >
           <Plus className="w-4 h-4 text-[#888888]" />
           Add First Task
         </button>
-      ) : null
+      )
     },
     no_assigned_work: {
       title: "All Clear",
