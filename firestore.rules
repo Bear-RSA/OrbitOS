@@ -58,6 +58,10 @@ service cloud.firestore {
       allow create: if isMember(request.resource.data.orgId);
       allow update: if isOwner(resource.data.orgId);
       allow delete: if isOwner(resource.data.orgId);
+
+      match /files/{fileId} {
+        allow read: if isMember(get(/databases/$(database)/documents/projects/$(projectId)).data.orgId);
+      }
     }
 
     match /users/{userId} {
