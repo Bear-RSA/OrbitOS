@@ -26,6 +26,7 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showArchiveSuccess, setShowArchiveSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState("");
@@ -64,8 +65,8 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
   };
 
   const handleArchive = () => {
-    alert("Project archived. It is now hidden from the core workspace view.");
     setOpen(false);
+    setShowArchiveSuccess(true);
   };
 
   return (
@@ -127,6 +128,30 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
         entityName={projectName}
         isLoading={loading}
       />
+
+      {/* Archive Success Modal */}
+      <Dialog open={showArchiveSuccess} onOpenChange={setShowArchiveSuccess}>
+        <DialogContent className="bg-[#0A0A0A] border-white/[0.05] shadow-2xl p-6 sm:max-w-md">
+          <DialogHeader className="space-y-3 flex flex-col items-center">
+            <DialogTitle className="text-xl font-medium tracking-tight text-[#ededed] flex items-center justify-center gap-2 w-full">
+              <Archive className="w-5 h-5 text-[#888888]" />
+              Project Archived
+            </DialogTitle>
+            <DialogDescription className="text-sm text-[#888888] leading-relaxed text-center">
+              Project archived. It is now hidden from the core workspace view.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6 sm:justify-center w-full flex justify-center">
+            <Button
+              type="button"
+              onClick={() => setShowArchiveSuccess(false)}
+              className="bg-[#ededed] text-black hover:bg-white transition-colors w-full sm:w-auto px-8"
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

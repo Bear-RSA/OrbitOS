@@ -34,6 +34,7 @@ import {
   Crown,
   Users,
   EyeOff,
+  HardDriveUpload,
 } from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
 import { ProfilePictureManager } from "@/components/profile/profile-picture-manager";
@@ -272,11 +273,11 @@ export default function ProfilePage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-end gap-3 w-[212px]">
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-transparent border border-transparent hover:bg-[#111111] text-[#888888] hover:text-[#ededed] transition-all disabled:opacity-50 outline-none"
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-transparent border border-transparent hover:bg-[#111111] text-[#888888] hover:text-[#ededed] transition-all disabled:opacity-50 outline-none shrink-0"
             >
               <RefreshCw
                 className={cn(
@@ -289,38 +290,48 @@ export default function ProfilePage() {
             <button
               onClick={handleSave}
               disabled={isSaving || !hasChanges || !name.trim()}
-              className="relative w-36 h-10 rounded-lg overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] bg-[#ededed] text-[#050505] font-medium hover:bg-white hover:-translate-y-[2px] disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:bg-[#ededed] disabled:cursor-not-allowed shadow-[0_2px_12px_rgba(255,255,255,0.06)] outline-none"
+              className="group flex items-center h-10 w-10 hover:w-[160px] rounded-lg overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] bg-[#ededed] text-[#050505] font-medium hover:bg-white hover:-translate-y-[2px] disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:bg-[#ededed] disabled:cursor-not-allowed shadow-[0_2px_12px_rgba(255,255,255,0.06)] outline-none shrink-0"
             >
-              {/* Saving state */}
-              <div
-                className={cn(
-                  "absolute inset-0 flex items-center justify-center gap-2.5 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                  isSaving ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
+              <div className="flex items-center justify-center w-10 h-10 shrink-0">
+                {isSaving ? (
+                  <Loader size={14} stroke={2.5} color="#050505" className="animate-spin" />
+                ) : saveSuccess ? (
+                  <Check className="w-4 h-4 text-[#050505]" />
+                ) : (
+                  <HardDriveUpload className="w-4 h-4 text-[#050505]" />
                 )}
-              >
-                <Loader size={14} stroke={2.5} color="#050505" className="animate-spin" />
-                <span className="text-[13px] font-bold tracking-tight">Saving</span>
               </div>
               
-              {/* Success state */}
-              <div
-                className={cn(
-                  "absolute inset-0 flex items-center justify-center gap-2 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                  saveSuccess ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
-                )}
-              >
-                <Check className="w-4 h-4 text-[#050505]" />
-                <span className="text-[13px] font-bold tracking-tight">Saved</span>
-              </div>
+              <div className="relative flex-1 h-full">
+                {/* Default state */}
+                <div className={cn(
+                  "absolute inset-0 flex items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                  !isSaving && !saveSuccess ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
+                )}>
+                  <span className="opacity-0 -translate-x-3 whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 group-hover:translate-x-0 text-[13px] font-bold tracking-tight pr-4">
+                    Save Changes
+                  </span>
+                </div>
 
-              {/* Default state */}
-              <div
-                className={cn(
-                  "absolute inset-0 flex items-center justify-center gap-2 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                  !isSaving && !saveSuccess ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
-                )}
-              >
-                <span className="text-[13px] font-bold tracking-tight">Save Changes</span>
+                {/* Saving state */}
+                <div className={cn(
+                  "absolute inset-0 flex items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                  isSaving ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"
+                )}>
+                  <span className="opacity-0 -translate-x-3 whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 group-hover:translate-x-0 text-[13px] font-bold tracking-tight pr-4">
+                    Saving
+                  </span>
+                </div>
+
+                {/* Success state */}
+                <div className={cn(
+                  "absolute inset-0 flex items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                  saveSuccess ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
+                )}>
+                  <span className="opacity-0 -translate-x-3 whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 group-hover:translate-x-0 text-[13px] font-bold tracking-tight pr-4">
+                    Saved
+                  </span>
+                </div>
               </div>
             </button>
           </div>
