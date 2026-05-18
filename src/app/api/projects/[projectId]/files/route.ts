@@ -9,10 +9,11 @@ import { FieldValue } from "firebase-admin/firestore";
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
-    console.warn("DEPRECATED: Client-side metadata submission called for project", params.projectId);
+    const { projectId } = await params;
+    console.warn("DEPRECATED: Client-side metadata submission called for project", projectId);
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,7 +23,7 @@ export async function POST(
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
 
-    const { projectId } = params;
+    // projectId already destructured above
     const fileData = await req.json();
 
     // Basic structure validation

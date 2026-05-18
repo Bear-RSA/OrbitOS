@@ -22,7 +22,7 @@ import { PersonnelHub } from "@/components/dashboard/personnel-hub";
 import { cn } from "@/lib/utils/classnames";
 import { useHeartbeat } from "@/hooks/use-heartbeat";
 
-export default function ProjectDashboardPage({ params }: { params: { projectId: string } }) {
+export default function ProjectDashboardPage({ params }: { params: Promise<{ projectId: string }> }) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   
@@ -37,7 +37,7 @@ export default function ProjectDashboardPage({ params }: { params: { projectId: 
   const [refreshKey, setRefreshKey] = useState(0);
   const [viewMode, setViewMode] = useState<"execution" | "strategy" | "personnel">("execution");
   const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null);
-  const projectId = params.projectId;
+  const { projectId } = use(params);
 
   const loadProjectMetadata = useCallback(async () => {
     try {
