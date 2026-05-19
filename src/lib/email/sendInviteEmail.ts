@@ -30,11 +30,11 @@ export async function sendInviteEmail({
     const { data, error } = await resend.emails.send({
       from: "OrbitOS <invites@mail.orbit-os.co.za>",
       to: [email],
-      subject: `${inviterName} invited you to join ${projectName} on OrbitOS`,
+      subject: `${inviterName} invited you to join ${projectName}.`,
       html: `
         <div style="font-family: sans-serif; line-height: 1.5; color: #333;">
           <p>Hello,</p>
-          <p><strong>${inviterName}</strong> has invited you to collaborate on the project <strong>${projectName}</strong>.</p>
+          <p><strong>${inviterName}</strong> has invited you to join <strong>${projectName}</strong>.</p>
           <p>Click the link below to accept the invitation and securely join the workspace (this link expires in 48 hours):</p>
           <div style="margin: 24px 0;">
             <a href="${inviteLink}" style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">

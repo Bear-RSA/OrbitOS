@@ -132,7 +132,7 @@ export function AddMemberDialog({
               </div>
             )}
 
-            <p className="text-[13px] text-[#888888] font-light">
+            <p className="text-[13px] text-[#888888] font-light text-center">
               Link active. Transmit to operator:
             </p>
             <div className="flex items-center gap-3">
@@ -156,7 +156,7 @@ export function AddMemberDialog({
                 )}
               </Button>
             </div>
-            <DialogFooter className="mt-8 border-t border-white/[0.04] pt-6">
+            <DialogFooter className="mt-8 border-t border-white/[0.04] pt-6 sm:justify-center">
               <Button onClick={handleClose} id="close-invite-dialog">Acknowledge</Button>
             </DialogFooter>
           </div>
@@ -173,7 +173,7 @@ export function AddMemberDialog({
             )}
 
             <div className="space-y-2.5">
-              <Label htmlFor="member-email">Network Address (Email)</Label>
+              <Label htmlFor="member-email" className="text-center block">Network Address (Email)</Label>
               <Input
                 id="member-email"
                 type="email"
@@ -185,7 +185,7 @@ export function AddMemberDialog({
                 <p className="text-[12px] text-[#E57A7A]">{errors.email.message}</p>
               )}
             </div>
-            <DialogFooter className="gap-2 mt-8 border-t border-white/[0.04] pt-6">
+            <DialogFooter className="gap-2 mt-8 border-t border-white/[0.04] pt-6 sm:justify-center">
               <Button
                 type="button"
                 variant="outline"
