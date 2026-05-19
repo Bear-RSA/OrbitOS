@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import { format } from "date-fns";
 
-const resend = new Resend(process.env.RESEND_API_KEY || "re_123456789");
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface DigestData {
   ownerName: string;
@@ -101,7 +101,7 @@ export async function sendDailyDigest(data: DigestData) {
   `.trim();
 
   return resend.emails.send({
-    from: "OrbitOS <digest@orbitos.app>",
+    from: "OrbitOS <digest@mail.orbit-os.co.za>",
     to: data.ownerEmail,
     subject,
     html,

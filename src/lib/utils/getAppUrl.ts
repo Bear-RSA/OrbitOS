@@ -13,5 +13,5 @@ export function getAppUrl(): string {
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
-  return "https://orbit-os-eight.vercel.app";
+  return "https://orbit-os.co.za";
 }

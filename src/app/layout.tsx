@@ -5,7 +5,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { InteractionProvider } from "@/components/ui/interaction-provider";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://orbitos.studio"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://orbit-os.co.za"),
   title: {
     default: "OrbitOS — Studio Operations Dashboard",
     template: "%s | OrbitOS",
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "OrbitOS — Studio Operations Dashboard",
     description: "The dashboard small studios need when work starts slipping.",
-    url: "https://orbitos.studio",
+    url: "https://orbit-os.co.za",
     siteName: "OrbitOS",
     locale: "en_ZA",
     type: "website",

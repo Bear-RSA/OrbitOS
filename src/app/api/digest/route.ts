@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       if (overduePercent > 0.25) atRiskStatus = "at-risk";
       else if (overduePercent > 0) atRiskStatus = "watch";
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://orbitos.app";
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://orbit-os.co.za";
 
       await sendDailyDigest({
         ownerName: owner.name,

@@ -28,7 +28,7 @@ export async function sendInviteEmail({
     }
 
     const { data, error } = await resend.emails.send({
-      from: "OrbitOS <onboarding@resend.dev>",
+      from: "OrbitOS <invites@mail.orbit-os.co.za>",
       to: [email],
       subject: `${inviterName} invited you to join ${projectName} on OrbitOS`,
       html: `
