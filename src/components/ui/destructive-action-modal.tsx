@@ -17,14 +17,13 @@ import { cn } from "@/lib/utils/classnames";
 interface DestructiveActionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => Promise<void>;
+  onConfirm: () => Promise<{ success: boolean; error?: string } | void>;
   title?: string;
   entityName: string;
   description?: React.ReactNode;
   warningMessage?: string;
   confirmText?: string;
   actionLabel?: string;
-  isLoading?: boolean;
 }
 
 export function DestructiveActionModal({
@@ -37,13 +36,11 @@ export function DestructiveActionModal({
   warningMessage = "This execution will trigger a cascade wipe. All metadata, configuration, and integrated task vectors associated with this project will be irreversibly destroyed.",
   confirmText,
   actionLabel = "Confirm Destruction",
-  isLoading: externalLoading = false,
 }: DestructiveActionModalProps) {
   const [inputValue, setInputValue] = useState("");
-  const [internalLoading, setInternalLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loading = externalLoading || internalLoading;
   const targetConfirmText = confirmText || entityName;
   const isMatch = inputValue.trim().toLowerCase() === targetConfirmText.trim().toLowerCase();
 
@@ -52,23 +49,30 @@ export function DestructiveActionModal({
     if (!isOpen) {
       setInputValue("");
       setError(null);
-      setInternalLoading(false);
+      setLoading(false);
     }
   }, [isOpen]);
 
   const handleConfirm = async () => {
     if (!isMatch || loading) return;
 
-    setInternalLoading(true);
+    setLoading(true);
     setError(null);
     try {
-      await onConfirm();
-      // On success, we don't necessarily need to setInternalLoading(false) 
-      // if the modal is about to unmount, but doing it anyway is safer.
-      setInternalLoading(false);
+      const result = await onConfirm();
+
+      // If onConfirm returns a result object, inspect it for failure
+      if (result && !result.success) {
+        setError(result.error || "Action failed. Please check system integrity.");
+        setLoading(false);
+        return;
+      }
+
+      // Success — reset loading (modal will likely unmount via onClose from parent)
+      setLoading(false);
     } catch (err: any) {
       setError(err?.message || "Action failed. Please check system integrity.");
-      setInternalLoading(false);
+      setLoading(false);
     }
   };
 

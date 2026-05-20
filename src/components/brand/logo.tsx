@@ -27,7 +27,7 @@ export function Logo({ className, size = "md" }: LogoProps) {
         src="/logo.png" 
         alt="OrbitOS Logo" 
         fill 
-        className="object-cover" 
+        className="object-cover rounded-[inherit]" 
         priority
       />
     </div>

@@ -21,6 +21,7 @@ export interface ProjectHealth {
   overdueCount: number;
   blockedCount: number;
   totalActiveTasks: number;
+  healthScore: number;
 }
 
 export interface MemberWorkload {
@@ -73,6 +74,7 @@ export interface MemberDashboardData {
     myCompletedThisWeek: number;
   };
   myProjects: Project[];
+  myProjectsHealth: ProjectHealth[];
   myUrgencyBuckets: UrgencyBuckets;
   myWorkload: MemberWorkload;
   recentActivity: ActivityFeedItem[];

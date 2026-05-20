@@ -36,6 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setFirebaseUser(fbUser);
 
       if (fbUser) {
+        // Reset loading while we fetch the Firestore profile
+        setLoading(true);
         // Subscribe to live profile updates
         const unsubProfile = onSnapshot(
           doc(db, "users", fbUser.uid),

@@ -28,8 +28,8 @@ export async function removeMemberAction(
   const { projectId, targetUserId, uid } = payload;
 
   try {
-    // 1. Validate caller is OWNER
-    const authStatus = await validateOwner(uid);
+    // 1. Validate caller is OWNER and scope is valid
+    const authStatus = await validateOwner(uid, targetUserId, projectId);
     if (!authStatus.isOwner) {
       return { success: false, error: authStatus.error ?? "Unauthorized. Requires OWNER clearance." };
     }
@@ -40,43 +40,21 @@ export async function removeMemberAction(
       return { success: false, error: "Cannot remove yourself. Transfer ownership first." };
     }
 
-    // 3. Validate project (if provided)
-    if (projectId) {
-      const projectSnap = await adminDb.collection("projects").doc(projectId).get();
-      if (!projectSnap.exists) {
-        return { success: false, error: "Project not found." };
-      }
-      const projectData = projectSnap.data()!;
-      if (projectData.orgId !== callerOrgId) {
-        return { success: false, error: "Project does not belong to your workspace." };
-      }
-    }
-
-    // 4. Validate target user exists and belongs to the same org
+    // 3. Fetch target user to prevent removing another OWNER
     const targetSnap = await adminDb.collection("users").doc(targetUserId).get();
     if (!targetSnap.exists) {
       return { success: false, error: "Target user not found." };
     }
     const targetData = targetSnap.data()!;
-    if (targetData.orgId !== callerOrgId) {
-      return { success: false, error: "User is not a member of this workspace." };
-    }
-
-    // 5. Prevent removing another OWNER
+    
     if (targetData.role === "OWNER" || targetData.role === "owner") {
       return { success: false, error: "Cannot remove an OWNER from the workspace." };
     }
 
     const targetName = targetData.name || "Unknown Operator";
 
-    // 6. Atomic transaction: remove membership + unassign tasks
+    // 4. Atomic transaction: remove membership + unassign tasks
     await adminDb.runTransaction(async (tx) => {
-      // Remove org membership from user
-      tx.update(adminDb.collection("users").doc(targetUserId), {
-        orgId: FieldValue.delete(),
-        role: FieldValue.delete(),
-      });
-
       // Find all tasks assigned to this user in the project (or org if no project)
       let tasksQuery = adminDb.collection("tasks")
         .where("assignedTo", "==", targetUserId);
@@ -87,9 +65,17 @@ export async function removeMemberAction(
         tasksQuery = tasksQuery.where("orgId", "==", callerOrgId);
       }
 
+      // Execute ALL reads first
       const tasksSnap = await tx.get(tasksQuery);
 
-      // Unassign each task
+      // Execute ALL writes after reads
+      // 1. Remove org membership from user
+      tx.update(adminDb.collection("users").doc(targetUserId), {
+        orgId: FieldValue.delete(),
+        role: FieldValue.delete(),
+      });
+
+      // 2. Unassign each task
       tasksSnap.forEach((taskDoc) => {
         tx.update(taskDoc.ref, { assignedTo: null });
       });

@@ -91,6 +91,7 @@ function assembleMemberDashboard(
   };
 
   const myProjects = projects;
+  const myProjectsHealth = myProjects.map(p => calculateProjectHealth(p, tasks.filter(t => t.projectId === p.id)));
   const myUrgencyBuckets = categorizeTasksByUrgency(myTasks);
   const myWorkload = calculateMemberWorkload(member, tasks);
 
@@ -98,6 +99,7 @@ function assembleMemberDashboard(
     role: "MEMBER",
     metrics,
     myProjects,
+    myProjectsHealth,
     myUrgencyBuckets,
     myWorkload,
     recentActivity: []

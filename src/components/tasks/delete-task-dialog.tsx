@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Task } from "@/types/task";
 import { DestructiveActionModal } from "@/components/ui/destructive-action-modal";
 
@@ -17,18 +16,13 @@ export function DeleteTaskDialog({
   onOpenChange,
   onConfirm,
 }: DeleteTaskDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const handleDelete = async () => {
-    setIsDeleting(true);
     try {
       await onConfirm();
       onOpenChange(false);
     } catch (err) {
       console.error("Failed to delete task:", err);
       throw err; // Re-throw so the modal can catch and display the error
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -48,7 +42,6 @@ export function DeleteTaskDialog({
       }
       warningMessage="Action Status: Irreversible. This execution will be logged to the telemetry stream and cannot be undone."
       actionLabel="Confirm Purge"
-      isLoading={isDeleting}
     />
   );
 }

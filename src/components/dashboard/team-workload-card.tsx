@@ -25,32 +25,40 @@ export function TeamWorkloadCard({ memberWorkloads, onInviteClick }: TeamWorkloa
   const { user } = useAuth();
   const [revokeMode, setRevokeMode] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
-  const [isRemoving, setIsRemoving] = useState(false);
 
   const currentUserWorkload = memberWorkloads.find(w => w.member.id === user?.id);
   const isOwner = currentUserWorkload?.member.role === "OWNER";
 
-  const handleRemove = async () => {
-    if (!memberToRemove || !user?.id) return;
-    setIsRemoving(true);
+  const handleRemove = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!memberToRemove || !user?.id) {
+      return { success: false, error: "Missing target or session. Re-authenticate and retry." };
+    }
+
+    // Client-side OWNER gate — the server action also enforces this
+    if (!isOwner) {
+      return { success: false, error: "Unauthorized. Only the Root Owner can revoke node access." };
+    }
+
     try {
       const result = await removeMemberAction({
         targetUserId: memberToRemove,
-        uid: user.id
+        uid: user.id,
       });
+
       if (result.success) {
         setMemberToRemove(null);
         const remainingRemovable = memberWorkloads.filter(w => w.member.id !== memberToRemove && w.member.role !== "OWNER" && w.member.id !== user?.id).length;
         if (remainingRemovable === 0) {
           setRevokeMode(false);
         }
-      } else {
-        console.error("Failed to remove:", result.error);
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsRemoving(false);
+
+      // Always return the result to the modal so it can display errors inline
+      return result;
+    } catch (err: any) {
+      const message = err?.message || "An unexpected error occurred during revocation.";
+      console.error("[Revoke Node Access]:", message);
+      return { success: false, error: message };
     }
   };
 
@@ -186,7 +194,6 @@ export function TeamWorkloadCard({ memberWorkloads, onInviteClick }: TeamWorkloa
         description="You are about to revoke system access for this operator. All active task vectors will be decoupled."
         warningMessage="This execution will trigger an immediate session termination for the target node. All metadata and configuration associated with this node's operational state will be archived but inaccessible."
         actionLabel="Confirm Revocation"
-        isLoading={isRemoving}
       />
     </div>
   );

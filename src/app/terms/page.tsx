@@ -16,7 +16,7 @@ export default function TermsPage() {
         <div className="flex justify-between items-center max-w-7xl mx-auto px-8 h-16">
           <Link href="/" className="font-mono text-lg tracking-tighter text-[#ededed] flex items-center gap-3">
              <div className="w-6 h-6 rounded-md bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden">
-               <Image src="/logo.png" alt="OrbitOS" fill className="object-cover" />
+               <Image src="/logo.png" alt="OrbitOS" fill className="object-cover rounded-[inherit]" />
              </div>
              OrbitOS
           </Link>

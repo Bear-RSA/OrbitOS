@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { Member } from "@/types/member";
 import { cn } from "@/lib/utils/classnames";
 import { Crown, Users } from "lucide-react";
+import { getTeamDailyMessage } from "@/utils/dailyMessage";
 
 interface DashboardHeaderProps {
   currentUser: Member;
@@ -55,6 +56,11 @@ export function DashboardHeader({ currentUser, orgName }: DashboardHeaderProps) 
             ? "Telemetry is active. Here is the operational state of your workspace modules."
             : "Here is your assigned work and project activity."}
         </p>
+
+        {/* Daily Message */}
+        <div className="mt-3 text-[11px] font-mono uppercase tracking-widest text-[#777777]">
+          {getTeamDailyMessage(currentUser.orgId)}
+        </div>
       </div>
 
       {/* Clock */}

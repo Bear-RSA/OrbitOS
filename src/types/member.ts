@@ -6,6 +6,7 @@ export interface Member {
   name: string;
   orgId: string;
   role: "OWNER" | "MEMBER";
+  roleDescriptor?: string;
   operationalStatus?: "available" | "focused" | "offline";
   lastActivity?: Timestamp;
   photoURL?: string | null;

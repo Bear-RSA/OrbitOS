@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ProjectFile } from "@/types/file";
 import { DestructiveActionModal } from "@/components/ui/destructive-action-modal";
 
@@ -17,18 +16,13 @@ export function DeleteFileDialog({
   onOpenChange,
   onConfirm,
 }: DeleteFileDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const handleDelete = async () => {
-    setIsDeleting(true);
     try {
       await onConfirm();
       onOpenChange(false);
     } catch (err) {
       console.error("Failed to delete file:", err);
       throw err; // Re-throw so the modal can catch and display the error
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -48,7 +42,6 @@ export function DeleteFileDialog({
       }
       warningMessage="Both the index record and the physical cloud storage asset will be permanently destroyed. This action cannot be reversed."
       actionLabel="Confirm Deletion"
-      isLoading={isDeleting}
     />
   );
 }

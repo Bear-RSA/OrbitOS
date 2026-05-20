@@ -160,6 +160,9 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
                        roleColor = "text-[#ededed]"; 
                        nodeColor = "bg-[#ededed]"; 
                      }
+                     if (m.roleDescriptor) {
+                       roleAlias = m.roleDescriptor;
+                     }
                    }
                    return (
                      <li key={user.uid} className="text-[11px] font-mono text-[#ededed] truncate flex items-center justify-between gap-3 group/user">

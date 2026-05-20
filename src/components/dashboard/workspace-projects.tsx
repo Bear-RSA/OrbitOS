@@ -24,7 +24,7 @@ export function WorkspaceProjects({ projectsHealth, projects }: WorkspaceProject
         name: ph.project.name,
         description: "Project execution environment.",
         status: ph.status === "healthy" ? "Healthy" : ph.status === "watch" ? "Watch" : "At Risk",
-        progress: 100 - ph.overduePercent, // Simplified health metric representation
+        progress: ph.healthScore, // Aligning with project pulse health score
       }))
     : projects?.map(p => ({
         id: p.id,

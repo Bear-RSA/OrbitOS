@@ -123,10 +123,9 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
       {/* Destructive Confirmation Modal */}
       <DestructiveActionModal
         isOpen={showDeleteConfirm}
-        onClose={() => !loading && setShowDeleteConfirm(false)}
+        onClose={() => setShowDeleteConfirm(false)}
         onConfirm={confirmDestruction}
         entityName={projectName}
-        isLoading={loading}
       />
 
       {/* Archive Success Modal */}

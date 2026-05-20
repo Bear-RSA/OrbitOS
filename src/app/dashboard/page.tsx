@@ -116,7 +116,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between mb-24 tracking-tight pt-4">
         <div className="flex items-center gap-5">
           <div className="w-10 h-10 rounded-xl bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_2px_8px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden group">
-            <Image src="/logo.png" alt="OrbitOS Logo" fill className="object-cover z-10" />
+            <Image src="/logo.png" alt="OrbitOS Logo" fill className="object-cover rounded-[inherit] z-10" />
           </div>
           <span className="text-[17px] font-medium text-[#ededed] tracking-tight">OrbitOS</span>
         </div>

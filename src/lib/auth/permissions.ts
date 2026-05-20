@@ -41,8 +41,12 @@ export async function verifyProjectAccess(userId: string, projectId: string) {
 /**
  * Validates if a user exists and holds the OWNER role in their organization.
  */
-export async function validateOwner(userId: string) {
+export async function validateOwner(userId: string, targetUserId?: string, projectId?: string) {
   try {
+    if (!userId) {
+      return { isOwner: false, error: "User ID is required" };
+    }
+
     const userDoc = await adminDb.collection("users").doc(userId).get();
     if (!userDoc.exists) {
       return { isOwner: false, error: "User not found" };
@@ -56,8 +60,30 @@ export async function validateOwner(userId: string) {
     if (userData.role !== "OWNER" && userData.role !== "owner") {
       return { isOwner: false, error: "Unauthorized. Requires OWNER operations clearance." };
     }
+
+    const callerOrgId = userData.orgId;
+
+    if (projectId) {
+      const projectDoc = await adminDb.collection("projects").doc(projectId).get();
+      if (!projectDoc.exists) {
+        return { isOwner: false, error: "Project not found" };
+      }
+      if (projectDoc.data()?.orgId !== callerOrgId) {
+        return { isOwner: false, error: "Project does not belong to your workspace" };
+      }
+    }
+
+    if (targetUserId) {
+      const targetDoc = await adminDb.collection("users").doc(targetUserId).get();
+      if (!targetDoc.exists) {
+        return { isOwner: false, error: "Target user not found" };
+      }
+      if (targetDoc.data()?.orgId !== callerOrgId) {
+        return { isOwner: false, error: "Target user is not a member of your workspace" };
+      }
+    }
     
-    return { isOwner: true, orgId: userData.orgId };
+    return { isOwner: true, orgId: callerOrgId };
   } catch (error) {
     console.error("Error validating owner status:", error);
     return { isOwner: false, error: "Internal server error during authorization" };

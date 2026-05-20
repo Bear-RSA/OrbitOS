@@ -23,7 +23,7 @@ interface ProfileModalProps {
 export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
   const router = useRouter();
   const [name, setName] = useState(user.name);
-  const [role, setRole] = useState<string>(user.role);
+  const [roleDescriptor, setRoleDescriptor] = useState<string>(user.roleDescriptor || "");
   const [isSaving, setIsSaving] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -41,12 +41,12 @@ export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
   };
 
   const handleSave = async () => {
-    if ((name === user.name && role === user.role) || !name.trim()) return;
+    if ((name === user.name && roleDescriptor === (user.roleDescriptor || "")) || !name.trim()) return;
     setIsSaving(true);
     try {
       await updateDoc(doc(db, "users", user.id), {
         name: name.trim(),
-        role: role.trim()
+        roleDescriptor: roleDescriptor.trim()
       });
       onOpenChange(false);
     } catch (err) {
@@ -99,12 +99,12 @@ export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
                 </div>
 
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#555555] ml-1">System Role</Label>
+                  <Label className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#555555] ml-1">Descriptor</Label>
                   <div className="relative group">
                     <input 
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      placeholder="Access Authority"
+                      value={roleDescriptor}
+                      onChange={(e) => setRoleDescriptor(e.target.value)}
+                      placeholder="e.g. Lead Engineer, Design Lead..."
                       className="w-full bg-[#0d0e0f] border-0 rounded-2xl h-14 px-6 text-[15px] font-light text-[#ededed] placeholder:text-[#333333] transition-all focus:outline-none focus:ring-1 focus:ring-[#a078ff]/30 shadow-inner"
                     />
                   </div>
@@ -157,7 +157,7 @@ export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
               </button>
               <button 
                 onClick={handleSave}
-                disabled={isSaving || (name === user.name && role === user.role) || !name.trim()}
+                disabled={isSaving || (name === user.name && roleDescriptor === (user.roleDescriptor || "")) || !name.trim()}
                 className="gap-2.5 flex items-center justify-center bg-[#ededed] hover:bg-white hover:-translate-y-[2px] disabled:opacity-30 disabled:hover:translate-y-0 text-[#050505] shadow-[0_2px_12px_rgba(255,255,255,0.06)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-lg px-8 h-11 text-[13px] font-bold tracking-tight focus:outline-none ring-0 overflow-hidden"
               >
                 {isSaving ? <Loader size={14} stroke={2} color="#050505" /> : <Check className="w-4 h-4" />}

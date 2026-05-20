@@ -366,7 +366,7 @@ export default function ProfilePage() {
                   </div>
                   {(user as any).roleDescriptor && (
                     <span className="text-[13px] text-[#888888] font-light italic">
-                      {user.role === "OWNER" ? "Lead Architect" : "Operator"}
+                      {(user as any).roleDescriptor}
                     </span>
                   )}
                 </div>

@@ -42,13 +42,18 @@ export function calculateProjectHealth(project: Project, tasks: Task[]): Project
     status = "watch";
   }
   
+  const totalTasks = tasks.length;
+  const executedTasks = tasks.filter(t => t.status === "done").length;
+  const healthScore = totalTasks === 0 ? 0 : Math.round((executedTasks / totalTasks) * 100);
+
   return {
     project,
     status,
     overduePercent: Math.round(overduePercent),
     overdueCount,
     blockedCount,
-    totalActiveTasks: totalActive
+    totalActiveTasks: totalActive,
+    healthScore
   };
 }
 

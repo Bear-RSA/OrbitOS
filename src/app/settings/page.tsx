@@ -82,7 +82,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-5 cursor-pointer group" onClick={() => router.push("/dashboard")}>
             <div className="w-10 h-10 rounded-xl bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_2px_8px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none"></div>
-              <Image src="/logo.png" alt="OrbitOS Logo" fill className="object-cover z-10" />
+              <Image src="/logo.png" alt="OrbitOS Logo" fill className="object-cover rounded-[inherit] z-10" />
             </div>
             <span className="text-[17px] font-medium text-[#ededed] tracking-tight group-hover:text-white transition-colors">OrbitOS</span>
           </div>

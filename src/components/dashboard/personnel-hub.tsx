@@ -49,6 +49,7 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
       name: member.name,
       photoURL: member.photoURL,
       role: member.role,
+      roleDescriptor: member.roleDescriptor,
       operationalStatus: status,
       directiveCount: count,
       loadPercentage: loadPercent
@@ -82,7 +83,7 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
            if (t.operationalStatus === "offline") statusColor = "bg-orbit-red";
 
            // Role formatting
-           const roleAlias = t.role === "OWNER" ? "[OWNER]" : "[MEMBER]";
+           const displayDescriptor = t.roleDescriptor || (t.role === "OWNER" ? "[OWNER]" : "[MEMBER]");
            const roleColor = t.role === "OWNER" ? "text-orbit-red" : "text-[#888]";
 
            // Load bar
@@ -109,7 +110,7 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
                        {t.name}
                      </span>
                      <span className={cn("text-[9px] font-mono tracking-widest uppercase mt-0.5", roleColor)}>
-                       {roleAlias}
+                       {displayDescriptor}
                      </span>
                   </div>
                 </div>
