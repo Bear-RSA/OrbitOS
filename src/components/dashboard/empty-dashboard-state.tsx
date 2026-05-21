@@ -18,9 +18,9 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
       title: isOwner ? "System Awaiting Signal" : "Workspace Connected",
       description: isOwner
         ? "OrbitOS is currently inactive. To begin surfacing telemetry on project health, team workload variance, and task clarity, initialize your first workspace module."
-        : "You have been added to this workspace. Once your team lead assigns you to a project or task, your operational dashboard will come to life here.",
+        : "No active projects yet. Initialize a project to start tracking work and collaborating with your team.",
       icon: FolderPlus,
-      action: isOwner ? (
+      action: (
         <button 
           onClick={onCreateProject} 
           className="gap-3 inline-flex items-center justify-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[2px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-xl px-10 h-12 text-[11px] font-mono uppercase tracking-[0.25em] focus:outline-none ring-0 group"
@@ -28,7 +28,7 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
           <Plus className="w-4 h-4 text-[#888888]" />
           Create Project
         </button>
-      ) : null
+      )
     },
     no_tasks: {
       title: "Clean Slate Output",

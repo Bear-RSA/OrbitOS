@@ -32,7 +32,7 @@ export function MemberDashboardView({ data, members, tasks, orgId, userId, onRef
       {/* Personal Urgency Layer */}
       <ScrollReveal delay={100}>
         <div className="pt-4">
-          <UrgencyBucketsCard buckets={data.myUrgencyBuckets} projects={data.myProjects} />
+          <UrgencyBucketsCard buckets={data.urgencyBuckets} projects={data.myProjects} />
         </div>
       </ScrollReveal>
 

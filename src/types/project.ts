@@ -5,5 +5,6 @@ export interface Project {
   orgId: string;
   name: string;
   ownerId: string;
+  createdBy?: string;
   createdAt: Timestamp;
 }

@@ -122,7 +122,7 @@ export default function DashboardPage() {
         </div>
         
         <div className="flex items-center gap-5">
-          <div className={cn("flex items-center justify-end gap-3", isOwner ? "w-[212px]" : "")}>
+          <div className="flex items-center justify-end gap-3 w-[212px]">
             <button
               onClick={() => { setRefreshing(true); setRefreshKey(prev => prev + 1); loadOperationalData(); }}
               disabled={refreshing}
@@ -134,19 +134,17 @@ export default function DashboardPage() {
               <RefreshCw className="w-4 h-4" />
             </button>
 
-            {isOwner && (
-              <button
-                onClick={() => setCreateProjectOpen(true)}
-                className="group flex items-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[1px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-md h-9 w-9 hover:w-[160px] overflow-hidden focus:outline-none ring-0 shrink-0"
-              >
-                <div className="flex items-center justify-center w-9 h-9 shrink-0">
-                  <Plus className="w-3.5 h-3.5 text-[#888888] transition-colors group-hover:text-[#ededed]" />
-                </div>
-                <span className="opacity-0 -translate-x-3 whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 group-hover:translate-x-0 text-[10px] font-mono uppercase tracking-[0.2em] pr-4">
-                  Create Project
-                </span>
-              </button>
-            )}
+            <button
+              onClick={() => setCreateProjectOpen(true)}
+              className="group flex items-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[1px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-md h-9 w-9 hover:w-[160px] overflow-hidden focus:outline-none ring-0 shrink-0"
+            >
+              <div className="flex items-center justify-center w-9 h-9 shrink-0">
+                <Plus className="w-3.5 h-3.5 text-[#888888] transition-colors group-hover:text-[#ededed]" />
+              </div>
+              <span className="opacity-0 -translate-x-3 whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 group-hover:translate-x-0 text-[10px] font-mono uppercase tracking-[0.2em] pr-4">
+                Create Project
+              </span>
+            </button>
           </div>
 
           <button
@@ -201,22 +199,20 @@ export default function DashboardPage() {
 
       {/* Telemetry Modals */}
       {isOwner && (
-        <>
-          <AddMemberDialog
-            open={addMemberOpen}
-            onOpenChange={setAddMemberOpen}
-            orgId={user.orgId}
-            invitedBy={user.id}
-          />
-          <CreateProjectDialog
-            open={createProjectOpen}
-            onOpenChange={setCreateProjectOpen}
-            orgId={user.orgId}
-            ownerId={user.id}
-            onSuccess={loadOperationalData}
-          />
-        </>
+        <AddMemberDialog
+          open={addMemberOpen}
+          onOpenChange={setAddMemberOpen}
+          orgId={user.orgId}
+          invitedBy={user.id}
+        />
       )}
+      <CreateProjectDialog
+        open={createProjectOpen}
+        onOpenChange={setCreateProjectOpen}
+        orgId={user.orgId}
+        createdBy={user.id}
+        onSuccess={loadOperationalData}
+      />
 
       <ProfileModal
         open={profileOpen}

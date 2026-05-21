@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, Trash2, Archive, AlertCircle, AlertTriangle } from "lucide-react";
-import { deleteProjectAction } from "@/app/actions/projects";
+import { Settings, Trash2, Archive, AlertCircle, AlertTriangle, ShieldAlert } from "lucide-react";
+import { deleteProjectAction, archiveProjectAction } from "@/app/actions/projects";
 import {
   Dialog,
   DialogContent,
@@ -64,9 +64,26 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
     setShowDeleteConfirm(true);
   };
 
-  const handleArchive = () => {
+  const handleArchive = async () => {
+    if (loading) return;
+
+    setLoading(true);
+    setErrorMsg(null);
     setOpen(false);
-    setShowArchiveSuccess(true);
+    try {
+      const result = await archiveProjectAction({ projectId, uid });
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      setShowArchiveSuccess(true);
+    } catch (err: any) {
+      console.error("Failed to archive project", err);
+      setErrorMsg(err?.message || "Archive operation failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -85,17 +102,17 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-12 w-56 rounded-xl bg-[#0A0A0A] border border-white/[0.05] shadow-2xl overflow-hidden z-50 animate-fade-in origin-top-right">
             <div className="p-2 space-y-1">
-              <button 
-                onClick={handleArchive}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#ededed] hover:bg-white/[0.04] transition-colors"
-                disabled={loading}
-              >
-                <Archive className="w-4 h-4 text-[#888888]" />
-                Archive Project
-              </button>
-              
-              {isOwner && (
+              {isOwner ? (
                 <>
+                  <button 
+                    onClick={handleArchive}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#ededed] hover:bg-white/[0.04] transition-colors"
+                    disabled={loading}
+                  >
+                    <Archive className="w-4 h-4 text-[#888888]" />
+                    Archive Project
+                  </button>
+
                   <div className="w-full h-px bg-white/[0.04] my-1" />
 
                   <button 
@@ -107,15 +124,22 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
                     Delete Project
                   </button>
                 </>
+              ) : (
+                <div className="flex items-center gap-3 px-3 py-2.5 text-sm text-[#555555]">
+                  <ShieldAlert className="w-4 h-4 text-[#444444]" />
+                  <span className="text-[12px]">Owner actions only</span>
+                </div>
               )}
             </div>
             
-            <div className="px-3 py-2 bg-white/[0.02] border-t border-white/[0.02]">
-               <p className="text-[10px] text-[#555555] font-mono leading-tight tracking-[0.05em] flex items-start gap-1.5">
+            {isOwner && (
+              <div className="px-3 py-2 bg-white/[0.02] border-t border-white/[0.02]">
+                <p className="text-[10px] text-[#555555] font-mono leading-tight tracking-[0.05em] flex items-start gap-1.5">
                   <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5 text-orbit-red/50" />
                   Deletion performs a cascade cleanup removing all tasks.
-               </p>
-            </div>
+                </p>
+              </div>
+            )}
           </div>
         </>
       )}

@@ -13,7 +13,7 @@ import {
 } from "@/lib/utils/dashboard-logic";
 import { Member } from "@/types/member";
 import { Task } from "@/types/task";
-import { startOfWeek, isAfter, isSameDay } from "date-fns";
+import { startOfWeek, isAfter } from "date-fns";
 
 /**
  * Dashboard Data Orchestration Service
@@ -51,10 +51,20 @@ function assembleOwnerDashboard(
 ): OwnerDashboardData {
   const activeTasks = tasks.filter(t => t.status !== "done");
   const weekStart = startOfWeek(new Date());
+
+  // Midnight-normalized "today" for calendar-day overdue check
+  // (synchronized with TasksTable and system-health-card)
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
   
   const metrics = {
     activeProjects: projects.length,
-    overdueTasks: tasks.filter(t => t.dueDate && t.status !== "done" && isAfter(new Date(), t.dueDate.toDate()) && !isSameDay(new Date(), t.dueDate.toDate())).length,
+    overdueTasks: tasks.filter(t => {
+      if (!t.dueDate || t.status === "done") return false;
+      const due = t.dueDate.toDate();
+      due.setHours(0, 0, 0, 0);
+      return due.getTime() < todayMidnight.getTime();
+    }).length,
     activeWorkload: activeTasks.length,
     completedThisWeek: tasks.filter(t => t.status === "done" && t.completedAt && isAfter(t.completedAt.toDate(), weekStart)).length
   };
@@ -83,9 +93,19 @@ function assembleMemberDashboard(
   const myActiveTasks = myTasks.filter(t => t.status !== "done");
   const weekStart = startOfWeek(new Date());
 
+  // Midnight-normalized "today" for calendar-day overdue check
+  // (synchronized with TasksTable and system-health-card)
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+
   const metrics = {
     myActiveTasks: myActiveTasks.length,
-    myOverdueTasks: myActiveTasks.filter(t => t.dueDate && isAfter(new Date(), t.dueDate.toDate()) && !isSameDay(new Date(), t.dueDate.toDate())).length,
+    myOverdueTasks: myActiveTasks.filter(t => {
+      if (!t.dueDate) return false;
+      const due = t.dueDate.toDate();
+      due.setHours(0, 0, 0, 0);
+      return due.getTime() < todayMidnight.getTime();
+    }).length,
     myBlockedTasks: myActiveTasks.filter(t => t.isBlocked).length,
     myCompletedThisWeek: myTasks.filter(t => t.status === "done" && t.completedAt && isAfter(t.completedAt.toDate(), weekStart)).length
   };
@@ -93,6 +113,7 @@ function assembleMemberDashboard(
   const myProjects = projects;
   const myProjectsHealth = myProjects.map(p => calculateProjectHealth(p, tasks.filter(t => t.projectId === p.id)));
   const myUrgencyBuckets = categorizeTasksByUrgency(myTasks);
+  const urgencyBuckets = categorizeTasksByUrgency(tasks); // Org-wide — mirrors project task views
   const myWorkload = calculateMemberWorkload(member, tasks);
 
   return {
@@ -101,6 +122,7 @@ function assembleMemberDashboard(
     myProjects,
     myProjectsHealth,
     myUrgencyBuckets,
+    urgencyBuckets,
     myWorkload,
     recentActivity: []
   };

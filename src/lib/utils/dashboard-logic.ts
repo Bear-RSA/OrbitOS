@@ -8,11 +8,9 @@ import {
   WorkloadStatus, 
   MemberWorkload 
 } from "@/types/dashboard";
-import { Timestamp } from "firebase/firestore";
 import { 
-  isSameDay, 
   isAfter, 
-  isBefore, 
+  isBefore,
   addDays, 
   startOfWeek, 
   endOfWeek, 
@@ -60,24 +58,49 @@ export function calculateProjectHealth(project: Project, tasks: Task[]): Project
 /**
  * Task Urgency Categorizer
  * Segments tasks into operational buckets based on due dates.
+ * Uses midnight-normalized calendar-day comparisons to stay
+ * synchronized with the project-level TasksTable view.
  */
 export function categorizeTasksByUrgency(tasks: Task[]): UrgencyBuckets {
   const activeTasks = tasks.filter(t => t.status !== "done");
-  const now = new Date();
+
+  // Normalize "today" to midnight for calendar-day comparisons
   const today = new Date();
-  const tomorrow = addDays(today, 1);
+  today.setHours(0, 0, 0, 0);
+
+  const tomorrowStart = addDays(today, 1);
   const weekStart = startOfWeek(today);
   const weekEnd = endOfWeek(today);
+
+  /** Normalize a Firestore Timestamp to midnight */
+  const toMidnight = (t: Task): Date => {
+    const d = new Date(t.dueDate!.toDate());
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+
+  /** Calendar-day difference (due − today) in whole days */
+  const daysDiff = (t: Task): number => {
+    const due = toMidnight(t);
+    return Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  };
   
   return {
-    overdue: activeTasks.filter(t => t.dueDate && isBefore(t.dueDate.toDate(), now) && !isSameDay(t.dueDate.toDate(), now)),
-    dueToday: activeTasks.filter(t => t.dueDate && isSameDay(t.dueDate.toDate(), now)),
-    dueTomorrow: activeTasks.filter(t => t.dueDate && isSameDay(t.dueDate.toDate(), tomorrow)),
-    dueThisWeek: activeTasks.filter(t => t.dueDate && isWithinInterval(t.dueDate.toDate(), { start: weekStart, end: weekEnd }) && !isSameDay(t.dueDate.toDate(), now)),
-    upcoming: activeTasks.filter(t => 
-      t.dueDate && 
-      isAfter(t.dueDate.toDate(), weekEnd)
-    ),
+    overdue: activeTasks.filter(t => t.dueDate && daysDiff(t) < 0),
+    dueToday: activeTasks.filter(t => t.dueDate && daysDiff(t) === 0),
+    dueTomorrow: activeTasks.filter(t => t.dueDate && daysDiff(t) === 1),
+    dueThisWeek: activeTasks.filter(t => {
+      if (!t.dueDate) return false;
+      const due = toMidnight(t);
+      const diff = daysDiff(t);
+      // Within the current week, but exclude today and tomorrow (they have their own buckets)
+      return isWithinInterval(due, { start: weekStart, end: weekEnd }) && diff !== 0 && diff !== 1;
+    }),
+    upcoming: activeTasks.filter(t => {
+      if (!t.dueDate) return false;
+      const due = toMidnight(t);
+      return isAfter(due, weekEnd);
+    }),
     noDueDate: activeTasks.filter(t => !t.dueDate)
   };
 }

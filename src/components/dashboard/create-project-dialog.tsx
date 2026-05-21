@@ -19,11 +19,11 @@ interface CreateProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orgId: string;
-  ownerId: string;
+  createdBy: string;
   onSuccess: () => void;
 }
 
-export function CreateProjectDialog({ open, onOpenChange, orgId, ownerId, onSuccess }: CreateProjectDialogProps) {
+export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSuccess }: CreateProjectDialogProps) {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,8 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, ownerId, onSucc
       await addDoc(collection(db, "projects"), {
         name: name.trim(),
         orgId,
-        ownerId,
+        ownerId: createdBy,
+        createdBy,
         createdAt: Timestamp.now(),
       });
       setName("");

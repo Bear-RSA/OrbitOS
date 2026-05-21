@@ -76,6 +76,8 @@ export interface MemberDashboardData {
   myProjects: Project[];
   myProjectsHealth: ProjectHealth[];
   myUrgencyBuckets: UrgencyBuckets;
+  /** Org-wide urgency buckets — mirrors the project-level task views */
+  urgencyBuckets: UrgencyBuckets;
   myWorkload: MemberWorkload;
   recentActivity: ActivityFeedItem[];
 }

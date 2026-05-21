@@ -110,3 +110,71 @@ export async function deleteProjectAction(
     };
   }
 }
+
+interface ArchiveProjectPayload {
+  projectId: string;
+  uid: string;
+}
+
+export async function archiveProjectAction(
+  payload: ArchiveProjectPayload
+): Promise<{ success: boolean; error?: string }> {
+  const { projectId, uid } = payload;
+
+  console.log("[ArchiveProject] Starting archive:", { projectId, uid });
+
+  try {
+    // 1. Validate the authenticated user exists and is an owner
+    const authStatus = await validateOwner(uid);
+    if (!authStatus.isOwner) {
+      console.error("[ArchiveProject] Unauthorized archive attempt:", uid);
+      return { success: false, error: authStatus.error || "Unauthorized. Requires OWNER operations clearance." };
+    }
+    const userOrgId = authStatus.orgId;
+
+    // 2. Validate the project exists and belongs to the user's org
+    const projectSnap = await adminDb.collection("projects").doc(projectId).get();
+    if (!projectSnap.exists) {
+      console.error("[ArchiveProject] Project not found:", projectId);
+      return { success: false, error: "Project not found." };
+    }
+
+    const projectData = projectSnap.data()!;
+    if (projectData.orgId !== userOrgId) {
+      console.error("[ArchiveProject] Org mismatch:", {
+        projectOrg: projectData.orgId,
+        userOrg: userOrgId,
+      });
+      return { success: false, error: "Project does not belong to your workspace." };
+    }
+
+    const projectName = projectData.name || "Unknown Project";
+    const userSnap = await adminDb.collection("users").doc(uid).get();
+    const userName = userSnap.data()?.name || "System";
+
+    // 3. Set archived flag on the project document
+    await adminDb.collection("projects").doc(projectId).update({
+      archived: true,
+      archivedAt: new Date(),
+      archivedBy: uid,
+    });
+
+    // 4. Log archive event
+    await logActivity({
+      eventType: "PROJECT_ARCHIVED",
+      orgId: userOrgId,
+      projectId,
+      actor: { uid, name: userName },
+      metadata: { projectId, projectName },
+    });
+
+    console.log("[ArchiveProject] Project archived:", projectId);
+    return { success: true };
+  } catch (error: any) {
+    console.error("[ArchiveProject] Archive failed:", error);
+    return {
+      success: false,
+      error: "Archive operation failed. Please try again or contact support.",
+    };
+  }
+}
