@@ -301,3 +301,63 @@ export async function updateProjectPriorityAction(
   }
 }
 
+/* ------------------------------------------------------------------ */
+/*  Update Project Description                                         */
+/* ------------------------------------------------------------------ */
+
+interface UpdateProjectDescriptionPayload {
+  projectId: string;
+  description: string;
+  uid: string;
+}
+
+export async function updateProjectDescriptionAction(
+  payload: UpdateProjectDescriptionPayload
+): Promise<{ success: boolean; error?: string }> {
+  const { projectId, description, uid } = payload;
+
+  console.log("[UpdateProjectDescription] Starting update:", { projectId, uid });
+
+  const trimmed = description.trim();
+  if (trimmed.length > 500) {
+    return { success: false, error: "Description cannot exceed 500 characters." };
+  }
+
+  try {
+    // 1. Validate user has access (OWNER or MEMBER in the same org)
+    const access = await verifyProjectAccess(uid, projectId);
+    if (!access.hasAccess) {
+      console.error("[UpdateProjectDescription] Unauthorized attempt:", uid);
+      return { success: false, error: access.error || "Unauthorized." };
+    }
+    const orgId = access.orgId!;
+
+    // 2. Resolve actor name
+    const userSnap = await adminDb.collection("users").doc(uid).get();
+    const userName = userSnap.data()?.name || "System";
+
+    // 3. Update the project document
+    await adminDb.collection("projects").doc(projectId).update({
+      description: trimmed,
+    });
+
+    // 4. Log activity event
+    await logActivity({
+      eventType: "PROJECT_DESCRIPTION_UPDATED",
+      orgId,
+      projectId,
+      actor: { uid, name: userName },
+      metadata: { projectId },
+    });
+
+    console.log("[UpdateProjectDescription] Description updated:", { projectId });
+    return { success: true };
+  } catch (error: any) {
+    console.error("[UpdateProjectDescription] Update failed:", error);
+    return {
+      success: false,
+      error: "Description update failed. Please try again or contact support.",
+    };
+  }
+}
+

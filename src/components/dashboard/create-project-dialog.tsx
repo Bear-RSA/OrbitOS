@@ -25,6 +25,7 @@ interface CreateProjectDialogProps {
 
 export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSuccess }: CreateProjectDialogProps) {
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,8 +42,10 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
         ownerId: createdBy,
         createdBy,
         createdAt: Timestamp.now(),
+        ...(description.trim() && { description: description.trim() }),
       });
       setName("");
+      setDescription("");
       onSuccess();
       onOpenChange(false);
     } catch (err) {
@@ -74,6 +77,20 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
               disabled={loading}
               autoFocus
             />
+          </div>
+          <div className="space-y-2.5">
+            <Label htmlFor="project-description">Description <span className="text-[#555555] font-normal">(optional)</span></Label>
+            <textarea
+              id="project-description"
+              placeholder="Brief overview of the project scope..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={loading}
+              maxLength={500}
+              rows={3}
+              className="w-full bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-[13px] font-mono text-[#ededed] placeholder:text-[#333] transition-colors focus:outline-none focus:border-[#333] disabled:opacity-50 resize-none"
+            />
+            <p className="text-[10px] font-mono text-[#333333] text-right">{description.length}/500</p>
           </div>
           {error && <p className="text-[13px] text-[#E57A7A]">{error}</p>}
           <DialogFooter className="flex-row justify-start sm:justify-start gap-4 mt-10">

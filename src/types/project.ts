@@ -8,4 +8,5 @@ export interface Project {
   createdBy?: string;
   createdAt: Timestamp;
   priority?: number;
+  description?: string;
 }

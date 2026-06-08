@@ -30,7 +30,7 @@ export function WorkspaceProjects({ projectsHealth, projects, orgId, userId, isO
     ? projectsHealth.map(ph => ({
         id: ph.project.id,
         name: ph.project.name,
-        description: "Project execution environment.",
+        description: ph.project.description || "Project execution environment.",
         status: ph.status === "healthy" ? "Healthy" : ph.status === "watch" ? "Watch" : "At Risk",
         progress: ph.healthScore, // Aligning with project pulse health score
         priority: ph.project.priority,
@@ -38,7 +38,7 @@ export function WorkspaceProjects({ projectsHealth, projects, orgId, userId, isO
     : projects?.map(p => ({
         id: p.id,
         name: p.name,
-        description: "Project execution environment.",
+        description: p.description || "Project execution environment.",
         status: "Healthy",
         progress: 100,
         priority: p.priority,

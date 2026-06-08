@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, Trash2, Archive, AlertCircle, AlertTriangle, ShieldAlert, Pencil } from "lucide-react";
-import { deleteProjectAction, archiveProjectAction, renameProjectAction } from "@/app/actions/projects";
+import { Settings, Trash2, Archive, AlertCircle, AlertTriangle, ShieldAlert, Pencil, FileText } from "lucide-react";
+import { deleteProjectAction, archiveProjectAction, renameProjectAction, updateProjectDescriptionAction } from "@/app/actions/projects";
 import {
   Dialog,
   DialogContent,
@@ -18,22 +18,27 @@ import { DestructiveActionModal } from "@/components/ui/destructive-action-modal
 interface ProjectSettingsMenuProps {
   projectId: string;
   projectName: string;
+  projectDescription?: string;
   uid: string;
   userRole?: string;
 }
 
-export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: ProjectSettingsMenuProps) {
+export function ProjectSettingsMenu({ projectId, projectName, projectDescription, uid, userRole }: ProjectSettingsMenuProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showArchiveSuccess, setShowArchiveSuccess] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [newName, setNewName] = useState(projectName);
   const [renameLoading, setRenameLoading] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [descriptionText, setDescriptionText] = useState(projectDescription || "");
+  const [descriptionLoading, setDescriptionLoading] = useState(false);
+  const [descriptionError, setDescriptionError] = useState<string | null>(null);
 
   // Reset rename state when modal opens
   useEffect(() => {
@@ -69,6 +74,39 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
       setRenameError(err?.message || "Rename failed. Please try again.");
     } finally {
       setRenameLoading(false);
+    }
+  };
+
+  // Reset description state when modal opens
+  useEffect(() => {
+    if (showDescriptionModal) {
+      setDescriptionText(projectDescription || "");
+      setDescriptionError(null);
+      setDescriptionLoading(false);
+    }
+  }, [showDescriptionModal, projectDescription]);
+
+  const handleDescriptionSave = async () => {
+    if (descriptionLoading) return;
+    const trimmed = descriptionText.trim();
+    if (trimmed === (projectDescription || "")) {
+      setShowDescriptionModal(false);
+      return;
+    }
+
+    setDescriptionLoading(true);
+    setDescriptionError(null);
+    try {
+      const result = await updateProjectDescriptionAction({ projectId, description: trimmed, uid });
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      setShowDescriptionModal(false);
+      router.refresh();
+    } catch (err: any) {
+      setDescriptionError(err?.message || "Failed to update description. Please try again.");
+    } finally {
+      setDescriptionLoading(false);
     }
   };
 
@@ -150,6 +188,15 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
               >
                 <Pencil className="w-4 h-4 text-[#888888]" />
                 Rename Project
+              </button>
+
+              {/* Edit Description — available to OWNER and MEMBER */}
+              <button
+                onClick={() => { setOpen(false); setShowDescriptionModal(true); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#ededed] hover:bg-white/[0.04] transition-colors"
+              >
+                <FileText className="w-4 h-4 text-[#888888]" />
+                Edit Description
               </button>
 
               {isOwner ? (
@@ -281,6 +328,64 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
                   className="h-8 px-4 rounded-lg text-[12px] font-mono text-[#000] bg-[#ededed] hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {renameLoading ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Edit Description Modal */}
+      {showDescriptionModal && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onClick={() => !descriptionLoading && setShowDescriptionModal(false)} />
+          <div className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm">
+            <div className="bg-[#000000] border border-[#1a1a1a] rounded-xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
+              <h3 className="text-[15px] font-mono font-medium text-[#ededed] mb-1 tracking-tight">
+                Edit Description
+              </h3>
+              <p className="text-[12px] font-mono text-[#555555] mb-5">
+                Set a brief description for this project.
+              </p>
+
+              <textarea
+                value={descriptionText}
+                onChange={(e) => setDescriptionText(e.target.value)}
+                disabled={descriptionLoading}
+                autoFocus
+                maxLength={500}
+                rows={4}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" && !descriptionLoading) setShowDescriptionModal(false);
+                }}
+                className="w-full bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-[13px] font-mono text-[#ededed] placeholder:text-[#333] transition-colors focus:outline-none focus:border-[#333] disabled:opacity-50 resize-none"
+                placeholder="Brief overview of the project scope..."
+              />
+              <p className="text-[10px] font-mono text-[#333333] text-right mt-1">{descriptionText.length}/500</p>
+
+              {descriptionError && (
+                <div className="mt-3 text-[11px] font-mono text-orbit-red flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orbit-red animate-pulse" />
+                  {descriptionError}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 mt-5">
+                <button
+                  type="button"
+                  disabled={descriptionLoading}
+                  onClick={() => setShowDescriptionModal(false)}
+                  className="h-8 px-4 rounded-lg text-[12px] font-mono text-[#888] bg-[#0a0a0a] border border-[#1a1a1a] hover:bg-[#111] hover:text-[#ededed] transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={descriptionLoading}
+                  onClick={handleDescriptionSave}
+                  className="h-8 px-4 rounded-lg text-[12px] font-mono text-[#000] bg-[#ededed] hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {descriptionLoading ? "Saving..." : "Save"}
                 </button>
               </div>
             </div>

@@ -131,9 +131,14 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
                  <h1 className="text-3xl font-light text-[#ededed] tracking-tight">{project.name}</h1>
                </div>
             </div>
+            {project.description && (
+              <p className="mt-4 text-[14px] text-[#666666] font-light leading-relaxed max-w-lg">
+                {project.description}
+              </p>
+            )}
          </div>
          {/* Settings Control Container */}
-         <ProjectSettingsMenu projectId={project.id} projectName={project.name} uid={user!.id} userRole={user!.role} />
+         <ProjectSettingsMenu projectId={project.id} projectName={project.name} projectDescription={project.description} uid={user!.id} userRole={user!.role} />
       </div>
 
       <div key={refreshKey}>
