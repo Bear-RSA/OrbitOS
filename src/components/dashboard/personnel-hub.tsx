@@ -52,7 +52,9 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
       roleDescriptor: member.roleDescriptor,
       operationalStatus: status,
       directiveCount: count,
-      loadPercentage: loadPercent
+      loadPercentage: loadPercent,
+      descriptor: member.roleDescriptor,
+      bio: (member as any).bio
     };
   }).sort((a, b) => {
     if (a.role !== b.role) return a.role === "OWNER" ? -1 : 1;
@@ -96,33 +98,58 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
                key={t.id}
                onClick={() => onAssigneeSelect(isSelected ? null : t.id)}
                className={cn(
-                 "p-4 flex items-center justify-between cursor-pointer group transition-all duration-300",
+                 "p-4 flex flex-col cursor-pointer group transition-all duration-300",
                  isSelected ? "bg-white/[0.04] ring-inset ring-1 ring-white/10" : "hover:bg-white/[0.02]"
                )}
              >
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <UserAvatar name={t.name} photoURL={t.photoURL} size="sm" />
-                    <span className={cn("absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-[#000]", statusColor)} />
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <UserAvatar name={t.name} photoURL={t.photoURL} size="sm" />
+                      <span className={cn("absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-[#000]", statusColor)} />
+                    </div>
+                    <div className="flex flex-col">
+                       <span className="text-[13px] font-medium text-[#ededed] tracking-tight group-hover:text-white transition-colors">
+                         {t.name}
+                       </span>
+                       <span className={cn("text-[9px] font-mono tracking-widest uppercase mt-0.5", roleColor)}>
+                         {displayDescriptor}
+                       </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                     <span className="text-[13px] font-medium text-[#ededed] tracking-tight group-hover:text-white transition-colors">
-                       {t.name}
-                     </span>
-                     <span className={cn("text-[9px] font-mono tracking-widest uppercase mt-0.5", roleColor)}>
-                       {displayDescriptor}
-                     </span>
+
+                  <div className="flex flex-col items-end gap-1">
+                     <div className="flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.1em]">
+                        <span className="text-[#555]">{t.operationalStatus}</span>
+                        <span className="text-[#888]">{bar}</span>
+                        <span className={cn("tabular-nums", t.loadPercentage >= 80 ? "text-orbit-red" : "text-[#ccc]")}>
+                          {t.directiveCount} NODES
+                        </span>
+                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-1">
-                   <div className="flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.1em]">
-                      <span className="text-[#555]">{t.operationalStatus}</span>
-                      <span className="text-[#888]">{bar}</span>
-                      <span className={cn("tabular-nums", t.loadPercentage >= 80 ? "text-orbit-red" : "text-[#ccc]")}>
-                        {t.directiveCount} NODES
-                      </span>
-                   </div>
+                {/* Grid-row collapse: 0fr→1fr is the only pure-CSS way to animate intrinsic height */}
+                <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows,opacity] duration-300 opacity-0 group-hover:opacity-100">
+                  <div className="overflow-hidden">
+                    <div className="mt-4 bg-[#000000] border border-[#1a1a1a] rounded-lg p-3 flex flex-col gap-1.5">
+                      {t.descriptor && (
+                        <span className="text-[10px] text-[#888] font-mono uppercase tracking-widest">
+                          {t.descriptor}
+                        </span>
+                      )}
+                      {t.bio && (
+                        <span className="text-[11px] text-[#ccc] font-mono leading-relaxed">
+                          {t.bio}
+                        </span>
+                      )}
+                      {!t.descriptor && !t.bio && (
+                        <span className="text-[11px] text-[#555] font-mono italic">
+                          No additional data available.
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
              </div>
            );
