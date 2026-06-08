@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, Trash2, Archive, AlertCircle, AlertTriangle, ShieldAlert } from "lucide-react";
-import { deleteProjectAction, archiveProjectAction } from "@/app/actions/projects";
+import { Settings, Trash2, Archive, AlertCircle, AlertTriangle, ShieldAlert, Pencil } from "lucide-react";
+import { deleteProjectAction, archiveProjectAction, renameProjectAction } from "@/app/actions/projects";
 import {
   Dialog,
   DialogContent,
@@ -27,9 +27,50 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
   const [open, setOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showArchiveSuccess, setShowArchiveSuccess] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState("");
+  const [newName, setNewName] = useState(projectName);
+  const [renameLoading, setRenameLoading] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
+
+  // Reset rename state when modal opens
+  useEffect(() => {
+    if (showRenameModal) {
+      setNewName(projectName);
+      setRenameError(null);
+      setRenameLoading(false);
+    }
+  }, [showRenameModal, projectName]);
+
+  const handleRename = async () => {
+    if (renameLoading) return;
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      setRenameError("Project name cannot be empty.");
+      return;
+    }
+    if (trimmed === projectName) {
+      setShowRenameModal(false);
+      return;
+    }
+
+    setRenameLoading(true);
+    setRenameError(null);
+    try {
+      const result = await renameProjectAction({ projectId, newName: trimmed, uid });
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      setShowRenameModal(false);
+      router.refresh();
+    } catch (err: any) {
+      setRenameError(err?.message || "Rename failed. Please try again.");
+    } finally {
+      setRenameLoading(false);
+    }
+  };
 
   const isOwner = userRole === "OWNER" || userRole === "owner";
 
@@ -102,8 +143,19 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-12 w-56 rounded-xl bg-[#0A0A0A] border border-white/[0.05] shadow-2xl overflow-hidden z-50 animate-fade-in origin-top-right">
             <div className="p-2 space-y-1">
+              {/* Rename — available to OWNER and MEMBER */}
+              <button
+                onClick={() => { setOpen(false); setShowRenameModal(true); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#ededed] hover:bg-white/[0.04] transition-colors"
+              >
+                <Pencil className="w-4 h-4 text-[#888888]" />
+                Rename Project
+              </button>
+
               {isOwner ? (
                 <>
+                  <div className="w-full h-px bg-white/[0.04] my-1" />
+
                   <button 
                     onClick={handleArchive}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#ededed] hover:bg-white/[0.04] transition-colors"
@@ -125,10 +177,13 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
                   </button>
                 </>
               ) : (
-                <div className="flex items-center gap-3 px-3 py-2.5 text-sm text-[#555555]">
-                  <ShieldAlert className="w-4 h-4 text-[#444444]" />
-                  <span className="text-[12px]">Owner actions only</span>
-                </div>
+                <>
+                  <div className="w-full h-px bg-white/[0.04] my-1" />
+                  <div className="flex items-center gap-3 px-3 py-2.5 text-sm text-[#555555]">
+                    <ShieldAlert className="w-4 h-4 text-[#444444]" />
+                    <span className="text-[12px]">Owner actions only</span>
+                  </div>
+                </>
               )}
             </div>
             
@@ -175,6 +230,63 @@ export function ProjectSettingsMenu({ projectId, projectName, uid, userRole }: P
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Rename Project Modal */}
+      {showRenameModal && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onClick={() => !renameLoading && setShowRenameModal(false)} />
+          <div className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm">
+            <div className="bg-[#000000] border border-[#1a1a1a] rounded-xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
+              <h3 className="text-[15px] font-mono font-medium text-[#ededed] mb-1 tracking-tight">
+                Rename Project
+              </h3>
+              <p className="text-[12px] font-mono text-[#555555] mb-5">
+                Enter a new name for this project.
+              </p>
+
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                disabled={renameLoading}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !renameLoading) handleRename();
+                  if (e.key === "Escape" && !renameLoading) setShowRenameModal(false);
+                }}
+                className="w-full bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg h-10 px-3 text-[13px] font-mono text-[#ededed] placeholder:text-[#333] transition-colors focus:outline-none focus:border-[#333] disabled:opacity-50"
+                placeholder="Project name"
+              />
+
+              {renameError && (
+                <div className="mt-3 text-[11px] font-mono text-orbit-red flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orbit-red animate-pulse" />
+                  {renameError}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 mt-5">
+                <button
+                  type="button"
+                  disabled={renameLoading}
+                  onClick={() => setShowRenameModal(false)}
+                  className="h-8 px-4 rounded-lg text-[12px] font-mono text-[#888] bg-[#0a0a0a] border border-[#1a1a1a] hover:bg-[#111] hover:text-[#ededed] transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={renameLoading || !newName.trim()}
+                  onClick={handleRename}
+                  className="h-8 px-4 rounded-lg text-[12px] font-mono text-[#000] bg-[#ededed] hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {renameLoading ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

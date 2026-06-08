@@ -1,8 +1,72 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase/admin";
-import { validateOwner } from "@/lib/auth/permissions";
+import { validateOwner, verifyProjectAccess } from "@/lib/auth/permissions";
 import { logActivity } from "@/lib/telemetry";
+
+/* ------------------------------------------------------------------ */
+/*  Rename Project                                                     */
+/* ------------------------------------------------------------------ */
+
+interface RenameProjectPayload {
+  projectId: string;
+  newName: string;
+  uid: string;
+}
+
+export async function renameProjectAction(
+  payload: RenameProjectPayload
+): Promise<{ success: boolean; error?: string }> {
+  const { projectId, newName, uid } = payload;
+
+  console.log("[RenameProject] Starting rename:", { projectId, uid });
+
+  const trimmedName = newName.trim();
+  if (!trimmedName) {
+    return { success: false, error: "Project name cannot be empty." };
+  }
+
+  try {
+    // 1. Validate user has access (OWNER or MEMBER in the same org)
+    const access = await verifyProjectAccess(uid, projectId);
+    if (!access.hasAccess) {
+      console.error("[RenameProject] Unauthorized rename attempt:", uid);
+      return { success: false, error: access.error || "Unauthorized." };
+    }
+    const orgId = access.orgId!;
+
+    // 2. Read current project name for the activity log
+    const projectSnap = await adminDb.collection("projects").doc(projectId).get();
+    const oldName = projectSnap.data()?.name || "Unknown Project";
+
+    // 3. Resolve actor name
+    const userSnap = await adminDb.collection("users").doc(uid).get();
+    const userName = userSnap.data()?.name || "System";
+
+    // 4. Update the project document
+    await adminDb.collection("projects").doc(projectId).update({
+      name: trimmedName,
+    });
+
+    // 5. Log activity event
+    await logActivity({
+      eventType: "PROJECT_RENAMED",
+      orgId,
+      projectId,
+      actor: { uid, name: userName },
+      metadata: { projectId, oldName, newName: trimmedName },
+    });
+
+    console.log("[RenameProject] Project renamed:", { projectId, oldName, newName: trimmedName });
+    return { success: true };
+  } catch (error: any) {
+    console.error("[RenameProject] Rename failed:", error);
+    return {
+      success: false,
+      error: "Rename operation failed. Please try again or contact support.",
+    };
+  }
+}
 
 interface DeleteProjectPayload {
   projectId: string;
