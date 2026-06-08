@@ -178,3 +178,62 @@ export async function archiveProjectAction(
     };
   }
 }
+
+interface UpdateProjectPriorityPayload {
+  uid: string;
+  priorities: Array<{ projectId: string; priority: number }>;
+}
+
+export async function updateProjectPriorityAction(
+  payload: UpdateProjectPriorityPayload
+): Promise<{ success: boolean; error?: string }> {
+  const { uid, priorities } = payload;
+
+  console.log("[UpdateProjectPriority] Starting priority update:", { uid, count: priorities.length });
+
+  try {
+    // 1. Validate the authenticated user exists and is an owner
+    const authStatus = await validateOwner(uid);
+    if (!authStatus.isOwner) {
+      console.error("[UpdateProjectPriority] Unauthorized priority update:", uid);
+      return { success: false, error: authStatus.error || "Unauthorized. Requires OWNER operations clearance." };
+    }
+    const userOrgId = authStatus.orgId;
+
+    // 2. Validate all projects exist and belong to the user's org
+    const projectRefs = priorities.map(p =>
+      adminDb.collection("projects").doc(p.projectId)
+    );
+    const projectSnaps = await Promise.all(projectRefs.map(ref => ref.get()));
+
+    for (let i = 0; i < projectSnaps.length; i++) {
+      const snap = projectSnaps[i];
+      if (!snap.exists) {
+        console.error("[UpdateProjectPriority] Project not found:", priorities[i].projectId);
+        return { success: false, error: `Project ${priorities[i].projectId} not found.` };
+      }
+      if (snap.data()?.orgId !== userOrgId) {
+        console.error("[UpdateProjectPriority] Org mismatch for project:", priorities[i].projectId);
+        return { success: false, error: "One or more projects do not belong to your workspace." };
+      }
+    }
+
+    // 3. Batch update all priorities atomically
+    const batch = adminDb.batch();
+    for (const { projectId, priority } of priorities) {
+      const ref = adminDb.collection("projects").doc(projectId);
+      batch.update(ref, { priority });
+    }
+    await batch.commit();
+
+    console.log("[UpdateProjectPriority] Priorities updated successfully:", priorities.length, "projects");
+    return { success: true };
+  } catch (error: any) {
+    console.error("[UpdateProjectPriority] Priority update failed:", error);
+    return {
+      success: false,
+      error: "Priority update failed. Please try again or contact support.",
+    };
+  }
+}
+

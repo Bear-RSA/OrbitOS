@@ -39,7 +39,7 @@ export function MemberDashboardView({ data, members, tasks, orgId, userId, onRef
       {/* Personal Task Queue */}
       <ScrollReveal delay={200}>
         <div className="pt-8 pb-32">
-          <WorkspaceProjects projectsHealth={data.myProjectsHealth} projects={data.myProjects} />
+          <WorkspaceProjects projectsHealth={data.myProjectsHealth} projects={data.myProjects} orgId={orgId} userId={userId} isOwner={false} onRefresh={onRefresh} />
         </div>
       </ScrollReveal>
     </div>

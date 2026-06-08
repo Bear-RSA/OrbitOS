@@ -182,6 +182,7 @@ export default function DashboardPage() {
           members={rawMembers} 
           tasks={rawTasks} 
           orgId={user.orgId} 
+          userId={user.id}
           onRefresh={loadOperationalData} 
           onInviteClick={() => setAddMemberOpen(true)}
         />

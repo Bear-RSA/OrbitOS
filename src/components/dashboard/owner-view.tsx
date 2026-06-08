@@ -15,11 +15,12 @@ interface OwnerDashboardViewProps {
   members: Member[];
   tasks: Task[];
   orgId: string;
+  userId: string;
   onRefresh: () => void;
   onInviteClick?: () => void;
 }
 
-export function OwnerDashboardView({ data, members, tasks, orgId, onRefresh, onInviteClick }: OwnerDashboardViewProps) {
+export function OwnerDashboardView({ data, members, tasks, orgId, userId, onRefresh, onInviteClick }: OwnerDashboardViewProps) {
   const hasProject = data.projectsHealth.length > 0;
 
   return (
@@ -49,7 +50,7 @@ export function OwnerDashboardView({ data, members, tasks, orgId, onRefresh, onI
       {/* Projects Overview */}
       <ScrollReveal delay={200}>
         <div className="pt-4 pb-32">
-          <WorkspaceProjects projectsHealth={data.projectsHealth} />
+          <WorkspaceProjects projectsHealth={data.projectsHealth} orgId={orgId} userId={userId} isOwner={true} onRefresh={onRefresh} />
         </div>
       </ScrollReveal>
     </div>

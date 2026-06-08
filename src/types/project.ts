@@ -7,4 +7,5 @@ export interface Project {
   ownerId: string;
   createdBy?: string;
   createdAt: Timestamp;
+  priority?: number;
 }

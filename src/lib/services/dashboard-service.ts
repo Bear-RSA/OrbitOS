@@ -14,11 +14,27 @@ import {
 import { Member } from "@/types/member";
 import { Task } from "@/types/task";
 import { startOfWeek, isAfter } from "date-fns";
+import { Project } from "@/types/project";
 
 /**
  * Dashboard Data Orchestration Service
  * This layer handles logic aggregation and ensures the UI remains lean.
  */
+
+/**
+ * Sorts projects by priority ascending (P1 first), then unprioritized by createdAt descending.
+ */
+function sortProjectsByPriority<T extends Project>(projects: T[]): T[] {
+  return [...projects].sort((a, b) => {
+    const aPri = a.priority ?? Infinity;
+    const bPri = b.priority ?? Infinity;
+    if (aPri !== bPri) return aPri - bPri;
+    // Both unprioritized — newest first
+    const aTime = a.createdAt?.toMillis?.() ?? 0;
+    const bTime = b.createdAt?.toMillis?.() ?? 0;
+    return bTime - aTime;
+  });
+}
 
 export async function getDashboardData(userId: string): Promise<OrbitalDashboardData | null> {
   // 1. Resolve User & Role
@@ -69,7 +85,8 @@ function assembleOwnerDashboard(
     completedThisWeek: tasks.filter(t => t.status === "done" && t.completedAt && isAfter(t.completedAt.toDate(), weekStart)).length
   };
 
-  const projectsHealth = projects.map(p => calculateProjectHealth(p, tasks.filter(t => t.projectId === p.id)));
+  const sortedProjects = sortProjectsByPriority(projects);
+  const projectsHealth = sortedProjects.map(p => calculateProjectHealth(p, tasks.filter(t => t.projectId === p.id)));
   const urgencyBuckets = categorizeTasksByUrgency(tasks);
   const teamWorkload = members.map(m => calculateMemberWorkload(m, tasks));
 
@@ -110,7 +127,7 @@ function assembleMemberDashboard(
     myCompletedThisWeek: myTasks.filter(t => t.status === "done" && t.completedAt && isAfter(t.completedAt.toDate(), weekStart)).length
   };
 
-  const myProjects = projects;
+  const myProjects = sortProjectsByPriority(projects);
   const myProjectsHealth = myProjects.map(p => calculateProjectHealth(p, tasks.filter(t => t.projectId === p.id)));
   const myUrgencyBuckets = categorizeTasksByUrgency(myTasks);
   const urgencyBuckets = categorizeTasksByUrgency(tasks); // Org-wide — mirrors project task views
