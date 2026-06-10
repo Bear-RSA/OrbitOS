@@ -23,7 +23,7 @@ function SignupForm() {
   const rawRedirect = searchParams.get("redirect");
   const isInvite = !!rawRedirect;
   const redirectPath = rawRedirect ? decodeURIComponent(rawRedirect) : "/onboarding";
-  
+
   const { user, loading } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
@@ -114,7 +114,7 @@ function SignupForm() {
             <Input
               id="signup-email"
               type="email"
-              placeholder="operator@orbit.sys"
+              placeholder="bear@orbit.sys"
               autoComplete="email"
               className="bg-black/40 border-white/[0.03] focus:border-white/20 transition-all duration-500 h-14"
               {...register("email")}
@@ -169,9 +169,9 @@ function SignupForm() {
         <div className="h-px w-8 bg-white/[0.05]" />
         <p className="text-center text-[12px] text-[#555555] font-mono uppercase tracking-widest">
           Already have clearance?{" "}
-          <Link 
-            href={searchParams.get("redirect") ? `/login?redirect=${encodeURIComponent(searchParams.get("redirect") as string)}` : "/login"} 
-            className="text-[#ededed] hover:text-white transition-all duration-300 ml-2" 
+          <Link
+            href={searchParams.get("redirect") ? `/login?redirect=${encodeURIComponent(searchParams.get("redirect") as string)}` : "/login"}
+            className="text-[#ededed] hover:text-white transition-all duration-300 ml-2"
             id="go-to-login"
           >
             Authenticate Session

@@ -20,7 +20,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get("redirect");
   const redirectPath = rawRedirect ? decodeURIComponent(rawRedirect) : "/dashboard";
-  
+
   const { user, loading } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
@@ -80,14 +80,14 @@ function LoginForm() {
         {/* Decorative scanline or top bar */}
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-white/5 blur-[100px]" />
-        
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 relative z-10">
           <div className="space-y-3">
             <Label htmlFor="login-email" className="text-[#888888]">Email Node</Label>
             <Input
               id="login-email"
               type="email"
-              placeholder="operator@orbit.sys"
+              placeholder="bear@orbit.sys"
               autoComplete="email"
               className="bg-black/40 border-white/[0.03] focus:border-white/20 transition-all duration-500 h-14"
               {...register("email")}
@@ -142,9 +142,9 @@ function LoginForm() {
         <div className="h-px w-8 bg-white/[0.05]" />
         <p className="text-center text-[12px] text-[#555555] font-mono uppercase tracking-widest">
           No operating system yet?{" "}
-          <Link 
-            href={searchParams.get("redirect") ? `/signup?redirect=${encodeURIComponent(searchParams.get("redirect") as string)}` : "/signup"} 
-            className="text-[#ededed] hover:text-white transition-all duration-300 ml-2" 
+          <Link
+            href={searchParams.get("redirect") ? `/signup?redirect=${encodeURIComponent(searchParams.get("redirect") as string)}` : "/signup"}
+            className="text-[#ededed] hover:text-white transition-all duration-300 ml-2"
             id="go-to-signup"
           >
             Initialize workspace
