@@ -18,6 +18,16 @@ import { Task, TaskStatus } from "@/types/task";
 
 const TASKS_COLLECTION = "tasks";
 
+/**
+ * Normalizes the assignedTo field from Firestore.
+ * Handles legacy string | null values by converting them to string[].
+ */
+function normalizeAssignedTo(val: unknown): string[] {
+  if (Array.isArray(val)) return val.filter((v): v is string => typeof v === "string");
+  if (typeof val === "string" && val.length > 0) return [val];
+  return [];
+}
+
 export function subscribeToTasksByProject(
   projectId: string,
   orgId: string,
@@ -31,10 +41,14 @@ export function subscribeToTasksByProject(
   );
 
   return onSnapshot(q, (snapshot) => {
-    const tasks = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Task[];
+    const tasks = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        assignedTo: normalizeAssignedTo(data.assignedTo),
+      };
+    }) as Task[];
     
     console.log(`[Telemetry] Scan complete. Found ${tasks.length} reactive directives for segment: ${projectId}`);
 
@@ -94,7 +108,14 @@ export async function getTasksByOrg(orgId: string): Promise<Task[]> {
     where("orgId", "==", orgId)
   );
   const snapshot = await getDocs(q);
-  const tasks = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Task));
+  const tasks = snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      assignedTo: normalizeAssignedTo(data.assignedTo),
+    } as Task;
+  });
   
   return tasks.sort((a, b) => {
     const aIsDone = a.status === "done";
@@ -166,7 +187,7 @@ export async function createTask(
     description: data.description || "",
     projectId: data.projectId,
     orgId: actualOrgId,
-    assignedTo: data.assignedTo || null,
+    assignedTo: data.assignedTo && data.assignedTo.length > 0 ? data.assignedTo : [],
     milestone: data.milestone || "Unassigned",
     createdBy: currentUser.uid,
     dueDate: data.dueDate || null,

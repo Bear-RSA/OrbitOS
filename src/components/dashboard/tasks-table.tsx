@@ -75,8 +75,10 @@ export function TasksTable({
       // Update UI immediately
       onTaskUpdated();
       
-      if (task.assignedTo) {
-        syncOperationalStatusAction(task.assignedTo, orgId).catch(err => console.error("[Sync Error]:", err));
+      if (task.assignedTo && task.assignedTo.length > 0) {
+        task.assignedTo.forEach(uid => {
+          syncOperationalStatusAction(uid, orgId).catch(err => console.error("[Sync Error]:", err));
+        });
       }
 
       // Background telemetry
@@ -155,7 +157,7 @@ export function TasksTable({
   };
 
   const tasks = selectedAssignee 
-    ? allTasks.filter(t => t.assignedTo === selectedAssignee)
+    ? allTasks.filter(t => t.assignedTo.includes(selectedAssignee))
     : allTasks;
 
   const sortTasks = (taskList: Task[]) => {
@@ -309,11 +311,13 @@ export function TasksTable({
                 const isExpanded = expandedTasks[task.id];
                 const taskId = task.id.slice(0, 4).toUpperCase();
                 
-                const personnelTasks = task.assignedTo ? allTasks.filter(t => t.assignedTo === task.assignedTo && t.status !== "done") : [];
-                const activeCount = personnelTasks.length;
-                const workloadSegments = 10;
-                const activeSegments = Math.min(activeCount, workloadSegments);
-                const workloadBar = `[${"|".repeat(activeSegments)}${"-".repeat(workloadSegments - activeSegments)}]`;
+                const getPersonnelWorkload = (uid: string) => {
+                  const personnelTasks = allTasks.filter(t => t.assignedTo.includes(uid) && t.status !== "done");
+                  const count = personnelTasks.length;
+                  const segments = 10;
+                  const active = Math.min(count, segments);
+                  return { count, bar: `[${"|".repeat(active)}${"-".repeat(segments - active)}]` };
+                };
 
                 return (
                   <Fragment key={task.id}>
@@ -423,16 +427,21 @@ export function TasksTable({
                             </div>
                             <div className="mb-8 flex flex-col gap-3">
                               <h4 className="text-[9px] text-[#444] uppercase tracking-[0.3em]">Operative Assignment //</h4>
-                              <div className="flex items-center gap-4">
-                                {task.assignedTo ? (
-                                  <>
-                                    <UserAvatar photoURL={members.find(m => m.id === task.assignedTo)?.photoURL} name={getMemberName(task.assignedTo)} size="sm" />
-                                    <div className="flex flex-col gap-1">
-                                      <span className="text-[11px] text-[#ededed] uppercase tracking-widest font-medium">{getMemberName(task.assignedTo)}</span>
-                                      <span className="text-[10px] text-[#85C89B] tracking-tighter">{workloadBar}</span>
-                                    </div>
-                                  </>
-                                ) : <span className="text-[10px] text-[#444] italic uppercase">Unassigned Frequency</span>}
+                              <div className="flex flex-col gap-3">
+                                {task.assignedTo.length > 0 ? (
+                                  task.assignedTo.map(uid => {
+                                    const workload = getPersonnelWorkload(uid);
+                                    return (
+                                      <div key={uid} className="flex items-center gap-4 border border-[#1a1a1a] rounded-lg px-3 py-2 bg-[#000000]">
+                                        <UserAvatar photoURL={members.find(m => m.id === uid)?.photoURL} name={getMemberName(uid)} size="sm" />
+                                        <div className="flex flex-col gap-1">
+                                          <span className="text-[11px] text-[#ededed] uppercase tracking-widest font-medium font-mono">{getMemberName(uid)}</span>
+                                          <span className="text-[10px] text-[#85C89B] tracking-tighter font-mono">{workload.bar}</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                ) : <span className="text-[10px] text-[#444] italic uppercase font-mono">Unassigned Frequency</span>}
                               </div>
                             </div>
 
@@ -521,8 +530,10 @@ export function TasksTable({
                               )}
                             </div>
                             <div className="pt-2">
-                              <span className="text-[10px] text-[#444] tracking-wider uppercase">
-                                {task.assignedTo ? `[${activeCount}] tasks assigned to ${getMemberName(task.assignedTo)}` : "[0] OPERATORS TUNED TO THIS NODE"}
+                              <span className="text-[10px] text-[#444] tracking-wider uppercase font-mono">
+                                {task.assignedTo.length > 0 
+                                  ? `[${task.assignedTo.reduce((sum, uid) => sum + getPersonnelWorkload(uid).count, 0)}] tasks across ${task.assignedTo.length} operative${task.assignedTo.length > 1 ? 's' : ''}` 
+                                  : "[0] OPERATORS TUNED TO THIS NODE"}
                               </span>
                             </div>
                           </div>

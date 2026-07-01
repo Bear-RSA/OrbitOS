@@ -232,7 +232,7 @@ interface UpdateTaskPayload {
   updates: {
     title?: string;
     description?: string;
-    assignedTo?: string | null;
+    assignedTo?: string[];
     milestone?: string;
     dueDate?: string | null; // ISO string — converted server-side
   };
@@ -243,6 +243,11 @@ export async function updateTaskAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { taskId, uid, updates } = payload;
+
+    // Server-side enforcement: max 2 operatives
+    if (updates.assignedTo && updates.assignedTo.length > 2) {
+      return { success: false, error: "Maximum 2 operatives allowed per directive." };
+    }
 
     const userSnap = await adminDb.collection("users").doc(uid).get();
     if (!userSnap.exists || !userSnap.data()?.orgId) {
@@ -292,7 +297,7 @@ interface CreateTaskPayload {
   projectId: string;
   title: string;
   description?: string;
-  assignedTo?: string | null;
+  assignedTo?: string[];
   milestone?: string;
   createdBy: string;
   dueDate?: string | null; // ISO string — converted server-side
@@ -306,6 +311,11 @@ export async function createTaskAction(
 
     if (!title.trim()) {
       return { success: false, error: "Title is required." };
+    }
+
+    // Server-side enforcement: max 2 operatives
+    if (assignedTo && assignedTo.length > 2) {
+      return { success: false, error: "Maximum 2 operatives allowed per directive." };
     }
 
     // Verify the user exists and belongs to the org
@@ -330,7 +340,7 @@ export async function createTaskAction(
       description: description || "",
       projectId,
       orgId,
-      assignedTo: assignedTo || null,
+      assignedTo: assignedTo && assignedTo.length > 0 ? assignedTo : [],
       milestone: milestone || "Unassigned",
       createdBy,
       dueDate: dueDate ? AdminTimestamp.fromDate(new Date(dueDate)) : null,

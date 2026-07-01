@@ -16,7 +16,7 @@ export interface Task {
   title: string;
   description: string;
   status: TaskStatus;
-  assignedTo: string | null;
+  assignedTo: string[];
   milestone?: string | null;
   createdBy: string;
   dueDate: Timestamp | null;
@@ -32,14 +32,14 @@ export interface Task {
 export interface CreateTaskInput {
   title: string;
   description: string;
-  assignedTo: string | null;
+  assignedTo: string[];
   milestone?: string | null;
   dueDate: string | null;
 }
 
 export interface UpdateTaskInput {
   status?: TaskStatus;
-  assignedTo?: string | null;
+  assignedTo?: string[];
   milestone?: string | null;
   dueDate?: string | null;
 }

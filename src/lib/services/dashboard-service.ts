@@ -106,7 +106,7 @@ function assembleMemberDashboard(
   projects: any[],
   members: Member[]
 ): MemberDashboardData {
-  const myTasks = tasks.filter(t => t.assignedTo === member.id);
+  const myTasks = tasks.filter(t => t.assignedTo.includes(member.id));
   const myActiveTasks = myTasks.filter(t => t.status !== "done");
   const weekStart = startOfWeek(new Date());
 

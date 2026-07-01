@@ -20,7 +20,8 @@ export type ActivityEventType =
   | "STATUS_TRANSITION"
   | "BRIEFING_POSTED"
   | "MEMBER_REMOVED"
-  | "DIRECTIVE_DELETED";
+  | "DIRECTIVE_DELETED"
+  | "WORKLOAD_SHIFT";
 
 /* ------------------------------------------------------------------ */
 /*  Activity Document                                                  */

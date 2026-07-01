@@ -26,14 +26,19 @@ export async function syncOperationalStatusAction(userId: string | null, orgId: 
     }
 
     // 1. Calculate current active workload (Strict Scoping)
+    // Note: Firestore disallows array-contains + inequality compound queries,
+    // so we fetch all non-done tasks for the org and filter in-memory.
     const tasksSnap = await adminDb
       .collection("tasks")
       .where("orgId", "==", orgId)
-      .where("assignedTo", "==", userId)
       .where("status", "!=", "done")
       .get();
     
-    const activeCount = tasksSnap.size;
+    const activeCount = tasksSnap.docs.filter(doc => {
+      const assignedTo = doc.data().assignedTo;
+      if (Array.isArray(assignedTo)) return assignedTo.includes(userId);
+      return assignedTo === userId; // Legacy string fallback
+    }).length;
     const loadPercentage = (activeCount / MAX_SYSTEM_LOAD) * 100;
 
     // 2. Resolve current status
@@ -106,8 +111,15 @@ export async function getWorkloadTelemetryAction(projectId: string, orgId: strin
     const workloadMap = new Map<string, number>();
     tasksSnap.forEach(doc => {
       const { assignedTo } = doc.data();
-      if (assignedTo && membersMap.has(assignedTo)) {
-        workloadMap.set(assignedTo, (workloadMap.get(assignedTo) || 0) + 1);
+      // Handle both array (new) and string (legacy) formats
+      const assignees: string[] = Array.isArray(assignedTo)
+        ? assignedTo
+        : (assignedTo ? [assignedTo] : []);
+      
+      for (const uid of assignees) {
+        if (membersMap.has(uid)) {
+          workloadMap.set(uid, (workloadMap.get(uid) || 0) + 1);
+        }
       }
     });
 

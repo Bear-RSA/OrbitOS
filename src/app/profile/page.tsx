@@ -219,7 +219,7 @@ export default function ProfilePage() {
 
   const relevantTasks = isOwner
     ? tasks
-    : tasks.filter((t) => t.assignedTo === user.id);
+    : tasks.filter((t) => t.assignedTo.includes(user.id));
 
   const activeTasks = relevantTasks.filter((t) => t.status !== "done");
   const overdueTasks = activeTasks.filter(

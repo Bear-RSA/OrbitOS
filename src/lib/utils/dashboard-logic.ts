@@ -110,13 +110,13 @@ export function categorizeTasksByUrgency(tasks: Task[]): UrgencyBuckets {
  * Determines cognitive/operational load based on task metrics.
  */
 export function calculateMemberWorkload(member: Member, tasks: Task[]): MemberWorkload {
-  const myActiveTasks = tasks.filter(t => t.assignedTo === member.id && t.status !== "done");
+  const myActiveTasks = tasks.filter(t => t.assignedTo.includes(member.id) && t.status !== "done");
   const overdue = myActiveTasks.filter(t => t.dueDate && isBefore(t.dueDate.toDate(), new Date()));
   const blocked = myActiveTasks.filter(t => t.isBlocked);
   
   const weekStart = startOfWeek(new Date());
   const completedThisWeek = tasks.filter(t => 
-    t.assignedTo === member.id && 
+    t.assignedTo.includes(member.id) && 
     t.status === "done" && 
     t.completedAt && 
     isAfter(t.completedAt.toDate(), weekStart)

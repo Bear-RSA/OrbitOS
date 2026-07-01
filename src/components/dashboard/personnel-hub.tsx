@@ -31,7 +31,7 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
   // Process mapping purely from props for zero-latency reactivity
   const telemetry = members.map(member => {
     const memberId = member.id || (member as any).uid;
-    const assignedTasks = tasks.filter(t => t.assignedTo === memberId && t.status !== "done");
+    const assignedTasks = tasks.filter(t => t.assignedTo.includes(memberId) && t.status !== "done");
     const count = assignedTasks.length;
     let loadPercent = Math.round((count / MAX_SYSTEM_LOAD) * 100);
     if (loadPercent > 100) loadPercent = 100;

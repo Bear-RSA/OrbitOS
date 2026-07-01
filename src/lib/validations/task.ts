@@ -3,7 +3,7 @@ import { z } from "zod";
 export const createTaskSchema = z.object({
   title: z.string().min(1, "Task title is required").max(100, "Title too long"),
   description: z.string().max(500, "Description too long").optional().default(""),
-  assignedTo: z.string().nullable().optional(),
+  assignedTo: z.array(z.string()).max(2, "Maximum 2 operatives allowed").default([]),
   milestone: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
 });
@@ -15,7 +15,7 @@ export const updateTaskStatusSchema = z.object({
 
 export const updateTaskSchema = z.object({
   status: z.enum(["todo", "doing", "done"]).optional(),
-  assignedTo: z.string().nullable().optional(),
+  assignedTo: z.array(z.string()).max(2, "Maximum 2 operatives allowed").optional(),
   milestone: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
 });

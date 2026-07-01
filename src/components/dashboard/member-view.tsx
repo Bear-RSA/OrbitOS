@@ -18,7 +18,7 @@ interface MemberDashboardViewProps {
 }
 
 export function MemberDashboardView({ data, members, tasks, orgId, userId, onRefresh }: MemberDashboardViewProps) {
-  const myTasks = tasks.filter(t => t.assignedTo === userId);
+  const myTasks = tasks.filter(t => t.assignedTo.includes(userId));
 
   return (
     <div className="flex flex-col gap-12">

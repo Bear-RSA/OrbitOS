@@ -57,7 +57,7 @@ export async function removeMemberAction(
     await adminDb.runTransaction(async (tx) => {
       // Find all tasks assigned to this user in the project (or org if no project)
       let tasksQuery = adminDb.collection("tasks")
-        .where("assignedTo", "==", targetUserId);
+        .where("assignedTo", "array-contains", targetUserId);
       
       if (projectId) {
         tasksQuery = tasksQuery.where("projectId", "==", projectId);
@@ -77,7 +77,7 @@ export async function removeMemberAction(
 
       // 2. Unassign each task
       tasksSnap.forEach((taskDoc) => {
-        tx.update(taskDoc.ref, { assignedTo: null });
+        tx.update(taskDoc.ref, { assignedTo: FieldValue.arrayRemove(targetUserId) });
       });
     });
 
