@@ -317,7 +317,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
                     
                     <div className="flex items-center justify-between text-[9px] text-[#444444] z-10">
                        <span>
-                         [{ts ? format(ts, "HH:mm:ss") : "--:--:--"}]
+                         [{ts ? format(ts, "yyyy-MM-dd HH:mm:ss") : "0000-00-00 00:00:00"}]
                        </span>
                        <span className="uppercase tracking-widest group-hover:text-[#666666] transition-colors">
                          {event.actor?.name || "SYS"}
