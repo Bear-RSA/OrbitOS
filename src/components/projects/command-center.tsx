@@ -192,8 +192,12 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
     liveText = "Paused";
   }
 
-  // Reverse events so the newest appear at the top
-  const reversedEvents = [...displayEvents].reverse();
+  // Explicitly sort events so the newest timestamp is ALWAYS at index 0 (top)
+  const sortedEvents = [...displayEvents].sort((a, b) => {
+    const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    return tB - tA;
+  });
 
   return (
     <div className="animate-fade-in mt-24">
@@ -292,7 +296,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
                 <div key={i} className="h-4 bg-[#111111] rounded animate-pulse w-full" />
               ))}
             </div>
-          ) : reversedEvents.length === 0 ? (
+          ) : sortedEvents.length === 0 ? (
             <div className="py-20 flex flex-col items-center justify-center">
               <div className="w-12 h-12 bg-[#060606] rounded-2xl flex items-center justify-center ring-1 ring-[#1a1a1a] mb-5">
                 <Terminal className="w-5 h-5 text-[#222222]" />
@@ -303,7 +307,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
             </div>
           ) : (
             <div className="space-y-3 pt-2">
-              {reversedEvents.map((event) => {
+              {sortedEvents.map((event) => {
                 const config = EVENT_CONFIG[event.eventType] || EVENT_CONFIG.SYSTEM_BOOT;
                 const ts = event.timestamp ? new Date(event.timestamp) : null;
 
