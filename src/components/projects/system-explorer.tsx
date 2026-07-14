@@ -17,7 +17,7 @@ import {
   FileSpreadsheet,
   File,
 } from "lucide-react";
-import { deleteProjectFileAction } from "@/app/actions/files";
+import { deleteProjectFileAction, getSignedDownloadUrlAction } from "@/app/actions/files";
 import { ProjectFile } from "@/types/file";
 import { Member } from "@/types/member";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -82,6 +82,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [fileToDelete, setFileToDelete] = useState<ProjectFile | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -171,6 +172,36 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
     members.find((m) => m.id === userId)?.name || "System";
   const getMemberPhoto = (userId: string) =>
     members.find((m) => m.id === userId)?.photoURL;
+
+  /* ── Download handler ── */
+  const handleDownload = async (e: React.MouseEvent, file: ProjectFile) => {
+    e.stopPropagation();
+    if (downloadingId) return;
+
+    setDownloadingId(file.id);
+    try {
+      const mimeType = file.type.split("/")[0];
+      const resourceType = (mimeType === "image" || mimeType === "video") ? mimeType : "raw";
+
+      const result = await getSignedDownloadUrlAction({
+        projectId,
+        publicId: file.publicId,
+        resourceType,
+        uid,
+      });
+
+      if (!result.success || !result.url) {
+        console.error("[Download] Failed:", result.error);
+        return;
+      }
+
+      window.open(result.url, "_blank");
+    } catch (err) {
+      console.error("[Download] Error:", err);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   /* ── Delete handlers ── */
   const handleDelete = (e: React.MouseEvent, file: ProjectFile) => {
@@ -402,16 +433,23 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                       {/* Actions */}
                       <td className="py-5 px-6 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity duration-300">
-                          <a
-                            href={file.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center justify-center p-2 rounded-lg text-[#444444] hover:text-[#ededed] hover:bg-white/[0.05] transition-all duration-300"
+                          <button
+                            onClick={(e) => handleDownload(e, file)}
+                            disabled={downloadingId === file.id}
+                            className={cn(
+                              "inline-flex items-center justify-center p-2 rounded-lg transition-all duration-300",
+                              downloadingId === file.id
+                                ? "text-[#555555] cursor-not-allowed"
+                                : "text-[#444444] hover:text-[#ededed] hover:bg-white/[0.05]"
+                            )}
                             title="Download Asset"
                           >
-                            <Download className="w-3.5 h-3.5" />
-                          </a>
+                            {downloadingId === file.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Download className="w-3.5 h-3.5" />
+                            )}
+                          </button>
                           <button
                             onClick={(e) => handleDelete(e, file)}
                             disabled={deletingId === file.id}
@@ -492,16 +530,23 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
 
                     {/* Actions */}
                     <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[#444444] hover:text-[#ededed] hover:bg-white/[0.08] transition-all duration-300"
+                      <button
+                        onClick={(e) => handleDownload(e, file)}
+                        disabled={downloadingId === file.id}
+                        className={cn(
+                          "inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-300",
+                          downloadingId === file.id
+                            ? "text-[#555555] cursor-not-allowed"
+                            : "text-[#444444] hover:text-[#ededed] hover:bg-white/[0.08]"
+                        )}
                         title="Download"
                       >
-                        <Download className="w-3 h-3" />
-                      </a>
+                        {downloadingId === file.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Download className="w-3 h-3" />
+                        )}
+                      </button>
                       <button
                         onClick={(e) => handleDelete(e, file)}
                         disabled={deletingId === file.id}

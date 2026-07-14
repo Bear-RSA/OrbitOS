@@ -3,6 +3,68 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { cloudinary } from "@/lib/cloudinary";
 import { logActivity } from "@/lib/telemetry";
+import { verifyProjectAccess } from "@/lib/auth/permissions";
+
+/* ------------------------------------------------------------------ */
+/*  Signed Download URL                                                */
+/* ------------------------------------------------------------------ */
+
+interface SignedDownloadPayload {
+  projectId: string;
+  publicId: string;
+  resourceType: string; // "image" | "video" | "raw"
+  uid: string;
+}
+
+/**
+ * Generates a time-limited, signed Cloudinary download URL.
+ * Validates that the requesting user is an OWNER or MEMBER of the
+ * project's organization before producing the signature.
+ */
+export async function getSignedDownloadUrlAction(
+  payload: SignedDownloadPayload
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  const { projectId, publicId, resourceType, uid } = payload;
+
+  try {
+    // 1. Verify the user has access to this project (OWNER or MEMBER)
+    const { hasAccess, error } = await verifyProjectAccess(uid, projectId);
+    if (!hasAccess) {
+      console.error("[SignedDownload] Access denied:", { uid, projectId, error });
+      return { success: false, error: error || "Access denied." };
+    }
+
+    // 2. Determine the Cloudinary resource type
+    const resolvedType = (["image", "video", "raw"].includes(resourceType))
+      ? resourceType
+      : "raw";
+
+    // 3. Build signed URL options
+    //    Raw files do NOT support transformations (including fl_attachment),
+    //    so only add the attachment flag for image/video resources.
+    const urlOptions: Record<string, unknown> = {
+      type: "upload",
+      resource_type: resolvedType,
+      sign_url: true,
+      secure: true,
+    };
+
+    if (resolvedType === "image" || resolvedType === "video") {
+      urlOptions.flags = "attachment";
+    }
+
+    const signedUrl = cloudinary.url(publicId, urlOptions);
+
+    return { success: true, url: signedUrl };
+  } catch (err) {
+    console.error("[SignedDownload] Error generating signed URL:", err);
+    return { success: false, error: "Failed to generate download link." };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  File Management                                                    */
+/* ------------------------------------------------------------------ */
 
 interface DeleteFilePayload {
   projectId: string;
