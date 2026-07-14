@@ -39,9 +39,41 @@ export async function getSignedDownloadUrlAction(
       ? resourceType
       : "raw";
 
-    // 3. Build signed URL options
-    //    Raw files do NOT support transformations (including fl_attachment),
-    //    so only add the attachment flag for image/video resources.
+    // 3. Look up the stored secure_url from Firestore as the reliable fallback.
+    //    The file was uploaded with resource_type "auto" so Cloudinary may have
+    //    classified it differently than what we guess from the MIME type.
+    //    Querying Firestore for the original secure_url is the most reliable approach.
+    const filesSnap = await adminDb
+      .collection("projects")
+      .doc(projectId)
+      .collection("files")
+      .where("publicId", "==", publicId)
+      .limit(1)
+      .get();
+
+    if (!filesSnap.empty) {
+      const fileData = filesSnap.docs[0].data();
+      if (fileData.url) {
+        // The stored URL is the direct Cloudinary secure_url from the upload response.
+        // For images/videos, append fl_attachment to trigger a browser download.
+        // For raw files, the secure_url already triggers a download.
+        let downloadUrl = fileData.url as string;
+
+        if (resolvedType === "image" || resolvedType === "video") {
+          // Insert fl_attachment transformation before the version segment
+          // URL format: https://res.cloudinary.com/<cloud>/image/upload/v123/folder/file.ext
+          downloadUrl = downloadUrl.replace(
+            /\/upload\//,
+            "/upload/fl_attachment/"
+          );
+        }
+
+        return { success: true, url: downloadUrl };
+      }
+    }
+
+    // 4. Fallback: generate a signed URL if the Firestore record has no stored URL.
+    //    Use resource_type-appropriate options.
     const urlOptions: Record<string, unknown> = {
       type: "upload",
       resource_type: resolvedType,
