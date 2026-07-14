@@ -24,7 +24,7 @@ interface SignedDownloadPayload {
 export async function getSignedDownloadUrlAction(
   payload: SignedDownloadPayload
 ): Promise<{ success: boolean; url?: string; error?: string }> {
-  const { projectId, publicId, resourceType, uid } = payload;
+  const { projectId, publicId, uid } = payload;
 
   try {
     // 1. Verify the user has access to this project (OWNER or MEMBER)
@@ -34,15 +34,10 @@ export async function getSignedDownloadUrlAction(
       return { success: false, error: error || "Access denied." };
     }
 
-    // 2. Determine the Cloudinary resource type
-    const resolvedType = (["image", "video", "raw"].includes(resourceType))
-      ? resourceType
-      : "raw";
-
-    // 3. Look up the stored secure_url from Firestore as the reliable fallback.
-    //    The file was uploaded with resource_type "auto" so Cloudinary may have
-    //    classified it differently than what we guess from the MIME type.
-    //    Querying Firestore for the original secure_url is the most reliable approach.
+    // 2. Look up the stored secure_url from Firestore.
+    //    This is the canonical URL returned by Cloudinary at upload time
+    //    and contains the *actual* resource type (image/video/raw) that
+    //    Cloudinary assigned — not the guess from the browser MIME type.
     const filesSnap = await adminDb
       .collection("projects")
       .doc(projectId)
@@ -54,26 +49,34 @@ export async function getSignedDownloadUrlAction(
     if (!filesSnap.empty) {
       const fileData = filesSnap.docs[0].data();
       if (fileData.url) {
-        // The stored URL is the direct Cloudinary secure_url from the upload response.
-        // For images/videos, append fl_attachment to trigger a browser download.
-        // For raw files, the secure_url already triggers a download.
         let downloadUrl = fileData.url as string;
 
-        if (resolvedType === "image" || resolvedType === "video") {
-          // Insert fl_attachment transformation before the version segment
-          // URL format: https://res.cloudinary.com/<cloud>/image/upload/v123/folder/file.ext
+        // Detect the actual Cloudinary resource type from the stored URL.
+        // URL format: https://res.cloudinary.com/<cloud>/<resource_type>/upload/...
+        // e.g. PDFs uploaded with "auto" are classified as "image" by Cloudinary.
+        const urlResourceType = downloadUrl.match(
+          /res\.cloudinary\.com\/[^/]+\/(image|video|raw)\//
+        )?.[1];
+
+        if (urlResourceType === "image" || urlResourceType === "video") {
+          // Insert fl_attachment to force a download instead of in-browser preview.
+          // This works for all image/video resources, including PDFs stored as "image".
           downloadUrl = downloadUrl.replace(
             /\/upload\//,
             "/upload/fl_attachment/"
           );
         }
+        // For "raw" resources, the URL already triggers a download by default.
 
         return { success: true, url: downloadUrl };
       }
     }
 
-    // 4. Fallback: generate a signed URL if the Firestore record has no stored URL.
-    //    Use resource_type-appropriate options.
+    // 3. Fallback: generate a signed URL if the Firestore record has no stored URL.
+    const resolvedType = (["image", "video", "raw"].includes(payload.resourceType))
+      ? payload.resourceType
+      : "raw";
+
     const urlOptions: Record<string, unknown> = {
       type: "upload",
       resource_type: resolvedType,
@@ -93,6 +96,7 @@ export async function getSignedDownloadUrlAction(
     return { success: false, error: "Failed to generate download link." };
   }
 }
+
 
 /* ------------------------------------------------------------------ */
 /*  File Management                                                    */

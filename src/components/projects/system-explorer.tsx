@@ -195,7 +195,23 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
         return;
       }
 
-      window.open(result.url, "_blank");
+      // Use fetch + blob to force a true download instead of browser preview.
+      // window.open() would open PDFs/images in the browser's built-in viewer.
+      const response = await fetch(result.url);
+      if (!response.ok) throw new Error(`Download failed: ${response.status}`);
+      
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = file.name; // Preserve the original filename
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error("[Download] Error:", err);
     } finally {
