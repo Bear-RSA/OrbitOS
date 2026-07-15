@@ -51,16 +51,17 @@ export async function getSignedDownloadUrlAction(
       if (fileData.url) {
         let downloadUrl = fileData.url as string;
 
-        // Detect the actual Cloudinary resource type from the stored URL.
-        // URL format: https://res.cloudinary.com/<cloud>/<resource_type>/upload/...
-        // e.g. PDFs uploaded with "auto" are classified as "image" by Cloudinary.
+        // Use the stored resource_type (persisted at upload time) to
+        // determine the correct download strategy. Falls back to URL
+        // parsing if the field was written before this migration.
+        const storedResourceType = fileData.resource_type as string | undefined;
         const urlResourceType = downloadUrl.match(
           /res\.cloudinary\.com\/[^/]+\/(image|video|raw)\//
         )?.[1];
+        const effectiveType = storedResourceType || urlResourceType || "raw";
 
-        if (urlResourceType === "image" || urlResourceType === "video") {
+        if (effectiveType === "image" || effectiveType === "video") {
           // Insert fl_attachment to force a download instead of in-browser preview.
-          // This works for all image/video resources, including PDFs stored as "image".
           downloadUrl = downloadUrl.replace(
             /\/upload\//,
             "/upload/fl_attachment/"
@@ -131,6 +132,14 @@ export async function registerProjectFileAction(
     if (!userSnap.exists) return { success: false, error: "User not found" };
     const userData = userSnap.data()!;
 
+    // Derive Cloudinary resource_type from the browser MIME type so
+    // download URL generation can read it directly from Firestore.
+    const mimePrefix = type.split("/")[0];
+    const resource_type =
+      mimePrefix === "image" ? "image" :
+      mimePrefix === "video" ? "video" :
+      "raw";
+
     const fileRef = await adminDb
       .collection("projects")
       .doc(projectId)
@@ -141,6 +150,7 @@ export async function registerProjectFileAction(
         size,
         url,
         publicId,
+        resource_type,
         uploadedBy: uid,
         createdAt: new Date(),
       });

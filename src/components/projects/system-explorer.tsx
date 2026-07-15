@@ -319,7 +319,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
         ref={fileInputRef}
         onChange={handleUpload}
         className="hidden"
-        accept="image/*,video/*,application/pdf,.csv,.xlsx,.xls,.json,.js,.ts,.html,.css,.txt,.zip,.rar,.7z,.tar,.gz"
+        accept="*/*"
       />
 
       {/* ────────── CONTENT AREA ────────── */}

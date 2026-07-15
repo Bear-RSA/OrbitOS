@@ -40,15 +40,14 @@ export async function POST(req: NextRequest) {
       process.env.CLOUDINARY_API_SECRET!
     );
 
-    // Dynamically determine resource_type based on file extension or type
-    let resource_type = "auto";
-    if (name) {
-      const lowerName = name.toLowerCase();
-      if (/\.(zip|rar|7z|tar|gz)$/i.test(lowerName)) {
-        resource_type = "raw";
-      } else if (type?.startsWith("image/") || /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(lowerName)) {
+    // Determine resource_type: image/ and video/ MIME types use native
+    // Cloudinary types; everything else (PDFs, archives, docs, code,
+    // unknown extensions) is uploaded as "raw" to prevent rejection.
+    let resource_type = "raw";
+    if (type) {
+      if (type.startsWith("image/")) {
         resource_type = "image";
-      } else if (type?.startsWith("video/") || /\.(mp4|mov|webm|avi)$/i.test(lowerName)) {
+      } else if (type.startsWith("video/")) {
         resource_type = "video";
       }
     }
