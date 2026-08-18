@@ -19,7 +19,13 @@ export interface Task {
   assignedTo: string[];
   milestone?: string | null;
   createdBy: string;
+  /**
+   * Sort/range key only. The calendar day this represents is `dueDateKey`
+   * — deriving a day from this Timestamp shifts it by timezone.
+   */
   dueDate: Timestamp | null;
+  /** "YYYY-MM-DD". The authority on which day the task is due. */
+  dueDateKey?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   lastUpdatedAt: Timestamp;

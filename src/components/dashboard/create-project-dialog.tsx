@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { db } from "@/lib/firebase/client";
+import { createProjectAction } from "@/app/actions/projects";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { addDoc, collection, Timestamp } from "firebase/firestore";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -36,14 +35,18 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
     setLoading(true);
     setError(null);
     try {
-      await addDoc(collection(db, "projects"), {
+      const result = await createProjectAction({
         name: name.trim(),
         orgId,
-        ownerId: createdBy,
-        createdBy,
-        createdAt: Timestamp.now(),
+        uid: createdBy,
         ...(description.trim() && { description: description.trim() }),
       });
+
+      if (!result.success) {
+        setError(result.error || "Failed to initialize project");
+        return;
+      }
+
       setName("");
       setDescription("");
       onSuccess();
@@ -55,14 +58,15 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
     }
   };
 
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] p-10 bg-[#080808]/95 border-white/[0.04]">
+      <DialogContent className="sm:max-w-[480px] p-10 bg-surface-sunken/95 border-line/[0.04]">
         <DialogHeader className="text-left sm:text-left space-y-4">
-          <DialogTitle className="text-xl font-medium tracking-tight text-[#ededed]">
+          <DialogTitle className="text-xl font-medium tracking-tight text-ink">
             Initialize Project
           </DialogTitle>
-          <DialogDescription className="text-[13px] leading-relaxed text-[#666666] font-light max-w-[360px]">
+          <DialogDescription className="text-[13px] leading-relaxed text-ink-dim font-light max-w-[360px]">
             Define a new project designation to launch a workspace vector.
           </DialogDescription>
         </DialogHeader>
@@ -79,7 +83,7 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
             />
           </div>
           <div className="space-y-2.5">
-            <Label htmlFor="project-description">Description <span className="text-[#555555] font-normal">(optional)</span></Label>
+            <Label htmlFor="project-description">Description <span className="text-ink-dim font-normal">(optional)</span></Label>
             <textarea
               id="project-description"
               placeholder="Brief overview of the project scope..."
@@ -88,11 +92,11 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
               disabled={loading}
               maxLength={500}
               rows={3}
-              className="w-full bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-[13px] font-mono text-[#ededed] placeholder:text-[#333] transition-colors focus:outline-none focus:border-[#333] disabled:opacity-50 resize-none"
+              className="w-full bg-surface-sunken border border-line/[0.1] rounded-lg px-3 py-2.5 text-[13px] font-mono text-ink placeholder:text-ink-faint transition-colors focus:outline-none focus:border-line/[0.2] disabled:opacity-50 resize-none"
             />
-            <p className="text-[10px] font-mono text-[#333333] text-right">{description.length}/500</p>
+            <p className="text-[10px] font-mono text-ink-faint text-right">{description.length}/500</p>
           </div>
-          {error && <p className="text-[13px] text-[#E57A7A]">{error}</p>}
+          {error && <p className="text-[13px] text-orbit-red">{error}</p>}
           <DialogFooter className="flex-row justify-start sm:justify-start gap-4 mt-10">
             <Button 
               type="submit" 
@@ -108,7 +112,7 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
               variant="ghost"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="h-9 px-5 rounded-lg text-[12px] text-[#444444] hover:text-[#888888] hover:bg-transparent"
+              className="h-9 px-5 rounded-lg text-[12px] text-ink-faint hover:text-ink-muted hover:bg-transparent"
             >
               Cancel
             </Button>

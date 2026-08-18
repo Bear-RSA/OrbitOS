@@ -62,9 +62,9 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
   });
 
   return (
-    <div className="bg-[#000000]/40 backdrop-blur-sm border border-[#1a1a1a] rounded-xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.8)] ring-1 ring-white/5">
-       <div className="p-4 border-b border-white/[0.04] bg-transparent flex justify-between items-center">
-          <h2 className="text-[10px] font-mono text-[#555] uppercase tracking-[0.2em]">Personnel Network</h2>
+    <div className="bg-surface-card/40 backdrop-blur-sm border border-line/[0.06] rounded-xl overflow-hidden shadow-raised ring-1 ring-line/5">
+       <div className="p-4 border-b border-line/[0.04] bg-transparent flex justify-between items-center">
+          <h2 className="text-[10px] font-mono text-ink-dim uppercase tracking-[0.2em]">Personnel Network</h2>
           {selectedAssignee && (
             <button 
               onClick={() => onAssigneeSelect(null)} 
@@ -74,19 +74,19 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
             </button>
           )}
        </div>
-       <div className="flex flex-col divide-y divide-[#1a1a1a]">
+       <div className="flex flex-col divide-y divide-line/[0.06]">
          {telemetry.map((t) => {
            const isSelected = selectedAssignee === t.id;
            
            // Status mapping
-           let statusColor = "bg-[#444]";
-           if (t.operationalStatus === "available") statusColor = "bg-[#85C89B]";
-           if (t.operationalStatus === "focused") statusColor = "bg-[#ededed]";
+           let statusColor = "bg-ink-faint";
+           if (t.operationalStatus === "available") statusColor = "bg-orbit-green";
+           if (t.operationalStatus === "focused") statusColor = "bg-ink";
            if (t.operationalStatus === "offline") statusColor = "bg-orbit-red";
 
            // Role formatting
            const displayDescriptor = t.roleDescriptor || (t.role === "OWNER" ? "[OWNER]" : "[MEMBER]");
-           const roleColor = t.role === "OWNER" ? "text-orbit-red" : "text-[#888]";
+           const roleColor = t.role === "OWNER" ? "text-orbit-red" : "text-ink-muted";
 
            // Load bar
            const barLength = 10;
@@ -99,17 +99,17 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
                onClick={() => onAssigneeSelect(isSelected ? null : t.id)}
                className={cn(
                  "p-4 flex flex-col cursor-pointer group transition-all duration-300",
-                 isSelected ? "bg-white/[0.04] ring-inset ring-1 ring-white/10" : "hover:bg-white/[0.02]"
+                 isSelected ? "bg-surface-raised ring-inset ring-1 ring-line/10" : "hover:bg-surface-card"
                )}
              >
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       <UserAvatar name={t.name} photoURL={t.photoURL} size="sm" />
-                      <span className={cn("absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-[#000]", statusColor)} />
+                      <span className={cn("absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-scrim/60", statusColor)} />
                     </div>
                     <div className="flex flex-col">
-                       <span className="text-[13px] font-medium text-[#ededed] tracking-tight group-hover:text-white transition-colors">
+                       <span className="text-[13px] font-medium text-ink tracking-tight group-hover:text-ink-strong transition-colors">
                          {t.name}
                        </span>
                        <span className={cn("text-[9px] font-mono tracking-widest uppercase mt-0.5", roleColor)}>
@@ -120,9 +120,9 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
 
                   <div className="flex flex-col items-end gap-1">
                      <div className="flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.1em]">
-                        <span className="text-[#555]">{t.operationalStatus}</span>
-                        <span className="text-[#888]">{bar}</span>
-                        <span className={cn("tabular-nums", t.loadPercentage >= 80 ? "text-orbit-red" : "text-[#ccc]")}>
+                        <span className="text-ink-dim">{t.operationalStatus}</span>
+                        <span className="text-ink-muted">{bar}</span>
+                        <span className={cn("tabular-nums", t.loadPercentage >= 80 ? "text-orbit-red" : "text-ink-muted")}>
                           {t.directiveCount} NODES
                         </span>
                      </div>
@@ -132,19 +132,19 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
                 {/* Grid-row collapse: 0fr→1fr is the only pure-CSS way to animate intrinsic height */}
                 <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows,opacity] duration-300 opacity-0 group-hover:opacity-100">
                   <div className="overflow-hidden">
-                    <div className="mt-4 bg-[#000000] border border-[#1a1a1a] rounded-lg p-3 flex flex-col gap-1.5">
+                    <div className="mt-4 bg-surface-card border border-line/[0.06] rounded-lg p-3 flex flex-col gap-1.5">
                       {t.descriptor && (
-                        <span className="text-[10px] text-[#888] font-mono uppercase tracking-widest">
+                        <span className="text-[10px] text-ink-muted font-mono uppercase tracking-widest">
                           {t.descriptor}
                         </span>
                       )}
                       {t.bio && (
-                        <span className="text-[11px] text-[#ccc] font-mono leading-relaxed">
+                        <span className="text-[11px] text-ink-muted font-mono leading-relaxed">
                           {t.bio}
                         </span>
                       )}
                       {!t.descriptor && !t.bio && (
-                        <span className="text-[11px] text-[#555] font-mono italic">
+                        <span className="text-[11px] text-ink-dim font-mono italic">
                           No additional data available.
                         </span>
                       )}

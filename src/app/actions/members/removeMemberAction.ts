@@ -47,7 +47,7 @@ export async function removeMemberAction(
     }
     const targetData = targetSnap.data()!;
     
-    if (targetData.role === "OWNER" || targetData.role === "owner") {
+    if (targetData.role === "OWNER") {
       return { success: false, error: "Cannot remove an OWNER from the workspace." };
     }
 

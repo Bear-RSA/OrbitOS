@@ -18,7 +18,7 @@ interface LoaderProps {
  */
 export function Loader({
   size = 24,
-  color = "#555555",
+  color = "rgb(var(--ink-dim))",
   stroke = 2.5,
   speed = 1.5,
   className
@@ -47,7 +47,7 @@ export function Loader({
             cy="50"
             r="40"
             fill="none"
-            stroke={color}
+            style={{ stroke: color }}
             strokeWidth={stroke * 4}
             strokeDasharray="60 180"
             strokeLinecap="round"
@@ -59,18 +59,18 @@ export function Loader({
             cy="50"
             r="40"
             fill="none"
-            stroke={color}
             strokeWidth={stroke * 4}
             strokeDasharray="120 120"
             strokeLinecap="round"
             style={{
-              filter: "drop-shadow(0 0 2px rgba(255,255,255,0.05))"
+              stroke: color,
+              filter: "drop-shadow(0 0 2px rgb(var(--ink-strong) / 0.05))"
             }}
           />
         </svg>
         
         {/* Subsurface depth effect */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none rounded-full" />
+        <div className="absolute inset-0 bg-gradient-to-t from-depth/20 to-transparent pointer-events-none rounded-full" />
       </div>
     </div>
   );

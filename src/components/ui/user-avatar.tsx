@@ -36,12 +36,12 @@ export function UserAvatar({ photoURL, name, size = "md", className }: UserAvata
 
   return (
     <div className={cn(
-      "relative flex-shrink-0 group overflow-hidden bg-[#0A0A0A] p-[1px] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] ring-1 ring-white/[0.04]",
+      "relative flex-shrink-0 group overflow-hidden bg-surface-sunken p-[1px] shadow-card ring-1 ring-line/[0.04]",
       sizeMap[size],
       className
     )}>
       <div className={cn(
-        "w-full h-full bg-[#111111] flex items-center justify-center overflow-hidden relative",
+        "w-full h-full bg-surface-control flex items-center justify-center overflow-hidden relative",
         innerRadiusMap[size]
       )}>
         {photoURL ? (
@@ -52,7 +52,7 @@ export function UserAvatar({ photoURL, name, size = "md", className }: UserAvata
             className="object-cover transition-transform duration-500 group-hover:scale-110"
           />
         ) : (
-          <span className="font-light text-[#ededed] tracking-tight">
+          <span className="font-light text-ink tracking-tight">
             {initials}
           </span>
         )}

@@ -23,9 +23,9 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
       action: (
         <button 
           onClick={onCreateProject} 
-          className="gap-3 inline-flex items-center justify-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[2px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-xl px-10 h-12 text-[11px] font-mono uppercase tracking-[0.25em] focus:outline-none ring-0 group"
+          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
-          <Plus className="w-4 h-4 text-[#888888]" />
+          <Plus className="h-4 w-4 text-ink-muted transition-colors group-hover:text-ink" aria-hidden />
           Create Project
         </button>
       )
@@ -36,9 +36,9 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
       icon: SignalLow,
       action: (
         <button 
-          className="gap-3 inline-flex items-center justify-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[2px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-xl px-10 h-12 text-[11px] font-mono uppercase tracking-[0.25em] focus:outline-none ring-0 group"
+          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
-          <Plus className="w-4 h-4 text-[#888888]" />
+          <Plus className="h-4 w-4 text-ink-muted transition-colors group-hover:text-ink" aria-hidden />
           Add First Task
         </button>
       )
@@ -56,9 +56,9 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
       action: isOwner ? (
         <button 
           onClick={onInviteMember}
-          className="gap-3 inline-flex items-center justify-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[2px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-xl px-10 h-12 text-[11px] font-mono uppercase tracking-[0.25em] focus:outline-none ring-0 group"
+          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
-          <UserPlus className="w-4 h-4 text-[#888888]" />
+          <UserPlus className="h-4 w-4 text-ink-muted transition-colors group-hover:text-ink" aria-hidden />
           Invite Team
         </button>
       ) : null
@@ -69,29 +69,33 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
   const Icon = config.icon;
 
   return (
-    <div className="rounded-[24px] bg-[#0A0A0A] ring-1 ring-white/[0.04] p-12 md:p-20 relative overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] animate-in fade-in slide-in-from-bottom-2 duration-700">
-      <div className="absolute top-0 right-0 w-full h-[120%] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/[0.02] via-transparent to-transparent pointer-events-none"></div>
-      
+    <div className="animate-in fade-in slide-in-from-bottom-2 relative overflow-hidden rounded-3xl bg-surface-card p-8 shadow-card ring-1 ring-inset ring-line/[0.06] duration-700 sm:p-12 md:p-16">
+      <div className="pointer-events-none absolute right-0 top-0 h-[120%] w-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-line/[0.035] via-transparent to-transparent"></div>
+
       <div className="relative z-10 max-w-2xl">
-        <div className="w-12 h-12 rounded-xl bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_rgba(0,0,0,0.4)] flex items-center justify-center mb-10">
-          <Icon className="w-5 h-5 text-[#888888]" />
+        <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-xl bg-surface-control shadow-card ring-1 ring-inset ring-line/[0.08]">
+          <Icon className="h-5 w-5 text-ink-muted" aria-hidden />
         </div>
-        
-        <h2 className="text-[28px] font-light text-[#ededed] tracking-tight mb-4">
+
+        <h2 className="mb-3 text-2xl font-light tracking-tight text-ink sm:text-[28px]">
           {config.title}
         </h2>
-        
-        <p className="text-[15px] text-[#888888] font-light leading-relaxed mb-12 max-w-lg">
+
+        <p className="mb-8 max-w-lg text-[14px] font-light leading-relaxed text-ink-muted">
           {config.description}
         </p>
-        
-        {config.action}
-        {!isOwner && type !== "no_assigned_work" && (
-          <div className="inline-flex items-center gap-3 px-6 h-12 rounded-xl bg-[#111111] border border-white/[0.04]">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#ededed]/40 shadow-[0_0_8px_rgba(237,237,237,0.2)] animate-pulse" />
-            <span className="text-[13px] text-[#888888] font-medium tracking-wide">Your workspace is ready — waiting for assignments</span>
-          </div>
-        )}
+
+        {/* Wrapped so the CTA and the status pill can't collide — previously
+            they rendered as adjacent inline-flex boxes with no gap. */}
+        <div className="flex flex-wrap items-center gap-4">
+          {config.action}
+          {!isOwner && type !== "no_assigned_work" && (
+            <div className="inline-flex h-12 items-center gap-3 rounded-xl bg-surface-control px-5 ring-1 ring-inset ring-line/[0.07]">
+              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink/50 shadow-[0_0_8px_rgb(var(--ink)_/_0.2)]" aria-hidden />
+              <span className="text-[13px] font-medium tracking-wide text-ink-muted">Your workspace is ready — waiting for assignments</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

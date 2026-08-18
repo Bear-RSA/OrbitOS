@@ -4,6 +4,7 @@ import * as React from "react";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
 import { Loader } from "@/components/ui/loader";
+import { themeColor } from "@/lib/theme/colors";
 
 /* ------------------------------------------------------------------ */
 /*  Settings Primitives                                                */
@@ -53,7 +54,7 @@ export function SettingsList({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col divide-y divide-white/[0.05]", className)}>
+    <div className={cn("flex flex-col divide-y divide-line/[0.05]", className)}>
       {children}
     </div>
   );
@@ -116,20 +117,20 @@ export function ToggleRow({
         className={cn(
           "relative inline-flex h-6 w-11 shrink-0 items-center self-start rounded-full sm:self-auto",
           "ring-1 ring-inset transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050505]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base",
           "disabled:cursor-not-allowed disabled:opacity-45",
           checked
-            ? "bg-ink/90 ring-white/20"
-            : "bg-white/[0.06] ring-white/[0.08] hover:bg-white/[0.1]"
+            ? "bg-ink/90 ring-focus"
+            : "bg-surface-control ring-line/[0.08] hover:bg-surface-hover"
         )}
       >
         <span
           className={cn(
             "flex h-4 w-4 items-center justify-center rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-            checked ? "translate-x-6 bg-[#050505]" : "translate-x-1 bg-ink-muted"
+            checked ? "translate-x-6 bg-base" : "translate-x-1 bg-ink-muted"
           )}
         >
-          {busy && <Loader size={10} stroke={2} color={checked ? "#EDEDED" : "#050505"} />}
+          {busy && <Loader size={10} stroke={2} color={checked ? themeColor.ink : themeColor.onInk} />}
         </span>
       </button>
     </SettingsRow>
@@ -158,7 +159,7 @@ export function SegmentedRow<T extends string>({
       <div
         role="radiogroup"
         aria-label={title}
-        className="flex shrink-0 flex-wrap gap-1 rounded-xl bg-white/[0.035] p-1 ring-1 ring-inset ring-white/[0.06]"
+        className="flex shrink-0 flex-wrap gap-1 rounded-xl bg-surface-raised p-1 ring-1 ring-inset ring-line/[0.06]"
       >
         {options.map((option) => {
           const active = option.value === value;
@@ -174,10 +175,10 @@ export function SegmentedRow<T extends string>({
                 "inline-flex items-center gap-2 rounded-lg px-3 py-2",
                 "font-mono text-[10px] uppercase tracking-[0.14em]",
                 "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                 "disabled:cursor-not-allowed disabled:opacity-45",
                 active
-                  ? "bg-white/[0.1] text-ink ring-1 ring-inset ring-white/[0.1]"
+                  ? "bg-surface-hover text-ink ring-1 ring-inset ring-line/[0.1]"
                   : "text-ink-dim hover:text-ink-muted"
               )}
             >
@@ -240,9 +241,9 @@ export function FormNotice({
 
 /** The one input treatment used by every settings form field. */
 export const SETTINGS_FIELD_CLASS =
-  "w-full rounded-xl bg-white/[0.035] px-4 text-[14px] font-light text-ink ring-1 ring-inset ring-white/[0.06] " +
+  "w-full rounded-xl bg-surface-raised px-4 text-[14px] font-light text-ink ring-1 ring-inset ring-line/[0.06] " +
   "placeholder:text-ink-dim transition-[background-color,box-shadow] duration-300 " +
-  "hover:bg-white/[0.05] focus:bg-white/[0.05] focus:outline-none focus:ring-white/25 " +
+  "hover:bg-surface-control focus:bg-surface-control focus:outline-none focus:ring-focus " +
   "disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Confirm button — matches the profile page save affordance. */
@@ -273,11 +274,11 @@ export function SettingsButton({
       className={cn(
         "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl px-4",
         "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050505]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base",
         "disabled:cursor-not-allowed disabled:opacity-40",
-        variant === "default" && "bg-ink text-[#050505] hover:bg-white",
+        variant === "default" && "bg-ink text-on-ink hover:bg-ink-strong",
         variant === "quiet" &&
-          "bg-white/[0.06] text-ink ring-1 ring-inset ring-white/[0.08] hover:bg-white/[0.1]",
+          "bg-surface-control text-ink ring-1 ring-inset ring-line/[0.08] hover:bg-surface-hover",
         variant === "danger" &&
           "bg-orbit-red/[0.08] text-orbit-red ring-1 ring-inset ring-orbit-red/25 hover:bg-orbit-red/[0.16]",
         className
@@ -288,7 +289,7 @@ export function SettingsButton({
           <Loader
             size={14}
             stroke={2.5}
-            color={variant === "default" ? "#050505" : "#EDEDED"}
+            color={variant === "default" ? themeColor.onInk : themeColor.ink}
           />
         ) : (
           Icon && <Icon className="h-3.5 w-3.5" aria-hidden />

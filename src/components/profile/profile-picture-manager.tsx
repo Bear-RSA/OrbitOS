@@ -132,44 +132,51 @@ export function ProfilePictureManager({ user }: ProfilePictureManagerProps) {
     }
   };
 
+  const busy = isUploading || isDeleting;
+
   return (
-    <div className="flex flex-col items-center sm:items-start gap-6">
-      <div className="relative group">
+    <div className="flex flex-col items-center gap-4 sm:items-start">
+      <div className="group relative">
         <UserAvatar
           photoURL={user.photoURL}
           name={user.name}
           size="2xl"
           className={cn(
             "transition-all duration-500",
-            isUploading || isDeleting ? "opacity-50 blur-sm" : ""
+            busy ? "opacity-50 blur-sm" : "group-hover:ring-line/[0.1]"
           )}
         />
-        
-        {/* Upload Overlay */}
+
+        {/* Upload Overlay — also revealed on keyboard focus, since a
+            hover-only affordance is unreachable by keyboard and touch. */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading || isDeleting}
-          className="absolute inset-2 z-20 rounded-[20px] bg-[#050505]/60 opacity-0 group-hover:opacity-100 backdrop-blur-sm flex flex-col items-center justify-center gap-2 transition-all duration-300 disabled:cursor-not-allowed"
+          disabled={busy}
+          aria-label="Change profile picture"
+          className="absolute inset-2 z-20 flex flex-col items-center justify-center gap-2 rounded-[20px] bg-base/65 opacity-0 backdrop-blur-sm transition-opacity duration-300 focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100 disabled:cursor-not-allowed"
         >
-          <Camera className="w-6 h-6 text-[#ededed]" />
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#ededed]">Change</span>
+          <Camera className="h-5 w-5 text-ink" aria-hidden />
+          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-ink">
+            Change
+          </span>
         </button>
 
         {/* Loading Spinner */}
-        {(isUploading || isDeleting) && (
+        {busy && (
           <div className="absolute inset-0 z-30 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-[#ededed] animate-spin" />
+            <Loader2 className="h-7 w-7 animate-spin text-ink" aria-hidden />
           </div>
         )}
 
         {/* Delete Button */}
-        {user.photoURL && !isUploading && !isDeleting && (
+        {user.photoURL && !busy && (
           <button
             onClick={handleDelete}
-            className="absolute -top-2 -right-2 z-40 w-8 h-8 rounded-full bg-[#1A0A0A] border border-[#E57A7A]/20 flex items-center justify-center text-[#E57A7A] hover:bg-[#2A0A0A] transition-colors shadow-lg"
+            aria-label="Remove profile picture"
             title="Remove picture"
+            className="absolute -right-2 -top-2 z-40 flex h-7 w-7 items-center justify-center rounded-full bg-orbit-red/[0.08] text-orbit-red shadow-lg ring-1 ring-inset ring-orbit-red/25 transition-colors hover:bg-orbit-red/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orbit-red/50"
           >
-            <X className="w-4 h-4" />
+            <X className="h-3.5 w-3.5" aria-hidden />
           </button>
         )}
       </div>
@@ -182,10 +189,13 @@ export function ProfilePictureManager({ user }: ProfilePictureManagerProps) {
         accept="image/*"
       />
 
-      <div className="flex flex-col gap-1 text-center sm:text-left">
-        <p className="text-[12px] text-[#ededed] font-medium">Profile Image</p>
-
-      </div>
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        disabled={busy}
+        className="font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim transition-colors hover:text-ink focus-visible:outline-none focus-visible:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {isUploading ? "Uploading…" : isDeleting ? "Removing…" : "Profile Image"}
+      </button>
     </div>
   );
 }

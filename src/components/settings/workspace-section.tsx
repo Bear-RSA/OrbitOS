@@ -188,7 +188,7 @@ export function WorkspaceSection({ user }: { user: User }) {
             </p>
           </div>
 
-          <SettingsList className="border-t border-white/[0.05] pt-5">
+          <SettingsList className="border-t border-line/[0.05] pt-5">
             <ReadonlyRow
               title="Workspace ID"
               description="Quote this when reporting an issue."
@@ -265,7 +265,7 @@ export function WorkspaceSection({ user }: { user: User }) {
           record permanently. It is not self-service yet — email{" "}
           <a
             href="mailto:feedback@miraistack.co.za?subject=Workspace%20deletion%20request"
-            className="text-ink underline decoration-white/25 underline-offset-4 transition-colors hover:decoration-white/60"
+            className="text-ink underline decoration-line/25 underline-offset-4 transition-colors hover:decoration-line/60"
           >
             feedback@miraistack.co.za
           </a>{" "}

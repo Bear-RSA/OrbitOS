@@ -24,6 +24,7 @@ import {
   type SubscriptionTier,
   type OrgSubscription,
 } from "@/types/subscription";
+import { themeColor } from "@/lib/theme/colors";
 
 /* ------------------------------------------------------------------ */
 /*  Billing Panel — OWNER-only subscription management                 */
@@ -40,10 +41,10 @@ const TIER_ICONS: Record<SubscriptionTier, React.ElementType> = {
 };
 
 const TIER_ACCENTS: Record<SubscriptionTier, string> = {
-  exploration: "#666666",
-  foundational: "#A078FF",
-  studio_core: "#00D4AA",
-  total_visibility: "#FFB800",
+  exploration: themeColor.inkDim,
+  foundational: themeColor.violet,
+  studio_core: themeColor.teal,
+  total_visibility: themeColor.gold,
 };
 
 interface UsageData {
@@ -152,12 +153,12 @@ export function BillingPanel() {
       {/* Active Plan Card */}
       <ScrollReveal delay={100}>
         <div className="space-y-8">
-          <h3 className="text-[11px] font-mono uppercase tracking-widest text-[#444444]">
+          <h3 className="text-[11px] font-mono uppercase tracking-widest text-ink-faint">
             Active Subscription
           </h3>
 
           <div
-            className="relative overflow-hidden rounded-2xl bg-[#0A0A0A] ring-1 ring-white/[0.04] p-10"
+            className="relative overflow-hidden rounded-2xl bg-surface-sunken ring-1 ring-line/[0.04] p-10"
             style={{ borderTop: `1px solid ${tierAccent}20` }}
           >
             {/* Tier glow accent */}
@@ -180,13 +181,13 @@ export function BillingPanel() {
                   <TierIcon className="w-6 h-6" style={{ color: tierAccent }} />
                 </div>
                 <div>
-                  <h4 className="text-xl font-light text-[#ededed] tracking-tight">{tierDef.name}</h4>
-                  <p className="text-[12px] text-[#555555] font-mono mt-1">
+                  <h4 className="text-xl font-light text-ink tracking-tight">{tierDef.name}</h4>
+                  <p className="text-[12px] text-ink-dim font-mono mt-1">
                     {tierDef.priceZAR === 0 ? "FREE" : `R${tierDef.priceZAR}/mo`}
-                    <span className="text-[#333333] ml-3">•</span>
+                    <span className="text-ink-faint ml-3">•</span>
                     <span
                       className="ml-3 uppercase tracking-widest text-[10px]"
-                      style={{ color: subscription?.status === "active" ? "#00D4AA" : "#E57A7A" }}
+                      style={{ color: subscription?.status === "active" ? themeColor.teal : themeColor.red }}
                     >
                       {subscription?.status || "active"}
                     </span>
@@ -222,12 +223,12 @@ export function BillingPanel() {
       <ScrollReveal delay={200}>
         <div className="space-y-8">
           <div className="flex items-center justify-between">
-            <h3 className="text-[11px] font-mono uppercase tracking-widest text-[#444444]">
+            <h3 className="text-[11px] font-mono uppercase tracking-widest text-ink-faint">
               Available Plans
             </h3>
             <div className="flex items-center gap-2 opacity-50">
-              <Zap className="w-3.5 h-3.5 text-[#A078FF]" />
-              <span className="text-[10px] font-mono text-[#A078FF] uppercase tracking-widest">
+              <Zap className="w-3.5 h-3.5 text-orbit-violet" />
+              <span className="text-[10px] font-mono text-orbit-violet uppercase tracking-widest">
                 Upgrade Anytime
               </span>
             </div>
@@ -245,8 +246,8 @@ export function BillingPanel() {
                   className={cn(
                     "group relative rounded-2xl p-8 transition-all duration-300",
                     isActive
-                      ? "bg-[#0A0A0A] ring-1"
-                      : "bg-[#070707] ring-1 ring-white/[0.03] hover:ring-white/[0.06] hover:bg-[#0A0A0A]"
+                      ? "bg-surface-sunken ring-1"
+                      : "bg-surface-sunken ring-1 ring-line/[0.03] hover:ring-line/[0.06] hover:bg-surface-sunken"
                   )}
                   style={isActive ? { borderColor: `${accent}30`, boxShadow: `inset 0 1px 0 ${accent}10, 0 0 0 1px ${accent}20` } : {}}
                 >
@@ -274,10 +275,10 @@ export function BillingPanel() {
                       <Icon className="w-4 h-4" style={{ color: accent }} />
                     </div>
                     <div>
-                      <h4 className="text-[15px] font-light text-[#ededed] tracking-tight">
+                      <h4 className="text-[15px] font-light text-ink tracking-tight">
                         {def.name}
                       </h4>
-                      <p className="text-[11px] text-[#444444] mt-1 font-light">
+                      <p className="text-[11px] text-ink-faint mt-1 font-light">
                         {def.description}
                       </p>
                     </div>
@@ -291,25 +292,25 @@ export function BillingPanel() {
                   </div>
 
                   {/* Price + Action */}
-                  <div className="flex items-center justify-between pt-6 border-t border-white/[0.04]">
+                  <div className="flex items-center justify-between pt-6 border-t border-line/[0.04]">
                     <div>
-                      <span className="text-xl font-light text-[#ededed] tracking-tight">
+                      <span className="text-xl font-light text-ink tracking-tight">
                         {def.priceZAR === 0 ? "Free" : `R${def.priceZAR}`}
                       </span>
                       {def.priceZAR > 0 && (
-                        <span className="text-[10px] font-mono text-[#333333] ml-1.5">/mo</span>
+                        <span className="text-[10px] font-mono text-ink-faint ml-1.5">/mo</span>
                       )}
                     </div>
 
                     {isActive ? (
-                      <span className="text-[10px] font-mono text-[#333333] uppercase tracking-widest">
+                      <span className="text-[10px] font-mono text-ink-faint uppercase tracking-widest">
                         Current Plan
                       </span>
                     ) : def.id === "exploration" ? (
                       /* Free tier — route to auth */
                       <Link
                         href="/login"
-                        className="flex items-center gap-2 h-9 px-5 rounded-xl text-[11px] font-mono uppercase tracking-[0.15em] transition-all duration-300 bg-[#111111] hover:bg-[#1a1a1a] text-[#ededed] ring-1 ring-white/[0.04] hover:ring-white/[0.08]"
+                        className="flex items-center gap-2 h-9 px-5 rounded-xl text-[11px] font-mono uppercase tracking-[0.15em] transition-all duration-300 bg-surface-control hover:bg-surface-hover text-ink ring-1 ring-line/[0.04] hover:ring-line/[0.08]"
                       >
                         Get Started
                         <ArrowUpRight className="w-3 h-3 opacity-60" />
@@ -318,7 +319,7 @@ export function BillingPanel() {
                       /* Growth tier — route to contact sales */
                       <Link
                         href="/contact-sales"
-                        className="flex items-center gap-2 h-9 px-5 rounded-xl text-[11px] font-mono uppercase tracking-[0.15em] transition-all duration-300 bg-[#111111] hover:bg-[#1a1a1a] text-[#ededed] ring-1 ring-white/[0.04] hover:ring-white/[0.08]"
+                        className="flex items-center gap-2 h-9 px-5 rounded-xl text-[11px] font-mono uppercase tracking-[0.15em] transition-all duration-300 bg-surface-control hover:bg-surface-hover text-ink ring-1 ring-line/[0.04] hover:ring-line/[0.08]"
                       >
                         Contact Sales
                         <ArrowUpRight className="w-3 h-3 opacity-60" />
@@ -331,7 +332,7 @@ export function BillingPanel() {
                         ))}
                         <button
                           type="submit"
-                          className="flex items-center gap-2 h-9 px-5 rounded-xl text-[11px] font-mono uppercase tracking-[0.15em] transition-all duration-300 bg-[#111111] hover:bg-[#1a1a1a] text-[#ededed] ring-1 ring-white/[0.04] hover:ring-white/[0.08] cursor-pointer"
+                          className="flex items-center gap-2 h-9 px-5 rounded-xl text-[11px] font-mono uppercase tracking-[0.15em] transition-all duration-300 bg-surface-control hover:bg-surface-hover text-ink ring-1 ring-line/[0.04] hover:ring-line/[0.08] cursor-pointer"
                         >
                           Get Started
                           <ArrowUpRight className="w-3 h-3 opacity-60" />
@@ -348,9 +349,9 @@ export function BillingPanel() {
 
       {/* Payment notice */}
       <ScrollReveal delay={300}>
-        <div className="flex items-center gap-4 px-6 py-4 rounded-xl bg-[#0A0A0A] ring-1 ring-white/[0.03]">
-          <Shield className="w-4 h-4 text-[#333333] flex-shrink-0" />
-          <p className="text-[11px] font-mono text-[#333333] leading-relaxed">
+        <div className="flex items-center gap-4 px-6 py-4 rounded-xl bg-surface-sunken ring-1 ring-line/[0.03]">
+          <Shield className="w-4 h-4 text-ink-faint flex-shrink-0" />
+          <p className="text-[11px] font-mono text-ink-faint leading-relaxed">
             Payments are processed securely via Payfast. All subscriptions are billed monthly in ZAR.
             Downgrade to Exploration at any time.
           </p>
@@ -386,24 +387,24 @@ function UsageMeter({
   return (
     <div className="min-w-[120px]">
       <div className="flex items-center gap-2 mb-2.5">
-        <Icon className="w-3 h-3 text-[#444444]" />
-        <span className="text-[10px] font-mono uppercase tracking-widest text-[#555555]">{label}</span>
+        <Icon className="w-3 h-3 text-ink-faint" />
+        <span className="text-[10px] font-mono uppercase tracking-widest text-ink-dim">{label}</span>
       </div>
       <div className="flex items-baseline gap-1.5 mb-3">
-        <span className="text-lg font-light text-[#ededed] tracking-tight">
+        <span className="text-lg font-light text-ink tracking-tight">
           {loading ? "—" : current}
         </span>
-        <span className="text-[10px] font-mono text-[#333333]">
+        <span className="text-[10px] font-mono text-ink-faint">
           / {isUnlimited ? "∞" : limit}
         </span>
       </div>
       {/* Progress bar */}
-      <div className="h-1 w-full rounded-full bg-[#111111] overflow-hidden">
+      <div className="h-1 w-full rounded-full bg-surface-control overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-700 ease-out"
           style={{
             width: `${percentage}%`,
-            background: isNearLimit ? "#E57A7A" : accent,
+            background: isNearLimit ? themeColor.red : accent,
             opacity: loading ? 0.3 : 0.7,
           }}
         />
@@ -415,8 +416,8 @@ function UsageMeter({
 function LimitRow({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[11px] font-mono text-[#444444]">{label}</span>
-      <span className="text-[12px] font-mono text-[#888888]">
+      <span className="text-[11px] font-mono text-ink-faint">{label}</span>
+      <span className="text-[12px] font-mono text-ink-muted">
         {value === -1 ? "Unlimited" : value}
       </span>
     </div>

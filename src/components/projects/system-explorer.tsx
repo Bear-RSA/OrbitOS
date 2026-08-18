@@ -18,6 +18,7 @@ import {
   File,
 } from "lucide-react";
 import { deleteProjectFileAction, getSignedDownloadUrlAction } from "@/app/actions/files";
+import { SIGNAL } from "@/lib/utils/signal-colors";
 import { ProjectFile } from "@/types/file";
 import { Member } from "@/types/member";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -42,20 +43,20 @@ function getFileCategory(type: string): {
 } {
   const t = type.toLowerCase();
   if (t.includes("image") || /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(t))
-    return { label: "IMG", icon: ImageIcon, accent: "#ededed" };
+    return { label: "IMG", icon: ImageIcon, accent: SIGNAL.ink };
   if (t.includes("video") || /\.(mp4|mov|webm|avi)$/i.test(t))
-    return { label: "VID", icon: Film, accent: "#78B8FF" };
+    return { label: "VID", icon: Film, accent: SIGNAL.blue };
   if (t.includes("pdf"))
-    return { label: "PDF", icon: FileText, accent: "#FF8878" };
+    return { label: "PDF", icon: FileText, accent: SIGNAL.red };
   if (t.includes("zip") || t.includes("rar") || t.includes("tar") || t.includes("gz") || t.includes("7z"))
-    return { label: "ARC", icon: FileArchive, accent: "#FFD278" };
+    return { label: "ARC", icon: FileArchive, accent: SIGNAL.amber };
   if (t.includes("spreadsheet") || t.includes("csv") || t.includes("xlsx") || t.includes("xls"))
-    return { label: "XLS", icon: FileSpreadsheet, accent: "#85C89B" };
+    return { label: "XLS", icon: FileSpreadsheet, accent: SIGNAL.green };
   if (t.includes("json") || t.includes("javascript") || t.includes("typescript") || t.includes("html") || t.includes("css"))
-    return { label: "CODE", icon: FileCode, accent: "#78FFD2" };
+    return { label: "CODE", icon: FileCode, accent: SIGNAL.blue };
   // Fallback: extract extension from type
   const ext = t.includes("/") ? t.split("/")[1]?.toUpperCase()?.slice(0, 4) : t.toUpperCase().slice(0, 4);
-  return { label: ext || "DOC", icon: File, accent: "#888888" };
+  return { label: ext || "DOC", icon: File, accent: SIGNAL.muted };
 }
 
 function formatSize(bytes: number): string {
@@ -254,15 +255,15 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
       {/* ────────── HEADER ────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8 mb-8">
         <div>
-          <h2 className="text-[10px] font-mono uppercase tracking-[0.3em] text-[#444444] mb-3">
+          <h2 className="text-[10px] font-mono uppercase tracking-[0.3em] text-ink-dim mb-3">
             Asset Repository
           </h2>
           <div className="flex items-center gap-4">
-            <h3 className="text-2xl font-light text-[#ededed] tracking-tight">
+            <h3 className="text-2xl font-light text-ink tracking-tight">
               System Explorer
             </h3>
-            <span className="h-4 w-px bg-white/[0.06]" />
-            <span className="text-[12px] text-[#555555] font-mono tabular-nums">
+            <span className="h-4 w-px bg-surface-control" />
+            <span className="text-[12px] text-ink-dim font-mono tabular-nums">
               {loading ? "Scanning…" : `${files.length} Indices Found`}
             </span>
           </div>
@@ -271,14 +272,14 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
         {/* Controls */}
         <div className="flex items-center gap-3 shrink-0">
           {/* View toggle */}
-          <div className="flex items-center rounded-lg border border-[#1a1a1a] overflow-hidden">
+          <div className="flex items-center rounded-lg border border-line/[0.06] overflow-hidden">
             <button
               onClick={() => setViewMode("list")}
               className={cn(
                 "flex items-center justify-center w-9 h-9 transition-all duration-300",
                 viewMode === "list"
-                  ? "bg-[#111111] text-[#ededed]"
-                  : "bg-transparent text-[#444444] hover:text-[#888888]"
+                  ? "bg-surface-control text-ink"
+                  : "bg-transparent text-ink-dim hover:text-ink-muted"
               )}
               title="List View"
             >
@@ -289,8 +290,8 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
               className={cn(
                 "flex items-center justify-center w-9 h-9 transition-all duration-300",
                 viewMode === "grid"
-                  ? "bg-[#111111] text-[#ededed]"
-                  : "bg-transparent text-[#444444] hover:text-[#888888]"
+                  ? "bg-surface-control text-ink"
+                  : "bg-transparent text-ink-dim hover:text-ink-muted"
               )}
               title="Grid View"
             >
@@ -302,12 +303,12 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="flex items-center gap-2.5 px-5 h-10 rounded-lg bg-[#111111] hover:bg-[#161616] text-[#ededed] text-[12px] font-medium transition-all duration-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] border border-[#1a1a1a] disabled:opacity-50 group shrink-0"
+            className="flex items-center gap-2.5 px-5 h-10 rounded-lg bg-surface-control hover:bg-surface-control text-ink text-[12px] font-medium transition-all duration-300 shadow-card border border-line/[0.06] disabled:opacity-50 group shrink-0"
           >
             {isUploading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#666666]" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-ink-dim" />
             ) : (
-              <Plus className="w-3.5 h-3.5 text-[#666666] group-hover:text-[#aaa] transition-colors" />
+              <Plus className="w-3.5 h-3.5 text-ink-dim group-hover:text-ink-muted transition-colors" />
             )}
             Import Asset
           </button>
@@ -323,7 +324,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
       />
 
       {/* ────────── CONTENT AREA ────────── */}
-      <div className="rounded-2xl border border-[#1a1a1a] bg-[#000000] overflow-hidden">
+      <div className="rounded-2xl border border-line/[0.06] bg-surface-card overflow-hidden">
         {loading ? (
           <LoadingSkeleton viewMode={viewMode} />
         ) : files.length === 0 ? (
@@ -333,23 +334,23 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
-                <tr className="border-b border-[#1a1a1a]">
-                  <th className="py-4 px-6 text-[9px] font-mono uppercase tracking-[0.25em] text-[#444444] w-[35%]">
+                <tr className="border-b border-line/[0.06]">
+                  <th className="py-4 px-6 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[35%]">
                     File Identifier
                   </th>
-                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-[#444444] w-[10%]">
+                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[10%]">
                     Class
                   </th>
-                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-[#444444] w-[12%]">
+                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[12%]">
                     Weight
                   </th>
-                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-[#444444] w-[18%]">
+                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[18%]">
                     Uploader
                   </th>
-                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-[#444444] w-[15%]">
+                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[15%]">
                     Timestamp
                   </th>
-                  <th className="py-4 px-6 text-[9px] font-mono uppercase tracking-[0.25em] text-[#444444] w-[10%] text-right">
+                  <th className="py-4 px-6 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[10%] text-right">
                     Actions
                   </th>
                 </tr>
@@ -365,10 +366,10 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                       key={file.id}
                       onClick={() => setSelectedId(isSelected ? null : file.id)}
                       className={cn(
-                        "group/row cursor-pointer transition-all duration-300 border-b border-[#0d0d0d] last:border-b-0",
+                        "group/row cursor-pointer transition-all duration-300 border-b border-line/[0.05] last:border-b-0",
                         isSelected
-                          ? "bg-white/[0.03]"
-                          : "hover:bg-white/[0.015]"
+                          ? "bg-surface-card"
+                          : "hover:bg-surface-sunken"
                       )}
                       style={{ animationDelay: `${index * 40}ms` }}
                     >
@@ -376,7 +377,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                       <td className="py-5 px-6">
                         <div className="flex items-center gap-4">
                           <div
-                            className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-500 group-hover/row:scale-105 border border-[#1a1a1a]"
+                            className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-500 group-hover/row:scale-105 border border-line/[0.06]"
                             style={{ backgroundColor: `${cat.accent}08` }}
                           >
                             <Icon
@@ -385,7 +386,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                             />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[13px] font-mono text-[#ededed] truncate group-hover/row:text-white transition-colors duration-300">
+                            <p className="text-[13px] font-mono text-ink truncate group-hover/row:text-ink-strong transition-colors duration-300">
                               {file.name}
                             </p>
                           </div>
@@ -408,7 +409,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
 
                       {/* Weight */}
                       <td className="py-5 px-4">
-                        <span className="text-[11px] font-mono text-[#555555] tabular-nums group-hover/row:text-[#888888] transition-colors">
+                        <span className="text-[11px] font-mono text-ink-dim tabular-nums group-hover/row:text-ink-muted transition-colors">
                           {formatSize(file.size)}
                         </span>
                       </td>
@@ -421,7 +422,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                             photoURL={getMemberPhoto(file.uploadedBy)}
                             size="sm"
                           />
-                          <span className="text-[12px] text-[#666666] group-hover/row:text-[#aaaaaa] transition-colors">
+                          <span className="text-[12px] text-ink-dim group-hover/row:text-ink-muted transition-colors">
                             {getMemberName(file.uploadedBy)}
                           </span>
                         </div>
@@ -430,10 +431,10 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                       {/* Timestamp */}
                       <td className="py-5 px-4">
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[11px] font-mono text-[#555555] group-hover/row:text-[#888888] transition-colors tabular-nums">
+                          <span className="text-[11px] font-mono text-ink-dim group-hover/row:text-ink-muted transition-colors tabular-nums">
                             {format(file.createdAt?.toDate() || new Date(), "dd MMM yyyy")}
                           </span>
-                          <span className="text-[9px] font-mono text-[#333333] uppercase tabular-nums">
+                          <span className="text-[9px] font-mono text-ink-dim uppercase tabular-nums">
                             {format(file.createdAt?.toDate() || new Date(), "HH:mm")}
                           </span>
                         </div>
@@ -448,8 +449,8 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                             className={cn(
                               "inline-flex items-center justify-center p-2 rounded-lg transition-all duration-300",
                               downloadingId === file.id
-                                ? "text-[#555555] cursor-not-allowed"
-                                : "text-[#444444] hover:text-[#ededed] hover:bg-white/[0.05]"
+                                ? "text-ink-dim cursor-not-allowed"
+                                : "text-ink-dim hover:text-ink hover:bg-surface-control"
                             )}
                             title="Download Asset"
                           >
@@ -465,8 +466,8 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                             className={cn(
                               "inline-flex items-center justify-center p-2 rounded-lg transition-all duration-300",
                               deletingId === file.id
-                                ? "text-[#555555] cursor-not-allowed"
-                                : "text-[#444444] hover:text-[#E57A7A] hover:bg-[#E57A7A]/[0.08]"
+                                ? "text-ink-dim cursor-not-allowed"
+                                : "text-ink-dim hover:text-orbit-red hover:bg-orbit-red/[0.08]"
                             )}
                             title="Delete Asset"
                           >
@@ -486,7 +487,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
           </div>
         ) : (
           /* ── GRID VIEW ── */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-px bg-[#1a1a1a]">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-px bg-surface-hover">
             {files.map((file, index) => {
               const cat = getFileCategory(file.type);
               const Icon = cat.icon;
@@ -497,16 +498,16 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                   key={file.id}
                   onClick={() => setSelectedId(isSelected ? null : file.id)}
                   className={cn(
-                    "group/card relative bg-[#000000] p-6 cursor-pointer transition-all duration-500 flex flex-col items-center text-center",
+                    "group/card relative bg-surface-card p-6 cursor-pointer transition-all duration-500 flex flex-col items-center text-center",
                     isSelected
-                      ? "bg-white/[0.03]"
-                      : "hover:bg-white/[0.015]"
+                      ? "bg-surface-card"
+                      : "hover:bg-surface-sunken"
                   )}
                   style={{ animationDelay: `${index * 60}ms` }}
                 >
                   {/* Icon */}
                   <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-all duration-500 group-hover/card:scale-110 border border-[#1a1a1a]"
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-all duration-500 group-hover/card:scale-110 border border-line/[0.06]"
                     style={{ backgroundColor: `${cat.accent}06` }}
                   >
                     <Icon
@@ -516,7 +517,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                   </div>
 
                   {/* Name */}
-                  <p className="text-[12px] font-mono text-[#ededed] truncate w-full mb-1.5 group-hover/card:text-white transition-colors">
+                  <p className="text-[12px] font-mono text-ink truncate w-full mb-1.5 group-hover/card:text-ink-strong transition-colors">
                     {file.name}
                   </p>
 
@@ -532,7 +533,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                     >
                       {cat.label}
                     </span>
-                    <span className="text-[10px] font-mono text-[#444444] tabular-nums">
+                    <span className="text-[10px] font-mono text-ink-dim tabular-nums">
                       {formatSize(file.size)}
                     </span>
                   </div>
@@ -545,8 +546,8 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                         className={cn(
                           "inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-300",
                           downloadingId === file.id
-                            ? "text-[#555555] cursor-not-allowed"
-                            : "text-[#444444] hover:text-[#ededed] hover:bg-white/[0.08]"
+                            ? "text-ink-dim cursor-not-allowed"
+                            : "text-ink-dim hover:text-ink hover:bg-surface-hover"
                         )}
                         title="Download"
                       >
@@ -562,8 +563,8 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                         className={cn(
                           "inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-300",
                           deletingId === file.id
-                            ? "text-[#555555] cursor-not-allowed"
-                            : "text-[#444444] hover:text-[#E57A7A] hover:bg-[#E57A7A]/[0.08]"
+                            ? "text-ink-dim cursor-not-allowed"
+                            : "text-ink-dim hover:text-orbit-red hover:bg-orbit-red/[0.08]"
                         )}
                         title="Delete"
                       >
@@ -589,29 +590,29 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
         )}
 
         {/* ────────── TELEMETRY FOOTER ────────── */}
-        <div className="border-t border-[#1a1a1a] px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="border-t border-line/[0.06] px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#85C89B] opacity-40" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#85C89B]" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orbit-green opacity-40" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-orbit-green" />
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-[#555555]">
-                Status: <span className="text-[#85C89B]">Operational</span>
+              <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-ink-dim">
+                Status: <span className="text-orbit-green">Operational</span>
               </span>
             </div>
-            <span className="h-3 w-px bg-[#1a1a1a]" />
-            <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-[#333333]">
+            <span className="h-3 w-px bg-surface-hover" />
+            <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-ink-dim">
               System Telemetry
             </span>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-[10px] font-mono text-[#444444] tabular-nums">
+            <span className="text-[10px] font-mono text-ink-dim tabular-nums">
               {files.length} Active Node{files.length !== 1 ? "s" : ""}
             </span>
-            <span className="h-3 w-px bg-[#1a1a1a]" />
-            <span className="text-[10px] font-mono text-[#444444] tabular-nums">
+            <span className="h-3 w-px bg-surface-hover" />
+            <span className="text-[10px] font-mono text-ink-dim tabular-nums">
               {formatSize(totalStorage)} Total Storage
             </span>
           </div>
@@ -643,12 +644,12 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
 function LoadingSkeleton({ viewMode }: { viewMode: ViewMode }) {
   if (viewMode === "grid") {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-px bg-[#1a1a1a]">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-px bg-surface-hover">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="bg-[#000000] p-6 flex flex-col items-center animate-pulse">
-            <div className="w-14 h-14 rounded-2xl bg-white/[0.03] mb-5" />
-            <div className="h-3 w-20 bg-white/[0.03] rounded mb-2" />
-            <div className="h-2.5 w-14 bg-white/[0.02] rounded" />
+          <div key={i} className="bg-surface-card p-6 flex flex-col items-center animate-pulse">
+            <div className="w-14 h-14 rounded-2xl bg-surface-card mb-5" />
+            <div className="h-3 w-20 bg-surface-card rounded mb-2" />
+            <div className="h-2.5 w-14 bg-surface-card rounded" />
           </div>
         ))}
       </div>
@@ -656,16 +657,16 @@ function LoadingSkeleton({ viewMode }: { viewMode: ViewMode }) {
   }
 
   return (
-    <div className="divide-y divide-[#0d0d0d]">
+    <div className="divide-y divide-line/[0.05]">
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="flex items-center gap-4 px-6 py-5 animate-pulse">
-          <div className="w-9 h-9 rounded-lg bg-white/[0.03]" />
+          <div className="w-9 h-9 rounded-lg bg-surface-card" />
           <div className="flex-1 space-y-2">
-            <div className="h-3.5 w-48 bg-white/[0.03] rounded" />
-            <div className="h-2.5 w-24 bg-white/[0.02] rounded" />
+            <div className="h-3.5 w-48 bg-surface-card rounded" />
+            <div className="h-2.5 w-24 bg-surface-card rounded" />
           </div>
-          <div className="h-3 w-12 bg-white/[0.02] rounded" />
-          <div className="h-3 w-16 bg-white/[0.02] rounded" />
+          <div className="h-3 w-12 bg-surface-card rounded" />
+          <div className="h-3 w-16 bg-surface-card rounded" />
         </div>
       ))}
     </div>
@@ -675,13 +676,13 @@ function LoadingSkeleton({ viewMode }: { viewMode: ViewMode }) {
 function EmptyState() {
   return (
     <div className="py-24 flex flex-col items-center justify-center">
-      <div className="w-14 h-14 bg-[#060606] rounded-2xl flex items-center justify-center ring-1 ring-[#1a1a1a] mb-6">
-        <HardDrive className="w-6 h-6 text-[#222222]" />
+      <div className="w-14 h-14 bg-surface-card rounded-2xl flex items-center justify-center ring-1 ring-line/[0.06] mb-6">
+        <HardDrive className="w-6 h-6 text-ink-faint" />
       </div>
-      <p className="text-[13px] font-mono text-[#ededed] mb-1.5">
+      <p className="text-[13px] font-mono text-ink mb-1.5">
         No indexed nodes.
       </p>
-      <p className="text-[12px] font-mono text-[#444444] max-w-xs text-center leading-relaxed">
+      <p className="text-[12px] font-mono text-ink-dim max-w-xs text-center leading-relaxed">
         Assets imported into this project thread will surface here as searchable system nodes.
       </p>
     </div>

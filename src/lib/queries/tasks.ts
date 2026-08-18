@@ -18,16 +18,6 @@ import { Task, TaskStatus } from "@/types/task";
 
 const TASKS_COLLECTION = "tasks";
 
-/**
- * Normalizes the assignedTo field from Firestore.
- * Handles legacy string | null values by converting them to string[].
- */
-function normalizeAssignedTo(val: unknown): string[] {
-  if (Array.isArray(val)) return val.filter((v): v is string => typeof v === "string");
-  if (typeof val === "string" && val.length > 0) return [val];
-  return [];
-}
-
 export function subscribeToTasksByProject(
   projectId: string,
   orgId: string,
@@ -46,7 +36,6 @@ export function subscribeToTasksByProject(
       return {
         id: doc.id,
         ...data,
-        assignedTo: normalizeAssignedTo(data.assignedTo),
       };
     }) as Task[];
     
@@ -113,7 +102,6 @@ export async function getTasksByOrg(orgId: string): Promise<Task[]> {
     return {
       id: doc.id,
       ...data,
-      assignedTo: normalizeAssignedTo(data.assignedTo),
     } as Task;
   });
   

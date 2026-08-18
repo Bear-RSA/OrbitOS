@@ -52,8 +52,8 @@ export function SystemRoadmap({ projectId, tasks }: SystemRoadmapProps) {
 
   if (loading) {
     return (
-      <div className="h-48 flex items-center justify-center bg-[#000000]/40 backdrop-blur-sm border border-[#1a1a1a] rounded-xl mb-12 ring-1 ring-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
-        <Loader2 className="w-5 h-5 text-[#666] animate-spin" />
+      <div className="h-48 flex items-center justify-center bg-surface-card/40 backdrop-blur-sm border border-line/[0.06] rounded-xl mb-12 ring-1 ring-line/5 shadow-raised">
+        <Loader2 className="w-5 h-5 text-ink-dim animate-spin" />
       </div>
     );
   }
@@ -68,26 +68,26 @@ export function SystemRoadmap({ projectId, tasks }: SystemRoadmapProps) {
      const target = document.getElementById(`task-${taskId}`);
      if (target) {
        target.scrollIntoView({ behavior: "smooth", block: "center" });
-       target.classList.add("ring-1", "ring-white/30", "transition-all", "duration-500");
-       setTimeout(() => target.classList.remove("ring-1", "ring-white/30"), 1500);
+       target.classList.add("ring-1", "ring-focus", "transition-all", "duration-500");
+       setTimeout(() => target.classList.remove("ring-1", "ring-focus"), 1500);
      }
   };
 
   return (
-    <div className="bg-[#000000]/40 backdrop-blur-sm border border-[#1a1a1a] rounded-xl overflow-hidden mb-12 flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.8)] ring-1 ring-white/5 animate-fade-in group/roadmap">
-      <div className="p-4 border-b border-white/[0.04] bg-transparent flex items-center justify-between">
-         <h2 className="text-[10px] font-mono text-[#555] uppercase tracking-[0.2em] select-none">
+    <div className="bg-surface-card/40 backdrop-blur-sm border border-line/[0.06] rounded-xl overflow-hidden mb-12 flex flex-col shadow-raised ring-1 ring-line/5 animate-fade-in group/roadmap">
+      <div className="p-4 border-b border-line/[0.04] bg-transparent flex items-center justify-between">
+         <h2 className="text-[10px] font-mono text-ink-dim uppercase tracking-[0.2em] select-none">
            Strategy Viewer // Deployment Roadmap
          </h2>
          <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-orbit-red animate-pulse" />
-            <span className="text-[8px] font-mono text-[#444] uppercase tracking-widest">Live Horizon</span>
+            <span className="text-[8px] font-mono text-ink-dim uppercase tracking-widest">Live Horizon</span>
          </div>
       </div>
 
       <div className="relative group/scroll-mask">
-        <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#050505]/60 to-transparent z-30 pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#050505]/60 to-transparent z-30 pointer-events-none" />
+        <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-background/60 to-transparent z-30 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background/60 to-transparent z-30 pointer-events-none" />
 
         <div 
           ref={containerRef}
@@ -117,8 +117,8 @@ export function SystemRoadmap({ projectId, tasks }: SystemRoadmapProps) {
             {months.map(month => {
               const startX = ((month.getTime() - minDateMs) / (24 * 60 * 60 * 1000)) * pxPerDay;
               return (
-                <div key={month.getTime()} className="absolute top-0 bottom-0 border-l border-white/[0.05] pointer-events-none" style={{ left: `${startX}px` }}>
-                   <span className="absolute top-2 left-2 text-[9px] font-mono text-[#444] uppercase tracking-widest">{format(month, 'MMM yyyy')}</span>
+                <div key={month.getTime()} className="absolute top-0 bottom-0 border-l border-line/[0.05] pointer-events-none" style={{ left: `${startX}px` }}>
+                   <span className="absolute top-2 left-2 text-[9px] font-mono text-ink-dim uppercase tracking-widest">{format(month, 'MMM yyyy')}</span>
                 </div>
               );
             })}
@@ -138,21 +138,21 @@ export function SystemRoadmap({ projectId, tasks }: SystemRoadmapProps) {
                 const isExecuted = item.isExecuted;
                 const isOverdue = item.horizonDateMs < Date.now() && !isExecuted;
 
-                let barColor = "bg-[#111111] border-[#1a1a1a]";
-                if (isExecuted) barColor = "bg-[#85C89B]/10 border-[#85C89B]/30";
+                let barColor = "bg-surface-control border-line/[0.06]";
+                if (isExecuted) barColor = "bg-orbit-green/10 border-orbit-green/30";
                 else if (isOverdue) barColor = "bg-orbit-red/5 border-orbit-red/30";
-                else if (item.status === "doing") barColor = "bg-white/5 border-white/10";
+                else if (item.status === "doing") barColor = "bg-surface-control border-line/10";
 
                 return (
                   <div key={item.id} className="relative h-8 w-full group flex items-center shrink-0">
                     <div 
                        onClick={() => handleTaskClick(item.id)}
-                       className={cn("absolute h-6 rounded-[4px] border cursor-pointer flex items-center px-2 group-hover:ring-1 group-hover:ring-white/10 transition-all z-20", barColor)}
+                       className={cn("absolute h-6 rounded-[4px] border cursor-pointer flex items-center px-2 group-hover:ring-1 group-hover:ring-line/10 transition-all z-20", barColor)}
                        style={{ left: `${startX}px`, width: `${width}px` }}
                     >
                       <span className={cn(
                         "text-[9px] font-mono truncate relative z-10 font-medium tracking-tight whitespace-nowrap", 
-                        isExecuted ? "text-[#85C89B]" : isOverdue ? "text-orbit-red" : "text-[#888] group-hover:text-[#ededed]"
+                        isExecuted ? "text-orbit-green" : isOverdue ? "text-orbit-red" : "text-ink-muted group-hover:text-ink"
                       )}>
                         <span className="opacity-50 mr-1.5">#{item.shortId}</span>
                         {item.title}

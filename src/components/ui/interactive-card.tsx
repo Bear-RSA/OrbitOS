@@ -57,7 +57,7 @@ export function InteractiveCard({
       className={cn(
         "focus-item group relative overflow-hidden rounded-[32px] bg-surface-lowest transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform intent-hover surface-warm",
         !isTracking && "transition-all duration-700", // Smooth reset
-        "hover:bg-surface-low hover:shadow-[0_24px_80px_rgba(0,0,0,0.5)] hover:scale-[1.005]",
+        "hover:bg-surface-low hover:shadow-[0_24px_80px_rgb(var(--scrim)_/_0.5)] hover:scale-[1.005]",
         className
       )}
       style={{
@@ -68,12 +68,12 @@ export function InteractiveCard({
       <div
         className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"
         style={{
-          background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.03), transparent 70%)`,
+          background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgb(var(--sheen) / calc(0.03 * var(--sheen-a))), transparent 70%)`,
         }}
       />
 
       {/* Surface Depth Shimmer (Tone vs Glow) */}
-      <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 bg-gradient-to-tr from-white/[0.01] to-transparent" />
+      <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 bg-gradient-to-tr from-sheen/[0.01] to-transparent" />
 
       {/* Content Overlay with Temporal Staggering (Sequence: container -> content) */}
       <div className="relative z-10 transition-opacity duration-500 group-hover:opacity-100 stagger-1">

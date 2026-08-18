@@ -119,11 +119,11 @@ export function TasksTable({
       // Background telemetry
       const actorName = getMemberName(currentUserId);
       recordTelemetryAction({
-        eventType: "DIRECTIVE_TRANSITION",
+        eventType: currentBlocked ? "DIRECTIVE_UNBLOCKED" : "DIRECTIVE_BLOCKED",
         orgId,
         projectId,
         actor: { uid: currentUserId, name: actorName },
-        metadata: { taskTitle, from: currentBlocked ? "Blocked" : "Clear", to: !currentBlocked ? "Blocked" : "Clear" }
+        metadata: { taskTitle }
       }).catch(err => console.error("[Telemetry Error]:", err));
     } catch (err) {
       console.error("Failed to toggle blocked state:", err);
@@ -201,20 +201,20 @@ export function TasksTable({
     <div className="animate-fade-in py-6 bg-transparent">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-8">
         <div>
-          <h2 className="text-[10px] font-mono uppercase tracking-[0.3em] text-[#444444] mb-3">
+          <h2 className="text-[10px] font-mono uppercase tracking-[0.3em] text-ink-dim mb-3">
             Operational Log
           </h2>
           <div className="flex items-center gap-4">
-            <h3 className="text-2xl font-light text-[#ededed] tracking-tight">Master Objective List</h3>
-            <span className="h-4 w-px bg-white/[0.06]" />
-            <span className="text-[12px] text-[#555555] font-mono tabular-nums">
+            <h3 className="text-2xl font-light text-ink tracking-tight">Master Objective List</h3>
+            <span className="h-4 w-px bg-surface-control" />
+            <span className="text-[12px] text-ink-dim font-mono tabular-nums">
               {tasks.length} Nodes Registered 
               {selectedAssignee && ` [FILTERED: ${getMemberName(selectedAssignee)}]`}
             </span>
             {selectedAssignee && (
               <button
                 onClick={onClearFilter}
-                className="text-[10px] font-mono uppercase tracking-widest text-orbit-amber hover:text-white transition-colors ml-2"
+                className="text-[10px] font-mono uppercase tracking-widest text-orbit-amber hover:text-ink-strong transition-colors ml-2"
               >
                 [Clear Signal]
               </button>
@@ -226,9 +226,9 @@ export function TasksTable({
             onClick={() => { setCreateOpen(true); }}
             disabled={!projectId}
             title={!projectId ? "Create a project first" : "Create Task"}
-            className="flex items-center justify-center gap-2.5 bg-[#111111] hover:bg-[#161616] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_rgba(0,0,0,0.3)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[1px] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_rgba(0,0,0,0.4)] border-0 rounded-lg px-5 h-9 text-[12px] font-medium focus:outline-none ring-0 disabled:opacity-50 disabled:cursor-not-allowed group"
+            className="flex items-center justify-center gap-2.5 bg-surface-control hover:bg-surface-control text-ink shadow-[inset_0_1px_0_rgb(var(--ink-strong)_/_0.06),0_2px_8px_rgb(var(--scrim)_/_0.3)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[1px] hover:shadow-[inset_0_1px_0_rgb(var(--ink-strong)_/_0.08),0_4px_16px_rgb(var(--scrim)_/_0.4)] border-0 rounded-lg px-5 h-9 text-[12px] font-medium focus:outline-none ring-0 disabled:opacity-50 disabled:cursor-not-allowed group"
           >
-            <Plus className="w-3.5 h-3.5 text-[#666666] group-hover:text-[#aaa] transition-colors duration-300" />
+            <Plus className="w-3.5 h-3.5 text-ink-dim group-hover:text-ink-muted transition-colors duration-300" />
             Insert Directive
           </button>
         </div>
@@ -237,11 +237,11 @@ export function TasksTable({
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
-            <tr className="border-b border-white/[0.05]">
-              <th className="pb-5 pt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-[#555555] w-[75%]">
+            <tr className="border-b border-line/[0.05]">
+              <th className="pb-5 pt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-ink-dim w-[75%]">
                 Directive
               </th>
-              <th className="pb-5 pt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-[#555555] w-[25%] text-right">
+              <th className="pb-5 pt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-ink-dim w-[25%] text-right">
                 Horizon
               </th>
             </tr>
@@ -250,10 +250,10 @@ export function TasksTable({
             {!tasks || tasks.length === 0 ? (
               <tr>
                 <td colSpan={2} className="py-16 text-center">
-                  <p className="text-[14px] font-medium text-[#ededed] mb-1 font-mono">
+                  <p className="text-[14px] font-medium text-ink mb-1 font-mono">
                     {selectedAssignee ? "No nodes matching current frequency." : "No directives listed."}
                   </p>
-                  <p className="text-[13px] text-[#888888] font-light mt-1 font-mono">
+                  <p className="text-[13px] text-ink-muted font-light mt-1 font-mono">
                     {selectedAssignee 
                       ? "The selected operator has no directives in this sector."
                       : projectId ? "Append your first directive to begin." : "Initialize a project first."}
@@ -273,7 +273,7 @@ export function TasksTable({
                 const rawDate = task.dueDate || (task as any).horizon;
                 let horizonText = "—";
                 let horizonSubText = "";
-                let horizonColor = "text-[#333333] group-hover/row:text-[#555555]";
+                let horizonColor = "text-ink-dim group-hover/row:text-ink-muted";
 
                 if (rawDate) {
                   const dueDate = typeof rawDate.toDate === 'function' ? rawDate.toDate() : new Date(rawDate);
@@ -285,7 +285,7 @@ export function TasksTable({
 
                   if (task.status === "done") {
                       horizonText = format(dueDate, "dd MMM yyyy");
-                      horizonColor = "text-[#555555]";
+                      horizonColor = "text-ink-dim";
                   } else if (daysDiff < 0) {
                       horizonText = `Overdue by ${Math.abs(daysDiff)}d`;
                       horizonColor = "text-orbit-red font-semibold";
@@ -296,12 +296,12 @@ export function TasksTable({
                       horizonSubText = format(dueDate, "dd MMM");
                   } else if (daysDiff === 1) {
                       horizonText = "Due Tomorrow";
-                      horizonColor = "text-[#ededed] font-medium";
+                      horizonColor = "text-ink font-medium";
                       horizonSubText = format(dueDate, "dd MMM");
                   } else {
                       horizonText = `Due ${format(dueDate, "dd MMM")}`;
                       horizonSubText = format(dueDate, "yyyy");
-                      horizonColor = "text-[#888888]";
+                      horizonColor = "text-ink-muted";
                   }
                 }
 
@@ -324,25 +324,25 @@ export function TasksTable({
                     <tr
                       id={`task-${task.id}`}
                       className={cn(
-                        "row-enter group/row transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-b border-white/[0.02] last:border-b-0 cursor-pointer font-mono",
+                        "row-enter group/row transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-b border-line/[0.02] last:border-b-0 cursor-pointer font-mono",
                         isDone && "opacity-40 grayscale-[0.5]",
                         task.isBlocked && !isDone && "bg-orbit-red/[0.03]",
-                        !task.isBlocked && !isDone && "hover:bg-white/[0.02]",
-                        isExpanded && "bg-white/[0.01]"
+                        !task.isBlocked && !isDone && "hover:bg-surface-card",
+                        isExpanded && "bg-surface-sunken"
                       )}
                       style={{ animationDelay: `${index * 60}ms` }}
                       onClick={() => setExpandedTasks(prev => ({ ...prev, [task.id]: !prev[task.id] }))}
                     >
                       <td className="py-4 pr-6 pl-2 align-top">
                         <div className="flex items-center gap-4">
-                          <button className="p-1 hover:bg-white/[0.05] rounded-md transition-colors">
-                            {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-[#555]" /> : <ChevronRight className="w-3.5 h-3.5 text-[#555]" />}
+                          <button className="p-1 hover:bg-surface-control rounded-md transition-colors">
+                            {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-ink-dim" /> : <ChevronRight className="w-3.5 h-3.5 text-ink-dim" />}
                           </button>
-                          <span className="text-[10px] text-[#444] tracking-[0.1em] shrink-0">#{taskId}</span>
+                          <span className="text-[10px] text-ink-dim tracking-[0.1em] shrink-0">#{taskId}</span>
                           <div className="flex-1 min-w-0">
                             <p className={cn(
                               "text-[14px] font-medium tracking-tight leading-snug",
-                              isDone ? "text-[#555555] line-through decoration-white/10" : "text-[#e0e0e0] group-hover/row:text-white transition-colors duration-300"
+                              isDone ? "text-ink-dim line-through decoration-line/10" : "text-ink group-hover/row:text-ink-strong transition-colors duration-300"
                             )}>
                               {task.title}
                             </p>
@@ -355,9 +355,9 @@ export function TasksTable({
                             <span className={cn("text-[11px] uppercase tracking-widest tabular-nums transition-colors duration-300", horizonColor)}>
                               {horizonText}
                             </span>
-                            {horizonSubText && <span className="text-[8px] uppercase tracking-[0.2em] text-[#555555]">{horizonSubText}</span>}
+                            {horizonSubText && <span className="text-[8px] uppercase tracking-[0.2em] text-ink-dim">{horizonSubText}</span>}
                           </div>
-                        ) : <span className="text-[11px] text-[#444444]">—</span>}
+                        ) : <span className="text-[11px] text-ink-dim">—</span>}
                       </td>
                     </tr>
                     <tr>
@@ -366,7 +366,7 @@ export function TasksTable({
                           "overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
                           isExpanded ? "max-h-[1200px] opacity-100 mb-8 mx-2 mt-2" : "max-h-0 opacity-0"
                         )}>
-                          <div className="border border-[#1a1a1a] bg-[#000000]/40 backdrop-blur-sm p-5 font-mono shadow-[0_8px_32px_rgba(0,0,0,0.8)] rounded-xl ring-1 ring-white/5">
+                          <div className="border border-line/[0.06] bg-surface-card/40 backdrop-blur-sm p-5 font-mono shadow-raised rounded-xl ring-1 ring-line/5">
                             <div className="flex items-center justify-between mb-8">
                               <div className="flex items-center gap-4">
                                 <button
@@ -378,13 +378,13 @@ export function TasksTable({
                                   }}
                                   className={cn(
                                     "w-5 h-5 rounded flex items-center justify-center shrink-0 border transition-all duration-300",
-                                    isDone ? "bg-[#85C89B] border-[#85C89B]" : "bg-[#050505] border-[#333333] hover:border-[#555555]",
+                                    isDone ? "bg-orbit-green border-orbit-green" : "bg-surface-card border-line/[0.12] hover:border-line/[0.25]",
                                     canEdit && "cursor-pointer", !canEdit && "opacity-50 cursor-not-allowed"
                                   )}
                                 >
-                                  {isDone && <Check className="w-3.5 h-3.5 text-[#000000] stroke-[3]" />}
+                                  {isDone && <Check className="w-3.5 h-3.5 text-background stroke-[3]" />}
                                 </button>
-                                <div className="h-4 w-px bg-white/[0.05]" />
+                                <div className="h-4 w-px bg-surface-control" />
                                 <Select 
                                   value={task.status} 
                                   onValueChange={(val: Task["status"]) => {
@@ -393,61 +393,61 @@ export function TasksTable({
                                   }} 
                                   disabled={!canEdit}
                                 >
-                                  <SelectTrigger className="h-7 w-[140px] bg-[#0A0A0A] border-[#1a1a1a] text-[10px] uppercase tracking-[0.2em] text-[#ededed] focus:ring-0">
+                                  <SelectTrigger className="h-7 w-[140px] bg-surface-card border-line/[0.06] text-[10px] uppercase tracking-[0.2em] text-ink focus:ring-0">
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent className="bg-[#0A0A0A] border-[#1a1a1a] text-[#ededed]">
-                                    <SelectItem value="todo" className="font-mono text-[9px] uppercase tracking-[0.2em] focus:bg-white/[0.05] focus:text-white">IDLE</SelectItem>
-                                    <SelectItem value="doing" className="font-mono text-[9px] uppercase tracking-[0.2em] focus:bg-white/[0.05] focus:text-white">ACTIVE</SelectItem>
-                                    <SelectItem value="done" className="font-mono text-[9px] uppercase tracking-[0.2em] focus:bg-white/[0.05] focus:text-white text-[#85C89B]">EXECUTED</SelectItem>
+                                  <SelectContent className="bg-surface-card border-line/[0.06] text-ink">
+                                    <SelectItem value="todo" className="font-mono text-[9px] uppercase tracking-[0.2em] focus:bg-surface-control focus:text-ink-strong">IDLE</SelectItem>
+                                    <SelectItem value="doing" className="font-mono text-[9px] uppercase tracking-[0.2em] focus:bg-surface-control focus:text-ink-strong">ACTIVE</SelectItem>
+                                    <SelectItem value="done" className="font-mono text-[9px] uppercase tracking-[0.2em] focus:bg-surface-control focus:text-ink-strong text-orbit-green">EXECUTED</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
                               <div className="flex items-center gap-2">
-                                <button onClick={(e) => { e.stopPropagation(); setActiveNoteInputId(task.id); setNoteContent(""); }} className="px-2 py-1 rounded bg-white/[0.02] text-[#555] border border-white/[0.05] hover:text-[#888] hover:border-white/[0.1] text-[9px] uppercase tracking-widest transition-all">
+                                <button onClick={(e) => { e.stopPropagation(); setActiveNoteInputId(task.id); setNoteContent(""); }} className="px-2 py-1 rounded bg-surface-card text-ink-dim border border-line/[0.05] hover:text-ink-muted hover:border-line/[0.1] text-[9px] uppercase tracking-widest transition-all">
                                   [ADD NOTE]
                                 </button>
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); setEditingTask(task); }} 
-                                  className="px-2 py-1 rounded bg-white/[0.02] text-[#555] border border-white/[0.05] hover:text-[#888] hover:border-white/[0.1] text-[9px] uppercase tracking-widest transition-all"
+                                  className="px-2 py-1 rounded bg-surface-card text-ink-dim border border-line/[0.05] hover:text-ink-muted hover:border-line/[0.1] text-[9px] uppercase tracking-widest transition-all"
                                 >
                                   [AMEND]
                                 </button>
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); setDeletingTask(task); }} 
-                                  className="px-2 py-1 rounded bg-white/[0.02] text-orbit-red/50 border border-white/[0.05] hover:text-orbit-red hover:border-orbit-red/20 text-[9px] uppercase tracking-widest transition-all"
+                                  className="px-2 py-1 rounded bg-surface-card text-orbit-red/50 border border-line/[0.05] hover:text-orbit-red hover:border-orbit-red/20 text-[9px] uppercase tracking-widest transition-all"
                                 >
                                   [REMOVE]
                                 </button>
                               </div>
                             </div>
                             <div className="mb-8">
-                              <h4 className="text-[9px] text-[#444] uppercase tracking-[0.3em] mb-2">Scope Documentation //</h4>
-                              <p className="text-[12px] text-[#888] leading-relaxed max-w-2xl whitespace-pre-wrap">{task.description || "No documentation registered for this node."}</p>
+                              <h4 className="text-[9px] text-ink-dim uppercase tracking-[0.3em] mb-2">Scope Documentation //</h4>
+                              <p className="text-[12px] text-ink-muted leading-relaxed max-w-2xl whitespace-pre-wrap">{task.description || "No documentation registered for this node."}</p>
                             </div>
                             <div className="mb-8 flex flex-col gap-3">
-                              <h4 className="text-[9px] text-[#444] uppercase tracking-[0.3em]">Operative Assignment //</h4>
+                              <h4 className="text-[9px] text-ink-dim uppercase tracking-[0.3em]">Operative Assignment //</h4>
                               <div className="flex flex-col gap-3">
                                 {task.assignedTo.length > 0 ? (
                                   task.assignedTo.map(uid => {
                                     const workload = getPersonnelWorkload(uid);
                                     return (
-                                      <div key={uid} className="flex items-center gap-4 border border-[#1a1a1a] rounded-lg px-3 py-2 bg-[#000000]">
+                                      <div key={uid} className="flex items-center gap-4 border border-line/[0.06] rounded-lg px-3 py-2 bg-surface-card">
                                         <UserAvatar photoURL={members.find(m => m.id === uid)?.photoURL} name={getMemberName(uid)} size="sm" />
                                         <div className="flex flex-col gap-1">
-                                          <span className="text-[11px] text-[#ededed] uppercase tracking-widest font-medium font-mono">{getMemberName(uid)}</span>
-                                          <span className="text-[10px] text-[#85C89B] tracking-tighter font-mono">{workload.bar}</span>
+                                          <span className="text-[11px] text-ink uppercase tracking-widest font-medium font-mono">{getMemberName(uid)}</span>
+                                          <span className="text-[10px] text-orbit-green tracking-tighter font-mono">{workload.bar}</span>
                                         </div>
                                       </div>
                                     );
                                   })
-                                ) : <span className="text-[10px] text-[#444] italic uppercase font-mono">Unassigned Frequency</span>}
+                                ) : <span className="text-[10px] text-ink-dim italic uppercase font-mono">Unassigned Frequency</span>}
                               </div>
                             </div>
 
 
                             <div className="mb-8">
-                              <h4 className="text-[9px] text-[#444] uppercase tracking-[0.3em] mb-4">Task Notes //</h4>
+                              <h4 className="text-[9px] text-ink-dim uppercase tracking-[0.3em] mb-4">Task Notes //</h4>
                               
                               {task.taskNotes && task.taskNotes.length > 0 ? (
                                 <div className="space-y-2 mb-4">
@@ -455,23 +455,23 @@ export function TasksTable({
                                     const getT = (t: any) => t?.toMillis ? t.toMillis() : new Date(t).getTime();
                                     return getT(a.createdAt) - getT(b.createdAt);
                                   }).map((note) => (
-                                    <div key={note.id} className="flex flex-col gap-1 border-l-2 border-[#1a1a1a] pl-3 py-1">
+                                    <div key={note.id} className="flex flex-col gap-1 border-l-2 border-line/[0.06] pl-3 py-1">
                                       <div className="flex items-center gap-2">
-                                        <span className="text-[9px] text-[#666] tabular-nums">{format(typeof (note.createdAt as any).toDate === 'function' ? (note.createdAt as any).toDate() : new Date(note.createdAt as any), "dd MMM HH:mm")}</span>
-                                        <span className="text-[9px] text-[#85C89B] uppercase tracking-widest">{getMemberName(note.createdBy)}</span>
+                                        <span className="text-[9px] text-ink-dim tabular-nums">{format(typeof (note.createdAt as any).toDate === 'function' ? (note.createdAt as any).toDate() : new Date(note.createdAt as any), "dd MMM HH:mm")}</span>
+                                        <span className="text-[9px] text-orbit-green uppercase tracking-widest">{getMemberName(note.createdBy)}</span>
                                       </div>
-                                      <p className="text-[11px] text-[#aaa] font-mono whitespace-pre-wrap">{note.content}</p>
+                                      <p className="text-[11px] text-ink-muted font-mono whitespace-pre-wrap">{note.content}</p>
                                     </div>
                                   ))}
                                 </div>
                               ) : (
-                                <p className="text-[10px] text-[#555] italic mb-4">No operational notes recorded.</p>
+                                <p className="text-[10px] text-ink-dim italic mb-4">No operational notes recorded.</p>
                               )}
 
                               {activeNoteInputId === task.id && (
                                 <div className="flex flex-col gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                                   <textarea
-                                    className="w-full bg-[#0A0A0A] border border-[#1a1a1a] rounded p-2 text-[11px] text-[#ededed] font-mono focus:outline-none focus:border-[#333] resize-none"
+                                    className="w-full bg-surface-card border border-line/[0.06] rounded p-2 text-[11px] text-ink font-mono focus:outline-none focus:border-line/[0.16] resize-none"
                                     rows={2}
                                     placeholder="Enter operational note..."
                                     value={noteContent}
@@ -479,13 +479,13 @@ export function TasksTable({
                                   />
                                   <div className="flex justify-end gap-2">
                                     <button
-                                      className="px-3 py-1 text-[9px] uppercase tracking-widest text-[#666] hover:text-[#fff] transition-colors"
+                                      className="px-3 py-1 text-[9px] uppercase tracking-widest text-ink-dim hover:text-ink transition-colors"
                                       onClick={() => { setActiveNoteInputId(null); setNoteContent(""); }}
                                     >
                                       [CANCEL]
                                     </button>
                                     <button
-                                      className="px-3 py-1 text-[9px] uppercase tracking-widest bg-white/[0.05] hover:bg-white/[0.1] text-white rounded transition-colors"
+                                      className="px-3 py-1 text-[9px] uppercase tracking-widest bg-surface-control hover:bg-surface-hover text-ink-strong rounded transition-colors"
                                       disabled={!noteContent.trim() || isSubmittingNote}
                                       onClick={async (e) => {
                                         e.stopPropagation();
@@ -510,11 +510,11 @@ export function TasksTable({
                                             const actorName = getMemberName(currentUserId);
                                             // Background telemetry (fire-and-forget)
                                             recordTelemetryAction({
-                                              eventType: "DIRECTIVE_TRANSITION",
+                                              eventType: "NOTE_ADDED",
                                               orgId,
                                               projectId,
                                               actor: { uid: currentUserId, name: actorName },
-                                              metadata: { taskTitle: task.title, from: "Note Added", to: "Updated", content: savedContent }
+                                              metadata: { taskTitle: task.title, content: savedContent }
                                             }).catch(err => console.error("[Telemetry Error]:", err));
                                         } catch (err) {
                                           console.error("Failed to add note", err);
@@ -530,7 +530,7 @@ export function TasksTable({
                               )}
                             </div>
                             <div className="pt-2">
-                              <span className="text-[10px] text-[#444] tracking-wider uppercase font-mono">
+                              <span className="text-[10px] text-ink-dim tracking-wider uppercase font-mono">
                                 {task.assignedTo.length > 0 
                                   ? `[${task.assignedTo.reduce((sum, uid) => sum + getPersonnelWorkload(uid).count, 0)}] tasks across ${task.assignedTo.length} operative${task.assignedTo.length > 1 ? 's' : ''}` 
                                   : "[0] OPERATORS TUNED TO THIS NODE"}

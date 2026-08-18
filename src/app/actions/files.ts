@@ -187,7 +187,7 @@ export async function deleteProjectFileAction(
     }
 
     const userData = userSnap.data()!;
-    if (!["OWNER", "owner", "MEMBER", "member"].includes(userData.role)) {
+    if (!["OWNER", "MEMBER"].includes(userData.role)) {
       console.error("[DeleteFile] Unauthorized attempted file deletion:", uid, userData.role);
       return { success: false, error: "Only workspace members can delete files." };
     }

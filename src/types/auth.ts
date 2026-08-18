@@ -1,4 +1,5 @@
 import { Timestamp } from "firebase/firestore";
+import { UserPreferences } from "./preferences";
 
 export interface User {
   id: string;
@@ -8,6 +9,8 @@ export interface User {
   role: "OWNER" | "MEMBER";
   photoURL?: string | null;
   photoPublicId?: string | null;
+  /** Partial on purpose — read it through `resolvePreferences`. */
+  preferences?: Partial<UserPreferences>;
   createdAt: Timestamp;
 }
 

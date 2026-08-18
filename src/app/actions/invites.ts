@@ -7,6 +7,7 @@ import { getAppUrl } from "@/lib/utils/getAppUrl";
 import { sendInviteEmail } from "@/lib/email/sendInviteEmail";
 import { nanoid } from "@/lib/utils/nanoid";
 import { logActivity } from "@/lib/telemetry";
+import { validateTierQuota } from "@/lib/auth/permissions";
 
 /* ------------------------------------------------------------------ */
 /*  Create Invite — server action                                     */
@@ -36,6 +37,14 @@ export async function createInviteAction(
 ): Promise<CreateInviteResult> {
   try {
     const email = payload.email.toLowerCase().trim();
+
+    // Enforce tier seat limit before proceeding
+    const quota = await validateTierQuota(payload.orgId, "members");
+    if (!quota.allowed) {
+      console.warn("[CreateInvite] Seat limit reached:", { orgId: payload.orgId, ...quota });
+      return { success: false, error: quota.error || "Member seat limit reached." };
+    }
+
     const now = new Date();
     const expires = new Date();
     expires.setDate(now.getDate() + 7);

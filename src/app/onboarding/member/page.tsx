@@ -9,6 +9,7 @@ import { Loader } from "@/components/ui/loader";
 import { Users, ArrowRight, ChevronRight, AlertCircle } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import type { User } from "@/types/auth";
+import { themeColor } from "@/lib/theme/colors";
 
 
 export default function MemberOnboardingPage() {
@@ -90,13 +91,13 @@ export default function MemberOnboardingPage() {
   // --- Loading state ---
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
+      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
         <Loader />
         <div className="flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#555555]">
+          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-ink-dim">
             Preparing Workspace
           </span>
-          <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.04] to-transparent"></div>
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-line/[0.04] to-transparent"></div>
         </div>
       </div>
     );
@@ -105,19 +106,19 @@ export default function MemberOnboardingPage() {
   // --- Profile fetch error state ---
   if (profileError || !memberProfile) {
     return (
-      <div className="min-h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000 p-4">
+      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000 p-4">
         <div className="w-full max-w-sm text-center">
-          <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
-            <div className="mx-auto w-12 h-12 rounded-full bg-[#1A0A0A] flex items-center justify-center mb-6">
-              <AlertCircle className="w-5 h-5 text-[#E57A7A]" />
+          <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
+            <div className="mx-auto w-12 h-12 rounded-full bg-orbit-red/[0.1] flex items-center justify-center mb-6">
+              <AlertCircle className="w-5 h-5 text-orbit-red" />
             </div>
-            <h1 className="text-[17px] font-light tracking-tight text-[#ededed] mb-2">Profile Sync Failed</h1>
-            <p className="text-[13px] text-[#888888] font-light leading-relaxed mb-6">
+            <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Profile Sync Failed</h1>
+            <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-6">
               {profileError || "Could not resolve your profile."}
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="text-[12px] font-medium text-[#ededed] bg-[#111111] px-5 py-2.5 rounded-lg border border-white/[0.04] hover:bg-white/[0.04] transition-all inline-block tracking-wide"
+              className="text-[12px] font-medium text-ink bg-surface-control px-5 py-2.5 rounded-lg border border-line/[0.04] hover:bg-surface-raised transition-all inline-block tracking-wide"
             >
               Retry
             </button>
@@ -153,36 +154,36 @@ export default function MemberOnboardingPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#050505] flex items-center justify-center p-4 font-sans">
+    <div className="min-h-[100dvh] bg-base flex items-center justify-center p-4 font-sans">
       <div className="w-full max-w-md animate-in fade-in duration-1000 slide-in-from-bottom-4">
 
         {/* Logo */}
         <div className="flex flex-col items-center gap-3 mb-12 justify-center">
           <Logo size={40} />
-          <span className="font-semibold text-[#ededed] text-lg tracking-tight">OrbitOS</span>
+          <span className="font-semibold text-ink text-lg tracking-tight">OrbitOS</span>
         </div>
 
         {/* Welcome Header */}
         <div className="mb-10 text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-white/[0.04] bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] text-[12px] font-medium text-[#ededed] mb-4">
-            <Users className="w-3.5 h-3.5 text-[#888888]" />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-line/[0.04] bg-surface-control shadow-card text-[12px] font-medium text-ink mb-4">
+            <Users className="w-3.5 h-3.5 text-ink-muted" />
             <span>Member</span>
           </div>
-          <h1 className="text-2xl font-light text-[#ededed] tracking-tight">
+          <h1 className="text-2xl font-light text-ink tracking-tight">
             Welcome to the workspace
           </h1>
-          <p className="text-[13px] text-[#888888] font-light leading-relaxed max-w-sm mx-auto">
+          <p className="text-[13px] text-ink-muted font-light leading-relaxed max-w-sm mx-auto">
             Complete your profile so your team knows who you are. You can update these details anytime.
           </p>
         </div>
 
         {/* Form Card */}
-        <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
+        <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
           <form onSubmit={handleSubmit} className="space-y-6">
 
             {/* Full Name — required */}
             <div className="space-y-3">
-              <label className="text-[10px] font-mono text-[#555555] uppercase tracking-[0.3em] block">
+              <label className="text-[10px] font-mono text-ink-dim uppercase tracking-[0.3em] block">
                 Full Name
               </label>
               <input
@@ -191,57 +192,57 @@ export default function MemberOnboardingPage() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
                 required
-                className="w-full bg-[#111111] border border-white/[0.04] rounded-xl h-12 px-5 text-[14px] font-light text-[#ededed] placeholder:text-[#333333] transition-all focus:outline-none focus:border-[#555555] shadow-inner"
+                className="w-full bg-surface-control border border-line/[0.04] rounded-xl h-12 px-5 text-[14px] font-light text-ink placeholder:text-ink-faint transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
               />
             </div>
 
             {/* Role / Title — optional */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-mono text-[#555555] uppercase tracking-[0.3em] block">
+                <label className="text-[10px] font-mono text-ink-dim uppercase tracking-[0.3em] block">
                   Role / Title
                 </label>
-                <span className="text-[8px] font-mono text-[#555555] uppercase tracking-widest">Optional</span>
+                <span className="text-[8px] font-mono text-ink-dim uppercase tracking-widest">Optional</span>
               </div>
               <input
                 type="text"
                 value={roleDescriptor}
                 onChange={(e) => setRoleDescriptor(e.target.value)}
                 placeholder="e.g. Frontend Engineer, Designer..."
-                className="w-full bg-[#111111] border border-white/[0.04] rounded-xl h-12 px-5 text-[14px] font-light text-[#ededed] placeholder:text-[#333333] transition-all focus:outline-none focus:border-[#555555] shadow-inner"
+                className="w-full bg-surface-control border border-line/[0.04] rounded-xl h-12 px-5 text-[14px] font-light text-ink placeholder:text-ink-faint transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
               />
             </div>
 
             {/* Bio — optional */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-mono text-[#555555] uppercase tracking-[0.3em] block">
+                <label className="text-[10px] font-mono text-ink-dim uppercase tracking-[0.3em] block">
                   Short Bio
                 </label>
-                <span className="text-[8px] font-mono text-[#555555] uppercase tracking-widest">Optional</span>
+                <span className="text-[8px] font-mono text-ink-dim uppercase tracking-widest">Optional</span>
               </div>
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="What do you focus on?"
-                className="w-full bg-[#111111] border border-white/[0.04] rounded-xl p-5 text-[14px] font-light text-[#ededed] min-h-[100px] resize-none placeholder:text-[#333333] transition-all focus:outline-none focus:border-[#555555] shadow-inner"
+                className="w-full bg-surface-control border border-line/[0.04] rounded-xl p-5 text-[14px] font-light text-ink min-h-[100px] resize-none placeholder:text-ink-faint transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
               />
             </div>
 
             {error && (
-              <div className="rounded-xl bg-[#1A0A0A] ring-1 ring-[#E57A7A]/20 px-4 py-3">
-                <p className="text-[13px] text-[#E57A7A] font-medium">{error}</p>
+              <div className="rounded-xl bg-orbit-red/[0.1] ring-1 ring-orbit-red/20 px-4 py-3">
+                <p className="text-[13px] text-orbit-red font-medium">{error}</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={isSubmitting || !name.trim()}
-              className="w-full h-12 rounded-xl bg-[#ededed] text-[#050505] font-bold text-[13px] tracking-tight transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-white hover:-translate-y-[2px] disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:bg-[#ededed] disabled:cursor-not-allowed shadow-[0_2px_12px_rgba(255,255,255,0.06)] outline-none flex items-center justify-center gap-2"
+              className="w-full h-12 rounded-xl bg-ink text-on-ink font-bold text-[13px] tracking-tight transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-ink-strong hover:-translate-y-[2px] disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:bg-ink disabled:cursor-not-allowed shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06)] outline-none flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
-                  <Loader size={14} stroke={2.5} color="#050505" />
+                  <Loader size={14} stroke={2.5} color={themeColor.onInk} />
                   <span>Setting up...</span>
                 </>
               ) : (
@@ -257,7 +258,7 @@ export default function MemberOnboardingPage() {
         {/* Skip */}
         <button
           onClick={handleSkip}
-          className="w-full text-center text-[13px] text-[#555555] font-light mt-8 hover:text-[#888888] transition-colors flex items-center justify-center gap-2 outline-none"
+          className="w-full text-center text-[13px] text-ink-dim font-light mt-8 hover:text-ink-muted transition-colors flex items-center justify-center gap-2 outline-none"
         >
           Skip for now
           <ChevronRight className="w-3 h-3" />

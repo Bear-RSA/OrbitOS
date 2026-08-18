@@ -34,11 +34,9 @@ export async function syncOperationalStatusAction(userId: string | null, orgId: 
       .where("status", "!=", "done")
       .get();
     
-    const activeCount = tasksSnap.docs.filter(doc => {
-      const assignedTo = doc.data().assignedTo;
-      if (Array.isArray(assignedTo)) return assignedTo.includes(userId);
-      return assignedTo === userId; // Legacy string fallback
-    }).length;
+    const activeCount = tasksSnap.docs.filter(doc =>
+      doc.data().assignedTo.includes(userId)
+    ).length;
     const loadPercentage = (activeCount / MAX_SYSTEM_LOAD) * 100;
 
     // 2. Resolve current status
@@ -110,12 +108,8 @@ export async function getWorkloadTelemetryAction(projectId: string, orgId: strin
 
     const workloadMap = new Map<string, number>();
     tasksSnap.forEach(doc => {
-      const { assignedTo } = doc.data();
-      // Handle both array (new) and string (legacy) formats
-      const assignees: string[] = Array.isArray(assignedTo)
-        ? assignedTo
-        : (assignedTo ? [assignedTo] : []);
-      
+      const assignees: string[] = doc.data().assignedTo;
+
       for (const uid of assignees) {
         if (membersMap.has(uid)) {
           workloadMap.set(uid, (workloadMap.get(uid) || 0) + 1);

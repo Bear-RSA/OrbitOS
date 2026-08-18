@@ -114,9 +114,9 @@ export function AddMemberDialog({
           <div className="space-y-4 mt-2">
             {/* Success banner */}
             {successEmail && (
-              <div className="flex items-start gap-3 rounded-lg bg-[#85C89B]/10 ring-1 ring-[#85C89B]/20 px-4 py-3">
-                <CheckCircle2 className="w-4 h-4 text-[#85C89B] mt-0.5 shrink-0" />
-                <p className="text-[12px] font-mono text-[#85C89B] leading-relaxed">
+              <div className="flex items-start gap-3 rounded-lg bg-orbit-green/10 ring-1 ring-orbit-green/20 px-4 py-3">
+                <CheckCircle2 className="w-4 h-4 text-orbit-green mt-0.5 shrink-0" />
+                <p className="text-[12px] font-mono text-orbit-green leading-relaxed">
                   Invite dispatched to <strong>{successEmail}</strong>
                 </p>
               </div>
@@ -124,22 +124,22 @@ export function AddMemberDialog({
 
             {/* Error banner (email failed but invite link still created) */}
             {errorMsg && (
-              <div className="flex items-start gap-3 rounded-lg bg-[#E57A7A]/10 ring-1 ring-[#E57A7A]/20 px-4 py-3">
-                <AlertCircle className="w-4 h-4 text-[#E57A7A] mt-0.5 shrink-0" />
-                <p className="text-[12px] font-mono text-[#E57A7A] leading-relaxed">
+              <div className="flex items-start gap-3 rounded-lg bg-orbit-red/10 ring-1 ring-orbit-red/20 px-4 py-3">
+                <AlertCircle className="w-4 h-4 text-orbit-red mt-0.5 shrink-0" />
+                <p className="text-[12px] font-mono text-orbit-red leading-relaxed">
                   {errorMsg}
                 </p>
               </div>
             )}
 
-            <p className="text-[13px] text-[#888888] font-light text-center">
+            <p className="text-[13px] text-ink-muted font-light text-center">
               Link active. Transmit to operator:
             </p>
             <div className="flex items-center gap-3">
               <Input
                 value={inviteLink}
                 readOnly
-                className="text-[12px] font-mono text-[#ededed]"
+                className="text-[12px] font-mono text-ink"
                 id="invite-link-input"
               />
               <Button
@@ -150,13 +150,13 @@ export function AddMemberDialog({
                 id="copy-invite-link"
               >
                 {copied ? (
-                  <Check className="w-4 h-4 text-[#85C89B]" />
+                  <Check className="w-4 h-4 text-orbit-green" />
                 ) : (
                   <Copy className="w-4 h-4" />
                 )}
               </Button>
             </div>
-            <DialogFooter className="mt-8 border-t border-white/[0.04] pt-6 sm:justify-center">
+            <DialogFooter className="mt-8 border-t border-line/[0.04] pt-6 sm:justify-center">
               <Button onClick={handleClose} id="close-invite-dialog">Acknowledge</Button>
             </DialogFooter>
           </div>
@@ -164,9 +164,9 @@ export function AddMemberDialog({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-2">
             {/* Error banner (full failure — no link created) */}
             {errorMsg && !inviteLink && (
-              <div className="flex items-start gap-3 rounded-lg bg-[#E57A7A]/10 ring-1 ring-[#E57A7A]/20 px-4 py-3">
-                <AlertCircle className="w-4 h-4 text-[#E57A7A] mt-0.5 shrink-0" />
-                <p className="text-[12px] font-mono text-[#E57A7A] leading-relaxed">
+              <div className="flex items-start gap-3 rounded-lg bg-orbit-red/10 ring-1 ring-orbit-red/20 px-4 py-3">
+                <AlertCircle className="w-4 h-4 text-orbit-red mt-0.5 shrink-0" />
+                <p className="text-[12px] font-mono text-orbit-red leading-relaxed">
                   {errorMsg}
                 </p>
               </div>
@@ -182,10 +182,10 @@ export function AddMemberDialog({
                 {...register("email")}
               />
               {errors.email && (
-                <p className="text-[12px] text-[#E57A7A]">{errors.email.message}</p>
+                <p className="text-[12px] text-orbit-red">{errors.email.message}</p>
               )}
             </div>
-            <DialogFooter className="gap-2 mt-8 border-t border-white/[0.04] pt-6 sm:justify-center">
+            <DialogFooter className="gap-2 mt-8 border-t border-line/[0.04] pt-6 sm:justify-center">
               <Button
                 type="button"
                 variant="outline"
@@ -197,7 +197,7 @@ export function AddMemberDialog({
               <Button type="submit" disabled={loading} id="submit-add-member">
                 {loading ? (
                   <span className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 border-2 border-[#050505]/30 border-t-[#050505] rounded-full animate-spin" />
+                    <span className="w-3.5 h-3.5 border-2 border-line/[0.3] border-t-on-ink rounded-full animate-spin" />
                     Dispatching…
                   </span>
                 ) : (

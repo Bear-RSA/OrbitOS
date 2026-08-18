@@ -46,11 +46,33 @@ service cloud.firestore {
         );
     }
 
+    /* Fields whose values differ between the incoming write and the
+       stored document. Unchanged fields are not reported, so a write
+       that re-sends an identical value is always permitted. */
+    function editedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
     match /tasks/{taskId} {
       allow read: if isMember(resource.data.orgId);
       allow create: if isMember(request.resource.data.orgId);
       allow update: if isMember(resource.data.orgId);
       allow delete: if isMember(resource.data.orgId);
+    }
+
+    /* Engagements — scheduled time with people in it.
+
+       Writes all run through server actions on the Admin SDK, which
+       bypasses these rules; what matters here is that the client's
+       live subscription can read its own org and nothing else.
+       Deletion is withheld from Members on purpose: cancelling sets
+       status to 'cancelled' and keeps the record, so a Member has no
+       reason to remove the document outright. */
+    match /events/{eventId} {
+      allow read: if isMember(resource.data.orgId);
+      allow create: if isMember(request.resource.data.orgId);
+      allow update: if isMember(resource.data.orgId);
+      allow delete: if isOwner(resource.data.orgId);
     }
 
     match /projects/{projectId} {
@@ -65,15 +87,73 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow update: if isSignedIn() && request.auth.uid == userId;
-      allow create: if isSignedIn() && request.auth.uid == userId;
+
+      /* Treat a missing orgId the same as an unassigned one. */
+      function currentOrgId() {
+        return 'orgId' in resource.data ? resource.data.orgId : '';
+      }
+
+      /* Ordinary profile maintenance. `role` and `orgId` are deliberately
+         excluded: privilege and org membership are assigned only by
+         server actions running on the Admin SDK, which bypasses rules. */
+      function isProfileEdit() {
+        return editedKeys().hasOnly([
+          'name',
+          'roleDescriptor',
+          'bio',
+          'photoURL',
+          'photoPublicId',
+          'lastActivity',
+          'operationalStatus',
+          'manualOverride',
+          'preferences'
+        ]);
+      }
+
+      /* Workspace genesis — the one legitimate client-side org binding.
+         A user who belongs to no organization may attach themselves to an
+         organization they just created. The org's `ownerId` must be their
+         own uid, so this cannot be used to join someone else's workspace,
+         and requiring an empty starting orgId means it happens only once. */
+      function isWorkspaceGenesis() {
+        return currentOrgId() == ''
+          && request.resource.data.orgId is string
+          && request.resource.data.orgId != ''
+          && request.resource.data.role == 'OWNER'
+          && get(/databases/$(database)/documents/organizations/$(request.resource.data.orgId)).data.ownerId == request.auth.uid
+          && editedKeys().hasOnly(['name', 'email', 'orgId', 'role', 'createdAt']);
+      }
+
+      /* Own profile, or a teammate in the same organization. */
+      allow read: if isSignedIn() &&
+        (request.auth.uid == userId || isInOrg(resource.data.orgId));
+
+      /* Self-provisioning at sign-up. Requiring an empty orgId makes the
+         client-supplied `role` inert: every org-scoped rule and every
+         server-side check requires a matching orgId to grant anything. */
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.orgId == '';
+
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && (isProfileEdit() || isWorkspaceGenesis());
     }
 
     match /organizations/{orgId} {
       allow read: if isInOrg(orgId);
-      allow create: if isSignedIn();
-      allow update: if isOwner(orgId);
+
+      /* You may only create an organization you own. `isWorkspaceGenesis`
+         above depends on this to keep org binding self-referential. */
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+
+      /* Billing state is authoritative and server-owned. Letting an OWNER
+         write `subscription` from the client would let them grant
+         themselves any tier for free; PayFast's webhook and the billing
+         server actions use the Admin SDK and are unaffected by this. */
+      allow update: if isOwner(orgId)
+        && !editedKeys().hasAny(['subscription', 'ownerId']);
     }
 
     match /{document=**} {

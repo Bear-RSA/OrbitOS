@@ -14,8 +14,9 @@ import {
   addDays, 
   startOfWeek, 
   endOfWeek, 
-  isWithinInterval 
+  isWithinInterval
 } from "date-fns";
+import { dueDateKeyOf, parseDateKey } from "@/lib/utils/dates";
 
 /**
  * Project Health Processor
@@ -72,9 +73,13 @@ export function categorizeTasksByUrgency(tasks: Task[]): UrgencyBuckets {
   const weekStart = startOfWeek(today);
   const weekEnd = endOfWeek(today);
 
-  /** Normalize a Firestore Timestamp to midnight */
+  /**
+   * The task's due day at local midnight, read from the calendar-day key
+   * rather than the Timestamp so these buckets and the calendar grid
+   * always agree on which day a task belongs to.
+   */
   const toMidnight = (t: Task): Date => {
-    const d = new Date(t.dueDate!.toDate());
+    const d = parseDateKey(dueDateKeyOf(t)!);
     d.setHours(0, 0, 0, 0);
     return d;
   };

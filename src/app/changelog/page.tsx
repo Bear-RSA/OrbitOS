@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import type { Metadata } from 'next';
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { MarketingNav } from "@/components/marketing/marketing-nav";
+import { MarketingFooter } from "@/components/marketing/marketing-footer";
 
 export const metadata: Metadata = {
   title: "Changelog · OrbitOS",
@@ -61,28 +62,8 @@ export default function ChangelogPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#050505] text-[#ededed] font-sans selection:bg-white/[0.1]">
-      {/* TopNavBar */}
-      <nav className="fixed top-0 w-full z-50 bg-[#050505]/70 backdrop-blur-xl border-b border-white/[0.04]">
-        <div className="flex justify-between items-center max-w-7xl mx-auto px-8 h-16">
-          <Link href="/" className="font-mono text-lg tracking-tighter text-[#ededed] flex items-center gap-3">
-             <div className="w-6 h-6 rounded-md bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden">
-               <Image src="/logo.png" alt="OrbitOS" fill className="object-cover rounded-[inherit]" />
-             </div>
-             OrbitOS
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="#">Features</Link>
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="/methodology">Methodology</Link>
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="/pricing">Pricing</Link>
-            <Link className="font-sans tracking-tight font-medium text-[#ededed] border-b border-[#ededed] pb-1 hover:text-white transition-colors duration-300" href="/changelog">Changelog</Link>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/login" className="text-[#888888] font-sans font-medium text-sm hover:text-[#ededed] transition-colors">Sign In</Link>
-            <Link href="/signup" className="bg-[#ededed] text-[#050505] px-5 py-2 rounded-lg font-medium text-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:bg-white active:scale-95">Get Started</Link>
-          </div>
-        </div>
-      </nav>
+    <main className="theme-dark min-h-screen bg-[#050505] text-[#ededed] font-sans selection:bg-white/[0.1]">
+      <MarketingNav active="changelog" />
 
       {/* Hero Section */}
       <section className="pt-48 pb-20 px-8 max-w-7xl mx-auto">
@@ -137,21 +118,7 @@ export default function ChangelogPage() {
         </ScrollReveal>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#050505] border-t border-white/[0.04] w-full py-20">
-        <div className="flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto px-8 md:px-16 gap-12 md:gap-0">
-          <div className="flex flex-col items-center md:items-start gap-4">
-            <div className="font-mono font-bold text-[#ededed] text-xl tracking-tight">OrbitOS</div>
-            <p className="font-mono text-[10px] tracking-widest uppercase text-[#555555]">© {new Date().getFullYear()} OrbitOS. Built for the architectural void.</p>
-          </div>
-          <div className="flex gap-8 md:gap-12">
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/privacy">Privacy</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/terms">Terms</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/security">Security</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="https://github.com/MiraiStack">GitHub</Link>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </main>
   );
 }

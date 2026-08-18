@@ -146,12 +146,12 @@ export function CreateTaskDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[480px] p-10 bg-[#080808]/95 border-white/[0.04]">
+        <DialogContent className="sm:max-w-[480px] p-10 bg-surface-sunken/95 border-line/[0.04]">
         <DialogHeader className="text-left sm:text-left space-y-4">
-          <DialogTitle className="text-xl font-medium tracking-tight text-[#ededed]">
+          <DialogTitle className="text-xl font-medium tracking-tight text-ink">
             Insert Directive
           </DialogTitle>
-          <DialogDescription className="text-[13px] leading-relaxed text-[#666666] font-light max-w-[360px]">
+          <DialogDescription className="text-[13px] leading-relaxed text-ink-dim font-light max-w-[360px]">
             Inject a new task vector. Assign up to two operators and set completion horizon.
           </DialogDescription>
         </DialogHeader>
@@ -164,7 +164,7 @@ export function CreateTaskDialog({
               {...register("title")}
             />
             {errors.title && (
-              <p className="text-[12px] text-[#E57A7A]">{errors.title.message}</p>
+              <p className="text-[12px] text-orbit-red">{errors.title.message}</p>
             )}
           </div>
 
@@ -180,30 +180,30 @@ export function CreateTaskDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2.5">
-              <Label>Operators <span className="text-[9px] text-[#555] ml-1 font-mono">(MAX 2)</span></Label>
+              <Label>Operators <span className="text-[9px] text-ink-dim ml-1 font-mono">(MAX 2)</span></Label>
               <div ref={dropdownRef} className="relative">
                 {/* Selected chips + trigger */}
                 <button
                   type="button"
                   id="task-assignee"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="w-full min-h-[36px] flex items-center gap-1.5 flex-wrap bg-[#0A0A0A] border border-[#1a1a1a] rounded-md px-3 py-1.5 text-left focus:outline-none focus:border-[#333] transition-colors"
+                  className="w-full min-h-[36px] flex items-center gap-1.5 flex-wrap bg-surface-sunken border border-line/[0.1] rounded-md px-3 py-1.5 text-left focus:outline-none focus:border-line/[0.2] transition-colors"
                 >
                   {selectedAssignees.length === 0 ? (
-                    <span className="text-[13px] text-[#555]">Unassigned</span>
+                    <span className="text-[13px] text-ink-dim">Unassigned</span>
                   ) : (
                     selectedAssignees.map(uid => {
                       const member = members.find(m => m.id === uid);
                       return (
                         <span
                           key={uid}
-                          className="inline-flex items-center gap-1 bg-white/[0.06] border border-white/[0.08] rounded px-2 py-0.5 text-[11px] text-[#ededed] font-mono uppercase tracking-wider"
+                          className="inline-flex items-center gap-1 bg-surface-control border border-line/[0.08] rounded px-2 py-0.5 text-[11px] text-ink font-mono uppercase tracking-wider"
                         >
                           {member?.name?.split(" ")[0] || "?"}
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); removeAssignee(uid); }}
-                            className="hover:text-[#E57A7A] transition-colors ml-0.5"
+                            className="hover:text-orbit-red transition-colors ml-0.5"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -211,12 +211,12 @@ export function CreateTaskDialog({
                       );
                     })
                   )}
-                  <ChevronDown className="w-3.5 h-3.5 text-[#555] ml-auto shrink-0" />
+                  <ChevronDown className="w-3.5 h-3.5 text-ink-dim ml-auto shrink-0" />
                 </button>
 
                 {/* Dropdown */}
                 {dropdownOpen && (
-                  <div className="absolute z-50 mt-1 w-full bg-[#0A0A0A] border border-[#1a1a1a] rounded-md shadow-[0_8px_32px_rgba(0,0,0,0.8)] overflow-hidden">
+                  <div className="absolute z-50 mt-1 w-full bg-surface-sunken border border-line/[0.1] rounded-md shadow-raised overflow-hidden">
                     {members.map(member => {
                       const isSelected = selectedAssignees.includes(member.id);
                       const isDisabled = !isSelected && selectedAssignees.length >= 2;
@@ -228,16 +228,16 @@ export function CreateTaskDialog({
                           onClick={() => toggleAssignee(member.id)}
                           className={`w-full text-left px-3 py-2 text-[12px] font-mono transition-colors ${
                             isSelected
-                              ? "bg-white/[0.06] text-[#ededed]"
+                              ? "bg-surface-control text-ink"
                               : isDisabled
-                                ? "text-[#333] cursor-not-allowed"
-                                : "text-[#888] hover:bg-white/[0.04] hover:text-[#ededed]"
+                                ? "text-ink-faint cursor-not-allowed"
+                                : "text-ink-muted hover:bg-surface-raised hover:text-ink"
                           }`}
                         >
                           <span className="flex items-center gap-2">
-                            {isSelected && <span className="text-[#85C89B] text-[10px]">●</span>}
+                            {isSelected && <span className="text-orbit-green text-[10px]">●</span>}
                             {member.name}
-                            {isDisabled && <span className="text-[9px] text-[#444] ml-auto uppercase tracking-widest">[MAX]</span>}
+                            {isDisabled && <span className="text-[9px] text-ink-faint ml-auto uppercase tracking-widest">[MAX]</span>}
                           </span>
                         </button>
                       );
@@ -246,7 +246,7 @@ export function CreateTaskDialog({
                 )}
               </div>
               {errors.assignedTo && (
-                <p className="text-[12px] text-[#E57A7A]">{errors.assignedTo.message}</p>
+                <p className="text-[12px] text-orbit-red">{errors.assignedTo.message}</p>
               )}
             </div>
 
@@ -256,7 +256,9 @@ export function CreateTaskDialog({
                 id="task-due-date"
                 type="date"
                 {...register("dueDate")}
-                className="[&::-webkit-calendar-picker-indicator]:invert-[0.8]"
+                /* `color-scheme: dark` on <html> already renders the picker glyph
+                   light — inverting it here would flip it back to black. */
+                className="[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:transition-opacity hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
               />
             </div>
           </div>
@@ -275,7 +277,7 @@ export function CreateTaskDialog({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="h-9 px-5 rounded-lg text-[12px] text-[#444444] hover:text-[#888888] hover:bg-transparent"
+              className="h-9 px-5 rounded-lg text-[12px] text-ink-faint hover:text-ink-muted hover:bg-transparent"
             >
               Cancel
             </Button>

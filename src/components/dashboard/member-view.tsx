@@ -21,24 +21,22 @@ export function MemberDashboardView({ data, members, tasks, orgId, userId, onRef
   const myTasks = tasks.filter(t => t.assignedTo.includes(userId));
 
   return (
-    <div className="flex flex-col gap-12">
+    // Matches the owner view's rhythm — the two roles previously used
+    // different section gaps for an otherwise identical layout.
+    <div className="flex flex-col gap-6 sm:gap-8">
       {/* Personal Metrics Layer */}
       <ScrollReveal>
-        <div className="w-full">
-          <MemberPersonalMetricsCard metrics={data.metrics} />
-        </div>
+        <MemberPersonalMetricsCard metrics={data.metrics} />
       </ScrollReveal>
 
       {/* Personal Urgency Layer */}
       <ScrollReveal delay={100}>
-        <div className="pt-4">
-          <UrgencyBucketsCard buckets={data.urgencyBuckets} projects={data.myProjects} />
-        </div>
+        <UrgencyBucketsCard buckets={data.urgencyBuckets} projects={data.myProjects} />
       </ScrollReveal>
 
       {/* Personal Task Queue */}
       <ScrollReveal delay={200}>
-        <div className="pt-8 pb-32">
+        <div className="pt-8">
           <WorkspaceProjects projectsHealth={data.myProjectsHealth} projects={data.myProjects} orgId={orgId} userId={userId} isOwner={false} onRefresh={onRefresh} />
         </div>
       </ScrollReveal>

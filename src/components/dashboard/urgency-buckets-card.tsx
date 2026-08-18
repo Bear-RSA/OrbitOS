@@ -1,11 +1,11 @@
 "use client";
 
-import { Task } from "@/types/task";
 import { UrgencyBuckets } from "@/types/dashboard";
 import { Project } from "@/types/project";
 import { cn } from "@/lib/utils/classnames";
 import { Clock, Calendar, AlertCircle, Inbox } from "lucide-react";
 import { format } from "date-fns";
+import { DashboardCard, CardHeader, CardEyebrow } from "./dashboard-card";
 
 interface UrgencyBucketsCardProps {
   buckets: UrgencyBuckets;
@@ -14,117 +14,118 @@ interface UrgencyBucketsCardProps {
 
 export function UrgencyBucketsCard({ buckets, projects = [] }: UrgencyBucketsCardProps) {
   const categories = [
-    { id: 'overdue', label: 'Overdue', tasks: buckets.overdue, icon: AlertCircle, color: 'text-orbit-red', countColor: 'text-orbit-red', bgHover: 'hover:bg-orbit-red/[0.03]', isUrgent: true },
-    { id: 'dueToday', label: 'Due Today', tasks: buckets.dueToday, icon: Clock, color: 'text-[#ededed]', countColor: 'text-[#ededed]', bgHover: 'hover:bg-white/[0.02]', isUrgent: false },
-    { id: 'dueTomorrow', label: 'Due Tomorrow', tasks: buckets.dueTomorrow, icon: Calendar, color: 'text-[#777777]', countColor: 'text-[#777777]', bgHover: 'hover:bg-white/[0.015]', isUrgent: false },
-    { id: 'dueThisWeek', label: 'Due This Week', tasks: buckets.dueThisWeek, icon: Calendar, color: 'text-[#444444]', countColor: 'text-[#444444]', bgHover: 'hover:bg-white/[0.01]', isUrgent: false },
+    { id: 'overdue', label: 'Overdue', tasks: buckets.overdue, icon: AlertCircle, accent: 'text-orbit-red', dueAccent: 'text-orbit-red/90', isUrgent: true },
+    { id: 'dueToday', label: 'Due Today', tasks: buckets.dueToday, icon: Clock, accent: 'text-orbit-amber', dueAccent: 'text-orbit-amber/90', isUrgent: true },
+    { id: 'dueTomorrow', label: 'Due Tomorrow', tasks: buckets.dueTomorrow, icon: Calendar, accent: 'text-ink', dueAccent: 'text-ink-dim', isUrgent: false },
+    { id: 'dueThisWeek', label: 'Due This Week', tasks: buckets.dueThisWeek, icon: Calendar, accent: 'text-ink-muted', dueAccent: 'text-ink-dim', isUrgent: false },
   ];
 
   const totalUrgent = buckets.overdue.length + buckets.dueToday.length;
 
   return (
-    <div className="rounded-[24px] p-10 animate-fade-in bg-[#0A0A0A]/30 ring-1 ring-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.01)] group/card transition-all duration-500 hover:bg-[#0A0A0A]/50">
-      <div className="flex items-center justify-between mb-12">
-        <h3 className="text-[11px] font-mono uppercase tracking-[0.3em] text-[#444444] flex items-center gap-3">
-          <Clock className="w-3.5 h-3.5 text-[#333333]" />
-          Operational Horizon
-        </h3>
-        {totalUrgent > 0 && (
-          <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#333333]">
-            {totalUrgent} requiring attention
-          </span>
-        )}
-      </div>
+    <DashboardCard interactive={false} tone="quiet">
+      <CardHeader
+        title="Operational Horizon"
+        icon={Clock}
+        meta={
+          totalUrgent > 0 ? (
+            <CardEyebrow className="text-orbit-amber">
+              {totalUrgent} requiring attention
+            </CardEyebrow>
+          ) : (
+            <CardEyebrow>All clear</CardEyebrow>
+          )
+        }
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 relative gap-y-8">
-        {categories.map((cat, idx) => (
-          <div key={cat.id} className={cn(
-            "flex flex-col gap-6 px-0 lg:px-7 py-3 rounded-xl transition-all duration-500",
-            idx !== 0 && "lg:border-l lg:border-white/[0.03]",
-            idx === 0 && "lg:pl-0",
-            cat.bgHover
-          )}>
-            {/* Bucket Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {cat.isUrgent && cat.tasks.length > 0 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-orbit-red/70 urgency-breath flex-shrink-0" />
-                )}
-                <span className={cn("text-[10px] font-mono tracking-[0.2em] uppercase", cat.color)}>
-                  {cat.label}
+      <div className="grid grid-cols-1 gap-x-0 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+        {categories.map((cat, idx) => {
+          const CatIcon = cat.icon;
+          return (
+            <div
+              key={cat.id}
+              className={cn(
+                "flex flex-col gap-5 rounded-xl py-1 transition-colors duration-500",
+                "lg:px-6",
+                idx !== 0 && "lg:border-l lg:border-line/[0.06]",
+                idx === 0 && "lg:pl-0",
+                idx === categories.length - 1 && "lg:pr-0"
+              )}
+            >
+              {/* Bucket Header */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <CatIcon className={cn("h-3.5 w-3.5 shrink-0", cat.tasks.length > 0 ? cat.accent : "text-ink-faint")} aria-hidden />
+                  <span className={cn(
+                    "truncate font-mono text-[10px] uppercase tracking-[0.16em]",
+                    cat.tasks.length > 0 ? "text-ink-muted" : "text-ink-dim"
+                  )}>
+                    {cat.label}
+                  </span>
+                  {cat.id === 'overdue' && cat.tasks.length > 0 && (
+                    <span className="urgency-breath h-1.5 w-1.5 shrink-0 rounded-full bg-orbit-red" aria-hidden />
+                  )}
+                </div>
+                <span className={cn(
+                  "font-mono text-[13px] tabular-nums transition-colors duration-500",
+                  cat.tasks.length > 0 ? cat.accent : "text-ink-dim"
+                )}>
+                  {cat.tasks.length.toString().padStart(2, '0')}
                 </span>
               </div>
-              <span className={cn(
-                "text-[13px] font-mono tabular-nums transition-all duration-500",
-                cat.tasks.length > 0 ? cat.countColor : "text-[#222222]"
-              )}>
-                {cat.tasks.length.toString().padStart(2, '0')}
-              </span>
-            </div>
 
-            {/* Task Items */}
-            <div className="space-y-3.5 min-h-[72px]">
-              {cat.tasks.length === 0 ? (
-                <div className="h-[72px] flex items-center justify-center rounded-lg border border-dashed border-white/[0.03] opacity-20">
-                   <Inbox className="w-3.5 h-3.5 text-[#555555]" />
-                </div>
-              ) : (
-                cat.tasks.slice(0, 3).map((task, taskIdx) => {
-                  const projectName = projects.find(p => p.id === task.projectId)?.name || "Unknown Project";
-                  let dueStatusStr = "No signal";
-                  if (task.dueDate) {
-                    if (cat.id === 'overdue') {
-                      const diffTime = Math.abs(new Date().getTime() - task.dueDate.toDate().getTime());
-                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                      dueStatusStr = `Overdue by ${diffDays} day${diffDays !== 1 ? 's' : ''}`;
-                    } else if (cat.id === 'dueToday') {
-                      dueStatusStr = "Due Today";
-                    } else if (cat.id === 'dueTomorrow') {
-                      dueStatusStr = "Due Tomorrow";
-                    } else {
-                      dueStatusStr = `Due ${format(task.dueDate.toDate(), "MMM dd")}`;
+              {/* Task Items */}
+              <div className="min-h-[80px] space-y-1">
+                {cat.tasks.length === 0 ? (
+                  <div className="flex h-[80px] items-center justify-center rounded-lg border border-dashed border-line/[0.06]">
+                    <Inbox className="h-4 w-4 text-ink-faint" aria-hidden />
+                    <span className="sr-only">No tasks in {cat.label}</span>
+                  </div>
+                ) : (
+                  cat.tasks.slice(0, 3).map((task) => {
+                    const projectName = projects.find(p => p.id === task.projectId)?.name || "Unknown Project";
+                    let dueStatusStr = "No signal";
+                    if (task.dueDate) {
+                      if (cat.id === 'overdue') {
+                        const diffTime = Math.abs(new Date().getTime() - task.dueDate.toDate().getTime());
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        dueStatusStr = `Overdue by ${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+                      } else if (cat.id === 'dueToday') {
+                        dueStatusStr = "Due Today";
+                      } else if (cat.id === 'dueTomorrow') {
+                        dueStatusStr = "Due Tomorrow";
+                      } else {
+                        dueStatusStr = `Due ${format(task.dueDate.toDate(), "MMM dd")}`;
+                      }
                     }
-                  }
 
-                  return (
-                    <div
-                      key={task.id}
-                      className="group/task cursor-pointer transition-all duration-300 rounded-md px-2 py-1.5 -mx-2 hover:bg-white/[0.02]"
-                      style={{ animationDelay: `${taskIdx * 80}ms` }}
-                    >
-                      <p className={cn(
-                        "text-[13px] font-medium leading-tight truncate transition-colors duration-300",
-                        cat.isUrgent ? "text-[#ddd] group-hover/task:text-white" : "text-[#bbb] group-hover/task:text-[#ededed]"
-                      )}>
-                        {task.title}
-                      </p>
-                      <p className="text-[10px] mt-1 font-mono tracking-wider truncate flex items-center gap-1.5">
-                        <span className="text-[#666666] group-hover/task:text-[#888888] transition-colors duration-300 uppercase">
-                          {projectName}
-                        </span>
-                        <span className="text-[#444444]">•</span>
-                        <span className={cn(
-                          "transition-colors duration-300 uppercase",
-                          cat.id === 'overdue' ? "text-orbit-red/80 group-hover/task:text-orbit-red" : 
-                          cat.id === 'dueToday' ? "text-amber-500/80 group-hover/task:text-amber-500" :
-                          cat.isUrgent ? "text-[#555555] group-hover/task:text-[#777]" : "text-[#444444] group-hover/task:text-[#555]"
-                        )}>
-                          {dueStatusStr}
-                        </span>
-                      </p>
-                    </div>
-                  );
-                })
-              )}
-              {cat.tasks.length > 3 && (
-                <p className="text-[9px] text-[#333333] font-mono uppercase tracking-[0.2em] pt-1 px-2">
-                  +{cat.tasks.length - 3} more
-                </p>
-              )}
+                    return (
+                      <div
+                        key={task.id}
+                        className="group/task -mx-2 cursor-pointer rounded-lg px-2 py-2 transition-colors duration-300 hover:bg-surface-raised"
+                      >
+                        <p className="truncate text-[13px] font-medium leading-tight text-ink-muted transition-colors duration-300 group-hover/task:text-ink-strong">
+                          {task.title}
+                        </p>
+                        <p className="mt-1.5 flex items-center gap-1.5 truncate font-mono text-[9px] uppercase tracking-[0.12em]">
+                          <span className="truncate text-ink-dim">{projectName}</span>
+                          <span className="text-ink-faint" aria-hidden>•</span>
+                          <span className={cn("shrink-0", cat.dueAccent)}>{dueStatusStr}</span>
+                        </p>
+                      </div>
+                    );
+                  })
+                )}
+                {cat.tasks.length > 3 && (
+                  <p className="px-0 pt-2 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim">
+                    +{cat.tasks.length - 3} more
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-    </div>
+    </DashboardCard>
   );
 }

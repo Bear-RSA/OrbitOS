@@ -112,7 +112,7 @@ export default function TeamsPage() {
 
   if (authLoading || dataLoading) {
     return (
-      <div className="min-h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center gap-6">
+      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6">
         <Loader />
       </div>
     );
@@ -130,15 +130,15 @@ export default function TeamsPage() {
   };
 
   return (
-    <DashboardShell className="bg-[#050505] text-[#ededed] min-h-screen selection:bg-white/10 selection:text-white">
+    <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
       {/* Top nav */}
       <div className="flex items-center justify-between mb-24 tracking-tight pt-4">
         <div className="flex items-center gap-5 cursor-pointer group" onClick={() => router.push("/dashboard")}>
-          <div className="w-10 h-10 rounded-xl bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_2px_8px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none"></div>
+          <div className="w-10 h-10 rounded-xl bg-surface-control shadow-raised flex items-center justify-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-sheen/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none"></div>
             <Image src="/logo.png" alt="OrbitOS Logo" fill className="object-cover rounded-[inherit] z-10" />
           </div>
-          <span className="text-[17px] font-medium text-[#ededed] tracking-tight group-hover:text-white transition-colors">OrbitOS</span>
+          <span className="text-[17px] font-medium text-ink tracking-tight group-hover:text-ink-strong transition-colors">OrbitOS</span>
         </div>
         
         <div className="flex items-center gap-5">
@@ -146,8 +146,8 @@ export default function TeamsPage() {
             onClick={handleRefresh}
             disabled={refreshing}
             className={cn(
-              "flex items-center justify-center w-10 h-10 rounded-full bg-transparent hover:bg-[#111111] text-[#888888] hover:text-[#ededed] transition-all focus:outline-none ring-0",
-              refreshing && "animate-spin text-[#666666]"
+              "flex items-center justify-center w-10 h-10 rounded-full bg-transparent hover:bg-surface-control text-ink-muted hover:text-ink transition-all focus:outline-none ring-0",
+              refreshing && "animate-spin text-ink-dim"
             )}
           >
             <RefreshCw className="w-4 h-4" />
@@ -155,7 +155,7 @@ export default function TeamsPage() {
 
           <button
             onClick={() => setAddMemberOpen(true)}
-            className="gap-2.5 hidden sm:flex items-center justify-center bg-[#ededed] hover:bg-white hover:-translate-y-[2px] text-[#050505] shadow-[0_2px_12px_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_20px_rgba(255,255,255,0.12),0_12px_32px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-lg px-6 h-10 text-[13px] font-bold tracking-tight focus:outline-none ring-0"
+            className="gap-2.5 hidden sm:flex items-center justify-center bg-ink hover:bg-ink-strong hover:-translate-y-[2px] text-on-ink shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06),0_8px_24px_rgb(var(--scrim)_/_0.3)] hover:shadow-[0_4px_20px_rgb(var(--ink-strong)_/_0.12),0_12px_32px_rgb(var(--scrim)_/_0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-lg px-6 h-10 text-[13px] font-bold tracking-tight focus:outline-none ring-0"
           >
             <UserPlus className="w-4 h-4" />
             Invite Member
@@ -163,9 +163,9 @@ export default function TeamsPage() {
 
           <button
             onClick={() => router.push("/profile")}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-[#111111] hover:bg-[#1a1a1a] hover:-translate-y-[2px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_8px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] focus:outline-none ring-0 relative overflow-hidden group"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-surface-control hover:bg-surface-hover hover:-translate-y-[2px] text-ink shadow-[inset_0_1px_0_rgb(var(--ink-strong)_/_0.06),0_2px_8px_rgb(var(--scrim)_/_0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] focus:outline-none ring-0 relative overflow-hidden group"
           >
-            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-sheen/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <span className="text-[13px] font-medium relative z-10">
               {user.name.charAt(0).toUpperCase()}
             </span>
@@ -176,13 +176,13 @@ export default function TeamsPage() {
       {/* Header */}
       <ScrollReveal>
         <div className="mb-24">
-          <h2 className="text-5xl font-light tracking-tighter text-[#ededed] mb-6">Core Team</h2>
+          <h2 className="text-5xl font-light tracking-tighter text-ink mb-6">Core Team</h2>
           <div className="flex items-center gap-4">
-            <div className="px-3 py-1 bg-[#111111] rounded-full ring-1 ring-white/[0.04] flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#888888]">Active Deployment</span>
+            <div className="px-3 py-1 bg-surface-control rounded-full ring-1 ring-line/[0.04] flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-ink-strong shadow-[0_0_8px_rgb(var(--ink-strong)_/_0.4)]" />
+              <span className="text-[10px] font-mono uppercase tracking-widest text-ink-muted">Active Deployment</span>
             </div>
-            <span className="text-[13px] text-[#666666] font-mono">{MOCK_TEAM.length + 1} Active Members</span>
+            <span className="text-[13px] text-ink-dim font-mono">{MOCK_TEAM.length + 1} Active Members</span>
           </div>
         </div>
       </ScrollReveal>
@@ -194,41 +194,41 @@ export default function TeamsPage() {
             <InteractiveCard className="p-8 group h-full">
               <div className="flex items-start justify-between mb-8">
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-full overflow-hidden border border-white/[0.06] bg-[#111111]">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border border-line/[0.06] bg-surface-control">
                     <img src={member.avatar} alt={member.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
                   </div>
                   <div className={cn(
-                    "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-4 border-[#0A0A0A] z-10",
-                    member.status === "active" ? "bg-emerald-500" : member.status === "busy" ? "bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]" : "bg-zinc-600"
+                    "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-4 border-line/[0.04] z-10",
+                    member.status === "active" ? "bg-emerald-500" : member.status === "busy" ? "bg-ink-strong shadow-[0_0_8px_rgb(var(--ink-strong)_/_0.4)]" : "bg-zinc-600"
                   )} />
                 </div>
                 <div className="text-right">
-                  <h3 className="text-xl font-light text-[#ededed]">{member.name}</h3>
-                  <p className="text-[11px] font-mono text-[#666666] uppercase tracking-widest mt-1">{member.role}</p>
+                  <h3 className="text-xl font-light text-ink">{member.name}</h3>
+                  <p className="text-[11px] font-mono text-ink-dim uppercase tracking-widest mt-1">{member.role}</p>
                 </div>
               </div>
 
               <div className="mb-10">
-                <p className="text-[10px] font-mono text-[#444444] uppercase tracking-widest mb-4">Focus Module</p>
-                <div className="bg-[#050505]/40 rounded-xl p-4 ring-1 ring-white/[0.04]">
+                <p className="text-[10px] font-mono text-ink-faint uppercase tracking-widest mb-4">Focus Module</p>
+                <div className="bg-base/40 rounded-xl p-4 ring-1 ring-line/[0.04]">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-[13px] font-light text-[#ededed]">{member.focus}</span>
-                    <span className="text-[11px] font-mono text-white">{member.progress}%</span>
+                    <span className="text-[13px] font-light text-ink">{member.focus}</span>
+                    <span className="text-[11px] font-mono text-ink-strong">{member.progress}%</span>
                   </div>
-                  <div className="w-full h-1 bg-[#111111] rounded-full overflow-hidden">
+                  <div className="w-full h-1 bg-surface-control rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-white rounded-full transition-all duration-1000" 
+                      className="h-full bg-ink-strong rounded-full transition-all duration-1000" 
                       style={{ width: `${member.progress}%` }} 
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-6 border-t border-white/[0.04]">
-                <span className="text-[10px] font-mono text-[#666666] uppercase tracking-widest flex items-center gap-2">
+              <div className="flex items-center justify-between pt-6 border-t border-line/[0.04]">
+                <span className="text-[10px] font-mono text-ink-dim uppercase tracking-widest flex items-center gap-2">
                   {member.availability}
                 </span>
-                <button className="text-[#333333] hover:text-[#ededed] transition-colors">
+                <button className="text-ink-faint hover:text-ink transition-colors">
                   <MoreHorizontal className="w-5 h-5" />
                 </button>
               </div>
@@ -241,36 +241,36 @@ export default function TeamsPage() {
       <ScrollReveal delay={400}>
         <div className="mb-32">
           <div className="flex items-center gap-4 mb-12">
-            <h3 className="text-2xl font-light text-[#ededed] tracking-tight">External Partners</h3>
-            <div className="h-px flex-1 bg-gradient-to-r from-white/[0.06] to-transparent" />
-            <span className="text-[10px] font-mono text-[#444444] uppercase tracking-widest">Orbit Network</span>
+            <h3 className="text-2xl font-light text-ink tracking-tight">External Partners</h3>
+            <div className="h-px flex-1 bg-gradient-to-r from-line/[0.06] to-transparent" />
+            <span className="text-[10px] font-mono text-ink-faint uppercase tracking-widest">Orbit Network</span>
           </div>
 
           <div className="space-y-3">
             {EXTERNAL_PARTNERS.map(partner => (
               <div 
                 key={partner.id} 
-                className="grid grid-cols-1 md:grid-cols-5 items-center px-8 py-5 bg-[#0A0A0A] rounded-2xl ring-1 ring-white/[0.04] hover:bg-[#111111] transition-all group"
+                className="grid grid-cols-1 md:grid-cols-5 items-center px-8 py-5 bg-surface-sunken rounded-2xl ring-1 ring-line/[0.04] hover:bg-surface-control transition-all group"
               >
                 <div className="flex items-center gap-4 col-span-2">
-                  <div className="w-10 h-10 rounded-xl bg-[#111111] ring-1 ring-white/[0.04] flex items-center justify-center text-[#666666] font-mono text-[10px]">
+                  <div className="w-10 h-10 rounded-xl bg-surface-control ring-1 ring-line/[0.04] flex items-center justify-center text-ink-dim font-mono text-[10px]">
                     {partner.name.split(' ').map(n => n[0]).join('')}
                   </div>
                   <div>
-                    <p className="text-[14px] font-light text-[#ededed]">{partner.name}</p>
-                    <p className="text-[10px] font-mono text-[#555555] uppercase tracking-widest">{partner.type}</p>
+                    <p className="text-[14px] font-light text-ink">{partner.name}</p>
+                    <p className="text-[10px] font-mono text-ink-dim uppercase tracking-widest">{partner.type}</p>
                   </div>
                 </div>
-                <div className="text-[13px] text-[#666666] font-light">{partner.specialty}</div>
+                <div className="text-[13px] text-ink-dim font-light">{partner.specialty}</div>
                 <div className="flex items-center gap-2">
                   <span className={cn(
                     "w-1.5 h-1.5 rounded-full",
-                    partner.status === "Available" ? "bg-emerald-500" : partner.status === "Wrapping Up" ? "bg-amber-500" : "bg-[#333333]"
+                    partner.status === "Available" ? "bg-emerald-500" : partner.status === "Wrapping Up" ? "bg-amber-500" : "bg-surface-highest"
                   )} />
-                  <span className="text-[10px] font-mono text-[#666666] uppercase tracking-widest">{partner.status}</span>
+                  <span className="text-[10px] font-mono text-ink-dim uppercase tracking-widest">{partner.status}</span>
                 </div>
                 <div className="text-right">
-                  <button className="text-[10px] font-mono uppercase tracking-widest text-[#ededed] hover:text-white transition-colors">
+                  <button className="text-[10px] font-mono uppercase tracking-widest text-ink hover:text-ink-strong transition-colors">
                     Assign Task
                   </button>
                 </div>
@@ -282,22 +282,22 @@ export default function TeamsPage() {
 
       {/* Stats Footer */}
       <ScrollReveal delay={500}>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pt-16 border-t border-white/[0.04] pb-32">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pt-16 border-t border-line/[0.04] pb-32">
           <div>
-            <p className="text-[10px] font-mono text-[#444444] uppercase tracking-widest mb-3">Saturation</p>
-            <p className="text-4xl font-light tracking-tighter text-[#ededed]">74.2%</p>
+            <p className="text-[10px] font-mono text-ink-faint uppercase tracking-widest mb-3">Saturation</p>
+            <p className="text-4xl font-light tracking-tighter text-ink">74.2%</p>
           </div>
           <div>
-            <p className="text-[10px] font-mono text-[#444444] uppercase tracking-widest mb-3">Velocity</p>
-            <p className="text-4xl font-light tracking-tighter text-[#ededed]">1.4x</p>
+            <p className="text-[10px] font-mono text-ink-faint uppercase tracking-widest mb-3">Velocity</p>
+            <p className="text-4xl font-light tracking-tighter text-ink">1.4x</p>
           </div>
           <div>
-            <p className="text-[10px] font-mono text-[#444444] uppercase tracking-widest mb-3">System Health</p>
-            <p className="text-4xl font-light tracking-tighter text-[#ededed]">Optimal</p>
+            <p className="text-[10px] font-mono text-ink-faint uppercase tracking-widest mb-3">System Health</p>
+            <p className="text-4xl font-light tracking-tighter text-ink">Optimal</p>
           </div>
           <div>
-            <p className="text-[10px] font-mono text-[#444444] uppercase tracking-widest mb-3">Coverage</p>
-            <p className="text-4xl font-light tracking-tighter text-[#ededed]">Global</p>
+            <p className="text-[10px] font-mono text-ink-faint uppercase tracking-widest mb-3">Coverage</p>
+            <p className="text-4xl font-light tracking-tighter text-ink">Global</p>
           </div>
         </div>
       </ScrollReveal>

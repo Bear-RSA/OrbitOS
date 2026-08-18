@@ -1,7 +1,7 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase/admin";
-import { validateOwner, verifyProjectAccess } from "@/lib/auth/permissions";
+import { validateOwner, verifyProjectAccess, validateTierQuota } from "@/lib/auth/permissions";
 import { logActivity } from "@/lib/telemetry";
 
 /* ------------------------------------------------------------------ */
@@ -361,3 +361,75 @@ export async function updateProjectDescriptionAction(
   }
 }
 
+/* ------------------------------------------------------------------ */
+/*  Create Project (Server-Side with Tier Quota Enforcement)           */
+/* ------------------------------------------------------------------ */
+
+import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
+
+interface CreateProjectPayload {
+  name: string;
+  description?: string;
+  orgId: string;
+  uid: string;
+}
+
+export async function createProjectAction(
+  payload: CreateProjectPayload
+): Promise<{ success: boolean; projectId?: string; error?: string }> {
+  const { name, description, orgId, uid } = payload;
+
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    return { success: false, error: "Project name cannot be empty." };
+  }
+
+  try {
+    // 1. Verify the user exists and belongs to the org
+    const userSnap = await adminDb.collection("users").doc(uid).get();
+    if (!userSnap.exists) {
+      return { success: false, error: "User not found." };
+    }
+    const userData = userSnap.data()!;
+    if (userData.orgId !== orgId) {
+      return { success: false, error: "Unauthorized. Org mismatch." };
+    }
+
+    // 2. Enforce tier quota for projects
+    const quota = await validateTierQuota(orgId, "projects");
+    if (!quota.allowed) {
+      console.warn("[CreateProject] Quota exceeded:", { orgId, uid, ...quota });
+      return { success: false, error: quota.error || "Project limit reached." };
+    }
+
+    // 3. Create the project document via Admin SDK
+    const now = AdminTimestamp.now();
+    const projectRef = await adminDb.collection("projects").add({
+      name: trimmedName,
+      orgId,
+      ownerId: uid,
+      createdBy: uid,
+      createdAt: now,
+      ...(description?.trim() && { description: description.trim() }),
+    });
+
+    // 4. Log activity
+    const userName = userData.name || "System";
+    await logActivity({
+      eventType: "PROJECT_INITIALIZED" as any,
+      orgId,
+      projectId: projectRef.id,
+      actor: { uid, name: userName },
+      metadata: { projectId: projectRef.id, projectName: trimmedName },
+    });
+
+    console.log("[CreateProject] Project created:", { projectId: projectRef.id, uid });
+    return { success: true, projectId: projectRef.id };
+  } catch (error: any) {
+    console.error("[CreateProject] Creation failed:", error);
+    return {
+      success: false,
+      error: "Project creation failed. Please try again or contact support.",
+    };
+  }
+}

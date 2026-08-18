@@ -52,6 +52,11 @@ export default function OnboardingPage() {
         name: data.orgName,
         ownerId: uid,
         createdAt: now,
+        subscription: {
+          tier: "exploration",
+          status: "active",
+          updatedAt: now,
+        },
       });
       const orgId = orgRef.id;
 
@@ -59,7 +64,7 @@ export default function OnboardingPage() {
         name: data.name,
         email: firebaseUser.email,
         orgId,
-        role: "owner",
+        role: "OWNER",
         createdAt: now,
       }, { merge: true });
 
@@ -74,21 +79,21 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-base flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="flex flex-col items-center gap-3 mb-12 justify-center">
           <Logo size={40} />
-          <span className="font-semibold text-[#ededed] text-lg tracking-tight">OrbitOS</span>
+          <span className="font-semibold text-ink text-lg tracking-tight">OrbitOS</span>
         </div>
 
         <div className="mb-10 text-center">
-          <h1 className="text-2xl font-light text-[#ededed] tracking-tight">System configuration</h1>
-          <p className="text-[13px] text-[#888888] font-medium mt-2">
+          <h1 className="text-2xl font-light text-ink tracking-tight">System configuration</h1>
+          <p className="text-[13px] text-ink-muted font-medium mt-2">
             Establish your organizational parameters.
           </p>
         </div>
 
-        <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
+        <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2.5">
               <Label htmlFor="onboard-name">Operator Designation (Name)</Label>
@@ -98,7 +103,7 @@ export default function OnboardingPage() {
                 {...register("name")}
               />
               {errors.name && (
-                <p className="text-xs text-[#E57A7A] mt-1">{errors.name.message}</p>
+                <p className="text-xs text-orbit-red mt-1">{errors.name.message}</p>
               )}
             </div>
 
@@ -110,13 +115,13 @@ export default function OnboardingPage() {
                 {...register("orgName")}
               />
               {errors.orgName && (
-                <p className="text-xs text-[#E57A7A] mt-1">{errors.orgName.message}</p>
+                <p className="text-xs text-orbit-red mt-1">{errors.orgName.message}</p>
               )}
             </div>
 
             {error && (
-              <div className="rounded-xl bg-[#1A0A0A] ring-1 ring-[#FF6B6B]/20 px-4 py-3">
-                <p className="text-[13px] text-[#E57A7A] font-medium">{error}</p>
+              <div className="rounded-xl bg-orbit-red/[0.1] ring-1 ring-orbit-red/20 px-4 py-3">
+                <p className="text-[13px] text-orbit-red font-medium">{error}</p>
               </div>
             )}
 

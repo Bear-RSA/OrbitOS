@@ -1,39 +1,63 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { ArrowRight, Target, Shield, Zap, Layers, CheckCircle2 } from 'lucide-react';
+import {
+  Target,
+  Shield,
+  Zap,
+  Layers,
+  CheckCircle2,
+  Inbox,
+  GitBranch,
+  Crosshair,
+  LineChart,
+} from 'lucide-react';
 import type { Metadata } from 'next';
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { InteractiveCard } from "@/components/ui/interactive-card";
+import { MarketingNav } from "@/components/marketing/marketing-nav";
+import { MarketingFooter } from "@/components/marketing/marketing-footer";
 
 export const metadata: Metadata = {
-  title: "Methodology · OrbitOS",
+  title: "Methodology",
   description: "An intentional operating discipline for digital studios.",
 };
 
+/**
+ * The four phases of the operating loop. Rendered as a connected sequence —
+ * a horizontal rail on desktop, a vertical one on mobile — so the steps read
+ * as one continuous cycle rather than four unrelated columns.
+ */
+const WORKFLOW = [
+  {
+    step: "01",
+    title: "Capture",
+    icon: Inbox,
+    desc: "Aggregating every signal and requirement into a single, unified inbox. Nothing is lost, every detail is accounted for.",
+  },
+  {
+    step: "02",
+    title: "Structure",
+    icon: GitBranch,
+    desc: "Translating raw inputs into actionable architecture. Defining the roadmap, dependencies, and owners.",
+  },
+  {
+    step: "03",
+    title: "Execute",
+    icon: Crosshair,
+    desc: "Moving with surgical precision. The system clears the noise so the team can focus solely on the craft.",
+  },
+  {
+    step: "04",
+    title: "Review",
+    icon: LineChart,
+    desc: "Analyzing outcome against intent. Using data-driven insights to refine the next cycle of execution.",
+  },
+];
+
 export default function MethodologyPage() {
   return (
-    <main className="min-h-screen bg-[#050505] text-[#ededed] font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark min-h-screen bg-[#050505] text-[#ededed] font-sans selection:bg-white/[0.1]">
       {/* TopNavBar - Replicated for consistency */}
-      <nav className="fixed top-0 w-full z-50 bg-[#050505]/70 backdrop-blur-xl border-b border-white/[0.04]">
-        <div className="flex justify-between items-center max-w-7xl mx-auto px-8 h-16">
-          <Link href="/" className="font-mono text-lg tracking-tighter text-[#ededed] flex items-center gap-3">
-             <div className="w-6 h-6 rounded-md bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden">
-               <Image src="/logo.png" alt="OrbitOS" fill className="object-cover rounded-[inherit]" />
-             </div>
-             OrbitOS
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="#">Features</Link>
-            <Link className="font-sans tracking-tight font-medium text-[#ededed] border-b border-[#ededed] pb-1 hover:text-white transition-colors duration-300" href="/methodology">Methodology</Link>
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="/pricing">Pricing</Link>
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="/changelog">Changelog</Link>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/login" className="text-[#888888] font-sans font-medium text-sm hover:text-[#ededed] transition-colors">Sign In</Link>
-            <Link href="/signup" className="bg-[#ededed] text-[#050505] px-5 py-2 rounded-lg font-medium text-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:bg-white active:scale-95">Get Started</Link>
-          </div>
-        </div>
-      </nav>
+      <MarketingNav active="methodology" />
 
       {/* Hero Section */}
       <section className="pt-48 pb-32 px-8 max-w-7xl mx-auto">
@@ -111,33 +135,67 @@ export default function MethodologyPage() {
       </section>
 
       {/* Workflow Section */}
-      <section className="py-40 px-8 bg-[#0A0A0A]/50 border-y border-white/[0.04]">
+      <section className="py-32 md:py-40 px-6 md:px-8 bg-[#0A0A0A]/50 border-y border-white/[0.04]">
         <div className="max-w-7xl mx-auto">
           <ScrollReveal>
-            <div className="mb-20 text-center">
+            <div className="mb-20 md:mb-24 text-center">
               <span className="font-mono text-[11px] tracking-widest text-[#555555] uppercase">Operational Flow</span>
               <h2 className="text-4xl md:text-5xl font-light tracking-tight mt-4 text-[#ededed]">How OrbitOS Operates</h2>
+              <p className="text-[#888888] text-base md:text-lg font-light leading-relaxed mt-6 max-w-lg mx-auto">
+                One continuous loop. Each phase hands clean inputs to the next, and the last one feeds the first.
+              </p>
             </div>
           </ScrollReveal>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            {[
-              { step: "01", title: "Capture", desc: "Aggregating every signal and requirement into a single, unified inbox. Nothing is lost, every detail is accounted for." },
-              { step: "02", title: "Structure", desc: "Translating raw inputs into actionable architecture. Defining the roadmap, dependencies, and owners." },
-              { step: "03", title: "Execute", desc: "Moving with surgical precision. The system clears the noise so the team can focus solely on the craft." },
-              { step: "04", title: "Review", desc: "Analyzing outcome against intent. Using data-driven insights to refine the next cycle of execution." }
-            ].map((item, i) => (
-              <ScrollReveal key={i} delay={i * 100}>
-                <div className="flex flex-col">
-                  <span className="font-mono text-[10px] text-[#555555] mb-6 tracking-widest">{item.step}</span>
-                  <h4 className="text-xl font-light text-[#ededed] mb-4">{item.title}</h4>
-                  <p className="text-[#888888] text-sm leading-relaxed font-light">
-                    {item.desc}
-                  </p>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
+
+          {/* The rail lives inside this ScrollReveal so it rises with the step
+              nodes as one unit. The per-step reveals below use yOffset={0} —
+              a staggered translate would drift the nodes off the rail
+              mid-animation. */}
+          <ScrollReveal className="relative">
+            {/* Connector rail — horizontal on desktop, vertical on mobile. The
+                opaque step nodes sit on top of it, segmenting the line. */}
+            <div
+              aria-hidden="true"
+              className="hidden md:block absolute left-0 right-0 top-[27px] h-px bg-gradient-to-r from-transparent via-white/[0.1] to-transparent"
+            />
+            <div
+              aria-hidden="true"
+              className="md:hidden absolute left-[27px] top-3 bottom-3 w-px bg-gradient-to-b from-transparent via-white/[0.1] to-transparent"
+            />
+
+            <ol className="grid grid-cols-1 md:grid-cols-4 gap-y-10 md:gap-y-0 md:gap-x-10">
+              {WORKFLOW.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <li key={item.step}>
+                    <ScrollReveal delay={200 + i * 120} yOffset={0} className="group h-full">
+                      <div className="flex md:flex-col gap-5 md:gap-0">
+                        {/* Node */}
+                        <div className="flex-none w-[54px] h-[54px] rounded-2xl bg-[#0A0A0A] ring-1 ring-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:ring-white/[0.18] group-hover:bg-[#111111] group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_32px_rgba(0,0,0,0.5)] md:group-hover:-translate-y-[3px]">
+                          <Icon
+                            aria-hidden="true"
+                            className="w-[18px] h-[18px] text-[#666666] transition-colors duration-500 group-hover:text-[#ededed]"
+                          />
+                        </div>
+
+                        <div className="md:mt-8 md:pr-4">
+                          <span className="font-mono text-[10px] tracking-[0.3em] text-[#555555] transition-colors duration-500 group-hover:text-[#888888]">
+                            {item.step}
+                          </span>
+                          <h3 className="text-xl font-light text-[#ededed] mt-3 mb-3 tracking-tight">
+                            {item.title}
+                          </h3>
+                          <p className="text-[#888888] text-sm leading-relaxed font-light">
+                            {item.desc}
+                          </p>
+                        </div>
+                      </div>
+                    </ScrollReveal>
+                  </li>
+                );
+              })}
+            </ol>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -199,20 +257,7 @@ export default function MethodologyPage() {
       </section>
 
       {/* Footer - Replicated */}
-      <footer className="bg-[#050505] border-t border-white/[0.04] w-full py-20">
-        <div className="flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto px-8 md:px-16 gap-12 md:gap-0">
-          <div className="flex flex-col items-center md:items-start gap-4">
-            <div className="font-mono font-bold text-[#ededed] text-xl tracking-tight">OrbitOS</div>
-            <p className="font-mono text-[10px] tracking-widest uppercase text-[#555555]">© {new Date().getFullYear()} OrbitOS. Built for the architectural void.</p>
-          </div>
-          <div className="flex gap-8 md:gap-12">
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/privacy">Privacy</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/terms">Terms</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/security">Security</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="https://github.com/MiraiStack">GitHub</Link>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </main>
   );
 }

@@ -19,8 +19,9 @@ import { ProfileModal } from "@/components/dashboard/profile-modal";
 import { Task } from "@/types/task";
 import { Member } from "@/types/member";
 import { OrbitalDashboardData, OwnerDashboardData, MemberDashboardData } from "@/types/dashboard";
-import { RefreshCw, Plus, UserPlus } from "lucide-react";
+import { RefreshCw, Plus } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { ActionButton } from "@/components/dashboard/dashboard-card";
 import { cn } from "@/lib/utils/classnames";
 
 export default function DashboardPage() {
@@ -88,13 +89,13 @@ export default function DashboardPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center gap-6">
+      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6">
         <Loader />
         <div className="flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#555555]">
+          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-dim">
             Resolving Network
           </span>
-          <div className="w-24 h-px bg-gradient-to-r from-transparent via-[#111111] to-transparent"></div>
+          <div className="h-px w-24 bg-gradient-to-r from-transparent via-line/15 to-transparent"></div>
         </div>
       </div>
     );
@@ -111,57 +112,53 @@ export default function DashboardPage() {
     : false;
 
   return (
-    <DashboardShell className="bg-[#050505] text-[#ededed] min-h-screen selection:bg-white/10 selection:text-white">
-      {/* Structural Navigation Layer */}
-      <div className="flex items-center justify-between mb-24 tracking-tight pt-4">
-        <div className="flex items-center gap-5">
-          <div className="w-10 h-10 rounded-xl bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_2px_8px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden group">
-            <Image src="/logo.png" alt="OrbitOS Logo" fill className="object-cover rounded-[inherit] z-10" />
+    <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
+      {/* Structural Navigation Layer — stays reachable on a long scroll */}
+      <header className="sticky top-0 z-40 -mx-5 mb-12 border-b border-line/[0.05] bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
+        <div className="flex h-16 items-center justify-between tracking-tight">
+          <div className="flex items-center gap-3.5">
+            <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[10px] bg-surface-control shadow-raised">
+              <Image src="/logo.png" alt="" fill className="z-10 rounded-[inherit] object-cover" />
+            </div>
+            <span className="text-[15px] font-medium tracking-tight text-ink">OrbitOS</span>
           </div>
-          <span className="text-[17px] font-medium text-[#ededed] tracking-tight">OrbitOS</span>
-        </div>
-        
-        <div className="flex items-center gap-5">
-          <div className="flex items-center justify-end gap-3 w-[212px]">
-            <button
-              onClick={() => { setRefreshing(true); setRefreshKey(prev => prev + 1); loadOperationalData(); }}
+
+          <div className="flex items-center gap-2">
+            <ActionButton
+              icon={RefreshCw}
+              label="Refresh"
+              variant="ghost"
+              collapsed
               disabled={refreshing}
-              className={cn(
-                "flex items-center justify-center w-10 h-10 rounded-full bg-transparent hover:bg-[#111111] text-[#888888] hover:text-[#ededed] transition-all focus:outline-none ring-0 shrink-0",
-                refreshing && "animate-spin text-[#666666]"
-              )}
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
+              onClick={() => { setRefreshing(true); setRefreshKey(prev => prev + 1); loadOperationalData(); }}
+              className={cn(refreshing && "[&_svg]:animate-spin")}
+            />
+
+            <ActionButton
+              icon={Plus}
+              label="Create Project"
+              collapsed
+              onClick={() => setCreateProjectOpen(true)}
+            />
 
             <button
-              onClick={() => setCreateProjectOpen(true)}
-              className="group flex items-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[1px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-md h-9 w-9 hover:w-[160px] overflow-hidden focus:outline-none ring-0 shrink-0"
+              onClick={() => router.push("/profile")}
+              aria-label="Open your profile"
+              title="Profile"
+              className="ml-1 rounded-full transition-transform duration-300 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
             >
-              <div className="flex items-center justify-center w-9 h-9 shrink-0">
-                <Plus className="w-3.5 h-3.5 text-[#888888] transition-colors group-hover:text-[#ededed]" />
-              </div>
-              <span className="opacity-0 -translate-x-3 whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 group-hover:translate-x-0 text-[10px] font-mono uppercase tracking-[0.2em] pr-4">
-                Create Project
-              </span>
+              <UserAvatar
+                photoURL={user.photoURL}
+                name={user.name}
+                size="md"
+              />
             </button>
           </div>
-
-          <button
-            onClick={() => router.push("/profile")}
-            className="focus:outline-none hover:-translate-y-[2px] transition-transform duration-300"
-          >
-            <UserAvatar 
-              photoURL={user.photoURL} 
-              name={user.name} 
-              size="md" 
-            />
-          </button>
         </div>
-      </div>
+      </header>
 
       {/* Narrative Header Layer */}
-      <div className="mb-24">
+      <div className="mb-12 sm:mb-16">
         <DashboardHeader
           currentUser={{ ...user, id: user.id } as Member}
           orgName={rawMembers.find(m => m.id === user.id)?.orgId || "Operational Node"}

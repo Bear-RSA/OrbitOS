@@ -40,29 +40,29 @@ export default function ProjectsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center gap-6">
+      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6">
         <Loader />
         <div className="flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#555555]">
+          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-ink-dim">
             Resolving Network
           </span>
-          <div className="w-24 h-px bg-gradient-to-r from-transparent via-[#111111] to-transparent"></div>
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-surface-control to-transparent"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <DashboardShell className="bg-[#050505] text-[#ededed] min-h-screen selection:bg-white/10 selection:text-white">
+    <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
       <div className="flex items-center gap-4 mb-20 group">
         <button 
           onClick={() => router.push("/dashboard")}
-          className="p-2 -ml-2 text-[#555555] hover:text-[#ededed] transition-colors"
+          className="p-2 -ml-2 text-ink-dim hover:text-ink transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-sm font-mono tracking-[0.2em] text-[#555555] uppercase">Workspace</h1>
+          <h1 className="text-sm font-mono tracking-[0.2em] text-ink-dim uppercase">Workspace</h1>
           <div className="text-xl font-medium tracking-tight mt-1">Operational Projects</div>
         </div>
       </div>

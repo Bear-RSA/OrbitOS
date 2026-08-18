@@ -12,6 +12,13 @@ export type ActivityEventType =
   | "ASSET_DESTROYED"
   | "DIRECTIVE_CREATED"
   | "DIRECTIVE_ASSIGNED"
+  /* Edits, notes and blocking are not status changes. They used to be
+     logged as DIRECTIVE_TRANSITION with placeholder from/to strings,
+     which rendered in the feed as "shifted X to Updated". */
+  | "DIRECTIVE_EDITED"
+  | "DIRECTIVE_BLOCKED"
+  | "DIRECTIVE_UNBLOCKED"
+  | "NOTE_ADDED"
   | "MILESTONE_COMPLETE"
   | "PROJECT_TERMINATED"
   | "PROJECT_ARCHIVED"
@@ -21,7 +28,14 @@ export type ActivityEventType =
   | "BRIEFING_POSTED"
   | "MEMBER_REMOVED"
   | "DIRECTIVE_DELETED"
-  | "WORKLOAD_SHIFT";
+  | "WORKLOAD_SHIFT"
+  /* Engagements are time with people in it — a separate collection from
+     directives, and separate events so the feed can distinguish "the
+     work moved" from "the meeting moved". */
+  | "ENGAGEMENT_SCHEDULED"
+  | "ENGAGEMENT_REVISED"
+  | "ENGAGEMENT_CANCELLED"
+  | "RSVP_RECORDED";
 
 /* ------------------------------------------------------------------ */
 /*  Activity Document                                                  */

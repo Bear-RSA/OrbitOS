@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { sendDailyDigest } from "@/lib/email/daily-digest";
 import { Timestamp } from "firebase-admin/firestore";
+import { resolvePreferences } from "@/types/preferences";
 
 export async function POST(req: NextRequest) {
   // Auth check for cron — basic secret check
@@ -24,12 +25,20 @@ export async function POST(req: NextRequest) {
       const usersSnap = await adminDb
         .collection("users")
         .where("orgId", "==", orgId)
-        .where("role", "==", "owner")
+        .where("role", "==", "OWNER")
         .limit(1)
         .get();
 
       if (usersSnap.empty) continue;
       const owner = usersSnap.docs[0].data();
+
+      // Settings -> Notifications. An owner who has switched the digest off
+      // is skipped before any of the aggregation work below runs.
+      const ownerPrefs = resolvePreferences(owner.preferences);
+      if (!ownerPrefs.dailyDigest) {
+        results.push(`Skipped ${owner.email} (digest disabled)`);
+        continue;
+      }
 
       // Get tasks
       const tasksSnap = await adminDb
@@ -74,6 +83,13 @@ export async function POST(req: NextRequest) {
       let atRiskStatus: "watch" | "at-risk" | null = null;
       if (overduePercent > 0.25) atRiskStatus = "at-risk";
       else if (overduePercent > 0) atRiskStatus = "watch";
+
+      // "Only when something needs attention" — a quiet day sends nothing
+      // rather than an all-clear mail.
+      if (ownerPrefs.digestOnlyWhenAttention && overdueCount + inactiveCount === 0) {
+        results.push(`Skipped ${owner.email} (nothing needs attention)`);
+        continue;
+      }
 
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://orbit-os.co.za";
 

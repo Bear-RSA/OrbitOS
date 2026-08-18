@@ -10,7 +10,7 @@ interface DashboardShellProps {
 export function DashboardShell({ children, className }: DashboardShellProps) {
   return (
     <div className={cn("min-h-screen bg-background", className)}>
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-24 sm:px-8 lg:px-10">
         {children}
       </div>
     </div>

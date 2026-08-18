@@ -129,25 +129,25 @@ function JoinForm() {
   const renderContent = () => {
     if (status === "error") {
       return (
-        <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
-          <div className="mx-auto w-12 h-12 rounded-full bg-[#1A0A0A] flex items-center justify-center mb-6">
-             <AlertCircle className="w-5 h-5 text-[#E57A7A]" />
+        <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
+          <div className="mx-auto w-12 h-12 rounded-full bg-orbit-red/[0.1] flex items-center justify-center mb-6">
+             <AlertCircle className="w-5 h-5 text-orbit-red" />
           </div>
-          <h1 className="text-[17px] font-light tracking-tight text-[#ededed] mb-2">Integration Failed</h1>
-          <p className="text-[13px] text-[#888888] font-light leading-relaxed mb-8">{errorMsg}</p>
-          <Link href="/" className="text-[12px] font-medium text-[#ededed] bg-[#111111] px-5 py-2.5 rounded-lg border border-white/[0.04] hover:bg-white/[0.04] transition-all inline-block tracking-wide">Return to Core</Link>
+          <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Integration Failed</h1>
+          <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-8">{errorMsg}</p>
+          <Link href="/" className="text-[12px] font-medium text-ink bg-surface-control px-5 py-2.5 rounded-lg border border-line/[0.04] hover:bg-surface-raised transition-all inline-block tracking-wide">Return to Core</Link>
         </div>
       );
     }
 
     if (status === "done") {
       return (
-        <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
-          <div className="mx-auto w-12 h-12 rounded-full bg-[#0F1A13] flex items-center justify-center mb-6">
-             <CheckCircle2 className="w-5 h-5 text-[#85C89B]" />
+        <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
+          <div className="mx-auto w-12 h-12 rounded-full bg-orbit-green/[0.1] flex items-center justify-center mb-6">
+             <CheckCircle2 className="w-5 h-5 text-orbit-green" />
           </div>
-          <h1 className="text-[17px] font-light tracking-tight text-[#ededed] mb-2">Integration Complete</h1>
-          <p className="text-[13px] text-[#888888] font-light leading-relaxed">Initializing dashboard sequence...</p>
+          <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Integration Complete</h1>
+          <p className="text-[13px] text-ink-muted font-light leading-relaxed">Initializing dashboard sequence...</p>
         </div>
       );
     }
@@ -155,17 +155,17 @@ function JoinForm() {
     if (!isInviteReady) return null;
 
     return (
-      <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.6)] p-12">
-        <div className="mx-auto w-12 h-12 rounded-full bg-[#111111] border border-white/[0.04] flex items-center justify-center mb-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-          <UserPlus className="w-5 h-5 text-[#ededed]" />
+      <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
+        <div className="mx-auto w-12 h-12 rounded-full bg-surface-control border border-line/[0.04] flex items-center justify-center mb-6 shadow-card">
+          <UserPlus className="w-5 h-5 text-ink" />
         </div>
-        <h1 className="text-[17px] font-light tracking-tight text-[#ededed] mb-1">Workspace Request</h1>
-        <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#555555] mb-8">Access Token Verified</p>
+        <h1 className="text-[17px] font-light tracking-tight text-ink mb-1">Workspace Request</h1>
+        <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-ink-dim mb-8">Access Token Verified</p>
 
         {/* Priority 1: Authentication Required */}
         {needsAuth ? (
           <>
-            <p className="text-[13px] text-[#888888] font-light leading-relaxed mb-8">
+            <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-8">
               You must authenticate with your own operational identity to accept this invite.
             </p>
             <Link
@@ -176,16 +176,16 @@ function JoinForm() {
                 Establish clearance
               </Button>
             </Link>
-            <p className="text-[12px] text-[#555555] font-light leading-relaxed mt-6">
-              Already have clearance? <Link href={`/login?redirect=${encodeURIComponent(`/join?token=${token}`)}`} className="text-[#888888] hover:text-[#ededed] underline-offset-4 hover:underline transition-all">Sign in</Link>
+            <p className="text-[12px] text-ink-dim font-light leading-relaxed mt-6">
+              Already have clearance? <Link href={`/login?redirect=${encodeURIComponent(`/join?token=${token}`)}`} className="text-ink-muted hover:text-ink underline-offset-4 hover:underline transition-all">Sign in</Link>
             </p>
           </>
         ) : 
         /* Priority 2: Identity Mismatch */
         isWrongEmail ? (
           <>
-            <p className="text-[13px] text-[#888888] font-light leading-relaxed mb-6">
-              Identity mismatch. This invite is bound to <span className="text-[#ededed] font-medium">{inviteData?.email}</span>, but you are logged in as <span className="text-[#E57A7A]">{firebaseUser?.email}</span>.
+            <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-6">
+              Identity mismatch. This invite is bound to <span className="text-ink font-medium">{inviteData?.email}</span>, but you are logged in as <span className="text-orbit-red">{firebaseUser?.email}</span>.
             </p>
             <Button 
               variant="outline" 
@@ -202,7 +202,7 @@ function JoinForm() {
         /* Priority 3: Collision - Correct Org */
         isAlreadyInOrg ? (
           <>
-            <p className="text-[13px] text-[#888888] font-light leading-relaxed mb-8">
+            <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-8">
               You are already a member of this workspace. Your identity is active.
             </p>
             <Link href="/dashboard" className="block w-full">
@@ -213,8 +213,8 @@ function JoinForm() {
         /* Priority 4: Collision - Wrong Org */
         isInOtherOrg ? (
           <>
-            <p className="text-[13px] text-[#888888] font-light leading-relaxed mb-6">
-              Identity conflict. You are currently assigned to another workspace (<span className="text-[#ededed]">{user?.email}</span>).
+            <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-6">
+              Identity conflict. You are currently assigned to another workspace (<span className="text-ink">{user?.email}</span>).
             </p>
             <Button 
               variant="outline" 
@@ -226,7 +226,7 @@ function JoinForm() {
             >
               Sign Out to Accept
             </Button>
-            <Link href="/dashboard" className="text-[12px] text-[#555555] hover:text-[#888888] transition-colors inline-block tracking-wide">
+            <Link href="/dashboard" className="text-[12px] text-ink-dim hover:text-ink-muted transition-colors inline-block tracking-wide">
               Return to my dashboard
             </Link>
           </>
@@ -234,8 +234,8 @@ function JoinForm() {
         /* Priority 5: Ready to Redeem */
         canJoin ? (
           <>
-            <p className="text-[13px] text-[#888888] font-light leading-relaxed mb-8">
-              Your account (<span className="text-[#ededed]">{firebaseUser?.email}</span>) has been cleared to join this network. Proceed below.
+            <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-8">
+              Your account (<span className="text-ink">{firebaseUser?.email}</span>) has been cleared to join this network. Proceed below.
             </p>
             <Button
               onClick={handleJoin}
@@ -251,13 +251,13 @@ function JoinForm() {
           <div className="flex flex-col items-center gap-6">
              <Loader />
              <div className="flex flex-col items-center gap-2">
-               <p className="text-[12px] text-[#555] font-mono uppercase tracking-widest">
+               <p className="text-[12px] text-ink-dim font-mono uppercase tracking-widest">
                  {syncTimedOut ? "Sync Interrupted" : "Synchronizing Identity"}
                </p>
                {syncTimedOut && (
                  <button 
                    onClick={() => window.location.reload()}
-                   className="text-[11px] text-[#888] underline underline-offset-4 hover:text-[#ededed] transition-colors"
+                   className="text-[11px] text-ink-muted underline underline-offset-4 hover:text-ink transition-colors"
                  >
                    Retry Connection
                  </button>
@@ -271,24 +271,24 @@ function JoinForm() {
 
   if (loading || status === "loading") {
     return (
-      <div className="min-h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
+      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
         <Loader />
         <div className="flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#555555]">
+          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-ink-dim">
             Verifying Link
           </span>
-          <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.04] to-transparent"></div>
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-line/[0.04] to-transparent"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-base flex items-center justify-center p-4">
       <div className="w-full max-w-sm animate-fade-in text-center flex flex-col items-center">
         <div className="flex flex-col items-center gap-3 mb-10 justify-center">
           <Logo size={40} />
-          <span className="font-semibold text-[#ededed] text-lg tracking-tight">OrbitOS</span>
+          <span className="font-semibold text-ink text-lg tracking-tight">OrbitOS</span>
         </div>
 
         {renderContent()}
@@ -300,13 +300,13 @@ function JoinForm() {
 export default function JoinPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
+      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
         <Loader />
         <div className="flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#555555]">
+          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-ink-dim">
             System Rendering
           </span>
-          <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.04] to-transparent"></div>
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-line/[0.04] to-transparent"></div>
         </div>
       </div>
     }>

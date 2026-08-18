@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function ContactSalesPage() {
   return (
-    <main className="min-h-screen bg-[#000000] flex items-center justify-center px-6 font-mono selection:bg-white/[0.08]">
+    <main className="theme-dark min-h-screen bg-[#000000] flex items-center justify-center px-6 font-mono selection:bg-white/[0.08]">
       {/* Centered card */}
       <div
         className="relative w-full max-w-lg text-center py-20 px-10 rounded-2xl"

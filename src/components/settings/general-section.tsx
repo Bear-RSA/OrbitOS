@@ -10,8 +10,10 @@ import {
   Crown,
   Gauge,
   Mail,
+  Monitor,
   MonitorCog,
   Moon,
+  Sun,
   UserRound,
   Users,
   Zap,
@@ -19,7 +21,7 @@ import {
 
 import { db } from "@/lib/firebase/client";
 import { User } from "@/types/auth";
-import { PresenceMode } from "@/types/preferences";
+import { PresenceMode, ThemeMode } from "@/types/preferences";
 import { usePreferences } from "@/hooks/use-preferences";
 import {
   DashboardCard,
@@ -39,6 +41,12 @@ import {
 /* ------------------------------------------------------------------ */
 /*  General — identity summary, presence, and interface preferences     */
 /* ------------------------------------------------------------------ */
+
+const THEME_OPTIONS: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "light", label: "Light", icon: Sun },
+  { value: "system", label: "System", icon: Monitor },
+];
 
 const PRESENCE_OPTIONS: { value: PresenceMode; label: string; icon: typeof Zap }[] = [
   { value: "auto", label: "Auto", icon: Gauge },
@@ -122,7 +130,7 @@ export function GeneralSection({ user }: { user: User }) {
           </SettingsButton>
         </div>
 
-        <SettingsList className="border-t border-white/[0.05] pt-5">
+        <SettingsList className="border-t border-line/[0.05] pt-5">
           <ReadonlyRow
             title="Member since"
             description="The day this account joined the workspace."
@@ -188,15 +196,17 @@ export function GeneralSection({ user }: { user: User }) {
             busy={pending === "reducedMotion"}
             onChange={(next) => update({ reducedMotion: next })}
           />
-          <ReadonlyRow
+          <SegmentedRow<ThemeMode>
             title="Appearance"
-            description="OrbitOS is built for a single dark surface. A light theme is not available."
-            value={
-              <span className="inline-flex items-center gap-2">
-                <Moon className="h-3 w-3 text-ink-faint" aria-hidden />
-                Dark
-              </span>
+            description={
+              preferences.theme === "system"
+                ? "Follows your device between light and dark automatically."
+                : "Applies everywhere you are signed in, on every device."
             }
+            value={preferences.theme}
+            options={THEME_OPTIONS}
+            onChange={(next) => update({ theme: next })}
+            disabled={pending === "theme"}
           />
         </SettingsList>
 

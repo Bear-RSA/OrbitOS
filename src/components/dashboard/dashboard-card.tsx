@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils/classnames";
 /**
  * The single surface recipe for every dashboard panel.
  *
- * Before this existed each card mixed its own background (`from-white/[0.02]`,
- * `bg-[#0A0A0A]/50`, `/30`, flat `#0A0A0A`), so panels sitting side by side in
+ * Before this existed each card mixed its own background (`from-line/[0.02]`,
+ * `bg-surface-sunken/50`, `/30`, flat `#0A0A0A`), so panels sitting side by side in
  * the same grid row read as two different components. One recipe, one hover
  * response, one padding scale.
  */
@@ -28,16 +28,16 @@ export function DashboardCard({
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-3xl",
         "p-6 sm:p-8",
-        "ring-1 ring-inset ring-white/[0.06]",
-        "shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_1px_2px_rgba(0,0,0,0.4)]",
+        "ring-1 ring-inset ring-line/[0.06]",
+        "shadow-card",
         "transition-[background-color,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-        tone === "quiet" ? "bg-white/[0.012]" : "bg-white/[0.022]",
-        interactive && "hover:bg-white/[0.035] hover:ring-white/[0.09]",
+        tone === "quiet" ? "bg-surface-sunken" : "bg-surface-card",
+        interactive && "hover:bg-surface-raised hover:ring-line/[0.09]",
         className
       )}
     >
       {/* Top-edge light catch — gives the surface a direction without a border */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sheen/[0.07] to-transparent" />
       {children}
     </div>
   );
@@ -165,12 +165,12 @@ export function ActionButton({
       className={cn(
         "group/btn inline-flex h-9 items-center rounded-lg text-ink",
         "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050505]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base",
         "disabled:cursor-not-allowed disabled:opacity-40",
         variant === "default" &&
-          "bg-white/[0.06] ring-1 ring-inset ring-white/[0.08] hover:bg-white/[0.1] hover:ring-white/[0.14]",
+          "bg-surface-control ring-1 ring-inset ring-line/[0.08] hover:bg-surface-hover hover:ring-line/[0.14]",
         variant === "ghost" &&
-          "bg-transparent text-ink-muted hover:bg-white/[0.06] hover:text-ink",
+          "bg-transparent text-ink-muted hover:bg-surface-control hover:text-ink",
         variant === "danger" &&
           "bg-orbit-red/10 text-orbit-red ring-1 ring-inset ring-orbit-red/25 hover:bg-orbit-red/[0.16]",
         collapsed
@@ -214,7 +214,7 @@ export function StatusChip({
         tone === "positive" && "bg-orbit-green/[0.08] text-orbit-green ring-orbit-green/20",
         tone === "warning" && "bg-orbit-amber/[0.08] text-orbit-amber ring-orbit-amber/20",
         tone === "critical" && "bg-orbit-red/[0.08] text-orbit-red ring-orbit-red/20",
-        tone === "neutral" && "bg-white/[0.05] text-ink-muted ring-white/[0.08]",
+        tone === "neutral" && "bg-surface-control text-ink-muted ring-line/[0.08]",
         className
       )}
     >
@@ -225,7 +225,7 @@ export function StatusChip({
 }
 
 /**
- * Progress track. The old bars were `h-[1px]`/`h-[2px]` with a `bg-[#0A0A0A]`
+ * Progress track. The old bars were `h-[1px]`/`h-[2px]` with a `bg-surface-sunken`
  * track on a near-identical surface, so neither track nor fill was visible.
  */
 export function MeterBar({
@@ -241,7 +241,7 @@ export function MeterBar({
   const clamped = Math.max(0, Math.min(100, value));
   return (
     <div
-      className={cn("h-1 w-full overflow-hidden rounded-full bg-white/[0.07]", className)}
+      className={cn("h-1 w-full overflow-hidden rounded-full bg-surface-hover", className)}
       role="progressbar"
       aria-valuenow={Math.round(clamped)}
       aria-valuemin={0}

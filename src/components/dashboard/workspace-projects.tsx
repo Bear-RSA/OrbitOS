@@ -7,8 +7,10 @@ import { InteractiveCard } from "@/components/ui/interactive-card";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/classnames";
-import { CheckCircle2, AlertCircle, ArrowUpRight, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, GripVertical, Save, X } from "lucide-react";
+import { ArrowUpRight, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, GripVertical, Save, X } from "lucide-react";
 import { updateProjectPriorityAction } from "@/app/actions/projects";
+import { ActionButton, MeterBar } from "./dashboard-card";
+import { themeColor } from "@/lib/theme/colors";
 
 interface WorkspaceProjectsProps {
   projectsHealth?: ProjectHealth[];
@@ -93,149 +95,123 @@ export function WorkspaceProjects({ projectsHealth, projects, orgId, userId, isO
 
   return (
     <div className="w-full">
-      <div className="mb-12">
-        <h2 className="text-3xl font-light tracking-tighter text-[#ededed] mb-4">Active Projects</h2>
-        <div className="flex items-center gap-6">
-          <div className="px-3 py-1 bg-[#111111] rounded-full flex items-center gap-2">
-             <span className="w-1.5 h-1.5 rounded-full bg-orbit-green shadow-[0_0_8px_rgba(133,200,155,0.4)]" />
-             <span className="text-[10px] font-mono uppercase tracking-widest text-[#888888]">Ecosystem Tracking</span>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="mb-3 text-2xl font-light tracking-tight text-ink sm:text-3xl">Active Projects</h2>
+          <div className="inline-flex items-center gap-2 rounded-full bg-surface-control px-3 py-1 ring-1 ring-inset ring-line/[0.07]">
+             <span className="h-1.5 w-1.5 rounded-full bg-orbit-green shadow-[0_0_8px_rgb(var(--orbit-green)_/_0.4)]" aria-hidden />
+             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-muted">Ecosystem Tracking</span>
           </div>
         </div>
 
-        {/* Project Priority Button — Owner only, below Ecosystem Tracking */}
+        {/* Project Priority Controls — Owner only */}
         {isOwner && (
-          <div className="flex items-center gap-3 mt-4">
+          <div className="flex items-center gap-2">
             {!reordering ? (
-              <button
-                onClick={startReordering}
-                className="group flex items-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[1px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-md h-9 px-4 overflow-hidden focus:outline-none ring-0"
-              >
-                <GripVertical className="w-3.5 h-3.5 text-[#888888] transition-colors group-hover:text-[#ededed] mr-2" />
-                <span className="text-[10px] font-mono uppercase tracking-[0.2em]">
-                  Project Priority
-                </span>
-              </button>
+              <ActionButton icon={GripVertical} label="Project Priority" onClick={startReordering} />
             ) : (
               <>
-                <button
+                <ActionButton
+                  icon={Save}
+                  label={saving ? "Saving…" : "Save Order"}
                   onClick={saveOrder}
                   disabled={saving}
-                  className="group flex items-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[1px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-md h-9 px-4 overflow-hidden focus:outline-none ring-0 disabled:opacity-50"
-                >
-                  <Save className="w-3.5 h-3.5 text-orbit-green transition-colors group-hover:text-[#ededed] mr-2" />
-                  <span className="text-[10px] font-mono uppercase tracking-[0.2em]">
-                    {saving ? "Saving..." : "Save Order"}
-                  </span>
-                </button>
-                <button
-                  onClick={cancelReordering}
-                  className="group flex items-center bg-gradient-to-b from-[#222222] to-[#151515] hover:from-[#2a2a2a] hover:to-[#1a1a1a] hover:-translate-y-[1px] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-md h-9 px-4 overflow-hidden focus:outline-none ring-0"
-                >
-                  <X className="w-3.5 h-3.5 text-[#888888] transition-colors group-hover:text-[#ededed] mr-2" />
-                  <span className="text-[10px] font-mono uppercase tracking-[0.2em]">
-                    Cancel
-                  </span>
-                </button>
+                />
+                <ActionButton icon={X} label="Cancel" variant="ghost" onClick={cancelReordering} />
               </>
             )}
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+      <div className="mb-16 grid grid-cols-1 gap-5 md:grid-cols-2">
         {displayProjects.map((project, i) => (
           <ScrollReveal key={project.id} delay={i * 80}>
              <div onClick={() => !reordering && router.push(`/projects/${project.id}`)} className={cn("h-full", reordering ? "cursor-default" : "cursor-pointer")}>
-              <InteractiveCard className="p-10 group h-full flex flex-col justify-between overflow-hidden relative">
+              <InteractiveCard className="group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl p-6 ring-1 ring-inset ring-line/[0.06] sm:p-8">
                 {/* Reorder Controls */}
                 {reordering && (
-                  <div className="absolute top-4 right-4 flex flex-col gap-1 z-10">
+                  <div className="absolute right-4 top-4 z-10 flex flex-col gap-1">
                     <button
                       onClick={(e) => { e.stopPropagation(); moveProject(i, "up"); }}
                       disabled={i === 0}
-                      className="w-7 h-7 flex items-center justify-center rounded bg-[#111111] border border-[#1a1a1a] text-[#888888] hover:text-[#ededed] hover:bg-[#1a1a1a] transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+                      aria-label={`Move ${project.name} up`}
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-surface-control text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-active hover:text-ink disabled:cursor-not-allowed disabled:opacity-25"
                     >
-                      <ChevronUp className="w-3.5 h-3.5" />
+                      <ChevronUp className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); moveProject(i, "down"); }}
                       disabled={i === displayProjects.length - 1}
-                      className="w-7 h-7 flex items-center justify-center rounded bg-[#111111] border border-[#1a1a1a] text-[#888888] hover:text-[#ededed] hover:bg-[#1a1a1a] transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+                      aria-label={`Move ${project.name} down`}
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-surface-control text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-active hover:text-ink disabled:cursor-not-allowed disabled:opacity-25"
                     >
-                      <ChevronDown className="w-3.5 h-3.5" />
+                      <ChevronDown className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 )}
 
-                {/* Status Glow */}
+                {/* Status Glow — previously `bg-orbit-red/05`, an invalid opacity
+                    modifier that Tailwind dropped, so this never rendered. */}
                 {project.status === "At Risk" && (
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#E57A7A]/05 blur-[60px] pointer-events-none" />
+                  <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-orbit-red/[0.07] blur-[60px]" aria-hidden />
                 )}
-                
+
                 <div>
-                  <div className="flex justify-between items-start mb-8">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
+                  <div className="mb-6 flex items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-3">
+                      <div className="flex items-center gap-2">
                         {project.status === "Healthy" ? (
-                          <div className="w-4 h-4 flex items-center justify-center">
-                            <TrendingUp className="w-3.5 h-3.5 text-orbit-green/80" />
-                          </div>
+                          <TrendingUp className="h-3.5 w-3.5 shrink-0 text-orbit-green" aria-hidden />
                         ) : project.status === "At Risk" ? (
-                          <TrendingDown className="w-4 h-4 text-orbit-red/80" />
+                          <TrendingDown className="h-3.5 w-3.5 shrink-0 text-orbit-red" aria-hidden />
                         ) : (
-                          <Minus className="w-4 h-4 text-orbit-amber/80" />
+                          <Minus className="h-3.5 w-3.5 shrink-0 text-orbit-amber" aria-hidden />
                         )}
                         <span className={cn(
-                          "text-[10px] font-mono uppercase tracking-[0.1em]",
-                          project.status === "Healthy" ? "text-[#ededed]" : "text-[#555555]"
+                          "font-mono text-[10px] uppercase tracking-[0.16em]",
+                          project.status === "Healthy" ? "text-orbit-green" :
+                          project.status === "At Risk" ? "text-orbit-red" : "text-orbit-amber"
                         )}>
                           {project.status}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-2xl font-light text-[#ededed] group-hover:text-white transition-colors">{project.name}</h3>
+                      <div className="flex items-center gap-2.5">
+                        <h3 className="truncate text-xl font-light text-ink transition-colors group-hover:text-ink-strong sm:text-2xl">{project.name}</h3>
                         {/* Priority Badge */}
                         {project.priority != null && (
-                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#000000] border border-[#1a1a1a] text-[#888888] leading-none">
+                          <span className="shrink-0 rounded-md bg-surface-control px-1.5 py-1 font-mono text-[10px] leading-none text-ink-muted ring-1 ring-inset ring-line/[0.08]">
                             P{project.priority}
                           </span>
                         )}
                       </div>
                     </div>
                     {!reordering && (
-                      <div className="text-[#333333] group-hover:text-[#666666] transition-colors p-2">
-                         <ArrowUpRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                      <div className="shrink-0 p-1 text-ink-dim transition-colors group-hover:text-ink">
+                         <ArrowUpRight className="h-5 w-5 opacity-0 transition-all duration-300 group-hover:opacity-100" aria-hidden />
                       </div>
                     )}
                   </div>
 
-                  <p className="text-[14px] text-[#666666] font-light leading-relaxed mb-12 max-w-sm line-clamp-2">
+                  <p className="mb-8 line-clamp-2 max-w-sm text-[13px] font-light leading-relaxed text-ink-muted">
                     {project.description}
                   </p>
                 </div>
 
-                <div>
-                   <div className="space-y-8">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center text-[10px] font-mono tracking-widest text-[#444444]">
-                           <span className="uppercase">Health Indicator</span>
-                           <span className={cn(
-                             project.status === "At Risk" ? "text-orbit-red" : project.status === "Watch" ? "text-orbit-amber" : "text-orbit-green/80"
-                           )}>
-                              {project.progress > 0 ? project.progress.toFixed(0) : 0}%
-                           </span>
-                        </div>
-                        <div className="w-full h-[1px] bg-[#0A0A0A] rounded-full overflow-hidden">
-                           <div 
-                             className={cn(
-                               "h-full transition-all duration-1000",
-                               project.status === "At Risk" ? "bg-orbit-red" : project.status === "Watch" ? "bg-orbit-amber" : "bg-orbit-green/80"
-                             )} 
-                             style={{ width: `${Math.max(project.progress, 5)}%` }} 
-                           />
-                        </div>
-                      </div>
-                   </div>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.16em]">
+                     <span className="text-ink-dim">Health Indicator</span>
+                     <span className={cn(
+                       "tabular-nums",
+                       project.status === "At Risk" ? "text-orbit-red" : project.status === "Watch" ? "text-orbit-amber" : "text-orbit-green"
+                     )}>
+                        {project.progress > 0 ? project.progress.toFixed(0) : 0}%
+                     </span>
+                  </div>
+                  <MeterBar
+                    value={project.progress}
+                    color={project.status === "At Risk" ? themeColor.red : project.status === "Watch" ? themeColor.amber : themeColor.green}
+                  />
                 </div>
               </InteractiveCard>
              </div>

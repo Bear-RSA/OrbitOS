@@ -13,16 +13,16 @@ export function WeeklyProgressCard({ weeklyProgress }: WeeklyProgressCardProps) 
   const totalThisWeek = weeklyProgress.reduce((sum, day) => sum + day.count, 0);
 
   return (
-    <div className="rounded-[20px] p-8 animate-fade-in bg-[#0A0A0A] hover:bg-[#111111] hover:-translate-y-1 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ring-1 ring-white/[0.02] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] flex flex-col relative w-full overflow-hidden">
-      <h3 className="text-[11px] font-medium uppercase tracking-[0.15em] text-[#888888] mb-8">
+    <div className="rounded-[20px] p-8 animate-fade-in bg-surface-sunken hover:bg-surface-control hover:-translate-y-1 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ring-1 ring-line/[0.02] shadow-card flex flex-col relative w-full overflow-hidden">
+      <h3 className="text-[11px] font-medium uppercase tracking-[0.15em] text-ink-muted mb-8">
         This Week
       </h3>
       
       <div className="flex-1 flex flex-col justify-end">
         {totalThisWeek === 0 ? (
           <div className="h-24 flex flex-col justify-end space-y-2 pb-2">
-            <p className="text-[14px] font-medium text-[#ededed]">No activity recorded.</p>
-            <p className="text-[13px] text-[#888888] font-light leading-relaxed">Complete tasks to visualize operational momentum.</p>
+            <p className="text-[14px] font-medium text-ink">No activity recorded.</p>
+            <p className="text-[13px] text-ink-muted font-light leading-relaxed">Complete tasks to visualize operational momentum.</p>
           </div>
         ) : (
           <div className="flex items-end gap-3 h-24 mt-4">
@@ -34,7 +34,7 @@ export function WeeklyProgressCard({ weeklyProgress }: WeeklyProgressCardProps) 
               return (
                 <div key={day.day} className="flex flex-col items-center gap-2.5 flex-1 relative group">
                   {day.count > 0 && !isFuture && (
-                    <span className="absolute -top-6 text-[11px] text-[#ededed] tabular-nums font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="absolute -top-6 text-[11px] text-ink tabular-nums font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                       {day.count}
                     </span>
                   )}
@@ -43,12 +43,12 @@ export function WeeklyProgressCard({ weeklyProgress }: WeeklyProgressCardProps) 
                       className={cn(
                         "w-full rounded-[3px] transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
                         isFuture
-                          ? "bg-[#1A1A1A] h-1"
+                          ? "bg-surface-hover h-1"
                           : day.count > 0
                           ? isToday
-                            ? "bg-[#ededed] shadow-[0_0_12px_rgba(255,255,255,0.2)]"
-                            : "bg-[#444444]"
-                          : "bg-[#1A1A1A] h-1"
+                            ? "bg-ink shadow-[0_0_12px_rgb(var(--ink-strong)_/_0.2)]"
+                            : "bg-surface-highest"
+                          : "bg-surface-hover h-1"
                       )}
                       style={{
                         height: isFuture || day.count === 0 ? undefined : `${Math.max(heightPercent, 12)}%`,
@@ -58,7 +58,7 @@ export function WeeklyProgressCard({ weeklyProgress }: WeeklyProgressCardProps) 
                   <span
                     className={cn(
                       "text-[10px] font-medium uppercase tracking-wider transition-colors",
-                      isToday ? "text-[#ededed]" : "text-[#555555]"
+                      isToday ? "text-ink" : "text-ink-dim"
                     )}
                   >
                     {day.shortDay}

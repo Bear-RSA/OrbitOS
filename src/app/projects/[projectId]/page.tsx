@@ -10,17 +10,21 @@ import { Project } from "@/types/project";
 import { getProjectById } from "@/lib/queries/projects";
 import { subscribeToTasksByProject } from "@/lib/queries/tasks";
 import { subscribeToMembersByOrg } from "@/lib/queries/members";
+import { subscribeToEventsByProject } from "@/lib/queries/events";
+import { OrbitEvent } from "@/types/event";
 import { Loader } from "@/components/ui/loader";
 import { TasksTable } from "@/components/dashboard/tasks-table";
 import { ProjectSettingsMenu } from "@/components/projects/project-settings";
-import { ArrowLeft, RefreshCw, Folder, Map, LayoutList, Network } from "lucide-react";
+import { ArrowLeft, RefreshCw, Folder, Map, LayoutList, Network, CalendarDays } from "lucide-react";
 import { SystemExplorer } from "@/components/projects/system-explorer";
+import { ProjectCalendar } from "@/components/projects/project-calendar";
 import { CommandCenter } from "@/components/projects/command-center";
 import { ProjectPulse } from "@/components/projects/project-pulse";
 import { SystemRoadmap } from "@/components/dashboard/system-roadmap";
 import { PersonnelHub } from "@/components/dashboard/personnel-hub";
 import { cn } from "@/lib/utils/classnames";
 import { useHeartbeat } from "@/hooks/use-heartbeat";
+import { ActionButton, CardEyebrow } from "@/components/dashboard/dashboard-card";
 
 export default function ProjectDashboardPage({ params }: { params: Promise<{ projectId: string }> }) {
   const router = useRouter();
@@ -32,10 +36,11 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [events, setEvents] = useState<OrbitEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [viewMode, setViewMode] = useState<"execution" | "strategy" | "personnel">("execution");
+  const [viewMode, setViewMode] = useState<"execution" | "calendar" | "strategy" | "personnel">("execution");
   const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null);
   const { projectId } = use(params);
 
@@ -77,15 +82,21 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
       setMembers(data);
     });
 
+    // 4. Subscribe to Engagements (Temporal Lane)
+    const unsubEvents = subscribeToEventsByProject(projectId, user.orgId, (data) => {
+      setEvents(data);
+    });
+
     return () => {
       unsubTasks();
       unsubMembers();
+      unsubEvents();
     };
   }, [authLoading, user, router, projectId, loadProjectMetadata, refreshKey]);
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center gap-6">
+      <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-background">
         <Loader />
       </div>
     );
@@ -94,45 +105,42 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
   if (!project) return null;
 
   return (
-    <DashboardShell className="selection:bg-white/10 selection:text-white pb-32">
+    <DashboardShell className="selection:bg-surface-hover selection:text-ink-strong pb-32">
       {/* Navigation Map */}
-      <div className="flex items-center justify-between mb-16 tracking-tight pt-4">
-        <button 
+      <div className="flex items-center justify-between mb-12 tracking-tight pt-4">
+        <button
           onClick={() => router.push("/dashboard")}
-          className="flex items-center gap-3 text-[#666666] hover:text-[#ededed] transition-colors group"
+          className="group flex items-center gap-3 rounded-lg text-ink-dim transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
         >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-[13px] font-medium tracking-tight uppercase">Workspace</span>
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em]">Workspace</span>
         </button>
-        
-        <div className="flex items-center gap-5">
-          <button
-            onClick={() => { setRefreshing(true); setRefreshKey(prev => prev + 1); loadProjectMetadata(); }}
-            disabled={refreshing}
-            className={cn(
-              "flex items-center justify-center w-10 h-10 rounded-full bg-transparent hover:bg-[#111111] text-[#888888] hover:text-[#ededed] transition-all focus:outline-none ring-0",
-              refreshing && "animate-spin text-[#666666]"
-            )}
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
+
+        <ActionButton
+          icon={RefreshCw}
+          label="Refresh"
+          variant="ghost"
+          collapsed
+          disabled={refreshing}
+          onClick={() => { setRefreshing(true); setRefreshKey(prev => prev + 1); loadProjectMetadata(); }}
+          className={cn(refreshing && "[&_svg]:animate-spin")}
+        />
       </div>
 
       {/* Project Header Layer */}
-      <div className="mb-20 animate-fade-in flex items-start justify-between">
-         <div className="space-y-4">
+      <div className="mb-12 animate-fade-in flex items-start justify-between gap-6">
+         <div className="min-w-0">
             <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-[#0A0A0A] rounded-2xl flex items-center justify-center ring-1 ring-white/5">
-                 <Folder className="w-5 h-5 text-[#888888]" />
+               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-surface-card ring-1 ring-inset ring-line/[0.06] shadow-card">
+                 <Folder className="w-5 h-5 text-ink-muted" />
                </div>
-               <div className="flex flex-col">
-                 <span className="text-[10px] font-mono text-[#555555] uppercase tracking-widest mb-1.5">Project Thread</span>
-                 <h1 className="text-3xl font-light text-[#ededed] tracking-tight">{project.name}</h1>
+               <div className="flex min-w-0 flex-col gap-1.5">
+                 <CardEyebrow>Project Thread</CardEyebrow>
+                 <h1 className="truncate text-3xl font-light tracking-tight text-ink">{project.name}</h1>
                </div>
             </div>
             {project.description && (
-              <p className="mt-4 text-[14px] text-[#666666] font-light leading-relaxed max-w-lg">
+              <p className="mt-5 max-w-xl text-[14px] font-light leading-relaxed text-ink-muted">
                 {project.description}
               </p>
             )}
@@ -148,46 +156,57 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
 
       {/* Project Execution Plane */}
       <div className="animate-fade-in" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
-         <div className="flex items-center justify-between mb-8">
-            <h3 className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#555555] flex items-center gap-3">
-               <span className="w-1.5 h-1.5 rounded-full bg-white/[0.04] ring-1 ring-white/[0.08]" />
-               Execution Scope
-            </h3>
-            
+         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+               <span className="h-1.5 w-1.5 rounded-full bg-surface-active ring-1 ring-line/[0.08]" />
+               <CardEyebrow>Execution Scope</CardEyebrow>
+            </div>
+
             {/* View Toggle */}
-            <div className="flex items-center rounded-lg border border-[#1a1a1a] bg-[#000000] p-1">
-               <button
-                 onClick={() => setViewMode("execution")}
-                 className={cn(
-                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-mono uppercase tracking-widest transition-all",
-                   viewMode === "execution" ? "bg-[#111111] text-[#ededed] shadow-sm ring-1 ring-white/5" : "text-[#555] hover:text-[#888]"
-                 )}
-               >
-                 <LayoutList className="w-3.5 h-3.5" />
-                 Checklist
-               </button>
-               <button
-                 onClick={() => setViewMode("strategy")}
-                 className={cn(
-                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-mono uppercase tracking-widest transition-all",
-                   viewMode === "strategy" ? "bg-[#111111] text-[#ededed] shadow-sm ring-1 ring-white/5" : "text-[#555] hover:text-[#888]"
-                 )}
-               >
-                 <Map className="w-3.5 h-3.5" />
-                 Roadmap
-               </button>
-               <button
-                 onClick={() => setViewMode("personnel")}
-                 className={cn(
-                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-mono uppercase tracking-widest transition-all",
-                   viewMode === "personnel" ? "bg-[#111111] text-[#ededed] shadow-sm ring-1 ring-white/5" : "text-[#555] hover:text-[#888]"
-                 )}
-               >
-                 <Network className="w-3.5 h-3.5" />
-                 Personnel
-               </button>
+            <div
+              role="tablist"
+              aria-label="Execution view"
+              className="flex items-center gap-1 rounded-xl bg-surface-card p-1 ring-1 ring-inset ring-line/[0.06]"
+            >
+               {([
+                 { id: "execution", icon: LayoutList,  label: "Checklist" },
+                 { id: "calendar",  icon: CalendarDays, label: "Calendar" },
+                 { id: "strategy",  icon: Map,         label: "Roadmap"   },
+                 { id: "personnel", icon: Network,     label: "Personnel" },
+               ] as const).map(({ id, icon: Icon, label }) => {
+                 const active = viewMode === id;
+                 return (
+                   <button
+                     key={id}
+                     role="tab"
+                     aria-selected={active}
+                     onClick={() => setViewMode(id)}
+                     className={cn(
+                       "flex items-center gap-2 rounded-lg px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em]",
+                       "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                       active
+                         ? "bg-surface-hover text-ink ring-1 ring-inset ring-line/[0.09]"
+                         : "text-ink-dim hover:bg-surface-raised hover:text-ink-muted"
+                     )}
+                   >
+                     <Icon className="h-3.5 w-3.5" aria-hidden />
+                     {label}
+                   </button>
+                 );
+               })}
             </div>
          </div>
+
+         {viewMode === "calendar" && (
+           <ProjectCalendar
+             tasks={tasks}
+             events={events}
+             members={members}
+             uid={user!.id}
+             projectId={project.id}
+           />
+         )}
 
          {viewMode === "strategy" && (
            <SystemRoadmap projectId={project.id} tasks={tasks} />
@@ -221,7 +240,7 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
       </div>
 
       {/* System Modules Plane */}
-      <div className="mt-24">
+      <div className="mt-20">
         <SystemExplorer projectId={project.id} members={members} isOwner={user!.role === 'OWNER'} uid={user!.id} />
       </div>
 

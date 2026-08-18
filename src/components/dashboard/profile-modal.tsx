@@ -13,6 +13,7 @@ import { Camera, X, LogOut, Check } from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
 import { ProfilePictureManager } from "@/components/profile/profile-picture-manager";
 import { User } from "@/types/auth";
+import { themeColor } from "@/lib/theme/colors";
 
 interface ProfileModalProps {
   open: boolean;
@@ -58,15 +59,15 @@ export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px] bg-[#343536] p-0 border-0 shadow-[0_40px_100px_rgba(0,0,0,0.85)] rounded-[32px] overflow-hidden selection:bg-white/10 selection:text-white ring-1 ring-white/5">
+      <DialogContent className="sm:max-w-[560px] bg-surface-highest p-0 border-0 shadow-overlay rounded-[32px] overflow-hidden selection:bg-surface-hover selection:text-ink-strong ring-1 ring-line/5">
         <div className="flex flex-col h-full max-h-[90vh]">
           
           {/* Architectural Header */}
-          <div className="relative h-48 w-full bg-gradient-to-br from-[#1f2021] to-[#0d0e0f] overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(160,120,255,0.05),transparent)] pointer-events-none" />
+          <div className="relative h-48 w-full bg-gradient-to-br from-surface-control to-surface-sunken overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgb(var(--orbit-violet)_/_0.05),transparent)] pointer-events-none" />
             <button 
               onClick={() => onOpenChange(false)}
-              className="absolute top-8 right-8 w-10 h-10 rounded-full bg-[#343536]/80 backdrop-blur-xl flex items-center justify-center text-[#888888] hover:text-white transition-colors z-20 group"
+              className="absolute top-8 right-8 w-10 h-10 rounded-full bg-surface-highest/80 backdrop-blur-xl flex items-center justify-center text-ink-muted hover:text-ink-strong transition-colors z-20 group"
             >
               <X className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
@@ -74,8 +75,8 @@ export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
             <div className="absolute -bottom-16 left-12 flex items-end gap-8 z-10">
               <ProfilePictureManager user={user as unknown as User} />
               <div className="mb-4">
-                <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.3em] mb-1">Identity Vector</p>
-                <h3 className="text-2xl font-light text-white tracking-tight">{name || "Unnamed Node"}</h3>
+                <p className="text-[10px] font-mono text-ink-strong/20 uppercase tracking-[0.3em] mb-1">Identity Vector</p>
+                <h3 className="text-2xl font-light text-ink-strong tracking-tight">{name || "Unnamed Node"}</h3>
               </div>
             </div>
           </div>
@@ -87,54 +88,54 @@ export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
               {/* Field Matrix */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#555555] ml-1">Full Legal Name</Label>
+                  <Label className="text-[10px] font-mono uppercase tracking-[0.25em] text-ink-dim ml-1">Full Legal Name</Label>
                   <div className="relative group">
                     <input 
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Node Identifier"
-                      className="w-full bg-[#0d0e0f] border-0 rounded-2xl h-14 px-6 text-[15px] font-light text-[#ededed] placeholder:text-[#333333] transition-all focus:outline-none focus:ring-1 focus:ring-[#a078ff]/30 shadow-inner"
+                      className="w-full bg-surface-sunken border-0 rounded-2xl h-14 px-6 text-[15px] font-light text-ink placeholder:text-ink-faint transition-all focus:outline-none focus:ring-1 focus:ring-orbit-violet/30 shadow-inner"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#555555] ml-1">Descriptor</Label>
+                  <Label className="text-[10px] font-mono uppercase tracking-[0.25em] text-ink-dim ml-1">Descriptor</Label>
                   <div className="relative group">
                     <input 
                       value={roleDescriptor}
                       onChange={(e) => setRoleDescriptor(e.target.value)}
                       placeholder="e.g. Lead Engineer, Design Lead..."
-                      className="w-full bg-[#0d0e0f] border-0 rounded-2xl h-14 px-6 text-[15px] font-light text-[#ededed] placeholder:text-[#333333] transition-all focus:outline-none focus:ring-1 focus:ring-[#a078ff]/30 shadow-inner"
+                      className="w-full bg-surface-sunken border-0 rounded-2xl h-14 px-6 text-[15px] font-light text-ink placeholder:text-ink-faint transition-all focus:outline-none focus:ring-1 focus:ring-orbit-violet/30 shadow-inner"
                     />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <Label className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#555555] ml-1">Authentication Endpoint</Label>
-                <div className="w-full bg-[#0d0e0f]/50 border-0 rounded-2xl h-14 px-6 flex items-center text-[14px] font-mono text-[#444444] cursor-not-allowed">
+                <Label className="text-[10px] font-mono uppercase tracking-[0.25em] text-ink-dim ml-1">Authentication Endpoint</Label>
+                <div className="w-full bg-surface-sunken/50 border-0 rounded-2xl h-14 px-6 flex items-center text-[14px] font-mono text-ink-faint cursor-not-allowed">
                   {user.email}
                 </div>
               </div>
 
               <div className="space-y-4">
-                <Label className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#555555] ml-1">Operational Summary</Label>
+                <Label className="text-[10px] font-mono uppercase tracking-[0.25em] text-ink-dim ml-1">Operational Summary</Label>
                 <textarea 
                   placeholder="Describe node responsibilities and bio parameters..."
-                  className="w-full bg-[#0d0e0f] border-0 rounded-2xl p-6 text-[15px] font-light text-[#ededed] min-h-[140px] resize-none placeholder:text-[#333333] transition-all focus:outline-none focus:ring-1 focus:ring-[#a078ff]/30 shadow-inner"
+                  className="w-full bg-surface-sunken border-0 rounded-2xl p-6 text-[15px] font-light text-ink min-h-[140px] resize-none placeholder:text-ink-faint transition-all focus:outline-none focus:ring-1 focus:ring-orbit-violet/30 shadow-inner"
                 />
               </div>
 
               {/* Account Configuration */}
               <div className="pt-10 flex flex-col gap-6">
-                <h4 className="text-[10px] font-mono uppercase tracking-[0.3em] text-[#444444]">Account Configuration</h4>
+                <h4 className="text-[10px] font-mono uppercase tracking-[0.3em] text-ink-faint">Account Configuration</h4>
                 <div className="flex flex-col gap-2">
-                  <button onClick={handleSignOut} className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-[#0d0e0f] hover:bg-black transition-colors group">
-                    <LogOut className="w-4 h-4 text-[#E57A7A]/40 group-hover:text-[#E57A7A] transition-colors" />
+                  <button onClick={handleSignOut} className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-surface-sunken hover:bg-surface-hover transition-colors group">
+                    <LogOut className="w-4 h-4 text-orbit-red/40 group-hover:text-orbit-red transition-colors" />
                     <div className="text-left">
-                      <p className="text-[13px] font-light text-[#888888] group-hover:text-[#ededed]">Sign Out of Workspace</p>
-                      <p className="text-[10px] font-mono text-[#333333] uppercase mt-0.5">End Current Session</p>
+                      <p className="text-[13px] font-light text-ink-muted group-hover:text-ink">Sign Out of Workspace</p>
+                      <p className="text-[10px] font-mono text-ink-faint uppercase mt-0.5">End Current Session</p>
                     </div>
                     {isSigningOut && <Loader size={12} stroke={2} className="ml-auto" />}
                   </button>
@@ -144,23 +145,23 @@ export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
           </div>
 
           {/* Action Footer */}
-          <div className="p-8 bg-[#1f2021]/50 flex items-center justify-between">
-            <div className="px-6 py-2 bg-[#0d0e0f] rounded-full text-[9px] font-mono uppercase tracking-widest text-[#555555]">
+          <div className="p-8 bg-surface-control/50 flex items-center justify-between">
+            <div className="px-6 py-2 bg-surface-sunken rounded-full text-[9px] font-mono uppercase tracking-widest text-ink-dim">
               V2.4.0-Final
             </div>
             <div className="flex items-center gap-6">
               <button 
                 onClick={() => onOpenChange(false)}
-                className="text-[13px] font-light text-[#666666] hover:text-[#ededed] transition-colors"
+                className="text-[13px] font-light text-ink-dim hover:text-ink transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSave}
                 disabled={isSaving || (name === user.name && roleDescriptor === (user.roleDescriptor || "")) || !name.trim()}
-                className="gap-2.5 flex items-center justify-center bg-[#ededed] hover:bg-white hover:-translate-y-[2px] disabled:opacity-30 disabled:hover:translate-y-0 text-[#050505] shadow-[0_2px_12px_rgba(255,255,255,0.06)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-lg px-8 h-11 text-[13px] font-bold tracking-tight focus:outline-none ring-0 overflow-hidden"
+                className="gap-2.5 flex items-center justify-center bg-ink hover:bg-ink-strong hover:-translate-y-[2px] disabled:opacity-30 disabled:hover:translate-y-0 text-on-ink shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-lg px-8 h-11 text-[13px] font-bold tracking-tight focus:outline-none ring-0 overflow-hidden"
               >
-                {isSaving ? <Loader size={14} stroke={2} color="#050505" /> : <Check className="w-4 h-4" />}
+                {isSaving ? <Loader size={14} stroke={2} color={themeColor.onInk} /> : <Check className="w-4 h-4" />}
                 Save Changes
               </button>
             </div>

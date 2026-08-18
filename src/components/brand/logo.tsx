@@ -18,7 +18,7 @@ export function Logo({ className, size = "md" }: LogoProps) {
   return (
     <div 
       className={cn(
-        "rounded-xl bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden flex items-center justify-center transition-all duration-700",
+        "rounded-xl bg-surface-control shadow-card relative overflow-hidden flex items-center justify-center transition-all duration-700",
         className
       )}
       style={{ width: pixelSize, height: pixelSize }}

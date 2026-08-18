@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { Logo } from "@/components/brand/logo";
 
-import { AlertCircle, EyeOff, ArrowRight } from 'lucide-react';
+import { AlertCircle, EyeOff, ArrowRight, Lock, ShieldCheck, Server, MapPin } from 'lucide-react';
 import type { Metadata } from 'next';
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { HeroProductFrame } from "@/components/marketing/hero-product-frame";
+import { MarketingNav } from "@/components/marketing/marketing-nav";
+import { MarketingFooter } from "@/components/marketing/marketing-footer";
 export const metadata: Metadata = {
   title: "OrbitOS · Workspace Intelligence",
   description: "The Calm Control Center for Digital Studios.",
@@ -12,88 +13,68 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-[#050505] text-[#ededed] font-sans selection:bg-white/[0.1]">
-      {/* TopNavBar */}
-      <nav className="fixed top-0 w-full z-50 bg-[#050505]/70 backdrop-blur-xl border-b border-white/[0.04]">
-        <div className="flex justify-between items-center max-w-7xl mx-auto px-8 h-16">
-          <div className="font-mono text-lg tracking-tighter text-[#ededed] flex items-center gap-3">
-             <Logo size="sm" className="rounded-md" />
-             OrbitOS
-          </div>
-          <div className="hidden md:flex items-center gap-8">
-            <Link className="font-sans tracking-tight font-medium text-[#ededed] border-b border-[#ededed] pb-1 hover:text-white transition-colors duration-300" href="#">Features</Link>
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="/methodology">Methodology</Link>
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="/pricing">Pricing</Link>
-            <Link className="font-sans tracking-tight font-light text-[#888888] hover:text-[#ededed] transition-colors duration-300" href="/changelog">Changelog</Link>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/login" className="text-[#888888] font-sans font-medium text-sm hover:text-[#ededed] transition-colors">Sign In</Link>
-            <Link href="/signup" className="bg-[#ededed] text-[#050505] px-5 py-2 rounded-lg font-medium text-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:bg-white active:scale-95">Get Started</Link>
-          </div>
-        </div>
-      </nav>
+    <main className="theme-dark relative isolate min-h-screen bg-[#050505] text-[#ededed] font-sans selection:bg-white/[0.1]">
+      {/* Ambient light source. Gives the hero a direction without introducing a
+          second colour — everything else on the page is flat. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[720px] bg-[radial-gradient(ellipse_55%_100%_at_50%_0%,rgba(255,255,255,0.05),transparent_70%)]"
+      />
+      <MarketingNav active="features" />
 
       {/* Hero Section */}
-      <section className="pt-48 pb-32 px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
+      <section className="pt-32 md:pt-48 pb-24 md:pb-32 px-6 md:px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
         <ScrollReveal className="flex flex-col items-center">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-[#555555] uppercase mb-8 block">OS beta v1.2</span>
+          <Link
+            href="/changelog"
+            className="group inline-flex items-center gap-2.5 mb-8 transition-all duration-300"
+          >
+            <span className="font-mono text-[10px] tracking-[0.24em] text-[#ededed] uppercase">v1.2</span>
+            <span className="h-3 w-px bg-white/[0.12]" />
+            <span className="font-mono text-[10px] tracking-[0.16em] text-[#888888] uppercase group-hover:text-[#ededed] transition-colors">
+              See what shipped
+            </span>
+            <ArrowRight className="w-3 h-3 text-[#555555] group-hover:text-[#ededed] group-hover:translate-x-0.5 transition-all" />
+          </Link>
           <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 max-w-4xl text-[#ededed]">
-            The Calm Control Center for Digital Studios.
+            Know what needs attention. Right now.
           </h1>
           <p className="text-xl md:text-2xl text-[#888888] mx-auto max-w-2xl leading-relaxed font-light mb-12">
-            OrbitOS surfaces what needs attention right now, eliminating the noise of traditional project management.
+            OrbitOS gives studio owners the clarity they usually carry in their heads — what&apos;s
+            overdue, what&apos;s at risk, and who&apos;s carrying too much. Without the noise of
+            traditional project management.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-8 w-full sm:w-auto">
+            <Link
+              href="/signup"
+              className="w-full sm:w-auto text-center bg-[#ededed] text-[#050505] px-8 py-3.5 rounded-xl font-medium text-[15px] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-white hover:-translate-y-[2px] hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] active:scale-95"
+            >
+              Start free
+            </Link>
+            <Link
+              href="/contact-sales"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-[#888888] px-6 py-3.5 rounded-xl font-medium text-[15px] ring-1 ring-white/[0.06] hover:text-[#ededed] hover:ring-white/[0.14] transition-all duration-300"
+            >
+              Book a demo
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <p className="text-[13px] text-[#555555] font-light mb-20">
+            Free for teams of three. Paid plans from{' '}
+            <Link href="/pricing" className="text-[#888888] hover:text-[#ededed] underline underline-offset-4 decoration-white/20 transition-colors">
+              R299/month
+            </Link>
+            , billed in rand.
           </p>
         </ScrollReveal>
         
         <ScrollReveal delay={150} className="w-full">
-          <div className="w-full aspect-[21/9] rounded-2xl overflow-hidden bg-[#0A0A0A] ring-1 ring-white/[0.04] shadow-[0_20px_60px_rgba(0,0,0,0.8)] relative group">
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[transparent_20%] to-transparent z-10"></div>
-            
-            <div className="absolute inset-0 z-20 flex items-center justify-center overflow-hidden">
-              {/* Abstract Architectural Visualization */}
-              <div className="absolute inset-0 flex items-center justify-center" style={{ perspective: '1000px' }}>
-                <div className="relative w-[600px] h-[300px]" style={{ transformStyle: 'preserve-3d', transform: 'rotateX(55deg) rotateZ(45deg)' }}>
-                  {/* Active Node */}
-                  <div className="absolute inset-0 border border-white/[0.08] bg-[#111111]/60 backdrop-blur-sm rounded-2xl shadow-[0_0_60px_rgba(255,255,255,0.02)] transition-transform duration-1000 hover:-translate-y-2" style={{ transform: 'translateZ(40px)' }}>
-                    <div className="absolute top-6 left-6 font-mono text-[10px] text-[#ededed]/40 uppercase tracking-widest">Active_Node_01</div>
-                    <div className="absolute bottom-6 right-6 flex gap-2">
-                      <div className="w-16 h-1.5 bg-white/20 rounded"></div>
-                      <div className="w-6 h-1.5 bg-white/10 rounded"></div>
-                    </div>
-                  </div>
-                  {/* System State */}
-                  <div className="absolute inset-0 border border-white/[0.04] bg-[#0A0A0A]/80 rounded-2xl" style={{ transform: 'translateZ(0px) translateY(-50px) translateX(40px)' }}>
-                    <div className="absolute top-6 left-6 font-mono text-[10px] text-[#888888]/30 uppercase tracking-widest">System_State</div>
-                  </div>
-                  {/* Attention Matrix */}
-                  <div className="absolute inset-0 border border-white/[0.02] bg-[#1A1A1A]/30 rounded-2xl" style={{ transform: 'translateZ(90px) translateY(50px) translateX(-40px)' }}>
-                    <div className="absolute top-6 left-6 font-mono text-[10px] text-[#ededed]/20 uppercase tracking-widest">Attention_Matrix</div>
-                  </div>
-                  
-                  {/* Blueprint Lines */}
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-px bg-gradient-to-r from-transparent via-white/[0.05] to-transparent rotate-12"></div>
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-px bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -rotate-12"></div>
-                </div>
-              </div>
-              
-              {/* Minimal HUD Elements */}
-              <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end">
-                <div className="flex flex-col gap-2">
-                  <div className="font-mono text-[10px] text-[#555555] flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#ededed]/60 animate-pulse"></span>
-                    COORD_X: 45.281
-                  </div>
-                  <div className="font-mono text-[10px] text-[#555555]">COORD_Y: 12.904</div>
-                </div>
-                <div className="font-mono text-[10px] text-[#555555] tracking-[0.3em]">ORBIT_PROTOCOL_V2.VOID</div>
-              </div>
-            </div>
-          </div>
+          <HeroProductFrame />
         </ScrollReveal>
       </section>
 
       {/* The Attention Grid (Bento) */}
-      <section className="py-20 px-8 max-w-7xl mx-auto">
+      <section id="features" className="scroll-mt-24 py-20 px-6 md:px-8 max-w-7xl mx-auto">
         <ScrollReveal>
           <div className="mb-16">
             <span className="font-mono text-[11px] tracking-widest text-[#555555] uppercase">Core Engine</span>
@@ -155,7 +136,8 @@ export default function LandingPage() {
               <div className="relative z-10">
                 <h3 className="text-xl font-light text-[#ededed] mb-3 tracking-tight">Automated Studio Pulse</h3>
                 <p className="text-[15px] text-[#888888] max-w-md font-light">
-                  Every commit, every message, every pixel — synthesized into a single stream of architectural truth.
+                  Every task, every deadline, every shift in workload — aggregated into one honest
+                  read on studio health.
                 </p>
               </div>
             </div>
@@ -164,9 +146,12 @@ export default function LandingPage() {
       </section>
 
       {/* Studio OS Philosophy */}
-      <section className="py-40 px-8 bg-[#050505]">
+      {/* Raised surface + hairline rules. The page is otherwise a flat #050505
+          from nav to footer, which leaves the eye no landmarks across a long
+          scroll; this is the one section given a different ground. */}
+      <section className="py-28 md:py-40 px-6 md:px-8 border-y border-white/[0.04] bg-gradient-to-b from-[#090909] via-[#070707] to-[#050505]">
         <ScrollReveal>
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start gap-20">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start gap-12 md:gap-20">
             <div className="md:w-1/2">
               <span className="font-mono text-[11px] tracking-widest text-[#ededed] uppercase">The Methodology</span>
               <h2 className="text-4xl md:text-5xl lg:text-[64px] font-light tracking-tighter mt-8 mb-12 leading-[1.05] text-[#ededed]">
@@ -198,38 +183,57 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-32 px-8">
+      <section className="py-24 md:py-32 px-6 md:px-8">
         <ScrollReveal>
           <div className="max-w-5xl mx-auto rounded-[32px] bg-[#0A0A0A] p-16 md:p-24 text-center ring-1 ring-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] relative overflow-hidden">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-32 bg-gradient-to-b from-[#ededed]/30 to-transparent"></div>
             <h2 className="text-4xl md:text-6xl font-light tracking-tight mb-8 text-[#ededed]">Ready to exit the chaos?</h2>
             <p className="text-lg text-[#888888] font-light mb-12 max-w-xl mx-auto">
-              Join over 400 world-class studios using OrbitOS to run their operations with surgical precision.
+              Start on the free tier — three seats, three projects, no card required. Move up when
+              your studio outgrows it.
             </p>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-              <Link href="/signup" className="bg-[#ededed] text-[#050505] px-10 py-4 rounded-xl font-medium text-[15px] hover:bg-white hover:-translate-y-[2px] hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
-                Get Started
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
+              <Link href="/signup" className="w-full md:w-auto text-center bg-[#ededed] text-[#050505] px-10 py-4 rounded-xl font-medium text-[15px] hover:bg-white hover:-translate-y-[2px] hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
+                Start free
+              </Link>
+              <Link href="/contact-sales" className="w-full md:w-auto inline-flex items-center justify-center gap-2 text-[#888888] px-8 py-4 rounded-xl font-medium text-[15px] ring-1 ring-white/[0.06] hover:text-[#ededed] hover:ring-white/[0.14] transition-all duration-300">
+                Book a demo
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Trust row. Every claim here is sourced from /security and /privacy —
+                the SOC 2 attestation belongs to the hosting provider, not to
+                OrbitOS, so it is worded as infrastructure. */}
+            <div className="mt-16 pt-10 border-t border-white/[0.05]">
+              <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+                {[
+                  { icon: MapPin, label: 'POPIA-aligned' },
+                  { icon: Lock, label: 'AES-256 at rest' },
+                  { icon: ShieldCheck, label: 'TLS 1.2+ in transit' },
+                  { icon: Server, label: 'SOC 2 Type 2 infrastructure' },
+                ].map(({ icon: Icon, label }) => (
+                  <div key={label} className="flex items-center gap-2.5">
+                    <Icon className="w-3.5 h-3.5 text-[#555555]" aria-hidden />
+                    <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#6E6E6E]">
+                      {label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <Link
+                href="/security"
+                className="mt-8 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#555555] hover:text-[#ededed] transition-colors"
+              >
+                Read the security overview
+                <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
           </div>
         </ScrollReveal>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#050505] border-t border-white/[0.04] w-full py-20">
-        <div className="flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto px-8 md:px-16 gap-12 md:gap-0">
-          <div className="flex flex-col items-center md:items-start gap-4">
-            <div className="font-mono font-bold text-[#ededed] text-xl tracking-tight">OrbitOS</div>
-            <p className="font-mono text-[10px] tracking-widest uppercase text-[#555555]">© {new Date().getFullYear()} OrbitOS. Built for the architectural void.</p>
-          </div>
-          <div className="flex gap-8 md:gap-12">
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/privacy">Privacy</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/terms">Terms</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="/security">Security</Link>
-            <Link className="font-mono text-[10px] tracking-widest uppercase text-[#555555] hover:text-[#ededed] transition-colors" href="https://github.com/MiraiStack">GitHub</Link>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </main>
   );
 }

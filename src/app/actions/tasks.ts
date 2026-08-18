@@ -2,6 +2,7 @@
 
 import { adminDb } from "@/lib/firebase/admin";
 import { FieldValue, Timestamp as AdminTimestamp } from "firebase-admin/firestore";
+import { coerceDateKey, dateKeyToInstant } from "@/lib/utils/dates";
 
 /* ------------------------------------------------------------------ */
 /*  Task Server Actions                                                */
@@ -274,8 +275,11 @@ export async function updateTaskAction(
     if (updates.assignedTo !== undefined) firestoreUpdates.assignedTo = updates.assignedTo;
     if (updates.milestone !== undefined) firestoreUpdates.milestone = updates.milestone;
     if (updates.dueDate !== undefined) {
-      firestoreUpdates.dueDate = updates.dueDate
-        ? AdminTimestamp.fromDate(new Date(updates.dueDate))
+      // The key is the authority on the day; the Timestamp only sorts.
+      const key = coerceDateKey(updates.dueDate);
+      firestoreUpdates.dueDateKey = key;
+      firestoreUpdates.dueDate = key
+        ? AdminTimestamp.fromDate(dateKeyToInstant(key))
         : null;
     }
 
@@ -335,6 +339,8 @@ export async function createTaskAction(
     }
 
     const now = AdminTimestamp.now();
+    // The key is the authority on the day; the Timestamp only sorts.
+    const dueDateKey = coerceDateKey(dueDate);
     const taskData: Record<string, any> = {
       title: title.trim(),
       description: description || "",
@@ -343,7 +349,8 @@ export async function createTaskAction(
       assignedTo: assignedTo && assignedTo.length > 0 ? assignedTo : [],
       milestone: milestone || "Unassigned",
       createdBy,
-      dueDate: dueDate ? AdminTimestamp.fromDate(new Date(dueDate)) : null,
+      dueDateKey,
+      dueDate: dueDateKey ? AdminTimestamp.fromDate(dateKeyToInstant(dueDateKey)) : null,
       status: "todo",
       isBlocked: false,
       taskNotes: [],

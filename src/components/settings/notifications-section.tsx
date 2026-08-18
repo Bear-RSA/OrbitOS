@@ -68,8 +68,8 @@ export function NotificationsSection({ user }: { user: User }) {
             />
           </SettingsList>
         ) : (
-          <div className="flex items-start gap-4 rounded-2xl bg-white/[0.03] p-5 ring-1 ring-inset ring-white/[0.05]">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] ring-1 ring-inset ring-white/[0.08]">
+          <div className="flex items-start gap-4 rounded-2xl bg-surface-card p-5 ring-1 ring-inset ring-line/[0.05]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-control ring-1 ring-inset ring-line/[0.08]">
               <Inbox className="h-4 w-4 text-ink-muted" aria-hidden />
             </span>
             <div className="min-w-0">

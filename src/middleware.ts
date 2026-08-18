@@ -1,25 +1,93 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { SESSION_COOKIE_NAME } from "@/lib/auth/session-cookie";
+import { safeRedirect } from "@/lib/utils/safe-redirect";
 
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/join"];
-const AUTH_ROUTES = ["/login", "/signup"];
+/* ------------------------------------------------------------------ */
+/*  Route Gate                                                         */
+/*                                                                     */
+/*  Deny-by-default: anything not listed below requires a session      */
+/*  cookie. Adding a new marketing page means adding it here.          */
+/*                                                                     */
+/*  NOTE: middleware runs on the Edge runtime, where firebase-admin    */
+/*  cannot load — so this checks that a session cookie is PRESENT, not */
+/*  that it is valid. It is a redirect/UX gate and defence in depth,   */
+/*  never the authorization boundary. Real enforcement belongs in      */
+/*  server actions and route handlers via `getServerSession()`.        */
+/* ------------------------------------------------------------------ */
+
+const PUBLIC_ROUTES = new Set([
+  "/",
+  "/login",
+  "/signup",
+  "/join",
+  "/pricing",
+  "/methodology",
+  "/changelog",
+  "/privacy",
+  "/terms",
+  "/security",
+  "/contact-sales",
+]);
+
+const AUTH_ROUTES = new Set(["/login", "/signup"]);
+
+/**
+ * Next.js metadata routes. These are fetched by unauthenticated social and
+ * search crawlers that never carry a session cookie, and they have no file
+ * extension — so without this they fall through to the deny-by-default gate
+ * and 307 to /login, which renders every shared link as a blank card.
+ */
+const METADATA_ROUTE =
+  /^\/(opengraph-image|twitter-image|icon|apple-icon|manifest|robots|sitemap)/;
+
+/**
+ * Builds an absolute redirect URL from a root-relative target, keeping any
+ * query string in `search` rather than letting it be encoded into the path.
+ */
+function resolve(request: NextRequest, target: string): URL {
+  const url = request.nextUrl.clone();
+  const queryStart = target.indexOf("?");
+  url.pathname = queryStart === -1 ? target : target.slice(0, queryStart);
+  url.search = queryStart === -1 ? "" : target.slice(queryStart);
+  return url;
+}
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
 
-  // Allow public routes and API routes
+  // Framework internals and API routes authenticate themselves. Anything
+  // with a file extension is a static asset (/icon.svg, /logo.png) and must
+  // stay reachable for logged-out visitors on the marketing pages.
   if (
-    PUBLIC_ROUTES.some((r) => pathname === r) ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
-    pathname.startsWith("/favicon")
+    METADATA_ROUTE.test(pathname) ||
+    /\.[a-zA-Z0-9]+$/.test(pathname)
   ) {
     return NextResponse.next();
   }
 
-  // For protected routes, we rely on client-side auth checks
-  // (Firebase auth state is client-side; middleware can't verify it without session cookies)
-  // Add server-side session cookie verification here when scaling
+  const hasSession = Boolean(request.cookies.get(SESSION_COOKIE_NAME)?.value);
+
+  // Signed-in users have no business on the login/signup screens. Honour
+  // the pending redirect so invite links survive the bounce.
+  if (hasSession && AUTH_ROUTES.has(pathname)) {
+    return NextResponse.redirect(
+      resolve(request, safeRedirect(request.nextUrl.searchParams.get("redirect")))
+    );
+  }
+
+  if (PUBLIC_ROUTES.has(pathname)) {
+    return NextResponse.next();
+  }
+
+  if (!hasSession) {
+    const url = resolve(request, "/login");
+    url.searchParams.set("redirect", `${pathname}${search}`);
+    return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
 
