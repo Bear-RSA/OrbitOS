@@ -1,0 +1,106 @@
+/* ------------------------------------------------------------------ */
+/*  Subscription Tier Schema                                           */
+/*  Defines operational tiers, resource limits, and Firestore shape.   */
+/* ------------------------------------------------------------------ */
+
+import { Timestamp } from "firebase/firestore";
+
+/**
+ * The four subscription tiers available in OrbitOS.
+ */
+export type SubscriptionTier =
+  | "exploration"
+  | "foundational"
+  | "studio_core"
+  | "total_visibility";
+
+/**
+ * Resource limits enforced per tier.
+ * A value of -1 indicates unlimited.
+ */
+export interface TierLimits {
+  maxOwners: number;
+  maxMembers: number;
+  maxProjects: number;
+  /**
+   * Concurrent live telemetry streams one user may hold open.
+   *
+   * Unlike the other limits this one is metered because it COSTS: each open
+   * stream is a Firestore listener, and each connect buys a fresh window of
+   * document reads. It is the first limit here that maps to a Blaze line item
+   * rather than to a seat, which is exactly why it belongs on the tier.
+   *
+   * The runtime hard ceiling in `lib/telemetry/stream-guard` applies on top
+   * and is never widened by this value — -1 means "the tier does not narrow
+   * it", not "unlimited".
+   */
+  maxLiveStreams: number;
+}
+
+/**
+ * Full tier definition including display metadata and pricing.
+ */
+export interface TierDefinition {
+  id: SubscriptionTier;
+  name: string;
+  description: string;
+  limits: TierLimits;
+  priceZAR: number; // Monthly price in ZAR (0 = free)
+}
+
+/**
+ * Firestore document shape stored at `organizations/{orgId}.subscription`.
+ */
+export interface OrgSubscription {
+  tier: SubscriptionTier;
+  status: "active" | "cancelled" | "past_due";
+  payfastSubscriptionId?: string;
+  currentPeriodStart?: Timestamp;
+  currentPeriodEnd?: Timestamp;
+  updatedAt: Timestamp;
+}
+
+/**
+ * Quota resource types that can be validated against tier limits.
+ */
+export type QuotaResource = "members" | "projects" | "owners";
+
+/* ------------------------------------------------------------------ */
+/*  Tier Definitions (Source of Truth)                                  */
+/* ------------------------------------------------------------------ */
+
+export const TIER_DEFINITIONS: Record<SubscriptionTier, TierDefinition> = {
+  exploration: {
+    id: "exploration",
+    name: "Exploration",
+    description: "Free — for solo operators testing the waters.",
+    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1 },
+    priceZAR: 0,
+  },
+  foundational: {
+    id: "foundational",
+    name: "Foundational",
+    description: "Starter — for small teams building momentum.",
+    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2 },
+    priceZAR: 299,
+  },
+  studio_core: {
+    id: "studio_core",
+    name: "Studio Core",
+    description: "Team — for growing studios scaling operations.",
+    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4 },
+    priceZAR: 699,
+  },
+  total_visibility: {
+    id: "total_visibility",
+    name: "Total Visibility",
+    description: "Growth — full operational command. No limits.",
+    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1 },
+    priceZAR: 1499,
+  },
+};
+
+/**
+ * Default subscription state for newly created organizations.
+ */
+export const DEFAULT_SUBSCRIPTION_TIER: SubscriptionTier = "exploration";
