@@ -258,11 +258,11 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
           <h2 className="text-[10px] font-mono uppercase tracking-[0.3em] text-ink-dim mb-3">
             Asset Repository
           </h2>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <h3 className="text-2xl font-light text-ink tracking-tight">
               System Explorer
             </h3>
-            <span className="h-4 w-px bg-surface-control" />
+            <span className="hidden h-4 w-px bg-surface-control sm:block" />
             <span className="text-[12px] text-ink-dim font-mono tabular-nums">
               {loading ? "Scanning…" : `${files.length} Indices Found`}
             </span>

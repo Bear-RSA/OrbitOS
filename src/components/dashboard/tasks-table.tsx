@@ -204,9 +204,9 @@ export function TasksTable({
           <h2 className="text-[10px] font-mono uppercase tracking-[0.3em] text-ink-dim mb-3">
             Operational Log
           </h2>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <h3 className="text-2xl font-light text-ink tracking-tight">Master Objective List</h3>
-            <span className="h-4 w-px bg-surface-control" />
+            <span className="hidden h-4 w-px bg-surface-control sm:block" />
             <span className="text-[12px] text-ink-dim font-mono tabular-nums">
               {tasks.length} Nodes Registered 
               {selectedAssignee && ` [FILTERED: ${getMemberName(selectedAssignee)}]`}
@@ -234,8 +234,11 @@ export function TasksTable({
         </div>
       </div>
 
+      {/* Two columns only — no min-width. A min-width here forced the whole
+          checklist (rows and the expanded detail panel alike) into a sideways
+          scroller on a phone, so half of every directive sat off-screen. */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[800px]">
+        <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-line/[0.05]">
               <th className="pb-5 pt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-ink-dim w-[75%]">
@@ -333,15 +336,15 @@ export function TasksTable({
                       style={{ animationDelay: `${index * 60}ms` }}
                       onClick={() => setExpandedTasks(prev => ({ ...prev, [task.id]: !prev[task.id] }))}
                     >
-                      <td className="py-4 pr-6 pl-2 align-top">
-                        <div className="flex items-center gap-4">
-                          <button className="p-1 hover:bg-surface-control rounded-md transition-colors">
+                      <td className="py-4 pr-3 pl-1 align-top sm:pr-6 sm:pl-2">
+                        <div className="flex items-center gap-2.5 sm:gap-4">
+                          <button className="shrink-0 p-1 hover:bg-surface-control rounded-md transition-colors">
                             {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-ink-dim" /> : <ChevronRight className="w-3.5 h-3.5 text-ink-dim" />}
                           </button>
                           <span className="text-[10px] text-ink-dim tracking-[0.1em] shrink-0">#{taskId}</span>
                           <div className="flex-1 min-w-0">
                             <p className={cn(
-                              "text-[14px] font-medium tracking-tight leading-snug",
+                              "text-[14px] font-medium tracking-tight leading-snug break-words",
                               isDone ? "text-ink-dim line-through decoration-line/10" : "text-ink group-hover/row:text-ink-strong transition-colors duration-300"
                             )}>
                               {task.title}
@@ -349,7 +352,7 @@ export function TasksTable({
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 pl-4 text-right align-top">
+                      <td className="py-4 pl-1 text-right align-top sm:pl-4">
                         {task.dueDate ? (
                           <div className="flex flex-col items-end gap-1">
                             <span className={cn("text-[11px] uppercase tracking-widest tabular-nums transition-colors duration-300", horizonColor)}>
@@ -364,10 +367,10 @@ export function TasksTable({
                       <td colSpan={2} className="p-0">
                         <div className={cn(
                           "overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                          isExpanded ? "max-h-[1200px] opacity-100 mb-8 mx-2 mt-2" : "max-h-0 opacity-0"
+                          isExpanded ? "max-h-[1600px] opacity-100 mb-8 mx-0 mt-2 sm:mx-2" : "max-h-0 opacity-0"
                         )}>
-                          <div className="border border-line/[0.06] bg-surface-card/40 backdrop-blur-sm p-5 font-mono shadow-raised rounded-xl ring-1 ring-line/5">
-                            <div className="flex items-center justify-between mb-8">
+                          <div className="border border-line/[0.06] bg-surface-card/40 backdrop-blur-sm p-4 sm:p-5 font-mono shadow-raised rounded-xl ring-1 ring-line/5">
+                            <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
                               <div className="flex items-center gap-4">
                                 <button
                                   disabled={!canEdit}
@@ -403,7 +406,7 @@ export function TasksTable({
                                   </SelectContent>
                                 </Select>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <button onClick={(e) => { e.stopPropagation(); setActiveNoteInputId(task.id); setNoteContent(""); }} className="px-2 py-1 rounded bg-surface-card text-ink-dim border border-line/[0.05] hover:text-ink-muted hover:border-line/[0.1] text-[9px] uppercase tracking-widest transition-all">
                                   [ADD NOTE]
                                 </button>
@@ -423,7 +426,7 @@ export function TasksTable({
                             </div>
                             <div className="mb-8">
                               <h4 className="text-[9px] text-ink-dim uppercase tracking-[0.3em] mb-2">Scope Documentation //</h4>
-                              <p className="text-[12px] text-ink-muted leading-relaxed max-w-2xl whitespace-pre-wrap">{task.description || "No documentation registered for this node."}</p>
+                              <p className="text-[12px] text-ink-muted leading-relaxed max-w-2xl whitespace-pre-wrap break-words">{task.description || "No documentation registered for this node."}</p>
                             </div>
                             <div className="mb-8 flex flex-col gap-3">
                               <h4 className="text-[9px] text-ink-dim uppercase tracking-[0.3em]">Operative Assignment //</h4>
@@ -460,7 +463,7 @@ export function TasksTable({
                                         <span className="text-[9px] text-ink-dim tabular-nums">{format(typeof (note.createdAt as any).toDate === 'function' ? (note.createdAt as any).toDate() : new Date(note.createdAt as any), "dd MMM HH:mm")}</span>
                                         <span className="text-[9px] text-orbit-green uppercase tracking-widest">{getMemberName(note.createdBy)}</span>
                                       </div>
-                                      <p className="text-[11px] text-ink-muted font-mono whitespace-pre-wrap">{note.content}</p>
+                                      <p className="text-[11px] text-ink-muted font-mono whitespace-pre-wrap break-words">{note.content}</p>
                                     </div>
                                   ))}
                                 </div>

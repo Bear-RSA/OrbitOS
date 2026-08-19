@@ -15,11 +15,12 @@ import { OrbitEvent } from "@/types/event";
 import { Loader } from "@/components/ui/loader";
 import { TasksTable } from "@/components/dashboard/tasks-table";
 import { ProjectSettingsMenu } from "@/components/projects/project-settings";
-import { ArrowLeft, RefreshCw, Folder, Map, LayoutList, Network, CalendarDays } from "lucide-react";
+import { ArrowLeft, RefreshCw, Folder } from "lucide-react";
 import { SystemExplorer } from "@/components/projects/system-explorer";
 import { ProjectCalendar } from "@/components/projects/project-calendar";
 import { CommandCenter } from "@/components/projects/command-center";
 import { ProjectPulse } from "@/components/projects/project-pulse";
+import { ExecutionViewTabs, type ExecutionView } from "@/components/projects/execution-view-tabs";
 import { SystemRoadmap } from "@/components/dashboard/system-roadmap";
 import { PersonnelHub } from "@/components/dashboard/personnel-hub";
 import { cn } from "@/lib/utils/classnames";
@@ -40,7 +41,7 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [viewMode, setViewMode] = useState<"execution" | "calendar" | "strategy" | "personnel">("execution");
+  const [viewMode, setViewMode] = useState<ExecutionView>("execution");
   const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null);
   const { projectId } = use(params);
 
@@ -163,39 +164,7 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
             </div>
 
             {/* View Toggle */}
-            <div
-              role="tablist"
-              aria-label="Execution view"
-              className="flex items-center gap-1 rounded-xl bg-surface-card p-1 ring-1 ring-inset ring-line/[0.06]"
-            >
-               {([
-                 { id: "execution", icon: LayoutList,  label: "Checklist" },
-                 { id: "calendar",  icon: CalendarDays, label: "Calendar" },
-                 { id: "strategy",  icon: Map,         label: "Roadmap"   },
-                 { id: "personnel", icon: Network,     label: "Personnel" },
-               ] as const).map(({ id, icon: Icon, label }) => {
-                 const active = viewMode === id;
-                 return (
-                   <button
-                     key={id}
-                     role="tab"
-                     aria-selected={active}
-                     onClick={() => setViewMode(id)}
-                     className={cn(
-                       "flex items-center gap-2 rounded-lg px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em]",
-                       "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
-                       active
-                         ? "bg-surface-hover text-ink ring-1 ring-inset ring-line/[0.09]"
-                         : "text-ink-dim hover:bg-surface-raised hover:text-ink-muted"
-                     )}
-                   >
-                     <Icon className="h-3.5 w-3.5" aria-hidden />
-                     {label}
-                   </button>
-                 );
-               })}
-            </div>
+            <ExecutionViewTabs value={viewMode} onChange={setViewMode} />
          </div>
 
          {viewMode === "calendar" && (

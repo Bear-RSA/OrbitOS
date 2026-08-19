@@ -292,15 +292,15 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
   return (
     <section className="animate-fade-in mt-20" aria-label="Command Center telemetry log">
       {/* ────────── HEADER ────────── */}
-      <div className="mb-8 flex items-start justify-between gap-6">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div>
           <h2 className="mb-3 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.3em] text-ink-dim">
             <span className="h-1.5 w-1.5 rounded-full bg-surface-raised ring-1 ring-line/[0.08]" />
             System Diagnostics
           </h2>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <h3 className="text-2xl font-light tracking-tight text-ink">Command Center</h3>
-            <span className="h-4 w-px bg-surface-control" />
+            <span className="hidden h-4 w-px bg-surface-control sm:block" />
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 {!error && (
