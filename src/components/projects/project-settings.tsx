@@ -127,7 +127,6 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
         throw new Error(result.error);
       }
 
-      console.log(`[ProjectSettings] Deleted project ${projectId} (${result.deletedTasks} tasks cascade-removed)`);
       setShowDeleteConfirm(false);
       router.push("/dashboard");
       router.refresh();

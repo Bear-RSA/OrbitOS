@@ -90,7 +90,7 @@ export function DestructiveActionModal({
           <DialogDescription className="text-ink-muted text-[15px] font-light leading-relaxed">
             {description || (
               <>
-                You are about to permanently eradicate <span className="font-semibold text-ink-strong">"{entityName}"</span>.
+                You are about to permanently eradicate <span className="font-semibold text-ink-strong">&quot;{entityName}&quot;</span>.
               </>
             )}
           </DialogDescription>
@@ -108,7 +108,7 @@ export function DestructiveActionModal({
           {/* Confirmation Input */}
           <div className="space-y-3">
             <label className="text-[11px] font-mono text-ink-dim uppercase tracking-[0.2em] block">
-              TYPE <span className="text-ink">"{targetConfirmText}"</span> TO CONFIRM
+              TYPE <span className="text-ink">&quot;{targetConfirmText}&quot;</span> TO CONFIRM
             </label>
             <div className="relative">
               <input

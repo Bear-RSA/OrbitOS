@@ -15,9 +15,7 @@ export function ScrambleText({ text, speed = 1/3, scrambleSpeed = 30 }: Scramble
   
   useEffect(() => {
     let iteration = 0;
-    let interval: NodeJS.Timeout;
-    
-    interval = setInterval(() => {
+    const interval: NodeJS.Timeout = setInterval(() => {
       setDisplay(text.split("").map((letter, index) => {
         if (index < iteration) {
           return text[index];

@@ -122,7 +122,7 @@ export default function LandingPage() {
               <EyeOff className="w-8 h-8 text-[#555555] mb-6" />
               <h3 className="text-xl font-light text-[#ededed] mb-4 tracking-tight">Silent Task Detection</h3>
               <p className="text-[15px] text-[#888888] leading-relaxed font-light">
-                Identifying the 'ghost work' that consumes your team's time but never makes it to the roadmap.
+                Identifying the &apos;ghost work&apos; that consumes your team&apos;s time but never makes it to the roadmap.
               </p>
             </div>
             

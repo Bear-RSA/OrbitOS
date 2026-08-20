@@ -1,0 +1,6 @@
+node_modules/
+.next/
+.claude/worktrees/
+next-env.d.ts
+scripts/
+public/

@@ -68,7 +68,7 @@ export function ConfirmDialog({
             
             {isDestructive && (
               <p className="text-[10px] text-ink-dim uppercase tracking-[0.2em] font-mono leading-tight">
-                Action Status: <span className="text-orbit-red/60 italic">Irreversible</span> // Logged to Telemetry
+                Action Status: <span className="text-orbit-red/60 italic">Irreversible</span>{" // Logged to Telemetry"}
               </p>
             )}
           </div>
