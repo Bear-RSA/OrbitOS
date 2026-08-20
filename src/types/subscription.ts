@@ -35,6 +35,18 @@ export interface TierLimits {
    * it", not "unlimited".
    */
   maxLiveStreams: number;
+  /**
+   * Due-soon reminder emails one organization may have sent on its behalf
+   * per daily run.
+   *
+   * Metered for the same reason as `maxLiveStreams`: every reminder is a
+   * Resend send, so a workspace with a thousand tasks landing on one day is
+   * a line item rather than a seat. -1 means "the tier does not narrow it".
+   *
+   * The hard ceiling in `lib/tasks/due-reminders` applies on top and is
+   * never widened by this value.
+   */
+  maxTaskRemindersPerDay: number;
 }
 
 /**
@@ -74,28 +86,28 @@ export const TIER_DEFINITIONS: Record<SubscriptionTier, TierDefinition> = {
     id: "exploration",
     name: "Exploration",
     description: "Free — for solo operators testing the waters.",
-    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1 },
+    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10 },
     priceZAR: 0,
   },
   foundational: {
     id: "foundational",
     name: "Foundational",
     description: "Starter — for small teams building momentum.",
-    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2 },
+    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30 },
     priceZAR: 299,
   },
   studio_core: {
     id: "studio_core",
     name: "Studio Core",
     description: "Team — for growing studios scaling operations.",
-    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4 },
+    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4, maxTaskRemindersPerDay: 75 },
     priceZAR: 699,
   },
   total_visibility: {
     id: "total_visibility",
     name: "Total Visibility",
     description: "Growth — full operational command. No limits.",
-    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1 },
+    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1 },
     priceZAR: 1499,
   },
 };

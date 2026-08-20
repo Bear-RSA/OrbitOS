@@ -167,6 +167,22 @@ export async function resolveLiveStreamLimit(orgId: string): Promise<number> {
 }
 
 /**
+ * Per-organization allowance of due-soon reminder emails for one daily run.
+ *
+ * Same contract as `resolveLiveStreamLimit`: -1 means "the tier does not
+ * narrow the allowance", and the hard ceiling in `lib/tasks/due-reminders`
+ * governs regardless. Reminders are a Resend invoice, so the ceiling has to
+ * be live now even while the paywall stays dark.
+ */
+export async function resolveTaskReminderLimit(orgId: string): Promise<number> {
+  if (!GUARDRAILS_ENABLED) return -1;
+  if (!orgId) return -1;
+
+  const tier = await resolveOrgTier(orgId);
+  return TIER_DEFINITIONS[tier].limits.maxTaskRemindersPerDay;
+}
+
+/**
  * Validates whether an organization's current resource usage allows
  * one more of the requested resource type under its active subscription tier.
  *
