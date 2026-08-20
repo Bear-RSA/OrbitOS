@@ -67,7 +67,13 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      <WorkspaceProjects projects={projects} />
+      <WorkspaceProjects
+        projects={projects}
+        orgId={user?.orgId}
+        userId={user?.id}
+        isOwner={user?.role === "OWNER"}
+        onRefresh={loadProjects}
+      />
     </DashboardShell>
   );
 }

@@ -1,4 +1,5 @@
 import { Timestamp } from "firebase/firestore";
+import type { GuestInviteInput } from "@/types/guest";
 
 /* ------------------------------------------------------------------ */
 /*  Engagement Schema                                                  */
@@ -56,6 +57,34 @@ export interface OrbitEvent {
   /** uid → response. Keys track `attendees`; absent is read as `pending`. */
   rsvp: Record<string, RsvpStatus>;
 
+  /**
+   * Guest ids (see `types/guest`) for people invited off-platform. Kept in
+   * its own field rather than mixed into `attendees` so every existing
+   * `array-contains` query on uids keeps its exact meaning — a guest must
+   * never satisfy a member lookup.
+   */
+  guests: string[];
+  /** guestId → response. Same contract as `rsvp`, keyed by guest. */
+  guestRsvp: Record<string, RsvpStatus>;
+  /**
+   * guestId → display name, denormalized at write time.
+   *
+   * A calendar grid renders every participant on every cell. Resolving
+   * these through the `guests` collection would be a read per guest per
+   * render, and the client would need read access to a collection that
+   * is otherwise server-only. A name is cheap to copy and near-static;
+   * a rename simply lands on the next write.
+   */
+  guestNames: Record<string, string>;
+
+  /**
+   * RFC 5545 SEQUENCE. Calendar clients dedupe on UID and accept an update
+   * only when this is higher than what they already hold, so it has to
+   * increment on every change that goes back out as an invite — a
+   * reschedule that reuses the old number is silently dropped by Outlook.
+   */
+  sequence: number;
+
   status: EventStatus;
   createdBy: string;
   createdAt: Timestamp;
@@ -80,6 +109,8 @@ export interface CreateEventInput {
   location?: string | null;
   meetingUrl?: string | null;
   attendees?: string[];
+  /** Off-platform invitees by address; resolved to guest records server-side. */
+  guests?: GuestInviteInput[];
 }
 
 export interface UpdateEventInput {
@@ -92,4 +123,5 @@ export interface UpdateEventInput {
   location?: string | null;
   meetingUrl?: string | null;
   attendees?: string[];
+  guests?: GuestInviteInput[];
 }

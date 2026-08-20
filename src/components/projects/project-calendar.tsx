@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   addMonths,
@@ -26,15 +26,22 @@ import {
   X,
   CalendarDays,
   Columns3,
+  Mail,
+  Pencil,
 } from "lucide-react";
 import { Task } from "@/types/task";
 import { Member } from "@/types/member";
 import { OrbitEvent, RsvpStatus } from "@/types/event";
+import type { ParticipantView } from "@/types/guest";
 import { updateTaskAction } from "@/app/actions/tasks";
-import { cancelEventAction, setRsvpAction } from "@/app/actions/events";
+import {
+  cancelEventAction,
+  getEngagementGuestsAction,
+  setRsvpAction,
+} from "@/app/actions/events";
 import { dueDateKeyOf, parseDateKey, toDateKey } from "@/lib/utils/dates";
 import { dayWindowFor, layoutCollisions, LayoutInput } from "@/lib/utils/event-layout";
-import { CreateEventDialog } from "@/components/events/create-event-dialog";
+import { EngagementDialog } from "@/components/events/engagement-dialog";
 import { cn } from "@/lib/utils/classnames";
 
 /* ------------------------------------------------------------------ */
@@ -128,6 +135,8 @@ export function ProjectCalendar({
   const [createOpen, setCreateOpen] = useState(false);
   const [createDateKey, setCreateDateKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [guests, setGuests] = useState<ParticipantView[]>([]);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
   /* Pointer handlers fire faster than React commits, so the authoritative
      drag state lives in a ref; `drag` exists only to render the ghost. */
@@ -194,6 +203,63 @@ export function ProjectCalendar({
     () => events.find((e) => e.id === selectedEventId) ?? null,
     [events, selectedEventId]
   );
+
+  const editingEvent = useMemo(
+    () => events.find((e) => e.id === editingEventId) ?? null,
+    [events, editingEventId]
+  );
+
+  /* Who may revise or cancel. Mirrors `canManageEngagement` on the server,
+     which is the one that actually decides — this only governs whether the
+     controls are offered. */
+  const isOwner = members.find((m) => m.id === uid)?.role === "OWNER";
+  const canManageSelected =
+    selectedEvent !== null && (selectedEvent.createdBy === uid || isOwner);
+
+  /* Guests are fetched rather than read off the engagement. The `guests`
+     collection has no client read rule on purpose — a workspace's client
+     list is not something any Member should be able to enumerate — so the
+     engagement carries ids and the server resolves them.
+
+     Keyed on the joined ids rather than on `selectedEvent`, which is a
+     fresh object on every Firestore snapshot and would otherwise refetch
+     the same names on every unrelated write to the org's calendar. */
+  const selectedGuestKey = (selectedEvent?.guests ?? []).join(",");
+
+  useEffect(() => {
+    if (!selectedEventId || !selectedGuestKey) {
+      setGuests([]);
+      return;
+    }
+
+    let active = true;
+    getEngagementGuestsAction(uid, selectedEventId).then((result) => {
+      if (!active) return;
+      // A failure here means the names are missing, not that the people
+      // are — the count still comes from the engagement itself.
+      setGuests(result.success ? result.data : []);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedEventId, selectedGuestKey, uid]);
+
+  /** Members and guests as one list, so the panel renders participants
+      instead of branching on where each person came from. */
+  const participants = useMemo<ParticipantView[]>(() => {
+    if (!selectedEvent) return [];
+
+    const fromMembers: ParticipantView[] = selectedEvent.attendees.map((id) => ({
+      id,
+      name: members.find((m) => m.id === id)?.name || "Unknown operative",
+      email: null,
+      kind: "member",
+      rsvp: selectedEvent.rsvp?.[id] ?? "pending",
+    }));
+
+    return [...fromMembers, ...guests];
+  }, [selectedEvent, members, guests]);
 
   /* ---------------- Visible range ---------------- */
 
@@ -839,27 +905,44 @@ export function ProjectCalendar({
             )}
           </div>
 
-          {/* Attendees */}
+          {/* Participants — members and guests in one row. A guest is
+              marked, because "who in this meeting is outside the company"
+              changes what gets said in it, but their answer is rendered
+              exactly like anyone else's: it counts the same. */}
           <div className="mb-4 flex flex-wrap gap-1.5">
-            {selectedEvent.attendees.map((attendeeId) => {
-              const member = members.find((m) => m.id === attendeeId);
-              const status = selectedEvent.rsvp?.[attendeeId] ?? "pending";
-              return (
-                <span
-                  key={attendeeId}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded border px-2 py-1 font-mono text-[9px]",
-                    status === "accepted" && "border-orbit-green/25 bg-orbit-green/[0.07] text-orbit-green",
-                    status === "declined" && "border-orbit-red/25 bg-orbit-red/[0.07] text-orbit-red",
-                    status === "tentative" && "border-orbit-amber/25 bg-orbit-amber/[0.07] text-orbit-amber",
-                    status === "pending" && "border-line/[0.08] bg-surface-card text-ink-dim"
-                  )}
-                >
-                  {member?.name || "Unknown operative"}
-                  <span className="opacity-60">· {RSVP_LABEL[status]}</span>
-                </span>
-              );
-            })}
+            {participants.map((participant) => (
+              <span
+                key={`${participant.kind}-${participant.id}`}
+                title={participant.email ?? undefined}
+                className={cn(
+                  "flex items-center gap-1.5 rounded border px-2 py-1 font-mono text-[9px]",
+                  participant.rsvp === "accepted" &&
+                    "border-orbit-green/25 bg-orbit-green/[0.07] text-orbit-green",
+                  participant.rsvp === "declined" &&
+                    "border-orbit-red/25 bg-orbit-red/[0.07] text-orbit-red",
+                  participant.rsvp === "tentative" &&
+                    "border-orbit-amber/25 bg-orbit-amber/[0.07] text-orbit-amber",
+                  participant.rsvp === "pending" && "border-line/[0.08] bg-surface-card text-ink-dim"
+                )}
+              >
+                {participant.kind === "guest" && (
+                  <Mail className="h-2.5 w-2.5 shrink-0 opacity-50" aria-hidden />
+                )}
+                {participant.name}
+                <span className="opacity-60">· {RSVP_LABEL[participant.rsvp]}</span>
+              </span>
+            ))}
+
+            {/* The engagement knows how many guests it has even when their
+                names could not be loaded. Saying nothing would under-report
+                the room. */}
+            {selectedEvent.guests?.length > 0 && guests.length === 0 && (
+              <span className="flex items-center gap-1.5 rounded border border-line/[0.08] bg-surface-card px-2 py-1 font-mono text-[9px] text-ink-dim">
+                <Mail className="h-2.5 w-2.5 shrink-0 opacity-50" aria-hidden />
+                {selectedEvent.guests.length} guest
+                {selectedEvent.guests.length === 1 ? "" : "s"}
+              </span>
+            )}
           </div>
 
           {/* Your response */}
@@ -888,17 +971,32 @@ export function ProjectCalendar({
                   </button>
                 );
               })}
+            </div>
+          )}
 
-              {selectedEvent.createdBy === uid && (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => cancelEngagement(selectedEvent.id)}
-                  className="ml-auto rounded-lg px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-orbit-red ring-1 ring-inset ring-orbit-red/20 transition-colors hover:bg-orbit-red/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orbit-red/40 disabled:opacity-40"
-                >
-                  Cancel engagement
-                </button>
-              )}
+          {/* Organizer controls, kept out of the response row: an OWNER can
+              manage an engagement they were never invited to, and the
+              response row only renders for people who are on it. */}
+          {selectedEvent.status !== "cancelled" && canManageSelected && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line/[0.05] pt-3">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setEditingEventId(selectedEvent.id)}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-dim ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-control hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40"
+              >
+                <Pencil className="h-3 w-3" aria-hidden />
+                Edit / reschedule
+              </button>
+
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => cancelEngagement(selectedEvent.id)}
+                className="ml-auto rounded-lg px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-orbit-red ring-1 ring-inset ring-orbit-red/20 transition-colors hover:bg-orbit-red/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orbit-red/40 disabled:opacity-40"
+              >
+                Cancel engagement
+              </button>
             </div>
           )}
         </div>
@@ -978,7 +1076,7 @@ export function ProjectCalendar({
           document.body
         )}
 
-      <CreateEventDialog
+      <EngagementDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
         projectId={projectId}
@@ -986,6 +1084,21 @@ export function ProjectCalendar({
         currentUserId={uid}
         defaultDateKey={createDateKey}
       />
+
+      {/* Mounted only while editing, so opening it is what loads the
+          engagement into the form. */}
+      {editingEvent && (
+        <EngagementDialog
+          open
+          onOpenChange={(next) => {
+            if (!next) setEditingEventId(null);
+          }}
+          projectId={editingEvent.projectId}
+          members={members}
+          currentUserId={uid}
+          event={editingEvent}
+        />
+      )}
     </div>
   );
 }

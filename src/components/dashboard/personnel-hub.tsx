@@ -5,6 +5,8 @@ import { getWorkloadTelemetryAction } from "@/app/actions/personnel";
 import { cn } from "@/lib/utils/classnames";
 import { Member } from "@/types/member";
 import { Task } from "@/types/task";
+import { OrbitEvent } from "@/types/event";
+import { engagementPresenceByMember } from "@/lib/calendar/presence";
 import { Loader2 } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 
@@ -13,11 +15,17 @@ interface PersonnelHubProps {
   orgId: string;
   members: Member[];
   tasks: Task[];
+  /**
+   * Engagements this project already subscribes to. Passed in rather than
+   * fetched here so the hub stays a pure render of props and does not open
+   * a second listener onto data the page is already holding.
+   */
+  events?: OrbitEvent[];
   selectedAssignee: string | null;
   onAssigneeSelect: (uid: string | null) => void;
 }
 
-export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssignee, onAssigneeSelect }: PersonnelHubProps) {
+export function PersonnelHub({ projectId, orgId, members, tasks, events = [], selectedAssignee, onAssigneeSelect }: PersonnelHubProps) {
   const [now, setNow] = useState(Date.now());
 
   // Heartbeat local timer for offline detection
@@ -27,6 +35,17 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
   }, []);
 
   const MAX_SYSTEM_LOAD = 5;
+
+  /* Who is in a room right now, and with whom. Recomputed on the same
+     30s heartbeat that drives offline detection, so a meeting starting
+     or ending shows up without its own timer. */
+  const memberNames = Object.fromEntries(members.map((m) => [m.id, m.name]));
+  const presenceByMember = engagementPresenceByMember(
+    events,
+    members.map((m) => m.id),
+    memberNames,
+    new Date(now)
+  );
 
   // Process mapping purely from props for zero-latency reactivity
   const telemetry = members.map(member => {
@@ -51,6 +70,10 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
       role: member.role,
       roleDescriptor: member.roleDescriptor,
       operationalStatus: status,
+      /* A live engagement outranks a self-set status: someone who clicked
+         "available" an hour ago and is in a client call right now is not
+         available, and the calendar is the better authority. */
+      presence: presenceByMember[memberId] ?? null,
       directiveCount: count,
       loadPercentage: loadPercent,
       descriptor: member.roleDescriptor,
@@ -83,6 +106,9 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
            if (t.operationalStatus === "available") statusColor = "bg-orbit-green";
            if (t.operationalStatus === "focused") statusColor = "bg-ink";
            if (t.operationalStatus === "offline") statusColor = "bg-orbit-red";
+           if (t.presence) statusColor = "bg-orbit-amber";
+
+           const statusWord = t.presence ? "in meeting" : t.operationalStatus;
 
            // Role formatting
            const displayDescriptor = t.roleDescriptor || (t.role === "OWNER" ? "[OWNER]" : "[MEMBER]");
@@ -112,15 +138,27 @@ export function PersonnelHub({ projectId, orgId, members, tasks, selectedAssigne
                        <span className="text-[13px] font-medium text-ink tracking-tight group-hover:text-ink-strong transition-colors">
                          {t.name}
                        </span>
-                       <span className={cn("text-[9px] font-mono tracking-widest uppercase mt-0.5", roleColor)}>
-                         {displayDescriptor}
-                       </span>
+                       {t.presence ? (
+                         <span
+                           className="text-[9px] font-mono tracking-widest uppercase mt-0.5 text-orbit-amber truncate max-w-[220px]"
+                           title={`${t.name} is ${t.presence.label} — ${t.presence.title}`}
+                         >
+                           {t.presence.label}
+                           {t.presence.hasGuests && " ·  guest"}
+                         </span>
+                       ) : (
+                         <span className={cn("text-[9px] font-mono tracking-widest uppercase mt-0.5", roleColor)}>
+                           {displayDescriptor}
+                         </span>
+                       )}
                     </div>
                   </div>
 
                   <div className="flex flex-col items-end gap-1">
                      <div className="flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.1em]">
-                        <span className="text-ink-dim">{t.operationalStatus}</span>
+                        <span className={cn(t.presence ? "text-orbit-amber" : "text-ink-dim")}>
+                          {statusWord}
+                        </span>
                         <span className="text-ink-muted">{bar}</span>
                         <span className={cn("tabular-nums", t.loadPercentage >= 80 ? "text-orbit-red" : "text-ink-muted")}>
                           {t.directiveCount} NODES

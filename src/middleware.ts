@@ -33,6 +33,18 @@ const PUBLIC_ROUTES = new Set([
 const AUTH_ROUTES = new Set(["/login", "/signup"]);
 
 /**
+ * Public routes whose path carries an argument, so they cannot be matched
+ * by exact set membership.
+ *
+ * `/rsvp/<token>` is reachable without a session on purpose: the whole
+ * point is that a guest with no OrbitOS account can answer an invitation
+ * from their inbox. The signed token in the path is the credential, and
+ * it is verified server-side in `actions/rsvp` — bouncing these visitors
+ * to /login would break the only flow they have.
+ */
+const PUBLIC_PREFIXES = [/^\/rsvp\//];
+
+/**
  * Next.js metadata routes. These are fetched by unauthenticated social and
  * search crawlers that never carry a session cookie, and they have no file
  * extension — so without this they fall through to the deny-by-default gate
@@ -78,7 +90,7 @@ export function middleware(request: NextRequest) {
     );
   }
 
-  if (PUBLIC_ROUTES.has(pathname)) {
+  if (PUBLIC_ROUTES.has(pathname) || PUBLIC_PREFIXES.some((re) => re.test(pathname))) {
     return NextResponse.next();
   }
 

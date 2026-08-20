@@ -73,6 +73,34 @@ export function toDateKey(date: Date): string {
 }
 
 /**
+ * The calendar day a Date falls on, read in a named IANA zone rather than
+ * wherever the code happens to be running.
+ *
+ * `toDateKey` reads the *local* zone, which is right on the client — the
+ * person picking a day is standing in it — and wrong on the server, where
+ * "local" is UTC. An engagement at 01:00 in Africa/Johannesburg is still
+ * the previous day in UTC, so a server-side `toDateKey` files it under a
+ * day its organizer never chose and an all-day invite reaches everyone
+ * else's calendar dated a day early.
+ *
+ * Falls back to the local reading if the zone is not recognised, which is
+ * no worse than what the caller would have done without it.
+ */
+export function toDateKeyInZone(date: Date, timeZone: string): string {
+  try {
+    // en-CA formats as YYYY-MM-DD, which is the key format already.
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
+  } catch {
+    return toDateKey(date);
+  }
+}
+
+/**
  * A date key as a local Date at midday — far enough from either midnight
  * that no DST transition can nudge it onto an adjacent day. Use this for
  * anything that formats or compares a due date on the client.

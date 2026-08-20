@@ -183,6 +183,22 @@ export async function resolveTaskReminderLimit(orgId: string): Promise<number> {
 }
 
 /**
+ * Off-platform guests one engagement may carry for this organization.
+ *
+ * Same contract as the two above: -1 means "the tier does not narrow the
+ * allowance", and the hard ceiling in `lib/calendar/invite-dispatch`
+ * governs regardless. Guest invites are a Resend invoice, so that ceiling
+ * is live now even while the paywall stays dark.
+ */
+export async function resolveGuestInviteLimit(orgId: string): Promise<number> {
+  if (!GUARDRAILS_ENABLED) return -1;
+  if (!orgId) return -1;
+
+  const tier = await resolveOrgTier(orgId);
+  return TIER_DEFINITIONS[tier].limits.maxGuestsPerEngagement;
+}
+
+/**
  * Validates whether an organization's current resource usage allows
  * one more of the requested resource type under its active subscription tier.
  *

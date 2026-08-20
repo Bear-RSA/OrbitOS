@@ -47,6 +47,21 @@ export interface TierLimits {
    * never widened by this value.
    */
   maxTaskRemindersPerDay: number;
+
+  /**
+   * Off-platform guests invitable to a single engagement.
+   *
+   * Metered for the same reason as the two above: every guest is a Resend
+   * send on create, another on any reschedule, and another on cancel. It
+   * is also the tier's natural shape — inviting outside clients into the
+   * workspace is what a studio pays for, not something a free account
+   * needs at volume.
+   *
+   * The hard ceiling in `lib/calendar/invite-dispatch` applies on top and
+   * is never widened by this value: -1 means "the tier does not narrow
+   * it", not "unlimited".
+   */
+  maxGuestsPerEngagement: number;
 }
 
 /**
@@ -86,28 +101,28 @@ export const TIER_DEFINITIONS: Record<SubscriptionTier, TierDefinition> = {
     id: "exploration",
     name: "Exploration",
     description: "Free — for solo operators testing the waters.",
-    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10 },
+    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10, maxGuestsPerEngagement: 0 },
     priceZAR: 0,
   },
   foundational: {
     id: "foundational",
     name: "Foundational",
     description: "Starter — for small teams building momentum.",
-    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30 },
+    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30, maxGuestsPerEngagement: 3 },
     priceZAR: 299,
   },
   studio_core: {
     id: "studio_core",
     name: "Studio Core",
     description: "Team — for growing studios scaling operations.",
-    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4, maxTaskRemindersPerDay: 75 },
+    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4, maxTaskRemindersPerDay: 75, maxGuestsPerEngagement: 10 },
     priceZAR: 699,
   },
   total_visibility: {
     id: "total_visibility",
     name: "Total Visibility",
     description: "Growth — full operational command. No limits.",
-    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1 },
+    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1, maxGuestsPerEngagement: -1 },
     priceZAR: 1499,
   },
 };

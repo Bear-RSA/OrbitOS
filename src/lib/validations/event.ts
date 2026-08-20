@@ -38,6 +38,26 @@ const attendees = z
   .max(50, "Maximum 50 attendees per engagement");
 
 /**
+ * Off-platform invitees. The shape check is deliberately loose — the
+ * server resolves each address against the member directory before
+ * deciding it is external, and Resend validates properly on send. This
+ * only stops something that is obviously not an address.
+ */
+const guests = z
+  .array(
+    z.object({
+      email: z
+        .string()
+        .trim()
+        .min(3, "Enter an email address")
+        .max(254, "Email too long")
+        .email("Not a valid email address"),
+      name: z.string().trim().max(80, "Name too long").optional(),
+    })
+  )
+  .max(25, "Maximum 25 guests per engagement");
+
+/**
  * Shared span check. Applied via `superRefine` on each schema so both keep
  * their own inferred input/output types — a generic wrapper would collapse
  * the two and make fields with defaults look required to callers.
@@ -83,6 +103,7 @@ export const createEventSchema = z
     location: z.string().trim().max(200, "Location too long").nullable().optional(),
     meetingUrl: optionalUrl,
     attendees: attendees.optional().default([]),
+    guests: guests.optional().default([]),
   })
   .superRefine(checkSpan);
 
@@ -97,6 +118,7 @@ export const updateEventSchema = z
     location: z.string().trim().max(200, "Location too long").nullable().optional(),
     meetingUrl: optionalUrl,
     attendees: attendees.optional(),
+    guests: guests.optional(),
   })
   .superRefine(checkSpan);
 

@@ -1,9 +1,25 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { createEventAction } from "@/app/actions/events";
+import {
+  createEventAction,
+  getEngagementGuestsAction,
+  updateEventAction,
+  type InviteOutcome,
+} from "@/app/actions/events";
 import { Member } from "@/types/member";
+import type { OrbitEvent } from "@/types/event";
+import {
+  DURATIONS,
+  EMAIL_SHAPE,
+  combine,
+  diffEngagement,
+  durationLabel,
+  valuesFor,
+  vetGuest,
+  type FormShape,
+} from "@/lib/events/engagement-form";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SuccessModal } from "@/components/ui/success-modal";
 import { Label } from "@/components/ui/label";
-import { X, ChevronDown, Wand2, AlertTriangle } from "lucide-react";
+import { X, ChevronDown, Wand2, AlertTriangle, Mail, Check } from "lucide-react";
 import { toDateKey } from "@/lib/utils/dates";
 import {
   getAvailabilityAction,
@@ -25,60 +41,87 @@ import {
 } from "@/app/actions/availability";
 
 /* ------------------------------------------------------------------ */
-/*  Schedule Engagement                                                */
+/*  Schedule / Revise Engagement                                       */
+/*                                                                     */
+/*  One form for both, because they are the same form. Pass an `event` */
+/*  and it edits that engagement; omit it and it schedules a new one.  */
 /*                                                                     */
 /*  The form speaks in the shapes a person types — a day, a start      */
 /*  time, a duration — and assembles the instants on submit. Asking    */
 /*  for an end time instead would make the common case (a 30-minute    */
 /*  call) two fields of arithmetic.                                    */
+/*                                                                     */
+/*  Two lists of people, because they are two different kinds of       */
+/*  thing. ATTENDEES are picked from the workspace directory and are   */
+/*  identified by uid. GUESTS are typed as bare addresses and belong   */
+/*  to nobody here — a client, a contractor, someone on the other side */
+/*  of a deal. Both receive the same .ics invitation; only the second  */
+/*  group needs somewhere to answer that is not behind a login.        */
+/*                                                                     */
+/*  An address that turns out to belong to a member is promoted to an  */
+/*  attendee server-side rather than rejected here, so typing a        */
+/*  colleague's email is a shortcut instead of an error.               */
+/*                                                                     */
+/*  Editing submits a SPARSE patch — only the fields that actually     */
+/*  moved. This is not a micro-optimisation: the server decides who to */
+/*  re-invite from which fields are present, so posting the whole form */
+/*  every time would mail every attendee and every outside guest over  */
+/*  a typo fix, and teach all of them to ignore the next one that      */
+/*  matters.                                                           */
 /* ------------------------------------------------------------------ */
 
-const DURATIONS = [15, 30, 45, 60, 90, 120] as const;
-
-interface FormShape {
-  title: string;
-  description: string;
-  date: string;
-  startTime: string;
-  durationMins: number;
-  allDay: boolean;
-  location: string;
-  meetingUrl: string;
-  attendees: string[];
-}
-
-interface CreateEventDialogProps {
+interface EngagementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string | null;
   members: Member[];
   currentUserId: string;
-  /** Prefills the day when opened from a calendar cell. */
+  /** Prefills the day when opened from a calendar cell. Create only. */
   defaultDateKey?: string | null;
+  /** Present means edit THIS engagement; absent means schedule a new one. */
+  event?: OrbitEvent | null;
   onCreated?: () => void;
 }
 
-/** Combines a "YYYY-MM-DD" and "HH:mm" into a local instant. */
-function combine(dateKey: string, time: string): Date {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  const [hh, mm] = time.split(":").map(Number);
-  return new Date(y, m - 1, d, hh || 0, mm || 0, 0, 0);
-}
-
-export function CreateEventDialog({
+export function EngagementDialog({
   open,
   onOpenChange,
   projectId,
   members,
   currentUserId,
   defaultDateKey,
+  event = null,
   onCreated,
-}: CreateEventDialogProps) {
+}: EngagementDialogProps) {
+  const isEdit = event !== null;
+  /* On a new engagement the organizer is whoever is filling the form. On
+     an existing one it stays the person who scheduled it, even when an
+     owner is the one editing. */
+  const organizerUid = event?.createdBy ?? currentUserId;
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  /* Guest entry. The draft lives outside the form because it is not a
+     value being submitted — it is the half-typed address on its way to
+     becoming one. */
+  const [guestDraft, setGuestDraft] = useState("");
+  const [guestError, setGuestError] = useState<string | null>(null);
+
+  /* What actually went out. Held so the dialog can report a delivery
+     problem instead of closing over it: the engagement is saved either
+     way, but "three invitations bounced" is not something to discover
+     later from someone who never turned up. */
+  const [report, setReport] = useState<InviteOutcome | null>(null);
+  const [lastOutcome, setLastOutcome] = useState<InviteOutcome | null>(null);
+
+  /* The guest list as the server currently holds it, for diffing against.
+     `guestsEditable` gates the field: until the existing addresses are in
+     hand, editing them could only ever destroy them. */
+  const [originalGuests, setOriginalGuests] = useState<string[]>([]);
+  const [guestsEditable, setGuestsEditable] = useState(true);
 
   /* Availability — fetched on demand rather than on every keystroke, so
      the suggestions are a deliberate act and not a background query. */
@@ -95,25 +138,30 @@ export function CreateEventDialog({
     setValue,
     watch,
     formState: { errors },
-  } = useForm<FormShape>({
-    defaultValues: {
-      title: "",
-      description: "",
-      date: defaultDateKey || toDateKey(new Date()),
-      startTime: "09:00",
-      durationMins: 30,
-      allDay: false,
-      location: "",
-      meetingUrl: "",
-      attendees: [],
-    },
-  });
+  } = useForm<FormShape>({ defaultValues: valuesFor(event, defaultDateKey) });
 
   const attendees = watch("attendees") || [];
+  const guests = watch("guests") || [];
   const allDay = watch("allDay");
   const date = watch("date");
   const startTime = watch("startTime");
   const durationMins = Number(watch("durationMins")) || 30;
+
+  /* An engagement that already exists need not be one of the offered
+     lengths. Its real length joins the list rather than being silently
+     snapped to the nearest one on the way through the form. */
+  const durationOptions = useMemo(() => {
+    const all = new Set<number>(DURATIONS);
+    if (durationMins > 0) all.add(durationMins);
+    return [...all].sort((a, b) => a - b);
+  }, [durationMins]);
+
+  /* Computed live so the warning the organizer reads is produced by the
+     same rule the dispatcher will apply. */
+  const watched = watch();
+  const pendingEdit = event
+    ? diffEngagement(event, watched, originalGuests, guestsEditable)
+    : null;
 
   /* Does the time currently in the form collide with something already
      booked? Derived from the same fetch that produced the suggestions,
@@ -170,16 +218,67 @@ export function CreateEventDialog({
     );
   };
 
+  /* The engagement is reached through a ref so that opening is what
+     reloads the form, not the identity of this prop. `event` comes from a
+     live Firestore subscription and is a brand new object on every write
+     anywhere in the org's calendar — in the dependency list it would wipe
+     out whatever the person had half-typed. */
+  const eventRef = useRef(event);
+  eventRef.current = event;
+  const eventId = event?.id ?? null;
+
   useEffect(() => {
     if (!open) return;
+
     setFormError(null);
     // Stale suggestions are worse than none — they describe a search the
     // person can no longer see the inputs for.
     setSlots(null);
     setBusy([]);
     setFullyBooked([]);
-    setValue("date", defaultDateKey || toDateKey(new Date()));
-  }, [open, defaultDateKey, setValue]);
+    setGuestDraft("");
+    setGuestError(null);
+    setReport(null);
+
+    const current = eventRef.current;
+    reset(valuesFor(current, defaultDateKey));
+    setOriginalGuests([]);
+
+    const guestIds = current?.guests ?? [];
+    if (guestIds.length === 0) {
+      setGuestsEditable(true);
+      return;
+    }
+
+    /* Guests are ids on the engagement and live in a collection the client
+       cannot read, so they have to be fetched before the field can be
+       shown. Until then it stays locked — see `diffEngagement`. */
+    setGuestsEditable(false);
+
+    let active = true;
+    getEngagementGuestsAction(currentUserId, current!.id).then((result) => {
+      if (!active) return;
+
+      if (!result.success) {
+        setGuestError(
+          "The current guests could not be loaded, so the guest list cannot be changed here. Everything else is still editable."
+        );
+        return;
+      }
+
+      const emails = result.data
+        .map((guest) => guest.email)
+        .filter((email): email is string => Boolean(email));
+
+      setOriginalGuests(emails);
+      setValue("guests", emails);
+      setGuestsEditable(true);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [open, eventId, defaultDateKey, currentUserId, reset, setValue]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -199,6 +298,44 @@ export function CreateEventDialog({
     attendeeFieldRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [dropdownOpen]);
 
+  /**
+   * Folds a batch of addresses in as one update. Returns false when
+   * anything was rejected, so the caller knows whether to clear the field
+   * it came from — losing what someone typed because it had a typo in it
+   * is its own bug.
+   *
+   * Batched rather than one-at-a-time because `guests` is a closed-over
+   * render value: a per-address helper called in a loop would vet every
+   * entry against the same stale list, letting a pasted duplicate through
+   * and mismeasuring the limit.
+   */
+  const addGuests = (raws: string[]): boolean => {
+    const next = [...guests];
+    let error: string | null = null;
+
+    for (const raw of raws) {
+      const verdict = vetGuest(raw, next);
+      if (verdict.error) {
+        error = error ?? verdict.error; // the first problem is the useful one
+        continue;
+      }
+      if (verdict.email) next.push(verdict.email);
+    }
+
+    if (next.length !== guests.length) setValue("guests", next);
+    setGuestError(error);
+    return error === null;
+  };
+
+  const commitDraft = () => {
+    if (addGuests([guestDraft])) setGuestDraft("");
+  };
+
+  const removeGuest = (email: string) => {
+    setValue("guests", guests.filter((g) => g !== email));
+    setGuestError(null);
+  };
+
   const toggleAttendee = (memberId: string) => {
     if (attendees.includes(memberId)) {
       setValue("attendees", attendees.filter((id) => id !== memberId));
@@ -207,47 +344,116 @@ export function CreateEventDialog({
     }
   };
 
+  /* Closes out after a delivery report. No success modal — a green tick
+     directly after "two invitations failed" reads as a system that was
+     not listening. */
+  const dismissReport = () => {
+    reset();
+    setGuestDraft("");
+    setReport(null);
+    onOpenChange(false);
+  };
+
   const onSubmit = async (data: FormShape) => {
     setLoading(true);
     setFormError(null);
     try {
-      const start = data.allDay
-        ? combine(data.date, "00:00")
-        : combine(data.date, data.startTime);
+      /* An address still sitting in the draft field has been typed but
+         not committed — pressing the submit button directly from it is
+         the obvious way to get here, and dropping the guest silently
+         would be the worst possible reading of that gesture. */
+      const draft = guestDraft.trim().toLowerCase();
+      const guestList =
+        draft && EMAIL_SHAPE.test(draft) && !data.guests.includes(draft)
+          ? [...data.guests, draft]
+          : data.guests;
 
-      const end = data.allDay
-        ? new Date(start.getTime() + 86_400_000) // exclusive end, next midnight
-        : new Date(start.getTime() + Number(data.durationMins) * 60_000);
+      const submitted: FormShape = { ...data, guests: guestList };
 
-      const result = await createEventAction(currentUserId, {
-        projectId,
-        title: data.title,
-        description: data.description,
-        startAt: start.toISOString(),
-        endAt: end.toISOString(),
-        allDay: data.allDay,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        location: data.location || null,
-        meetingUrl: data.meetingUrl || null,
-        attendees: data.attendees,
-      });
+      const result = event
+        ? await submitEdit(event, submitted)
+        : await submitCreate(submitted);
+
+      if (result === "unchanged") {
+        onOpenChange(false);
+        return;
+      }
 
       if (!result.success) {
         setFormError(result.error);
         return;
       }
 
-      reset();
-      onOpenChange(false);
+      // The engagement exists from here on. Everything below is about
+      // how it went, never about whether it happened.
       onCreated?.();
+      setLastOutcome(result.invites);
+
+      /* A clean send closes the dialog. Anything the organizer has to act
+         on — a bounced address, a typo the server rejected — replaces the
+         form with a report instead, because a toast that vanishes after
+         two seconds is not where you put "this person was not invited".
+         Replacing the form rather than sitting on top of it also removes
+         any way to submit the same engagement a second time. */
+      const needsAttention =
+        result.invites.invitesFailed > 0 || result.invites.invalidEmails.length > 0;
+
+      if (needsAttention) {
+        setReport(result.invites);
+        return;
+      }
+
+      reset();
+      setGuestDraft("");
+      onOpenChange(false);
       setShowSuccess(true);
     } catch (err: any) {
-      console.error("Failed to schedule engagement:", err);
-      setFormError(err?.message || "Could not schedule the engagement.");
+      console.error("Failed to save engagement:", err);
+      setFormError(
+        err?.message ||
+          (isEdit ? "Could not save the changes." : "Could not schedule the engagement.")
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  async function submitCreate(data: FormShape) {
+    const start = data.allDay
+      ? combine(data.date, "00:00")
+      : combine(data.date, data.startTime);
+
+    const end = data.allDay
+      ? new Date(start.getTime() + 86_400_000) // exclusive end, next midnight
+      : new Date(start.getTime() + Number(data.durationMins) * 60_000);
+
+    return createEventAction(currentUserId, {
+      projectId,
+      title: data.title,
+      description: data.description,
+      startAt: start.toISOString(),
+      endAt: end.toISOString(),
+      allDay: data.allDay,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      location: data.location || null,
+      meetingUrl: data.meetingUrl || null,
+      attendees: data.attendees,
+      guests: data.guests.map((email) => ({ email })),
+    });
+  }
+
+  /**
+   * Sends only what moved. A form with nothing changed in it is not an
+   * error and not a write — saving it anyway would bump the sequence and
+   * put a "this meeting was updated" mail in front of people for whom
+   * nothing was.
+   */
+  async function submitEdit(target: OrbitEvent, data: FormShape) {
+    const diff = diffEngagement(target, data, originalGuests, guestsEditable);
+    if (!diff.hasChanges) return "unchanged" as const;
+
+    return updateEventAction(currentUserId, target.id, diff.patch);
+  }
 
   return (
     <>
@@ -260,13 +466,105 @@ export function CreateEventDialog({
         <DialogContent className="flex max-h-[88dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[560px] bg-surface-sunken/95 border-line/[0.04]">
           <DialogHeader className="shrink-0 space-y-4 px-10 pt-10 text-left sm:text-left">
             <DialogTitle className="text-xl font-medium tracking-tight text-ink">
-              Schedule Engagement
+              {report
+                ? "Saved, with a problem"
+                : isEdit
+                  ? "Revise Engagement"
+                  : "Schedule Engagement"}
             </DialogTitle>
             <DialogDescription className="text-[13px] leading-relaxed text-ink-dim font-light max-w-[380px]">
-              Reserve a block of time and put people in it. Everyone invited answers for themselves.
+              {report
+                ? "The engagement is saved. Some invitations did not reach the people they were meant for."
+                : isEdit
+                  ? "Change the time, the place, or who is in it. Everyone already holding this gets an updated copy."
+                  : "Reserve a block of time and put people in it. Everyone invited answers for themselves."}
             </DialogDescription>
           </DialogHeader>
 
+          {report ? (
+            /* Delivery report. The engagement is saved and correct by the
+               time this renders — the only job left is making sure a failed
+               invitation is something the organizer learns now, from the
+               screen they are already looking at. */
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-10 py-2">
+                <div className="flex items-start gap-3 rounded-xl bg-surface-raised/60 p-4 ring-1 ring-inset ring-line/[0.05]">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-orbit-green" aria-hidden />
+                  <p className="text-[13px] leading-relaxed text-ink-muted">
+                    The engagement is on the calendar
+                    {report.invitesSent > 0
+                      ? ` and ${report.invitesSent} invitation${
+                          report.invitesSent === 1 ? "" : "s"
+                        } went out.`
+                      : "."}
+                    {report.promotedToMembers > 0 &&
+                      ` ${report.promotedToMembers} address${
+                        report.promotedToMembers === 1 ? "" : "es"
+                      } already belonged to someone here, so they were added as attendees.`}
+                  </p>
+                </div>
+
+                {report.invalidEmails.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="flex items-start gap-2 text-[12px] leading-relaxed text-orbit-amber">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+                      Rejected before sending — check for a typo:
+                    </p>
+                    <ul className="space-y-1 pl-5">
+                      {report.invalidEmails.map((email) => (
+                        <li key={email} className="break-all font-mono text-[11px] text-ink-muted">
+                          {email}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {report.failedEmails.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="flex items-start gap-2 text-[12px] leading-relaxed text-orbit-red">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+                      Could not be delivered:
+                    </p>
+                    <ul className="space-y-1 pl-5">
+                      {report.failedEmails.map((email) => (
+                        <li key={email} className="break-all font-mono text-[11px] text-ink-muted">
+                          {email}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Failures the dispatcher counted but could not name — the
+                    recipient ceiling being the usual reason. Reported rather
+                    than rounded away, because the gap between "9 sent" and
+                    "12 invited" is the whole point. */}
+                {report.invitesFailed - report.failedEmails.length > 0 && (
+                  <p className="text-[12px] leading-relaxed text-orbit-red">
+                    {report.invitesFailed - report.failedEmails.length} further invitation
+                    {report.invitesFailed - report.failedEmails.length === 1 ? "" : "s"} did not go
+                    out.
+                  </p>
+                )}
+
+                <p className="text-[12px] font-light leading-relaxed text-ink-dim">
+                  Nobody listed above has been invited. They will not see this
+                  engagement on their calendar until you reach them another way.
+                </p>
+              </div>
+
+              <DialogFooter className="mt-0 shrink-0 flex-row justify-start gap-4 border-t border-line/[0.05] bg-surface-sunken/95 px-10 py-6 sm:justify-start">
+                <Button
+                  type="button"
+                  onClick={dismissReport}
+                  className="h-9 min-w-[120px] rounded-lg px-5 text-[12px]"
+                >
+                  Done
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="flex min-h-0 flex-1 flex-col"
@@ -327,9 +625,9 @@ export function CreateEventDialog({
                   {...register("durationMins", { valueAsNumber: true })}
                   className="h-9 w-full rounded-md border border-line/[0.1] bg-surface-sunken px-3 text-[13px] text-ink transition-colors focus:border-line/[0.2] focus:outline-none disabled:opacity-30"
                 >
-                  {DURATIONS.map((mins) => (
+                  {durationOptions.map((mins) => (
                     <option key={mins} value={mins}>
-                      {mins < 60 ? `${mins} min` : `${mins / 60} hr${mins > 60 ? "s" : ""}`}
+                      {durationLabel(mins)}
                     </option>
                   ))}
                 </select>
@@ -461,7 +759,7 @@ export function CreateEventDialog({
                 {dropdownOpen && (
                   <div className="absolute z-50 mt-1 max-h-[180px] w-full overflow-y-auto rounded-md border border-line/[0.1] bg-surface-sunken shadow-raised">
                     {members
-                      .filter((m) => m.id !== currentUserId)
+                      .filter((m) => m.id !== organizerUid)
                       .map((member) => {
                         const isSelected = attendees.includes(member.id);
                         return (
@@ -486,8 +784,106 @@ export function CreateEventDialog({
                 )}
               </div>
               <p className="font-mono text-[10px] text-ink-faint">
-                You are always included as the organizer.
+                {organizerUid === currentUserId
+                  ? "You are always included as the organizer."
+                  : `${
+                      members.find((m) => m.id === organizerUid)?.name || "The organizer"
+                    } is always included as the organizer.`}
               </p>
+            </div>
+
+            {/* Guests — anyone without an OrbitOS account. This is the field
+                that lets an engagement leave the workspace at all: every
+                address here gets a real calendar invitation it can accept
+                from its own inbox, with no sign-up in the way. */}
+            <div className="space-y-2.5">
+              <Label htmlFor="event-guests">Guests</Label>
+
+              {/* The wrapper carries the focus ring because the real input
+                  sits inside it alongside the chips. */}
+              <div
+                onClick={() => document.getElementById("event-guests")?.focus()}
+                className="flex min-h-[36px] w-full flex-wrap items-center gap-1.5 rounded-md border border-line/[0.1] bg-surface-sunken px-3 py-1.5 transition-colors focus-within:border-line/[0.2]"
+              >
+                {guests.map((email) => (
+                  <span
+                    key={email}
+                    className="inline-flex max-w-full items-center gap-1.5 rounded border border-line/[0.08] bg-surface-control px-2 py-0.5 font-mono text-[11px] text-ink"
+                  >
+                    <Mail className="h-2.5 w-2.5 shrink-0 opacity-40" aria-hidden />
+                    <span className="truncate">{email}</span>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${email}`}
+                      disabled={!guestsEditable}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeGuest(email);
+                      }}
+                      className="shrink-0 transition-colors hover:text-orbit-red disabled:opacity-40"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+
+                <input
+                  id="event-guests"
+                  type="text"
+                  inputMode="email"
+                  autoComplete="off"
+                  value={guestDraft}
+                  disabled={!guestsEditable}
+                  placeholder={
+                    !guestsEditable
+                      ? "Loading the current guests…"
+                      : guests.length === 0
+                        ? "name@company.com"
+                        : "Add another…"
+                  }
+                  onChange={(e) => {
+                    setGuestDraft(e.target.value);
+                    if (guestError) setGuestError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    /* Enter here means "add this address". Without the
+                       preventDefault it submits the whole form, scheduling
+                       the engagement the moment someone finishes typing a
+                       guest — which is the single worst thing this field
+                       could do. */
+                    if (e.key === "Enter" || e.key === "," || e.key === ";") {
+                      e.preventDefault();
+                      commitDraft();
+                    } else if (e.key === "Backspace" && guestDraft === "" && guests.length > 0) {
+                      removeGuest(guests[guests.length - 1]);
+                    }
+                  }}
+                  /* Moving on is a commit. Nobody expects to lose an address
+                     because they clicked the next field instead of pressing
+                     Enter. */
+                  onBlur={commitDraft}
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData("text");
+                    // A lone address types itself in fine; only a list needs
+                    // splitting, which is how a To: field or a spreadsheet
+                    // column arrives.
+                    if (!/[\s,;]/.test(text.trim())) return;
+                    e.preventDefault();
+                    if (addGuests(text.split(/[\s,;]+/))) setGuestDraft("");
+                  }}
+                  className="min-w-[140px] flex-1 bg-transparent text-[13px] text-ink placeholder:text-ink-dim focus:outline-none disabled:cursor-not-allowed"
+                />
+              </div>
+
+              {guestError ? (
+                <p className="text-[12px] text-orbit-red">{guestError}</p>
+              ) : (
+                <p className="font-mono text-[10px] leading-relaxed text-ink-faint">
+                  Enter or comma to add. They get an invitation they can accept
+                  from their inbox — no account needed. An address that already
+                  belongs to someone here joins as an attendee instead.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -501,6 +897,30 @@ export function CreateEventDialog({
               </div>
             </div>
 
+            {/* Editing mails other people, including people outside the
+                company, so what saving will do is stated before it is done
+                rather than discovered afterwards from the replies. */}
+            {pendingEdit && (
+              <div className="rounded-xl bg-surface-raised/60 p-4 ring-1 ring-inset ring-line/[0.05]">
+                <p className="text-[13px] font-medium tracking-tight text-ink">
+                  What saving sends
+                </p>
+                <p className="mt-1 text-[12px] font-light leading-relaxed text-ink-dim">
+                  {!pendingEdit.hasChanges
+                    ? "Nothing has changed yet, so nothing would go out."
+                    : pendingEdit.materially
+                      ? "The time, title, or place moved. Everyone on this engagement gets an updated invitation that replaces the copy sitting in their calendar."
+                      : pendingEdit.added > 0
+                        ? "Only the people just added get an invitation. Nobody else is contacted."
+                        : "No invitations — this changes nothing that anyone is holding a copy of."}
+                  {pendingEdit.removed > 0 &&
+                    ` ${pendingEdit.removed} ${
+                      pendingEdit.removed === 1 ? "person is" : "people are"
+                    } being taken off and will get a cancellation, which clears it from their calendar.`}
+                </p>
+              </div>
+            )}
+
             {formError && (
               <p className="rounded-md border border-orbit-red/20 bg-orbit-red/[0.06] px-3 py-2 text-[12px] text-orbit-red">
                 {formError}
@@ -512,7 +932,13 @@ export function CreateEventDialog({
                 be something you have to scroll to find. */}
             <DialogFooter className="mt-0 shrink-0 flex-row justify-start gap-4 border-t border-line/[0.05] bg-surface-sunken/95 px-10 py-6 sm:justify-start">
               <Button type="submit" disabled={loading} className="h-9 min-w-[120px] rounded-lg px-5 text-[12px]">
-                {loading ? "Reserving..." : "Reserve Time"}
+                {loading
+                  ? isEdit
+                    ? "Saving..."
+                    : "Reserving..."
+                  : isEdit
+                    ? "Save Changes"
+                    : "Reserve Time"}
               </Button>
               <Button
                 type="button"
@@ -524,6 +950,7 @@ export function CreateEventDialog({
               </Button>
             </DialogFooter>
           </form>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -531,7 +958,13 @@ export function CreateEventDialog({
         open={showSuccess}
         onOpenChange={setShowSuccess}
         title="Time Reserved"
-        description="The engagement is on the calendar and attendees can now respond."
+        description={
+          lastOutcome && lastOutcome.invitesSent > 0
+            ? `Invitations sent to ${lastOutcome.invitesSent} ${
+                lastOutcome.invitesSent === 1 ? "person" : "people"
+              }. It will appear on their calendar once they accept.`
+            : "The engagement is on the calendar and attendees can now respond."
+        }
       />
     </>
   );

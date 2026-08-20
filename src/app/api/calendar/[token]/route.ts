@@ -130,7 +130,13 @@ export async function GET(
         event.startDateKey ?? startAt.toDate().toISOString().slice(0, 10);
 
       entries.push({
+        /* Same UID the emailed invitation carries, so a client that has
+           both this feed and the invite recognises them as one meeting
+           rather than two. The stored sequence travels with it for the
+           same reason — a feed pinned at 0 would look older than every
+           invite and lose to it on any client that reconciles the two. */
         uid: `event-${doc.id}@orbitos`,
+        sequence: Number(event.sequence ?? 0),
         summary: event.title,
         description: event.description || null,
         location: event.location || null,
