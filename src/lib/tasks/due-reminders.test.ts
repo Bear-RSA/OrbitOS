@@ -1,6 +1,8 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { FakeFirestore, type Row } from "@/lib/testing/fake-firestore";
+
 /* ------------------------------------------------------------------ */
 /*  Due-soon reminders                                                 */
 /*                                                                     */
@@ -15,110 +17,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 /*  suite runnable with no emulator and no credentials.                */
 /* ------------------------------------------------------------------ */
 
-type Row = Record<string, unknown>;
-
-/** collection -> id -> document */
-const store = new Map<string, Map<string, Row>>();
-
-function seed(collection: string, id: string, data: Row) {
-  if (!store.has(collection)) store.set(collection, new Map());
-  store.get(collection)!.set(id, data);
-}
-
-function readBack(collection: string, id: string): Row | undefined {
-  return store.get(collection)?.get(id);
-}
-
-/** Millis for anything comparable the module filters on. */
-function millis(value: unknown): number {
-  if (value instanceof Timestamp) return value.toMillis();
-  if (value instanceof Date) return value.getTime();
-  return Number(value);
-}
-
-function matches(doc: Row, [field, op, value]: [string, string, unknown]): boolean {
-  const actual = doc[field];
-  if (op === "==") return actual === value;
-  if (actual === undefined || actual === null) return false;
-  if (op === ">=") return millis(actual) >= millis(value);
-  if (op === "<") return millis(actual) < millis(value);
-  throw new Error(`fake firestore: unsupported operator ${op}`);
-}
-
-class FakeQuery {
-  constructor(
-    private collection: string,
-    private filters: [string, string, unknown][] = []
-  ) {}
-
-  where(field: string, op: string, value: unknown) {
-    return new FakeQuery(this.collection, [...this.filters, [field, op, value]]);
-  }
-
-  async get() {
-    const rows = [...(store.get(this.collection) ?? new Map()).entries()].filter(
-      ([, data]) => this.filters.every((f) => matches(data, f))
-    );
-
-    const docs = rows.map(([id, data]) => ({
-      id,
-      exists: true,
-      data: () => data,
-    }));
-
-    return { docs, empty: docs.length === 0, size: docs.length };
-  }
-}
-
-/** A document reference, carrying just enough to resolve later. */
-interface FakeRef {
-  __collection: string;
-  __id: string;
-  get(): Promise<{ id: string; exists: boolean; data: () => Row | undefined }>;
-}
-
-const batchCommits = { count: 0 };
-
-const adminDb = {
-  collection(name: string) {
-    const query = new FakeQuery(name);
-    return Object.assign(query, {
-      doc: (id: string): FakeRef => ({
-        __collection: name,
-        __id: id,
-        async get() {
-          const data = readBack(name, id);
-          return { id, exists: data !== undefined, data: () => data };
-        },
-      }),
-    });
-  },
-
-  async getAll(...refs: FakeRef[]) {
-    return refs.map((ref) => {
-      const data = readBack(ref.__collection, ref.__id);
-      return { id: ref.__id, exists: data !== undefined, data: () => data };
-    });
-  },
-
-  batch() {
-    const writes: { ref: FakeRef; data: Row }[] = [];
-    return {
-      update(ref: FakeRef, data: Row) {
-        writes.push({ ref, data });
-      },
-      async commit() {
-        batchCommits.count += 1;
-        for (const { ref, data } of writes) {
-          const existing = readBack(ref.__collection, ref.__id) ?? {};
-          seed(ref.__collection, ref.__id, { ...existing, ...data });
-        }
-      },
-    };
-  },
-};
-
-vi.mock("@/lib/firebase/admin", () => ({ adminDb }));
+const db = new FakeFirestore();
+vi.mock("@/lib/firebase/admin", () => ({ adminDb: db }));
 
 /** The slice of the send payload these tests assert on. */
 interface ReminderCall {
@@ -156,7 +56,7 @@ function dueAt(key: string): Timestamp {
 }
 
 function seedTask(id: string, overrides: Row = {}) {
-  seed("tasks", id, {
+  db.seed("tasks", id, {
     title: `Task ${id}`,
     orgId: "org-1",
     projectId: "proj-1",
@@ -170,7 +70,7 @@ function seedTask(id: string, overrides: Row = {}) {
 }
 
 function seedUser(id: string, overrides: Row = {}) {
-  seed("users", id, {
+  db.seed("users", id, {
     name: `User ${id}`,
     email: `${id}@example.com`,
     orgId: "org-1",
@@ -180,15 +80,14 @@ function seedUser(id: string, overrides: Row = {}) {
 }
 
 beforeEach(() => {
-  store.clear();
-  batchCommits.count = 0;
+  db.reset();
   sendTaskReminder.mockClear();
   sendTaskReminder.mockImplementation(async () => ({ success: true }));
   resolveTaskReminderLimit.mockClear();
   resolveTaskReminderLimit.mockImplementation(async () => -1);
 
-  seed("organizations", "org-1", { name: "Orbit Studio" });
-  seed("projects", "proj-1", { name: "Apollo" });
+  db.seed("organizations", "org-1", { name: "Orbit Studio" });
+  db.seed("projects", "proj-1", { name: "Apollo" });
 });
 
 /** Every recipient address the run mailed, in send order. */
@@ -383,7 +282,7 @@ describe("runDueTaskReminders — recipients", () => {
   it("spans every workspace in one run, naming each correctly", async () => {
     // The cron is global — it queries `tasks` with no org filter, so one
     // run has to serve every workspace and label each email with its own.
-    seed("organizations", "org-2", { name: "Second Studio" });
+    db.seed("organizations", "org-2", { name: "Second Studio" });
     seedUser("u1", { orgId: "org-1" });
     seedUser("u2", { orgId: "org-2" });
     seedTask("t1", { orgId: "org-1", assignedTo: ["u1"] });
@@ -466,7 +365,7 @@ describe("runDueTaskReminders — delivery and idempotency", () => {
 
     await runDueTaskReminders({ now: NOW });
 
-    expect(readBack("tasks", "t1")!.dueReminderSentFor).toBe(TARGET);
+    expect(db.read("tasks", "t1")!.dueReminderSentFor).toBe(TARGET);
   });
 
   it("leaves the marker unset when the send failed", async () => {
@@ -482,7 +381,7 @@ describe("runDueTaskReminders — delivery and idempotency", () => {
     expect(result.emailsFailed).toBe(1);
     // Unmarked, so tomorrow's run can try again rather than silently
     // swallowing the reminder.
-    expect(readBack("tasks", "t1")!.dueReminderSentFor).toBeUndefined();
+    expect(db.read("tasks", "t1")!.dueReminderSentFor).toBeUndefined();
     expect(result.skipped).toContainEqual(
       expect.stringContaining("Resend rejected the address")
     );
@@ -503,7 +402,7 @@ describe("runDueTaskReminders — delivery and idempotency", () => {
     expect(result.emailsSent).toBe(1);
     expect(result.emailsFailed).toBe(1);
     // u2 never got it, so the task stays unmarked and is retried.
-    expect(readBack("tasks", "shared")!.dueReminderSentFor).toBeUndefined();
+    expect(db.read("tasks", "shared")!.dueReminderSentFor).toBeUndefined();
   });
 
   it("touches only the reminder field, never updatedAt", async () => {
@@ -512,7 +411,7 @@ describe("runDueTaskReminders — delivery and idempotency", () => {
 
     await runDueTaskReminders({ now: NOW });
 
-    const task = readBack("tasks", "t1")!;
+    const task = db.read("tasks", "t1")!;
     // Bumping these would tell the digest's inactivity check that a stalled
     // task had just been worked on.
     expect(task.updatedAt).toBe("untouched");
@@ -528,8 +427,8 @@ describe("runDueTaskReminders — delivery and idempotency", () => {
     expect(result.candidates).toBe(1);
     expect(result.emailsSent).toBe(0);
     expect(sendTaskReminder).not.toHaveBeenCalled();
-    expect(batchCommits.count).toBe(0);
-    expect(readBack("tasks", "t1")!.dueReminderSentFor).toBeUndefined();
+    expect(db.batchCommits).toBe(0);
+    expect(db.read("tasks", "t1")!.dueReminderSentFor).toBeUndefined();
     expect(result.skipped).toContainEqual(
       expect.stringContaining("1 email(s) withheld")
     );
@@ -540,6 +439,6 @@ describe("runDueTaskReminders — delivery and idempotency", () => {
 
     expect(result.candidates).toBe(0);
     expect(result.emailsSent).toBe(0);
-    expect(batchCommits.count).toBe(0);
+    expect(db.batchCommits).toBe(0);
   });
 });
