@@ -8,7 +8,10 @@ export async function POST(req: NextRequest) {
   // Auth check for cron — basic secret check
   const authHeader = req.headers.get("authorization");
   const expected = `Bearer ${process.env.CRON_SECRET}`;
-  if (authHeader !== expected) {
+  // An unset secret would make the expected header the literal string
+  // "Bearer undefined" — checked separately so a missing env var closes
+  // the endpoint instead of opening it.
+  if (!process.env.CRON_SECRET || authHeader !== expected) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -71,8 +71,30 @@ service cloud.firestore {
     match /events/{eventId} {
       allow read: if isMember(resource.data.orgId);
       allow create: if isMember(request.resource.data.orgId);
-      allow update: if isMember(resource.data.orgId);
+
+      /* The guest half of an engagement is server-owned. Every path that
+         touches it — resolving an address to a guest record, recording a
+         reply from a signed link, bumping SEQUENCE — runs through the
+         Admin SDK in `actions/events` and `actions/rsvp`, so nothing
+         legitimate writes these from a browser.
+
+         Leaving them open would let any Member forge an outsider's RSVP,
+         rename a guest, or freeze SEQUENCE so that a reschedule never
+         reaches anyone's calendar. */
+      allow update: if isMember(resource.data.orgId)
+        && !editedKeys().hasAny(['guests', 'guestRsvp', 'guestNames', 'sequence']);
+
       allow delete: if isOwner(resource.data.orgId);
+    }
+
+    /* Guests are server-only, and the read side is the point: a workspace's
+       guest list is its client list. Any Member could otherwise enumerate
+       every outside party the studio has ever met with, along with their
+       email addresses. Organizers reach the guests on their OWN engagement
+       through `getEngagementGuestsAction`, which checks org membership and
+       returns only that engagement's participants. */
+    match /guests/{guestId} {
+      allow read, write: if false;
     }
 
     match /projects/{projectId} {

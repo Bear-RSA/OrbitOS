@@ -32,6 +32,8 @@ export interface UserPreferences {
   dailyDigest: boolean;
   /** Skip the digest entirely on days with nothing to action. */
   digestOnlyWhenAttention: boolean;
+  /** Email reminder the day before a task assigned to you falls due. */
+  taskReminders: boolean;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -41,6 +43,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   presence: "auto",
   dailyDigest: true,
   digestOnlyWhenAttention: false,
+  taskReminders: true,
 };
 
 /** Fills in every missing key so callers never branch on `undefined`. */

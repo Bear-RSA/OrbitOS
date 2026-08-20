@@ -26,6 +26,12 @@ export interface Task {
   dueDate: Timestamp | null;
   /** "YYYY-MM-DD". The authority on which day the task is due. */
   dueDateKey?: string | null;
+  /**
+   * The `dueDateKey` a due-soon reminder has already gone out for. Written
+   * by the reminder cron and by nothing else, so moving a due date to a new
+   * day makes the value stale and earns a fresh reminder.
+   */
+  dueReminderSentFor?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   lastUpdatedAt: Timestamp;

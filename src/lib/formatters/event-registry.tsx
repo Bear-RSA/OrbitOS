@@ -13,6 +13,7 @@ import {
   StickyNote,
   CheckCircle2,
   Archive,
+  ArchiveRestore,
   Type,
   Scale,
   ArrowRightLeft,
@@ -411,6 +412,16 @@ export const EVENT_REGISTRY: Record<ActivityEventType, EventDescriptor> = {
     describe: (m) => (
       <>
         archived <Target val={m.projectName} />
+      </>
+    ),
+  },
+  PROJECT_RESTORED: {
+    label: "RST",
+    icon: ArchiveRestore,
+    tone: "success",
+    describe: (m) => (
+      <>
+        restored <Target val={m.projectName} /> from the archive
       </>
     ),
   },

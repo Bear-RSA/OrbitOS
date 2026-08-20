@@ -15,7 +15,7 @@ import { OrbitEvent } from "@/types/event";
 import { Loader } from "@/components/ui/loader";
 import { TasksTable } from "@/components/dashboard/tasks-table";
 import { ProjectSettingsMenu } from "@/components/projects/project-settings";
-import { ArrowLeft, RefreshCw, Folder } from "lucide-react";
+import { ArrowLeft, RefreshCw, Folder, Archive } from "lucide-react";
 import { SystemExplorer } from "@/components/projects/system-explorer";
 import { ProjectCalendar } from "@/components/projects/project-calendar";
 import { CommandCenter } from "@/components/projects/command-center";
@@ -137,7 +137,15 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
                </div>
                <div className="flex min-w-0 flex-col gap-1.5">
                  <CardEyebrow>Project Thread</CardEyebrow>
-                 <h1 className="truncate text-3xl font-light tracking-tight text-ink">{project.name}</h1>
+                 <div className="flex min-w-0 items-center gap-3">
+                   <h1 className="truncate text-3xl font-light tracking-tight text-ink">{project.name}</h1>
+                   {project.archived && (
+                     <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-orbit-amber/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-orbit-amber ring-1 ring-inset ring-orbit-amber/20">
+                       <Archive className="h-3 w-3" aria-hidden />
+                       Archived
+                     </span>
+                   )}
+                 </div>
                </div>
             </div>
             {project.description && (
@@ -147,7 +155,15 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
             )}
          </div>
          {/* Settings Control Container */}
-         <ProjectSettingsMenu projectId={project.id} projectName={project.name} projectDescription={project.description} uid={user!.id} userRole={user!.role} />
+         <ProjectSettingsMenu
+           projectId={project.id}
+           projectName={project.name}
+           projectDescription={project.description}
+           uid={user!.id}
+           userRole={user!.role}
+           isArchived={project.archived === true}
+           onArchiveChange={loadProjectMetadata}
+         />
       </div>
 
       <div key={refreshKey}>
@@ -188,6 +204,7 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
                  orgId={user!.orgId!} 
                  members={members}
                  tasks={tasks}
+                 events={events}
                  selectedAssignee={selectedAssignee}
                  onAssigneeSelect={setSelectedAssignee}
               />

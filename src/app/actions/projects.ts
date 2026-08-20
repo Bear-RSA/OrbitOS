@@ -1,6 +1,7 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase/admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { validateOwner, verifyProjectAccess, validateTierQuota } from "@/lib/auth/permissions";
 import { logActivity } from "@/lib/telemetry";
 
@@ -213,6 +214,11 @@ export async function archiveProjectAction(
     }
 
     const projectName = projectData.name || "Unknown Project";
+
+    if (projectData.archived) {
+      return { success: false, error: "Project is already archived." };
+    }
+
     const userSnap = await adminDb.collection("users").doc(uid).get();
     const userName = userSnap.data()?.name || "System";
 
@@ -239,6 +245,63 @@ export async function archiveProjectAction(
     return {
       success: false,
       error: "Archive operation failed. Please try again or contact support.",
+    };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Restore Project                                                    */
+/* ------------------------------------------------------------------ */
+
+export async function unarchiveProjectAction(
+  payload: ArchiveProjectPayload
+): Promise<{ success: boolean; error?: string }> {
+  const { projectId, uid } = payload;
+
+  console.log("[UnarchiveProject] Starting restore:", { projectId, uid });
+
+  try {
+    const authStatus = await validateOwner(uid, undefined, projectId);
+    if (!authStatus.isOwner) {
+      console.error("[UnarchiveProject] Unauthorized restore attempt:", uid);
+      return { success: false, error: authStatus.error || "Unauthorized. Requires OWNER operations clearance." };
+    }
+    const userOrgId = authStatus.orgId;
+
+    const projectSnap = await adminDb.collection("projects").doc(projectId).get();
+    const projectData = projectSnap.data()!;
+    const projectName = projectData.name || "Unknown Project";
+
+    if (!projectData.archived) {
+      // Already active — nothing to undo, and reporting failure would surface
+      // an error for a state the caller already wanted.
+      return { success: true };
+    }
+
+    const userSnap = await adminDb.collection("users").doc(uid).get();
+    const userName = userSnap.data()?.name || "System";
+
+    await adminDb.collection("projects").doc(projectId).update({
+      archived: false,
+      archivedAt: FieldValue.delete(),
+      archivedBy: FieldValue.delete(),
+    });
+
+    await logActivity({
+      eventType: "PROJECT_RESTORED",
+      orgId: userOrgId,
+      projectId,
+      actor: { uid, name: userName },
+      metadata: { projectId, projectName },
+    });
+
+    console.log("[UnarchiveProject] Project restored:", projectId);
+    return { success: true };
+  } catch (error: any) {
+    console.error("[UnarchiveProject] Restore failed:", error);
+    return {
+      success: false,
+      error: "Restore operation failed. Please try again or contact support.",
     };
   }
 }

@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ProjectHealth } from "@/types/dashboard";
 import { Project } from "@/types/project";
 import { InteractiveCard } from "@/components/ui/interactive-card";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/classnames";
-import { ArrowUpRight, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, GripVertical, Save, X } from "lucide-react";
-import { updateProjectPriorityAction } from "@/app/actions/projects";
+import { ArrowUpRight, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, GripVertical, Save, X, Archive, ArchiveRestore } from "lucide-react";
+import { updateProjectPriorityAction, unarchiveProjectAction } from "@/app/actions/projects";
+import { getArchivedProjectsByOrg } from "@/lib/queries/projects";
 import { ActionButton, MeterBar } from "./dashboard-card";
 import { themeColor } from "@/lib/theme/colors";
 
@@ -47,6 +48,47 @@ export function WorkspaceProjects({ projectsHealth, projects, orgId, userId, isO
       })) || [];
 
   const [orderedProjects, setOrderedProjects] = useState(initialDisplayProjects);
+
+  /* ---- Archive shelf ---------------------------------------------------
+     Archived projects are hidden from every listing, so this is the only
+     route back to them. It lives here rather than on a separate page so it
+     sits next to the projects it restores into. */
+  const [archived, setArchived] = useState<Project[]>([]);
+  const [showArchive, setShowArchive] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+
+  const loadArchived = useCallback(async () => {
+    if (!orgId) return;
+    try {
+      setArchived(await getArchivedProjectsByOrg(orgId));
+    } catch (err) {
+      console.error("[WorkspaceProjects] Failed to load archived projects:", err);
+    }
+  }, [orgId]);
+
+  useEffect(() => {
+    loadArchived();
+  }, [loadArchived]);
+
+  const restoreProject = async (projectId: string) => {
+    if (!userId || restoringId) return;
+    setRestoringId(projectId);
+    setRestoreError(null);
+    try {
+      const result = await unarchiveProjectAction({ projectId, uid: userId });
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      await loadArchived();
+      onRefresh?.();
+    } catch (err: any) {
+      console.error("[WorkspaceProjects] Restore failed:", err);
+      setRestoreError(err?.message || "Restore failed. Please try again.");
+    } finally {
+      setRestoringId(null);
+    }
+  };
 
   // Sync if props change while not reordering
   const displayProjects = reordering ? orderedProjects : initialDisplayProjects;
@@ -91,7 +133,9 @@ export function WorkspaceProjects({ projectsHealth, projects, orgId, userId, isO
     }
   };
 
-  if (displayProjects.length === 0) return null;
+  // Previously an early return — which would have hidden the archive shelf in
+  // exactly the case it matters most: every project archived.
+  if (displayProjects.length === 0 && archived.length === 0) return null;
 
   return (
     <div className="w-full">
@@ -103,6 +147,16 @@ export function WorkspaceProjects({ projectsHealth, projects, orgId, userId, isO
              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-muted">Ecosystem Tracking</span>
           </div>
         </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {archived.length > 0 && !reordering && (
+            <ActionButton
+              icon={Archive}
+              label={`Archived · ${archived.length}`}
+              variant="ghost"
+              onClick={() => setShowArchive((v) => !v)}
+            />
+          )}
 
         {/* Project Priority Controls — Owner only */}
         {isOwner && (
@@ -122,7 +176,63 @@ export function WorkspaceProjects({ projectsHealth, projects, orgId, userId, isO
             )}
           </div>
         )}
+        </div>
       </div>
+
+      {/* Archive Shelf */}
+      {showArchive && archived.length > 0 && (
+        <div className="mb-10 rounded-3xl bg-surface-card p-5 ring-1 ring-inset ring-line/[0.06] sm:p-6">
+          <div className="mb-4 flex items-center gap-2.5">
+            <Archive className="h-3.5 w-3.5 text-ink-dim" aria-hidden />
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+              Archived Projects
+            </span>
+          </div>
+
+          {restoreError && (
+            <p role="alert" className="mb-3 text-[12px] font-light text-orbit-red">
+              {restoreError}
+            </p>
+          )}
+
+          <ul className="divide-y divide-line/[0.06]">
+            {archived.map((project) => (
+              <li key={project.id} className="flex items-center justify-between gap-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/projects/${project.id}`)}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <span className="block truncate text-[15px] font-light text-ink-muted transition-colors hover:text-ink">
+                    {project.name}
+                  </span>
+                  {project.description && (
+                    <span className="mt-0.5 block truncate text-[12px] font-light text-ink-dim">
+                      {project.description}
+                    </span>
+                  )}
+                </button>
+
+                {isOwner ? (
+                  <button
+                    type="button"
+                    onClick={() => restoreProject(project.id)}
+                    disabled={restoringId !== null}
+                    className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-surface-control px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-active hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ArchiveRestore className="h-3.5 w-3.5" aria-hidden />
+                    {restoringId === project.id ? "Restoring…" : "Restore"}
+                  </button>
+                ) : (
+                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-dim">
+                    Owner only
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="mb-16 grid grid-cols-1 gap-5 md:grid-cols-2">
         {displayProjects.map((project, i) => (

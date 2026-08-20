@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, Trash2, Archive, AlertCircle, AlertTriangle, ShieldAlert, Pencil, FileText } from "lucide-react";
-import { deleteProjectAction, archiveProjectAction, renameProjectAction, updateProjectDescriptionAction } from "@/app/actions/projects";
+import { Settings, Trash2, Archive, ArchiveRestore, AlertCircle, AlertTriangle, ShieldAlert, Pencil, FileText } from "lucide-react";
+import { deleteProjectAction, archiveProjectAction, unarchiveProjectAction, renameProjectAction, updateProjectDescriptionAction } from "@/app/actions/projects";
 import {
   Dialog,
   DialogContent,
@@ -21,9 +21,11 @@ interface ProjectSettingsMenuProps {
   projectDescription?: string;
   uid: string;
   userRole?: string;
+  isArchived?: boolean;
+  onArchiveChange?: () => void;
 }
 
-export function ProjectSettingsMenu({ projectId, projectName, projectDescription, uid, userRole }: ProjectSettingsMenuProps) {
+export function ProjectSettingsMenu({ projectId, projectName, projectDescription, uid, userRole, isArchived, onArchiveChange }: ProjectSettingsMenuProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -156,6 +158,9 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
         throw new Error(result.error);
       }
 
+      // Refresh the caller so the header reflects the archived state even
+      // while the confirmation is still up.
+      onArchiveChange?.();
       setShowArchiveSuccess(true);
     } catch (err: any) {
       console.error("Failed to archive project", err);
@@ -163,6 +168,38 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUnarchive = async () => {
+    if (loading) return;
+
+    setLoading(true);
+    setErrorMsg(null);
+    setOpen(false);
+    try {
+      const result = await unarchiveProjectAction({ projectId, uid });
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      onArchiveChange?.();
+      router.refresh();
+    } catch (err: any) {
+      console.error("Failed to restore project", err);
+      setErrorMsg(err?.message || "Restore operation failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // The archived project drops out of every workspace listing, so there is
+  // nothing left to look at on its page — send the owner back to the dashboard,
+  // where the Archived shelf can restore it.
+  const dismissArchiveSuccess = () => {
+    setShowArchiveSuccess(false);
+    router.push("/dashboard");
+    router.refresh();
   };
 
   return (
@@ -204,12 +241,16 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
                   <div className="w-full h-px bg-surface-raised my-1" />
 
                   <button 
-                    onClick={handleArchive}
+                    onClick={isArchived ? handleUnarchive : handleArchive}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-ink hover:bg-surface-raised transition-colors"
                     disabled={loading}
                   >
-                    <Archive className="w-4 h-4 text-ink-muted" />
-                    Archive Project
+                    {isArchived ? (
+                      <ArchiveRestore className="w-4 h-4 text-ink-muted" />
+                    ) : (
+                      <Archive className="w-4 h-4 text-ink-muted" />
+                    )}
+                    {loading ? "Working…" : isArchived ? "Restore Project" : "Archive Project"}
                   </button>
 
                   <div className="w-full h-px bg-surface-raised my-1" />
@@ -246,6 +287,26 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
         </>
       )}
 
+      {/* Action Error — archive/restore/delete failures were previously set on
+          state and never rendered, so a rejected action looked like a no-op. */}
+      {errorMsg && !showDeleteConfirm && (
+        <div
+          role="alert"
+          className="absolute right-0 top-12 z-50 w-64 rounded-xl bg-surface-sunken border border-orbit-red/20 shadow-2xl p-3"
+        >
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-orbit-red" />
+            <p className="text-[11px] leading-relaxed text-ink-muted">{errorMsg}</p>
+          </div>
+          <button
+            onClick={() => setErrorMsg(null)}
+            className="mt-2 w-full text-[10px] font-mono uppercase tracking-[0.12em] text-ink-dim hover:text-ink transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Destructive Confirmation Modal */}
       <DestructiveActionModal
         isOpen={showDeleteConfirm}
@@ -255,7 +316,7 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
       />
 
       {/* Archive Success Modal */}
-      <Dialog open={showArchiveSuccess} onOpenChange={setShowArchiveSuccess}>
+      <Dialog open={showArchiveSuccess} onOpenChange={(next) => { if (!next) dismissArchiveSuccess(); }}>
         <DialogContent className="bg-surface-sunken border-line/[0.05] shadow-2xl p-6 sm:max-w-md">
           <DialogHeader className="space-y-3 flex flex-col items-center">
             <DialogTitle className="text-xl font-medium tracking-tight text-ink flex items-center justify-center gap-2 w-full">
@@ -263,13 +324,13 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
               Project Archived
             </DialogTitle>
             <DialogDescription className="text-sm text-ink-muted leading-relaxed text-center">
-              Project archived. It is now hidden from the core workspace view.
+              Project archived. It is now hidden from the core workspace view. You can restore it from the archive at any time.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-6 sm:justify-center w-full flex justify-center">
             <Button
               type="button"
-              onClick={() => setShowArchiveSuccess(false)}
+              onClick={dismissArchiveSuccess}
               className="bg-ink text-black hover:bg-ink-strong transition-colors w-full sm:w-auto px-8"
             >
               OK
