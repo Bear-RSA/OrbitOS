@@ -39,7 +39,7 @@ export function DashboardHeader({ currentUser, orgName }: DashboardHeaderProps) 
       <div className="flex min-w-0 flex-col">
         {/* Role Badge */}
         <div className="mb-5 flex items-center gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-surface-control px-3 py-1.5 text-[11px] font-medium text-ink ring-1 ring-inset ring-line/[0.08]">
+          <div className="inline-flex items-center gap-2 text-[11px] font-medium text-ink">
             {currentUser.role === "OWNER" ? (
               <Crown className="h-3.5 w-3.5 text-ink-dim" aria-hidden />
             ) : (

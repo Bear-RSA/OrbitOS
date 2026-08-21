@@ -335,7 +335,6 @@ export function TasksTable({
                           <button className="shrink-0 p-1 hover:bg-surface-control rounded-md transition-colors">
                             {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-ink-dim" /> : <ChevronRight className="w-3.5 h-3.5 text-ink-dim" />}
                           </button>
-                          <span className="text-[10px] text-ink-dim tracking-[0.1em] shrink-0">#{taskId}</span>
                           <div className="flex-1 min-w-0">
                             <p className={cn(
                               "text-[14px] font-medium tracking-tight leading-snug break-words",
@@ -364,6 +363,11 @@ export function TasksTable({
                           isExpanded ? "max-h-[1600px] opacity-100 mb-8 mx-0 mt-2 sm:mx-2" : "max-h-0 opacity-0"
                         )}>
                           <div className="border border-line/[0.06] bg-surface-card/40 backdrop-blur-sm p-4 sm:p-5 font-mono shadow-raised rounded-xl ring-1 ring-line/5">
+                            {/* Node handle — kept out of the collapsed row to keep the
+                                list clean, but still quotable once a node is opened. */}
+                            <div className="mb-4 text-[9px] uppercase tracking-[0.3em] text-ink-dim">
+                              Node #{taskId} //
+                            </div>
                             <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
                               <div className="flex items-center gap-4">
                                 <button
