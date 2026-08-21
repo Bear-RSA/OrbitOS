@@ -366,7 +366,10 @@ export function TasksTable({
                             {/* Node handle — kept out of the collapsed row to keep the
                                 list clean, but still quotable once a node is opened. */}
                             <div className="mb-4 text-[9px] uppercase tracking-[0.3em] text-ink-dim">
-                              Node #{taskId} //
+                              {/* The trailing slashes are decoration. As a bare text
+                                  child they read as an unwrapped comment and fail
+                                  the build under react/jsx-no-comment-textnodes. */}
+                              Node #{taskId} {"//"}
                             </div>
                             <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
                               <div className="flex items-center gap-4">
