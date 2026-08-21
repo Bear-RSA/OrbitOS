@@ -190,6 +190,28 @@ export async function resolveTaskReminderLimit(orgId: string): Promise<number> {
  * governs regardless. Guest invites are a Resend invoice, so that ceiling
  * is live now even while the paywall stays dark.
  */
+/**
+ * Lifetime end-of-day debriefs one person may receive under this org's tier.
+ *
+ * Deliberately NOT gated on `GUARDRAILS_ENABLED`, which is the one exception
+ * among the resolvers here and worth being explicit about. That flag exists
+ * to stop quota enforcement retroactively locking existing workspaces out of
+ * things they already had — projects, members, owners. The debrief is a new
+ * feature nobody has today, so there is no entitlement to revoke and nothing
+ * to backfill first: metering it from the start is the feature as specified,
+ * not enforcement switched on early.
+ *
+ * -1 means the tier does not meter it. A missing `subscription` field
+ * resolves to `exploration` and therefore to the three-mail trial, which is
+ * the correct reading of an unpaid workspace.
+ */
+export async function resolveDebriefAllowance(orgId: string): Promise<number> {
+  if (!orgId) return TIER_DEFINITIONS[DEFAULT_SUBSCRIPTION_TIER].limits.lifetimeDebriefs;
+
+  const tier = await resolveOrgTier(orgId);
+  return TIER_DEFINITIONS[tier].limits.lifetimeDebriefs;
+}
+
 export async function resolveGuestInviteLimit(orgId: string): Promise<number> {
   if (!GUARDRAILS_ENABLED) return -1;
   if (!orgId) return -1;

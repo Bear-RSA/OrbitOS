@@ -81,15 +81,9 @@ export function TasksTable({
         });
       }
 
-      // Background telemetry
-      recordTelemetryAction({
-        eventType: "DIRECTIVE_TRANSITION",
-        orgId,
-        projectId,
-        actor: { uid: currentUserId, name: actorName },
-        metadata: { taskTitle: task.title, from: prevStatus, to: newStatus }
-      }).catch(err => console.error("[Telemetry Error]:", err));
-
+      // DIRECTIVE_TRANSITION is logged by updateTaskStatusAction itself —
+      // see the note atop actions/tasks.ts. Milestones are not, so that one
+      // stays here as background telemetry.
       if (newStatus === "done" && isCompletingMilestone) {
         recordTelemetryAction({
           eventType: "MILESTONE_COMPLETE",

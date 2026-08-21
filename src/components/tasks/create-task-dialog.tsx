@@ -105,15 +105,10 @@ export function CreateTaskDialog({
       });
       if (!result.success) throw new Error(result.error);
 
-      // Fire background sync and telemetry
+      // Fire background sync and telemetry.
+      // DIRECTIVE_CREATED and DIRECTIVE_ASSIGNED are logged by
+      // createTaskAction itself — see the note atop actions/tasks.ts.
       const actorName = members.find((m) => m.id === currentUserId)?.name || "System";
-      recordTelemetryAction({
-        eventType: "DIRECTIVE_CREATED",
-        orgId,
-        projectId,
-        actor: { uid: currentUserId, name: actorName },
-        metadata: { taskTitle: data.title },
-      }).catch(err => console.error("[Telemetry Error]:", err));
 
       // Emit WORKLOAD_SHIFT for each assigned operative
       if (data.assignedTo.length > 0) {

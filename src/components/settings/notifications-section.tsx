@@ -19,14 +19,15 @@ import {
 /* ------------------------------------------------------------------ */
 /*  Notifications                                                      */
 /*                                                                     */
-/*  Two emails ship today, and they have different audiences.          */
+/*  Four emails ship today, and they do not share an audience.         */
 /*                                                                     */
 /*  The morning digest is owner-only — `/api/digest` looks up the      */
 /*  OWNER of each organization and nobody else, so showing a member a  */
 /*  switch for it would be a switch that does nothing.                 */
 /*                                                                     */
-/*  Due reminders go to whoever a task is ASSIGNED to, which is        */
-/*  usually a member. Everyone gets that toggle.                       */
+/*  The other three go to whoever a task is ASSIGNED to, or to whoever */
+/*  did something that day, which is usually a member. Everyone gets   */
+/*  those toggles.                                                     */
 /* ------------------------------------------------------------------ */
 
 export function NotificationsSection({ user }: { user: User }) {
@@ -34,7 +35,10 @@ export function NotificationsSection({ user }: { user: User }) {
   const isOwner = user.role === "OWNER";
 
   const emailOn =
-    preferences.taskReminders || (isOwner && preferences.dailyDigest);
+    preferences.taskReminders ||
+    preferences.dueTodayDigest ||
+    preferences.dailyDebrief ||
+    (isOwner && preferences.dailyDigest);
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,12 +83,34 @@ export function NotificationsSection({ user }: { user: User }) {
             title="Task due reminders"
             description={
               isOwner
-                ? "An email 24 hours before work assigned to you falls due, plus anything due with nobody assigned — one message covering everything landing that day."
-                : "An email 24 hours before work assigned to you falls due — one message covering everything landing that day."
+                ? "A 09:00 email the day before work assigned to you falls due, plus anything due with nobody assigned — one message covering everything landing that day."
+                : "A 09:00 email the day before work assigned to you falls due — one message covering everything landing that day."
             }
             checked={preferences.taskReminders}
             busy={pending === "taskReminders"}
             onChange={(next) => update({ taskReminders: next })}
+          />
+
+          <ToggleRow
+            id="pref-due-today"
+            title="Due today"
+            description={
+              isOwner
+                ? "A 06:00 list of everything of yours falling due that day, plus anything due with nobody assigned."
+                : "A 06:00 list of everything of yours falling due that day."
+            }
+            checked={preferences.dueTodayDigest}
+            busy={pending === "dueTodayDigest"}
+            onChange={(next) => update({ dueTodayDigest: next })}
+          />
+
+          <ToggleRow
+            id="pref-daily-debrief"
+            title="End-of-day debrief"
+            description="An 18:00 summary of what you opened, were handed, moved and closed. Nothing is sent on a day you were not active. Included on paid plans — the free tier gets three."
+            checked={preferences.dailyDebrief}
+            busy={pending === "dailyDebrief"}
+            onChange={(next) => update({ dailyDebrief: next })}
           />
 
           <ReadonlyRow

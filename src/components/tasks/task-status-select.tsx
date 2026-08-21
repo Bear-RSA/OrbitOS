@@ -65,15 +65,9 @@ export function TaskStatusSelect({
       // Update UI immediately — don't block on telemetry
       onUpdated();
 
-      // Background telemetry (fire-and-forget)
-      recordTelemetryAction({
-        eventType: "DIRECTIVE_TRANSITION",
-        orgId,
-        projectId,
-        actor: { uid: currentUserId, name: memberName },
-        metadata: { taskTitle, from: prevStatus, to: newStatus }
-      }).catch(err => console.error("[Telemetry Error]:", err));
-
+      // DIRECTIVE_TRANSITION is logged by updateTaskStatusAction itself —
+      // see the note atop actions/tasks.ts. Milestones are not, so that one
+      // stays here as background telemetry (fire-and-forget).
       if (newStatus === "done" && isCompletingMilestone) {
         recordTelemetryAction({
           eventType: "MILESTONE_COMPLETE",

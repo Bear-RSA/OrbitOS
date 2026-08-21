@@ -128,15 +128,10 @@ export function EditTaskDialog({
       onOpenChange(false);
       onUpdated();
 
-      // Background telemetry and sync
+      // Background telemetry and sync.
+      // DIRECTIVE_EDITED and DIRECTIVE_ASSIGNED are logged by
+      // updateTaskAction itself — see the note atop actions/tasks.ts.
       const actorName = members.find((m) => m.id === currentUserId)?.name || "System";
-      recordTelemetryAction({
-        eventType: "DIRECTIVE_EDITED",
-        orgId,
-        projectId,
-        actor: { uid: currentUserId, name: actorName },
-        metadata: { taskTitle: data.title },
-      }).catch(err => console.error("[Telemetry Error]:", err));
 
       // Emit WORKLOAD_SHIFT when assignees have changed
       const previousAssignees = task.assignedTo;

@@ -34,6 +34,10 @@ export interface UserPreferences {
   digestOnlyWhenAttention: boolean;
   /** Email reminder the day before a task assigned to you falls due. */
   taskReminders: boolean;
+  /** Morning list of everything assigned to you that falls due today. */
+  dueTodayDigest: boolean;
+  /** Evening summary of what you created, were handed, moved and finished. */
+  dailyDebrief: boolean;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -44,6 +48,8 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   dailyDigest: true,
   digestOnlyWhenAttention: false,
   taskReminders: true,
+  dueTodayDigest: true,
+  dailyDebrief: true,
 };
 
 /** Fills in every missing key so callers never branch on `undefined`. */

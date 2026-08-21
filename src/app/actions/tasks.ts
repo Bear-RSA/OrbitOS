@@ -3,6 +3,7 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { FieldValue, Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 import { coerceDateKey, dateKeyToInstant } from "@/lib/utils/dates";
+import { logActivity } from "@/lib/telemetry";
 
 /* ------------------------------------------------------------------ */
 /*  Task Server Actions                                                */
@@ -10,7 +11,67 @@ import { coerceDateKey, dateKeyToInstant } from "@/lib/utils/dates";
 /*  Operations that bypass client-side Firestore security rules by     */
 /*  using the Admin SDK. This ensures Members can perform writes       */
 /*  without being blocked by rule evaluation issues.                   */
+/*                                                                     */
+/*  These actions also own the activity log for the four task events   */
+/*  that matter downstream — created, assigned, moved, completed.      */
+/*  They used to be logged from the components that call these actions */
+/*  instead, as unawaited `recordTelemetryAction` calls. That lost     */
+/*  events two ways: any caller reaching an action from somewhere      */
+/*  other than those components logged nothing at all, and a           */
+/*  fire-and-forget promise on Vercel races the freeze that follows    */
+/*  the response. The end-of-day debrief reads this log as its only    */
+/*  record of what happened during a day — task documents hold current */
+/*  state and no history — so a dropped event is a gap nothing else    */
+/*  can reconstruct. Logging on the write path, awaited, closes both.  */
 /* ------------------------------------------------------------------ */
+
+/** The display names for a set of uids, for readable log entries. */
+async function namesFor(uids: string[]): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  if (uids.length === 0) return names;
+
+  const refs = uids.map((uid) => adminDb.collection("users").doc(uid));
+  const snaps = await adminDb.getAll(...refs);
+  for (const snap of snaps) {
+    if (snap.exists) names.set(snap.id, snap.data()?.name || "Operator");
+  }
+  return names;
+}
+
+/**
+ * Records an assignment against every named assignee.
+ *
+ * `assigneeUids` carries the uids as well as the names because the debrief
+ * groups by recipient: "assigned to you today" is a query for events whose
+ * assignees include a person, and a display name cannot answer that.
+ */
+async function logAssignment(params: {
+  orgId: string;
+  projectId: string;
+  taskId: string;
+  taskTitle: string;
+  actor: { uid: string; name: string };
+  assigneeUids: string[];
+}): Promise<void> {
+  if (params.assigneeUids.length === 0) return;
+
+  const names = await namesFor(params.assigneeUids);
+
+  await logActivity({
+    eventType: "DIRECTIVE_ASSIGNED",
+    orgId: params.orgId,
+    projectId: params.projectId,
+    actor: params.actor,
+    metadata: {
+      taskId: params.taskId,
+      taskTitle: params.taskTitle,
+      assigneeUids: params.assigneeUids,
+      assigneeName: params.assigneeUids
+        .map((uid) => names.get(uid) ?? "Operator")
+        .join(", "),
+    },
+  });
+}
 
 interface AddTaskNotePayload {
   taskId: string;
@@ -126,6 +187,27 @@ export async function updateTaskStatusAction(
 
     await adminDb.collection("tasks").doc(taskId).update(updates);
     console.log(`[TaskAction] Status updated for ${taskId}: ${previousStatus} → ${status}`);
+
+    const task = taskSnap.data()!;
+
+    /* Completion is a transition to "done" rather than an event of its own,
+       which is how the in-app feed has always recorded it. The debrief
+       splits the two apart when it reads them, so a task moved to done
+       lands under Completed and everything else under Moved. */
+    await logActivity({
+      eventType: "DIRECTIVE_TRANSITION",
+      orgId: task.orgId,
+      projectId: task.projectId ?? null,
+      actor: { uid, name: userSnap.data()!.name || "Operator" },
+      metadata: {
+        taskId,
+        taskTitle: task.title,
+        from: previousStatus,
+        to: status,
+        assigneeUids: Array.isArray(task.assignedTo) ? task.assignedTo : [],
+      },
+    });
+
     return { success: true };
   } catch (err: any) {
     console.error("[TaskAction] Failed to update task status:", err);
@@ -285,6 +367,50 @@ export async function updateTaskAction(
 
     await adminDb.collection("tasks").doc(taskId).update(firestoreUpdates);
     console.log(`[TaskAction] Task ${taskId} updated by ${uid}`);
+
+    const previous = taskSnap.data()!;
+    const actor = { uid, name: userSnap.data()!.name || "Operator" };
+    const taskTitle = updates.title ?? previous.title;
+    const projectId = previous.projectId ?? null;
+
+    /* Only genuinely new assignees. Re-saving the edit dialog resends the
+       same array, and logging that as an assignment would tell the debrief
+       somebody was handed work they have had all along. */
+    const before: string[] = Array.isArray(previous.assignedTo)
+      ? previous.assignedTo
+      : [];
+    const added =
+      updates.assignedTo !== undefined
+        ? updates.assignedTo.filter((assignee) => !before.includes(assignee))
+        : [];
+
+    if (added.length > 0) {
+      await logAssignment({
+        orgId: previous.orgId,
+        projectId,
+        taskId,
+        taskTitle,
+        actor,
+        assigneeUids: added,
+      });
+    }
+
+    /* An edit that only moved people is already described by the assignment
+       above; a second "revised" row beside it says nothing extra. */
+    const editedFields = Object.keys(updates).filter(
+      (field) => field !== "assignedTo"
+    );
+
+    if (editedFields.length > 0) {
+      await logActivity({
+        eventType: "DIRECTIVE_EDITED",
+        orgId: previous.orgId,
+        projectId,
+        actor,
+        metadata: { taskId, taskTitle, field: editedFields.join(", ") },
+      });
+    }
+
     return { success: true };
   } catch (err: any) {
     console.error("[TaskAction] Failed to update task:", err);
@@ -362,6 +488,29 @@ export async function createTaskAction(
 
     const ref = await adminDb.collection("tasks").add(taskData);
     console.log(`[TaskAction] Task created: ${ref.id} by ${createdBy}`);
+
+    const actor = { uid: createdBy, name: userData.name || "Operator" };
+
+    await logActivity({
+      eventType: "DIRECTIVE_CREATED",
+      orgId,
+      projectId,
+      actor,
+      metadata: { taskId: ref.id, taskTitle: taskData.title, dueDateKey },
+    });
+
+    // Creating a task with people already on it is an assignment too — the
+    // debrief's "assigned to you" section would otherwise miss every task
+    // that was assigned at the moment it was created, which is most of them.
+    await logAssignment({
+      orgId,
+      projectId,
+      taskId: ref.id,
+      taskTitle: taskData.title,
+      actor,
+      assigneeUids: taskData.assignedTo,
+    });
+
     return { success: true, taskId: ref.id };
   } catch (err: any) {
     console.error("[TaskAction] Failed to create task:", err);

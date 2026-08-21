@@ -74,6 +74,7 @@ export interface FakeRef {
   get(): Promise<FakeSnapshot>;
   set(data: Row): Promise<void>;
   update(data: Row): Promise<void>;
+  create(data: Row): Promise<void>;
 }
 
 export class FakeFirestore {
@@ -135,19 +136,33 @@ export class FakeFirestore {
       this.directWrites.push({ collection, id, data });
       this.apply(collection, id, data, true);
     },
+    /* Rejects when the document already exists, which is what makes it an
+       atomic claim without a transaction. The debrief uses that to stop a
+       retry inside the same window from mailing everybody twice, so the
+       rejection is the behaviour under test, not an edge case. */
+    create: async (data: Row) => {
+      if (this.read(collection, id) !== undefined) {
+        throw new Error(`ALREADY_EXISTS: ${collection}/${id}`);
+      }
+      this.directWrites.push({ collection, id, data });
+      this.apply(collection, id, data, false);
+    },
   });
 
   /** The `adminDb` stand-in handed to `vi.mock("@/lib/firebase/admin")`. */
   collection = (name: string) => {
-    const build = (filters: Filter[]) => ({
+    const build = (filters: Filter[], cap: number | null) => ({
       where: (field: string, op: string, value: unknown) =>
-        build([...filters, [field, op, value]]),
+        build([...filters, [field, op, value]], cap),
+
+      limit: (n: number) => build(filters, n),
 
       get: async () => {
         const rows = [...(this.store.get(name) ?? new Map()).entries()].filter(
           ([, data]) => filters.every((f) => matches(data, f))
         );
-        const docs: FakeSnapshot[] = rows.map(([id, data]) => ({
+        const capped = cap === null ? rows : rows.slice(0, cap);
+        const docs: FakeSnapshot[] = capped.map(([id, data]) => ({
           id,
           exists: true,
           data: () => data,
@@ -158,7 +173,7 @@ export class FakeFirestore {
       doc: (id: string) => this.ref(name, id),
     });
 
-    return build([]);
+    return build([], null);
   };
 
   getAll = async (...refs: FakeRef[]): Promise<FakeSnapshot[]> => {

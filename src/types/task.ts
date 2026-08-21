@@ -32,6 +32,13 @@ export interface Task {
    * day makes the value stale and earns a fresh reminder.
    */
   dueReminderSentFor?: string | null;
+  /**
+   * The same marker for the 06:00 due-today digest. Kept separate from
+   * `dueReminderSentFor` because a task is legitimately mailed about on
+   * both days — "due tomorrow" then "due today" — and a shared field
+   * would let the first run silence the second.
+   */
+  dueTodaySentFor?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   lastUpdatedAt: Timestamp;
