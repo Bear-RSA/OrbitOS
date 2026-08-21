@@ -53,10 +53,21 @@ function matches(doc: Row, [field, op, value]: Filter): boolean {
   }
 
   if (actual === undefined || actual === null) return false;
-  if (op === ">=") return millis(actual) >= millis(value);
-  if (op === ">") return millis(actual) > millis(value);
-  if (op === "<=") return millis(actual) <= millis(value);
-  if (op === "<") return millis(actual) < millis(value);
+
+  /* Range ops compare like for like. Firestore orders strings
+     lexicographically, which is what makes a range over zero-padded ISO day
+     keys a date range — coercing those through `millis` gives NaN, and every
+     comparison against NaN is false, so the query would match nothing while
+     the real SDK matched the window. */
+  const ordered =
+    typeof actual === "string" && typeof value === "string"
+      ? ([actual, value] as const)
+      : ([millis(actual), millis(value)] as const);
+
+  if (op === ">=") return ordered[0] >= ordered[1];
+  if (op === ">") return ordered[0] > ordered[1];
+  if (op === "<=") return ordered[0] <= ordered[1];
+  if (op === "<") return ordered[0] < ordered[1];
 
   throw new Error(`fake firestore: unsupported operator "${op}"`);
 }
@@ -72,7 +83,7 @@ export interface FakeRef {
   __collection: string;
   __id: string;
   get(): Promise<FakeSnapshot>;
-  set(data: Row): Promise<void>;
+  set(data: Row, options?: { merge?: boolean }): Promise<void>;
   update(data: Row): Promise<void>;
   create(data: Row): Promise<void>;
 }
@@ -128,9 +139,13 @@ export class FakeFirestore {
       const data = this.read(collection, id);
       return { id, exists: data !== undefined, data: () => data };
     },
-    set: async (data: Row) => {
+    /* `{ merge: true }` is honoured rather than ignored: the run log writes
+       an outcome onto the same document the debrief claimed its day with,
+       and a set that quietly replaced it would drop the claim — the exact
+       bug the merge is there to avoid. */
+    set: async (data: Row, options?: { merge?: boolean }) => {
       this.directWrites.push({ collection, id, data });
-      this.apply(collection, id, data, false);
+      this.apply(collection, id, data, options?.merge === true);
     },
     update: async (data: Row) => {
       this.directWrites.push({ collection, id, data });

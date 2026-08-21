@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { runDueTodayDigest } from "@/lib/tasks/due-today";
 import { runDueTaskReminders } from "@/lib/tasks/due-reminders";
 import { runOwnerDigest } from "@/lib/tasks/owner-digest";
+import {
+  recordRunCrash,
+  recordRunOutcome,
+  type ScheduledJob,
+} from "@/lib/tasks/run-log";
 
 /* ------------------------------------------------------------------ */
 /*  Morning cron dispatcher                                            */
@@ -32,11 +37,25 @@ import { runOwnerDigest } from "@/lib/tasks/owner-digest";
 
 export const maxDuration = 60;
 
+/**
+ * The overlap between what the three runners return.
+ *
+ * They report the same two counts but name their line list differently —
+ * `skipped` for the due mails, `results` for the owner digest — so the
+ * dispatcher reads both and requires neither.
+ */
+interface RunReport {
+  emailsSent?: number;
+  emailsFailed?: number;
+  skipped?: string[];
+  results?: string[];
+}
+
 /** Runs one job, converting a throw into a reported failure. */
 async function guard<T>(
-  name: string,
+  name: ScheduledJob,
   run: () => Promise<T>
-): Promise<{ job: string; ok: boolean; result?: T; error?: string }> {
+): Promise<{ job: ScheduledJob; ok: boolean; result?: T; error?: string }> {
   try {
     const result = await run();
     return { job: name, ok: true, result };
@@ -70,17 +89,59 @@ export async function POST(req: NextRequest) {
 
   const failed = jobs.filter((job) => !job.ok);
 
+  /* Every runner reports the same two counts and a list of lines, so the
+     outcome can be read off any of them without knowing which job it was.
+     The failure lines differ in wording between the due mails and the
+     owner digest, hence matching on both markers. */
+  const outcomeOf = (result: RunReport | undefined) => {
+    const lines = [...(result?.skipped ?? []), ...(result?.results ?? [])];
+    return {
+      emailsSent: result?.emailsSent ?? 0,
+      emailsFailed: result?.emailsFailed ?? 0,
+      errors: lines.filter(
+        (line) => line.includes("send failed") || line.startsWith("FAILED")
+      ),
+    };
+  };
+
+  // A dry run inspects; it does not get to claim it delivered anything.
+  if (!dryRun) {
+    await Promise.all(
+      jobs.map((job) =>
+        job.ok
+          ? recordRunOutcome({ job: job.job, ...outcomeOf(job.result) })
+          : recordRunCrash(job.job, job.error ?? "Internal error")
+      )
+    );
+  }
+
+  const refused = jobs.reduce(
+    (total, job) => total + (job.ok ? outcomeOf(job.result).emailsFailed : 0),
+    0
+  );
+  const delivered = jobs.reduce(
+    (total, job) => total + (job.ok ? outcomeOf(job.result).emailsSent : 0),
+    0
+  );
+
   console.log(
-    `[Cron:morning] ${jobs.length - failed.length}/${jobs.length} job(s) ok` +
+    `[Cron:morning] ${jobs.length - failed.length}/${jobs.length} job(s) ok, ` +
+      `${delivered} sent, ${refused} refused` +
       (failed.length ? ` — failed: ${failed.map((j) => j.job).join(", ")}` : "")
   );
 
-  // 207 when some jobs ran and some did not: a blanket 500 would tell the
-  // Vercel log that nothing happened, and a blanket 200 would hide that
-  // somebody's mail never went out.
+  /* Status codes are the second alarm, after the run log — a non-2xx is
+     what makes Vercel's cron view show the run as errored instead of green.
+     500 is reserved for the outage shape: mail to send, none of it accepted,
+     which is what a dead Resend key looks like. 207 covers a partial run,
+     where a blanket 500 would claim nothing happened and a blanket 200 would
+     hide that somebody's mail never went out. */
+  const outage = refused > 0 && delivered === 0;
+  const clean = failed.length === 0 && refused === 0;
+
   return NextResponse.json(
-    { success: failed.length === 0, jobs },
-    { status: failed.length === 0 ? 200 : 207 }
+    { success: clean, delivered, refused, jobs },
+    { status: clean ? 200 : outage ? 500 : 207 }
   );
 }
 

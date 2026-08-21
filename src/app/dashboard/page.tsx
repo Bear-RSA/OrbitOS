@@ -10,6 +10,7 @@ import { getMembersByOrg } from "@/lib/queries/members";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Loader } from "@/components/ui/loader";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { MailHealthBanner } from "@/components/dashboard/mail-health-banner";
 import { OwnerDashboardView } from "@/components/dashboard/owner-view";
 import { MemberDashboardView } from "@/components/dashboard/member-view";
 import { EmptyDashboardState } from "@/components/dashboard/empty-dashboard-state";
@@ -164,6 +165,9 @@ export default function DashboardPage() {
           orgName={rawMembers.find(m => m.id === user.id)?.orgId || "Operational Node"}
         />
       </div>
+
+      {/* Renders nothing unless a scheduled mail was actually refused. */}
+      <MailHealthBanner />
 
       {/* Content Rendering Layer */}
       <div key={refreshKey} className="flex-1">

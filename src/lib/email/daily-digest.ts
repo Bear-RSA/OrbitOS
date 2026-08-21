@@ -16,11 +16,17 @@ interface DigestData {
   dashboardUrl: string;
 }
 
+/* Resend resolves a rejected send rather than throwing, so the raw client
+   response cannot be handed back to a caller counting successes: an invalid
+   API key looks exactly like a delivered mail. Normalised here into the same
+   shape the other senders return. */
+type SendResult = { success: true; id?: string } | { success: false; error: string };
+
 function getAttentionCount(data: DigestData): number {
   return data.overdueCount + data.inactiveCount;
 }
 
-export async function sendDailyDigest(data: DigestData) {
+export async function sendDailyDigest(data: DigestData): Promise<SendResult> {
   const attentionCount = getAttentionCount(data);
   const today = format(new Date(), "d MMMM yyyy");
 
@@ -100,10 +106,27 @@ export async function sendDailyDigest(data: DigestData) {
 </html>
   `.trim();
 
-  return resend.emails.send({
-    from: "OrbitOS <digest@mail.orbit-os.co.za>",
-    to: data.ownerEmail,
-    subject,
-    html,
-  });
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.warn("[Digest]: RESEND_API_KEY not configured. Email will not be sent.");
+      return { success: false, error: "Missing API key" };
+    }
+
+    const { data: sent, error } = await resend.emails.send({
+      from: "OrbitOS <digest@mail.orbit-os.co.za>",
+      to: data.ownerEmail,
+      subject,
+      html,
+    });
+
+    if (error) {
+      console.error("[Digest Failure]:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, id: sent?.id };
+  } catch (err: any) {
+    console.error("[Digest Error]:", err);
+    return { success: false, error: err.message || "Internal error during digest dispatch" };
+  }
 }

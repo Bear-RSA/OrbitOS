@@ -23,6 +23,8 @@ export interface OwnerDigestResult {
   /** One line per organization considered, sent or skipped. */
   results: string[];
   emailsSent: number;
+  /** Accepted by us and refused by Resend. Counted, never assumed to be zero. */
+  emailsFailed: number;
 }
 
 export async function runOwnerDigest(options?: {
@@ -35,6 +37,7 @@ export async function runOwnerDigest(options?: {
   const orgsSnap = await adminDb.collection("organizations").get();
   const results: string[] = [];
   let emailsSent = 0;
+  let emailsFailed = 0;
 
   for (const orgDoc of orgsSnap.docs) {
     const org = orgDoc.data();
@@ -116,7 +119,7 @@ export async function runOwnerDigest(options?: {
       continue;
     }
 
-    await sendDailyDigest({
+    const sendResult = await sendDailyDigest({
       ownerName: owner.name,
       ownerEmail: owner.email,
       orgName: org.name,
@@ -129,9 +132,15 @@ export async function runOwnerDigest(options?: {
       dashboardUrl: `${appUrl}/dashboard`,
     });
 
+    if (!sendResult.success) {
+      emailsFailed += 1;
+      results.push(`FAILED ${owner.email} (${sendResult.error})`);
+      continue;
+    }
+
     emailsSent += 1;
     results.push(`Sent digest to ${owner.email}`);
   }
 
-  return { results, emailsSent };
+  return { results, emailsSent, emailsFailed };
 }

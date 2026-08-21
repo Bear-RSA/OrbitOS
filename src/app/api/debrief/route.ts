@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { runDailyDebrief } from "@/lib/tasks/debrief";
+import { recordRunCrash, recordRunOutcome } from "@/lib/tasks/run-log";
 
 /* ------------------------------------------------------------------ */
 /*  End-of-day debrief cron                                            */
@@ -44,9 +45,35 @@ export async function POST(req: NextRequest) {
         `${result.emailsFailed} failed, ${result.skipped.length} skipped`
     );
 
-    return NextResponse.json({ success: true, ...result });
+    // A dry run inspects; it does not get to claim it delivered anything.
+    if (!dryRun) {
+      await recordRunOutcome({
+        job: "debrief",
+        dayKey: result.dayKey,
+        emailsSent: result.emailsSent,
+        emailsFailed: result.emailsFailed,
+        errors: result.skipped.filter((line) => line.includes("send failed")),
+      });
+    }
+
+    /* This handler used to answer 200 with `success: true` for a run in
+       which every single send was refused, which is how an invalid Resend
+       key stayed invisible for a day. The response now says what happened,
+       and says it in the status code as well, because that is the field
+       Vercel's cron view colours the run by. */
+    const outage = result.emailsFailed > 0 && result.emailsSent === 0;
+    const clean = result.emailsFailed === 0;
+
+    return NextResponse.json(
+      { success: clean, ...result },
+      { status: clean ? 200 : outage ? 500 : 207 }
+    );
   } catch (err) {
     console.error("[Debrief] Run failed:", err);
+    await recordRunCrash(
+      "debrief",
+      err instanceof Error ? err.message : "Internal error"
+    );
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
