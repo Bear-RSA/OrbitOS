@@ -109,7 +109,7 @@ export async function runOwnerDigest(options?: {
       continue;
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://orbit-os.co.za";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.orbit-os.co.za";
 
     if (dryRun) {
       results.push(`Would send digest to ${owner.email}`);

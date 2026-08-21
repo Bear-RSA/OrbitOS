@@ -183,7 +183,7 @@ export async function runDailyDebrief(options?: {
 }): Promise<DebriefRunResult> {
   const now = options?.now ?? new Date();
   const dryRun = options?.dryRun ?? false;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://orbit-os.co.za";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.orbit-os.co.za";
   const skipped: string[] = [];
 
   const dayKey = sastDayKey(now);

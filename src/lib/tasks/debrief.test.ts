@@ -17,6 +17,12 @@ import { FakeFirestore, type Row } from "@/lib/testing/fake-firestore";
 const db = new FakeFirestore();
 vi.mock("@/lib/firebase/admin", () => ({ adminDb: db }));
 
+/* Pinned rather than left to the module's fallback, so the URL assertions
+   below test how a link is BUILT and not what the production default
+   happens to be. Leaving it unset made this suite fail the day that
+   default moved from the apex to www. */
+process.env.NEXT_PUBLIC_APP_URL = "https://www.orbit-os.co.za";
+
 interface DebriefCall {
   recipient: { name: string; email: string };
   orgName: string;
@@ -408,7 +414,7 @@ describe("runDailyDebrief — free-tier trial", () => {
     expect(sendDailyDebrief.mock.calls[0][0].trial).toEqual({
       number: 1,
       allowance: 3,
-      upgradeUrl: "https://orbit-os.co.za/pricing",
+      upgradeUrl: "https://www.orbit-os.co.za/pricing",
     });
   });
 
