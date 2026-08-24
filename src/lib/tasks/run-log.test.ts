@@ -6,8 +6,8 @@ import { FakeFirestore } from "@/lib/testing/fake-firestore";
 /* ------------------------------------------------------------------ */
 /*  Scheduled run outcomes                                             */
 /*                                                                     */
-/*  This module exists because four scheduled mails failed silently on */
-/*  2026-08-21 while every run reported success. So the tests are      */
+/*  This module exists because scheduled mail failed silently on       */
+/*  2026-08-21 while the run reported success. So the tests are        */
 /*  mostly about what the record must never be able to say: that a run */
 /*  which delivered nothing was fine, that a crash was a quiet day, or */
 /*  that a bookkeeping failure is worth taking a delivered mail down   */
@@ -20,8 +20,8 @@ vi.mock("@/lib/firebase/admin", () => ({ adminDb: db }));
 const { recordRunOutcome, recordRunCrash, readRecentRunFailures, statusOf } =
   await import("@/lib/tasks/run-log");
 
-/** 18:00 SAST on the 21st — the moment the debrief cron fires. */
-const NOW = new Date("2026-08-21T16:00:00Z");
+/** 06:00 SAST on the 21st — the moment the morning cron fires. */
+const NOW = new Date("2026-08-21T04:00:00Z");
 const DAY = "2026-08-21";
 
 beforeEach(() => {
@@ -48,7 +48,7 @@ describe("statusOf", () => {
 describe("recordRunOutcome", () => {
   it("records what the run did, under one id per job per day", async () => {
     await recordRunOutcome({
-      job: "debrief",
+      job: "due-tomorrow",
       dayKey: DAY,
       emailsSent: 0,
       emailsFailed: 1,
@@ -58,9 +58,9 @@ describe("recordRunOutcome", () => {
 
     const write = db.directWrites.at(-1)!;
     expect(write.collection).toBe("scheduled_runs");
-    expect(write.id).toBe(`debrief-${DAY}`);
+    expect(write.id).toBe(`due-tomorrow-${DAY}`);
     expect(write.data).toMatchObject({
-      job: "debrief",
+      job: "due-tomorrow",
       dayKey: DAY,
       status: "failed",
       emailsSent: 0,
@@ -68,32 +68,29 @@ describe("recordRunOutcome", () => {
     });
   });
 
-  it("merges onto the claim rather than replacing it", async () => {
-    // The debrief claims its day on the same document before it spends any
-    // money. An outcome that overwrote the claim would let a re-run mail
-    // everybody a second time.
-    db.seed("scheduled_runs", `debrief-${DAY}`, {
-      job: "debrief",
+  it("merges onto an existing record rather than replacing it", async () => {
+    db.seed("scheduled_runs", `due-tomorrow-${DAY}`, {
+      job: "due-tomorrow",
       dayKey: DAY,
-      claimedAt: Timestamp.fromDate(NOW),
+      note: "seeded",
     });
 
     await recordRunOutcome({
-      job: "debrief",
+      job: "due-tomorrow",
       dayKey: DAY,
       emailsSent: 1,
       emailsFailed: 0,
       now: NOW,
     });
 
-    const doc = await db.collection("scheduled_runs").doc(`debrief-${DAY}`).get();
-    expect(doc.data()!.claimedAt).toBeDefined();
+    const doc = await db.collection("scheduled_runs").doc(`due-tomorrow-${DAY}`).get();
+    expect(doc.data()!.note).toBe("seeded");
     expect(doc.data()!.status).toBe("ok");
   });
 
   it("caps the errors it keeps and counts the rest", async () => {
     await recordRunOutcome({
-      job: "due-today",
+      job: "due-tomorrow",
       dayKey: DAY,
       emailsSent: 0,
       emailsFailed: 8,
@@ -115,7 +112,7 @@ describe("recordRunOutcome", () => {
 
     await expect(
       recordRunOutcome({
-        job: "owner-digest",
+        job: "due-tomorrow",
         dayKey: DAY,
         emailsSent: 3,
         emailsFailed: 0,
@@ -139,8 +136,8 @@ describe("recordRunCrash", () => {
 
 describe("readRecentRunFailures", () => {
   beforeEach(() => {
-    db.seed("scheduled_runs", `debrief-${DAY}`, {
-      job: "debrief",
+    db.seed("scheduled_runs", `due-tomorrow-${DAY}`, {
+      job: "due-tomorrow",
       dayKey: DAY,
       status: "failed",
       emailsSent: 0,
@@ -148,30 +145,30 @@ describe("readRecentRunFailures", () => {
       errors: ["send failed: API key is invalid"],
       finishedAt: Timestamp.fromDate(NOW),
     });
-    db.seed("scheduled_runs", `due-today-${DAY}`, {
-      job: "due-today",
-      dayKey: DAY,
+    db.seed("scheduled_runs", `due-tomorrow-2026-08-20`, {
+      job: "due-tomorrow",
+      dayKey: "2026-08-20",
       status: "ok",
       emailsSent: 2,
       emailsFailed: 0,
       errors: [],
       finishedAt: Timestamp.fromDate(NOW),
     });
-    db.seed("scheduled_runs", "debrief-2026-08-01", {
-      job: "debrief",
+    db.seed("scheduled_runs", "due-tomorrow-2026-08-01", {
+      job: "due-tomorrow",
       dayKey: "2026-08-01",
       status: "failed",
       emailsSent: 0,
       emailsFailed: 1,
       errors: ["ancient history"],
-      finishedAt: Timestamp.fromDate(new Date("2026-08-01T16:00:00Z")),
+      finishedAt: Timestamp.fromDate(new Date("2026-08-01T04:00:00Z")),
     });
   });
 
   it("returns only the runs that went badly", async () => {
     const failures = await readRecentRunFailures({ now: NOW });
 
-    expect(failures.map((f) => f.job)).toEqual(["debrief"]);
+    expect(failures.map((f) => f.job)).toEqual(["due-tomorrow"]);
     expect(failures[0].errors).toEqual(["send failed: API key is invalid"]);
   });
 

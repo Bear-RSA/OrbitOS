@@ -62,21 +62,6 @@ export interface TierLimits {
    * it", not "unlimited".
    */
   maxGuestsPerEngagement: number;
-
-  /**
-   * End-of-day debrief emails one PERSON may receive, ever, on this tier.
-   *
-   * Unlike every other limit here this one is a lifetime count rather than a
-   * rate: the debrief is a paid feature, and the free tier's allowance is a
-   * trial of it. Three arrive, the third carries the upgrade prompt, and
-   * nothing follows until the workspace is on a paid tier. -1 means the tier
-   * does not meter it at all.
-   *
-   * Counted per user rather than per organization because the debrief is a
-   * personal mail — it summarises what YOU did today, so one teammate
-   * reading their three would otherwise spend everybody else's trial.
-   */
-  lifetimeDebriefs: number;
 }
 
 /**
@@ -116,28 +101,28 @@ export const TIER_DEFINITIONS: Record<SubscriptionTier, TierDefinition> = {
     id: "exploration",
     name: "Exploration",
     description: "Free — for solo operators testing the waters.",
-    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10, maxGuestsPerEngagement: 0, lifetimeDebriefs: 3 },
+    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10, maxGuestsPerEngagement: 0 },
     priceZAR: 0,
   },
   foundational: {
     id: "foundational",
     name: "Foundational",
     description: "Starter — for small teams building momentum.",
-    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30, maxGuestsPerEngagement: 3, lifetimeDebriefs: -1 },
+    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30, maxGuestsPerEngagement: 3 },
     priceZAR: 299,
   },
   studio_core: {
     id: "studio_core",
     name: "Studio Core",
     description: "Team — for growing studios scaling operations.",
-    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4, maxTaskRemindersPerDay: 75, maxGuestsPerEngagement: 10, lifetimeDebriefs: -1 },
+    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4, maxTaskRemindersPerDay: 75, maxGuestsPerEngagement: 10 },
     priceZAR: 699,
   },
   total_visibility: {
     id: "total_visibility",
     name: "Total Visibility",
     description: "Growth — full operational command. No limits.",
-    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1, maxGuestsPerEngagement: -1, lifetimeDebriefs: -1 },
+    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1, maxGuestsPerEngagement: -1 },
     priceZAR: 1499,
   },
 };

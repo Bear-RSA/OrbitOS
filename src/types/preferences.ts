@@ -28,16 +28,8 @@ export interface UserPreferences {
   clock24h: boolean;
   /** Presence shown to teammates in the personnel hub. */
   presence: PresenceMode;
-  /** Owner-only: receive the morning digest email. */
-  dailyDigest: boolean;
-  /** Skip the digest entirely on days with nothing to action. */
-  digestOnlyWhenAttention: boolean;
   /** Email reminder the day before a task assigned to you falls due. */
   taskReminders: boolean;
-  /** Morning list of everything assigned to you that falls due today. */
-  dueTodayDigest: boolean;
-  /** Evening summary of what you created, were handed, moved and finished. */
-  dailyDebrief: boolean;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -45,11 +37,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   reducedMotion: false,
   clock24h: true,
   presence: "auto",
-  dailyDigest: true,
-  digestOnlyWhenAttention: false,
   taskReminders: true,
-  dueTodayDigest: true,
-  dailyDebrief: true,
 };
 
 /** Fills in every missing key so callers never branch on `undefined`. */

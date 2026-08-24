@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { runDueTaskReminders } from "@/lib/tasks/due-reminders";
+import { recordRunCrash, recordRunOutcome } from "@/lib/tasks/run-log";
 
 /* ------------------------------------------------------------------ */
 /*  Task due-soon reminder                                             */
 /*                                                                     */
-/*  No longer scheduled directly: Vercel's Hobby plan allows two cron  */
-/*  jobs and this workspace runs four scheduled mails, so the morning  */
-/*  three are dispatched together by /api/cron/morning at 04:00 UTC —  */
-/*  06:00 SAST. This route stays because it is the way to trigger the  */
-/*  reminders on their own, for a manual run or a retry.               */
+/*  Scheduled directly in vercel.json at 04:00 UTC — 06:00 SAST.       */
 /*                                                                     */
 /*  This used to run at 12:00 UTC, chosen so that a due date stored at */
 /*  midday UTC was exactly 24 hours away. That precision was never     */
@@ -18,7 +15,7 @@ import { runDueTaskReminders } from "@/lib/tasks/due-reminders";
 /*  unchanged and still means "due tomorrow".                          */
 /*                                                                     */
 /*  Vercel's scheduler sends `Authorization: Bearer $CRON_SECRET`, so  */
-/*  the same header check as /api/digest guards a manual trigger.      */
+/*  the same header check guards a manual trigger.                     */
 /*  Append ?dryRun=1 to see what a run would send without sending it,  */
 /*  and ?asOf=YYYY-MM-DD with it to ask the same question of another   */
 /*  day — the only way to test against a day that has work on it.      */
@@ -34,9 +31,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    const dryRun = req.nextUrl.searchParams.get("dryRun") === "1";
+  const dryRun = req.nextUrl.searchParams.get("dryRun") === "1";
 
+  try {
     /* `asOf=YYYY-MM-DD` pretends the run happened on that day, so a dry run
        can be pointed at a day that actually has work on it — otherwise the
        only testable day is tomorrow, and "0 candidates" proves nothing.
@@ -62,9 +59,38 @@ export async function POST(req: NextRequest) {
         `${result.emailsSent} sent, ${result.emailsFailed} failed, ${result.skipped.length} skipped`
     );
 
-    return NextResponse.json({ success: true, ...result });
+    // A dry run inspects; it does not get to claim it delivered anything.
+    if (!dryRun) {
+      await recordRunOutcome({
+        job: "due-tomorrow",
+        dayKey: result.targetDateKey,
+        emailsSent: result.emailsSent,
+        emailsFailed: result.emailsFailed,
+        errors: result.skipped.filter((line) => line.includes("send failed")),
+      });
+    }
+
+    /* Status codes are the second alarm, after the run log — a non-2xx is
+       what makes Vercel's cron view show the run as errored instead of green.
+       500 is reserved for the outage shape: mail to send, none of it accepted,
+       which is what a dead Resend key looks like. 207 covers a partial run,
+       where a blanket 500 would claim nothing happened and a blanket 200 would
+       hide that somebody's mail never went out. */
+    const outage = result.emailsFailed > 0 && result.emailsSent === 0;
+    const clean = result.emailsFailed === 0;
+
+    return NextResponse.json(
+      { success: clean, ...result },
+      { status: clean ? 200 : outage ? 500 : 207 }
+    );
   } catch (err) {
     console.error("[TaskReminders] Run failed:", err);
+    if (!dryRun) {
+      await recordRunCrash(
+        "due-tomorrow",
+        err instanceof Error ? err.message : "Internal error"
+      );
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

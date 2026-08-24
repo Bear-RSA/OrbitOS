@@ -36,9 +36,6 @@ interface RunFailure {
 
 /** The job names are internal; these are what they are to a reader. */
 const JOB_LABELS: Record<string, string> = {
-  debrief: "End-of-day debrief",
-  "due-today": "Due-today digest",
-  "owner-digest": "Owner morning digest",
   "due-tomorrow": "Due-tomorrow reminders",
 };
 

@@ -1,12 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/morning",
+      "path": "/api/reminders/tasks",
       "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/debrief",
-      "schedule": "0 16 * * *"
     }
   ]
 }

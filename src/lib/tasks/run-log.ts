@@ -17,10 +17,8 @@ import { sastDayKey } from "@/lib/utils/sast";
 /*  dashboard reads it back. The log is the diagnosis; this is the      */
 /*  alarm.                                                              */
 /*                                                                     */
-/*  Same document the debrief already claims its day with, so a         */
-/*  claimed-but-dead run and its outcome stay in one place: id is       */
-/*  `{job}-{dayKey}`, one per job per day, and a re-run with force      */
-/*  overwrites the outcome rather than appending a second record.       */
+/*  Id is `{job}-{dayKey}`, one per job per day, and a re-run with      */
+/*  force overwrites the outcome rather than appending a second record. */
 /* ------------------------------------------------------------------ */
 
 /** Errors kept on the record. Beyond this the count carries the rest. */
@@ -31,11 +29,7 @@ const LOOKBACK_DAYS = 3;
 
 export type RunStatus = "ok" | "degraded" | "failed";
 
-export type ScheduledJob =
-  | "debrief"
-  | "due-today"
-  | "owner-digest"
-  | "due-tomorrow";
+export type ScheduledJob = "due-tomorrow";
 
 /** What every scheduled mail is expected to say about itself. */
 export interface RunOutcome {
