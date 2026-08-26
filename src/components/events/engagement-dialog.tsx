@@ -463,8 +463,8 @@ export function EngagementDialog({
             off both edges with nothing to scroll. Height is capped here and
             the field area scrolls inside it, keeping the title and the submit
             button visible at all times. Padding moves inward for that reason. */}
-        <DialogContent className="flex max-h-[88dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[560px] bg-surface-sunken/95 border-line/[0.04]">
-          <DialogHeader className="shrink-0 space-y-4 px-10 pt-10 text-left sm:text-left">
+        <DialogContent className="flex max-h-[92dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[560px] md:max-w-2xl lg:max-w-3xl bg-surface-sunken/95 border-line/[0.04]">
+          <DialogHeader className="shrink-0 mb-0 space-y-2 px-6 pb-4 pt-6 text-left sm:px-8 sm:pb-5 sm:pt-8 md:px-10 sm:text-left">
             <DialogTitle className="text-xl font-medium tracking-tight text-ink">
               {report
                 ? "Saved, with a problem"
@@ -472,7 +472,7 @@ export function EngagementDialog({
                   ? "Revise Engagement"
                   : "Schedule Engagement"}
             </DialogTitle>
-            <DialogDescription className="text-[13px] leading-relaxed text-ink-dim font-light max-w-[380px]">
+            <DialogDescription className="text-[13px] leading-relaxed text-ink-dim font-light max-w-[380px] md:max-w-none">
               {report
                 ? "The engagement is saved. Some invitations did not reach the people they were meant for."
                 : isEdit
@@ -487,7 +487,7 @@ export function EngagementDialog({
                invitation is something the organizer learns now, from the
                screen they are already looking at. */
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-10 py-2">
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-2 sm:px-8 md:px-10">
                 <div className="flex items-start gap-3 rounded-xl bg-surface-raised/60 p-4 ring-1 ring-inset ring-line/[0.05]">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-orbit-green" aria-hidden />
                   <p className="text-[13px] leading-relaxed text-ink-muted">
@@ -554,7 +554,7 @@ export function EngagementDialog({
                 </p>
               </div>
 
-              <DialogFooter className="mt-0 shrink-0 flex-row justify-start gap-4 border-t border-line/[0.05] bg-surface-sunken/95 px-10 py-6 sm:justify-start">
+              <DialogFooter className="mt-0 shrink-0 flex-row justify-start gap-4 border-t border-line/[0.05] bg-surface-sunken/95 px-6 py-4 sm:justify-start sm:px-8 sm:py-5 md:px-10">
                 <Button
                   type="button"
                   onClick={dismissReport}
@@ -571,7 +571,7 @@ export function EngagementDialog({
           >
             {/* min-h-0 above is what lets this actually scroll — without it a
                 flex child refuses to shrink below its content height. */}
-            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-10 py-2">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-2 pt-1 sm:px-8 md:px-10">
             <div className="space-y-2.5">
               <Label htmlFor="event-title">Engagement Title</Label>
               <Input
@@ -595,7 +595,7 @@ export function EngagementDialog({
             </div>
 
             {/* Timing */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-2.5">
                 <Label htmlFor="event-date">Day</Label>
                 <Input
@@ -643,9 +643,15 @@ export function EngagementDialog({
               Runs all day
             </label>
 
+            {/* Scheduling on the left, people on the right — pairing them
+                side by side on a wide dialog is most of where the extra
+                width goes; on a phone this collapses back to one column
+                in source order. */}
+            <div className="space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-x-8 md:gap-y-4 md:space-y-0">
+            <div className="space-y-4">
             {/* Find a time — availability across everyone invited */}
             {!allDay && (
-              <div className="rounded-xl bg-surface-raised/60 p-4 ring-1 ring-inset ring-line/[0.05]">
+              <div className="rounded-xl bg-surface-raised/60 p-3 ring-1 ring-inset ring-line/[0.05]">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-[13px] font-medium tracking-tight text-ink">Find a time</p>
@@ -718,6 +724,19 @@ export function EngagementDialog({
               </div>
             )}
 
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
+              <div className="space-y-2.5">
+                <Label htmlFor="event-location">Location</Label>
+                <Input id="event-location" placeholder="Studio, room, city…" {...register("location")} />
+              </div>
+              <div className="space-y-2.5">
+                <Label htmlFor="event-link">Meeting Link</Label>
+                <Input id="event-link" placeholder="https://…" {...register("meetingUrl")} />
+              </div>
+            </div>
+            </div>
+
+            <div className="space-y-4">
             {/* People */}
             <div ref={attendeeFieldRef} className="space-y-2.5">
               <Label>Attendees</Label>
@@ -885,16 +904,7 @@ export function EngagementDialog({
                 </p>
               )}
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2.5">
-                <Label htmlFor="event-location">Location</Label>
-                <Input id="event-location" placeholder="Studio, room, city…" {...register("location")} />
-              </div>
-              <div className="space-y-2.5">
-                <Label htmlFor="event-link">Meeting Link</Label>
-                <Input id="event-link" placeholder="https://…" {...register("meetingUrl")} />
-              </div>
+            </div>
             </div>
 
             {/* Editing mails other people, including people outside the
@@ -930,7 +940,7 @@ export function EngagementDialog({
 
             {/* Pinned below the scroll area — the submit action should never
                 be something you have to scroll to find. */}
-            <DialogFooter className="mt-0 shrink-0 flex-row justify-start gap-4 border-t border-line/[0.05] bg-surface-sunken/95 px-10 py-6 sm:justify-start">
+            <DialogFooter className="mt-0 shrink-0 flex-row justify-start gap-4 border-t border-line/[0.05] bg-surface-sunken/95 px-6 py-5 sm:justify-start sm:px-8 sm:py-6 md:px-10">
               <Button type="submit" disabled={loading} className="h-9 min-w-[120px] rounded-lg px-5 text-[12px]">
                 {loading
                   ? isEdit
