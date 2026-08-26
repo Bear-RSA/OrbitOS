@@ -9,6 +9,7 @@ import type { ParticipantView } from "@/types/guest";
 import { toDateKeyInZone } from "@/lib/utils/dates";
 import { loadGuests, resolveGuestInvites } from "@/lib/guests/registry";
 import { dispatchEngagementInvites, type DispatchReport } from "@/lib/calendar/invite-dispatch";
+import { notifyOrganizerOfRsvp } from "@/lib/calendar/notify-organizer";
 import { resolveGuestInviteLimit } from "@/lib/auth/permissions";
 
 /* ------------------------------------------------------------------ */
@@ -524,6 +525,19 @@ export async function setRsvpAction(
       projectId: (found.data.projectId as string | null) ?? null,
       actor: { uid, name: caller.name },
       metadata: { eventId, eventTitle: found.data.title, rsvp: status },
+    });
+
+    notifyOrganizerOfRsvp({
+      organizerId: found.data.createdBy as string,
+      event: {
+        id: eventId,
+        title: found.data.title as string,
+        projectId: (found.data.projectId as string | null) ?? null,
+      },
+      subjectId: uid,
+      subjectName: caller.name,
+      subjectKind: "member",
+      status,
     });
 
     return { success: true };

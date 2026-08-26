@@ -30,6 +30,8 @@ export interface UserPreferences {
   presence: PresenceMode;
   /** Email reminder the day before a task assigned to you falls due. */
   taskReminders: boolean;
+  /** Email when someone RSVPs to an engagement you organize. */
+  rsvpNotifications: boolean;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -38,6 +40,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   clock24h: true,
   presence: "auto",
   taskReminders: true,
+  rsvpNotifications: true,
 };
 
 /** Fills in every missing key so callers never branch on `undefined`. */

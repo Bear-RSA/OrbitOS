@@ -4,6 +4,7 @@ import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { logActivity } from "@/lib/telemetry";
 import { verifyRsvpToken, type RsvpIdentity } from "@/lib/calendar/rsvp-token";
+import { notifyOrganizerOfRsvp } from "@/lib/calendar/notify-organizer";
 import type { RsvpStatus } from "@/types/event";
 
 /* ------------------------------------------------------------------ */
@@ -225,6 +226,19 @@ export async function submitTokenRsvpAction(
         rsvp: status,
         viaGuestLink: subject.kind === "guest",
       },
+    });
+
+    notifyOrganizerOfRsvp({
+      organizerId: event.createdBy as string,
+      event: {
+        id: identity.eventId,
+        title: event.title as string,
+        projectId: (event.projectId as string | null) ?? null,
+      },
+      subjectId: subject.id,
+      subjectName: subject.name,
+      subjectKind: subject.kind,
+      status,
     });
 
     return { success: true, status };

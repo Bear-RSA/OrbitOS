@@ -52,6 +52,15 @@ export function NotificationsSection({ user }: { user: User }) {
             onChange={(next) => update({ taskReminders: next })}
           />
 
+          <ToggleRow
+            id="pref-rsvp-notifications"
+            title="RSVP responses"
+            description="An email when someone accepts, declines, or tentatively responds to an engagement you organize."
+            checked={preferences.rsvpNotifications}
+            busy={pending === "rsvpNotifications"}
+            onChange={(next) => update({ rsvpNotifications: next })}
+          />
+
           <ReadonlyRow
             title="Delivered to"
             description="Email always goes to your sign-in address."
