@@ -155,6 +155,59 @@ function buildIcs(params: SendInviteParams): string {
   });
 }
 
+/**
+ * The multipart/alternative half HTML mail always needs. A message with
+ * only an HTML body is itself a mild spam signal to some filters, and it
+ * is the one part of deliverability fixable from inside this file rather
+ * than the sending domain's DNS.
+ */
+function buildText(params: SendInviteParams): string {
+  const { engagement, organizer, recipient, kind } = params;
+
+  const heading =
+    kind === "cancel"
+      ? "This engagement has been cancelled"
+      : kind === "update"
+        ? "An engagement has been updated"
+        : `${organizer.name} invited you to an engagement`;
+
+  const lines: string[] = [heading, "", engagement.title, "", `When: ${whenLine(engagement)}`];
+
+  if (engagement.location) lines.push(`Where: ${engagement.location}`);
+  if (engagement.meetingUrl && kind !== "cancel") lines.push(`Link: ${engagement.meetingUrl}`);
+  lines.push(`Organizer: ${organizer.name} <${organizer.email}>`);
+
+  if (engagement.description) {
+    lines.push("", engagement.description);
+  }
+
+  if (kind !== "cancel") {
+    lines.push(
+      "",
+      "Can you make it?",
+      `Yes: ${recipient.rsvpUrl}?reply=accepted`,
+      `Maybe: ${recipient.rsvpUrl}?reply=tentative`,
+      `No: ${recipient.rsvpUrl}?reply=declined`
+    );
+  }
+
+  if (recipient.kind === "guest" && kind !== "cancel") {
+    lines.push(
+      "",
+      "You are joining as a guest — no account needed. The attached invitation will add this to your calendar."
+    );
+  }
+
+  lines.push(
+    "",
+    kind === "cancel"
+      ? "This entry has been removed from your calendar."
+      : "The attached .ics adds this to your calendar."
+  );
+
+  return lines.join("\n");
+}
+
 function buildHtml(params: SendInviteParams): string {
   const { engagement, organizer, recipient, kind, orgName } = params;
 
@@ -269,6 +322,14 @@ export async function sendEngagementInvite(params: SendInviteParams): Promise<Se
       reply_to: organizer.email,
       subject: `${SUBJECT_PREFIX[kind]}: ${engagement.title} — ${dayLabel}`,
       html: buildHtml(params),
+      text: buildText(params),
+      // Read back by the delivery webhook to attribute a bounce/complaint
+      // to the engagement that caused it — the send response alone carries
+      // no reference the async event could be matched against later.
+      tags: [
+        { name: "engagement_id", value: engagement.id },
+        { name: "recipient_kind", value: recipient.kind },
+      ],
       attachments: [
         {
           filename: "invite.ics",
