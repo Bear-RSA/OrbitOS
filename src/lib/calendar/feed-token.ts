@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { getAppUrl } from "@/lib/utils/getAppUrl";
 
 /* ------------------------------------------------------------------ */
 /*  Calendar feed tokens                                               */
@@ -70,6 +71,6 @@ export function verifyFeedToken(token: string): FeedIdentity | null {
 
 /** The absolute URL a person pastes into Google, Outlook, or Apple. */
 export function feedUrlFor(uid: string, version: number): string {
-  const base = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+  const base = getAppUrl().replace(/\/$/, "");
   return `${base}/api/calendar/${signFeedToken(uid, version)}.ics`;
 }

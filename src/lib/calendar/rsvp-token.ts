@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { getAppUrl } from "@/lib/utils/getAppUrl";
 
 /* ------------------------------------------------------------------ */
 /*  RSVP tokens                                                        */
@@ -109,6 +110,6 @@ export function rsvpUrlFor(
   eventId: string,
   version: number
 ): string {
-  const base = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+  const base = getAppUrl().replace(/\/$/, "");
   return `${base}/rsvp/${signRsvpToken(kind, subjectId, eventId, version)}`;
 }
