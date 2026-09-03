@@ -22,16 +22,25 @@ function toCalls(docs: { id: string; data: () => any }[]): OrbitCall[] {
  * Calls ringing this user right now.
  *
  * This is the listener that makes a phone ring, so it is deliberately
- * the narrowest query in the app: one uid, one status. It runs for the
- * whole session on every signed-in client, and anything broader would
- * mean paying reads on other people's calls to find out about your own.
+ * narrow: one org, one uid, one status. It runs for the whole session on
+ * every signed-in client, and anything broader would mean paying reads on
+ * other people's calls to find out about your own.
+ *
+ * The `orgId` filter is not incidental. The `calls` read rule requires
+ * `isInOrg(resource.data.orgId)`, and Firestore only permits a listen
+ * query when the rule is provable from the query's own constraints — so
+ * without pinning `orgId` here the whole subscription is denied and the
+ * phone never rings, exactly as every other subscription in the app pins
+ * it for the same reason.
  */
 export function subscribeToIncomingCalls(
   uid: string,
+  orgId: string,
   callback: (calls: OrbitCall[]) => void
 ) {
   const q = query(
     collection(db, CALLS_COLLECTION),
+    where("orgId", "==", orgId),
     where("to", "==", uid),
     where("status", "==", "ringing")
   );
@@ -55,10 +64,12 @@ export function subscribeToIncomingCalls(
  */
 export function subscribeToOutgoingCalls(
   uid: string,
+  orgId: string,
   callback: (calls: OrbitCall[]) => void
 ) {
   const q = query(
     collection(db, CALLS_COLLECTION),
+    where("orgId", "==", orgId),
     where("from", "==", uid),
     where("status", "==", "ringing")
   );

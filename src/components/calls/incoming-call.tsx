@@ -38,6 +38,7 @@ export function IncomingCall() {
   const [error, setError] = useState<string | null>(null);
 
   const uid = user?.id ?? null;
+  const orgId = user?.orgId ?? null;
 
   /* Held in a ref so the expiry timer can read the current ring without
      restarting itself every render. */
@@ -45,15 +46,15 @@ export function IncomingCall() {
   ringingRef.current = ringing;
 
   useEffect(() => {
-    if (!uid) return;
+    if (!uid || !orgId) return;
 
-    return subscribeToIncomingCalls(uid, (calls) => {
+    return subscribeToIncomingCalls(uid, orgId, (calls) => {
       /* Newest wins. Two people ringing at once is rare and the
          alternative — a stack of cards — is worse than answering the
          most recent and letting the other time out. */
       setRinging(calls[0] ?? null);
     });
-  }, [uid]);
+  }, [uid, orgId]);
 
   /* Stop showing a card the server would refuse anyway. */
   useEffect(() => {
