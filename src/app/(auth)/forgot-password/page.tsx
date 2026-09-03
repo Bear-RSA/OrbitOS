@@ -10,11 +10,7 @@ import {
   passwordResetRequestSchema,
   PasswordResetRequestInput,
 } from "@/lib/validations/auth";
-import {
-  describeResetError,
-  errorCode,
-  requestPasswordReset,
-} from "@/lib/firebase/password-reset";
+import { requestPasswordResetAction } from "@/app/actions/password-reset";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,15 +34,21 @@ function ForgotPasswordForm() {
     defaultValues: { email: searchParams.get("email") ?? "" },
   });
 
+  // Dispatch runs server-side: the link is minted with the Admin SDK and
+  // carried by Resend, so nothing here touches Firebase's built-in mailer.
   const send = async (email: string) => {
     setError(null);
     try {
-      await requestPasswordReset(email);
+      const result = await requestPasswordResetAction(email);
+      if (!result.ok) {
+        setError(result.error);
+        return false;
+      }
       setSentTo(email);
       return true;
     } catch (err) {
       console.error("[ForgotPassword] Reset request failed", err);
-      setError(describeResetError(errorCode(err)));
+      setError("Could not reach the server. Check your connection and try again.");
       return false;
     }
   };

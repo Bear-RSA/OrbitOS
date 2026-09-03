@@ -12,7 +12,7 @@ import { KeyRound, LogOut, MonitorSmartphone, ShieldCheck } from "lucide-react";
 
 import { auth } from "@/lib/firebase/client";
 import { signOut as appSignOut } from "@/lib/firebase/auth";
-import { requestPasswordReset } from "@/lib/firebase/password-reset";
+import { requestPasswordResetAction } from "@/app/actions/password-reset";
 import { revokeAllSessionsAction } from "@/app/actions/security";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils/classnames";
@@ -65,6 +65,9 @@ export function SecuritySection() {
 
   const [resetSending, setResetSending] = useState(false);
   const [resetNotice, setResetNotice] = useState<string | null>(null);
+  // A throttled or failed request lands in the same slot as a sent one, so
+  // the slot carries its own tone — otherwise a refusal reads as a success.
+  const [resetTone, setResetTone] = useState<"error" | "success">("success");
 
   const [revoking, setRevoking] = useState(false);
   const [revokeError, setRevokeError] = useState<string | null>(null);
@@ -128,13 +131,20 @@ export function SecuritySection() {
     if (!email || resetSending) return;
     setResetSending(true);
     setResetNotice(null);
+    setResetTone("success");
     try {
       // Shared with the signed-out /forgot-password flow so both send the
-      // same link, pointed back at this deployment.
-      await requestPasswordReset(email);
+      // same Resend-delivered link at our own handler.
+      const result = await requestPasswordResetAction(email);
+      if (!result.ok) {
+        setResetTone("error");
+        setResetNotice(result.error);
+        return;
+      }
       setResetNotice(`Reset link sent to ${email}.`);
     } catch (err) {
       console.error("[Security] Reset email failed", err);
+      setResetTone("error");
       setResetNotice("Could not send the reset email. Try again.");
     } finally {
       setResetSending(false);
@@ -274,7 +284,7 @@ export function SecuritySection() {
 
             <FormNotice tone="error">{passwordError}</FormNotice>
             <FormNotice tone="success">{passwordSuccess}</FormNotice>
-            <FormNotice tone="success">{resetNotice}</FormNotice>
+            <FormNotice tone={resetTone}>{resetNotice}</FormNotice>
           </form>
         ) : (
           <p className="max-w-lg text-[13px] font-light leading-relaxed text-ink-muted">

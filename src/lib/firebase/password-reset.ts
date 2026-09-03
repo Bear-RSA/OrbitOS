@@ -1,56 +1,18 @@
 "use client";
 
-import {
-  ActionCodeSettings,
-  confirmPasswordReset,
-  sendPasswordResetEmail,
-  verifyPasswordResetCode,
-} from "firebase/auth";
+import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
 
-import { getAppUrl } from "@/lib/utils/getAppUrl";
 import { auth } from "./client";
 
-/**
- * Where Firebase sends the user after they finish resetting. On a preview
- * deployment `window.location.origin` keeps the link pointing at the same
- * host the request came from; `getAppUrl()` covers the server-render case.
- *
- * NOTE: the domain must be listed under Firebase Authentication →
- * Settings → Authorized domains, or `sendPasswordResetEmail` rejects with
- * `auth/unauthorized-continue-uri`.
- */
-function continueUrl(): string {
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : getAppUrl();
-  return `${origin}/login`;
-}
-
-function actionCodeSettings(): ActionCodeSettings {
-  return { url: continueUrl(), handleCodeInApp: false };
-}
-
-/**
- * Firebase reports `auth/user-not-found` when the address has no account,
- * which turns this form into an account-existence oracle. Callers get a
- * uniform success instead, so the reply is identical either way.
- *
- * `auth/too-many-requests` is deliberately *not* swallowed — that one is
- * about the sender, not the target, and the user needs to know their email
- * is not coming.
- */
-export async function requestPasswordReset(email: string): Promise<void> {
-  try {
-    await sendPasswordResetEmail(auth, email, actionCodeSettings());
-  } catch (err) {
-    const code =
-      typeof err === "object" && err !== null && "code" in err
-        ? String((err as { code: unknown }).code)
-        : "";
-
-    if (code === "auth/user-not-found" || code === "auth/invalid-email") return;
-    throw err;
-  }
-}
+/* ------------------------------------------------------------------ */
+/*  Reset code redemption                                              */
+/*                                                                     */
+/*  Sending lives server-side in `actions/password-reset` — the link is */
+/*  minted with the Admin SDK and carried by Resend, because Firebase's */
+/*  built-in mailer reports nothing about whether a message arrived.    */
+/*  What remains here is the half that must run in the browser: taking  */
+/*  the code out of the URL the recipient opened and redeeming it.      */
+/* ------------------------------------------------------------------ */
 
 /** Resolves to the email the code belongs to, or throws if it is spent. */
 export function checkResetCode(oobCode: string): Promise<string> {
@@ -81,8 +43,6 @@ export function describeResetError(code: string): string {
       return "Too many attempts. Wait a few minutes and try again.";
     case "auth/network-request-failed":
       return "Network error. Check your connection and try again.";
-    case "auth/unauthorized-continue-uri":
-      return "This domain is not authorised for password resets. Contact support.";
     default:
       return "Something went wrong. Please try again.";
   }
