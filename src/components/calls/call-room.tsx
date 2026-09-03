@@ -31,6 +31,36 @@ interface CallRoomProps {
   className?: string;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Prebuilt theme                                                     */
+/*                                                                     */
+/*  The hex here mirrors the dark tokens in `globals.css` — this is    */
+/*  the one place Daily's UI is painted, and it has to read as part of */
+/*  the app rather than a third-party iframe dropped into it. Kept as  */
+/*  the DARK palette on purpose regardless of the app's light/dark     */
+/*  setting: the call always floats over a `bg-scrim/95` overlay, so a */
+/*  light room would clash with the dark chrome framing it.            */
+/*                                                                     */
+/*  `accent` is the app's near-white ink fill, not a colour, because   */
+/*  the product's primary actions are monochrome and the call should   */
+/*  not be the one screen shouting in green. orbit-red still lands on  */
+/*  the leave button, which Daily paints itself.                       */
+/* ------------------------------------------------------------------ */
+const DAILY_THEME = {
+  colors: {
+    accent: "#EDEDED", // --ink
+    accentText: "#0B0B0B", // text on an ink fill
+    background: "#050505", // --base
+    backgroundAccent: "#141414", // --surface-control
+    baseText: "#EDEDED", // --ink
+    border: "#1E1E1E", // --surface-hover, as a hairline
+    mainAreaBg: "#0B0B0B", // --surface-card
+    mainAreaBgAccent: "#141414", // --surface-control
+    mainAreaText: "#EDEDED", // --ink
+    supportiveText: "#7E7E7E", // --ink-dim
+  },
+} as const;
+
 export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [status, setStatus] = useState<"joining" | "joined" | "failed">("joining");
@@ -83,6 +113,7 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
           },
           showLeaveButton: true,
           showFullscreenButton: true,
+          theme: DAILY_THEME,
         });
 
         /* Daily Prebuilt renders its own loader and prejoin screen, so our
