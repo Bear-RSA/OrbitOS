@@ -29,10 +29,18 @@ function LoginForm() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SignInInput>({
     resolver: zodResolver(signInSchema),
   });
+
+  // Carry whatever they already typed over to the recovery screen rather
+  // than making them enter the same address twice.
+  const typedEmail = watch("email");
+  const forgotHref = typedEmail
+    ? `/forgot-password?email=${encodeURIComponent(typedEmail)}`
+    : "/forgot-password";
 
   // Only bounce an already-authenticated visitor onward once the session
   // cookie actually exists. Redirecting while `sessionStatus` is "error"
@@ -103,7 +111,16 @@ function LoginForm() {
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="login-password" title="System Password" className="text-ink-muted">System Password</Label>
+            <div className="flex items-baseline justify-between gap-4">
+              <Label htmlFor="login-password" title="System Password" className="text-ink-muted">System Password</Label>
+              <Link
+                href={forgotHref}
+                className="text-[11px] font-mono text-ink-dim hover:text-ink transition-colors duration-300"
+                id="go-to-forgot-password"
+              >
+                Forgot?
+              </Link>
+            </div>
             <Input
               id="login-password"
               type="password"

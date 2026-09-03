@@ -20,6 +20,8 @@ const PUBLIC_ROUTES = new Set([
   "/",
   "/login",
   "/signup",
+  "/forgot-password",
+  "/reset-password",
   "/join",
   "/pricing",
   "/methodology",
@@ -30,6 +32,12 @@ const PUBLIC_ROUTES = new Set([
   "/contact-sales",
 ]);
 
+/**
+ * Screens a signed-in visitor has no business on. Deliberately excludes
+ * /forgot-password and /reset-password: a user following the link from their
+ * inbox may still be holding a session cookie, and bouncing them to the
+ * dashboard would leave them unable to finish the reset.
+ */
 const AUTH_ROUTES = new Set(["/login", "/signup"]);
 
 /**

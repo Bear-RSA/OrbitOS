@@ -6,13 +6,13 @@ import { format } from "date-fns";
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
-  sendPasswordResetEmail,
   updatePassword,
 } from "firebase/auth";
 import { KeyRound, LogOut, MonitorSmartphone, ShieldCheck } from "lucide-react";
 
 import { auth } from "@/lib/firebase/client";
 import { signOut as appSignOut } from "@/lib/firebase/auth";
+import { requestPasswordReset } from "@/lib/firebase/password-reset";
 import { revokeAllSessionsAction } from "@/app/actions/security";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils/classnames";
@@ -129,7 +129,9 @@ export function SecuritySection() {
     setResetSending(true);
     setResetNotice(null);
     try {
-      await sendPasswordResetEmail(auth, email);
+      // Shared with the signed-out /forgot-password flow so both send the
+      // same link, pointed back at this deployment.
+      await requestPasswordReset(email);
       setResetNotice(`Reset link sent to ${email}.`);
     } catch (err) {
       console.error("[Security] Reset email failed", err);
