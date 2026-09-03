@@ -7,8 +7,10 @@ import { Member } from "@/types/member";
 import { Task } from "@/types/task";
 import { OrbitEvent } from "@/types/event";
 import { engagementPresenceByMember } from "@/lib/calendar/presence";
-import { Loader2 } from "lucide-react";
+import { Loader2, Phone } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { useAuth } from "@/contexts/auth-context";
+import { OutgoingCall } from "@/components/calls/outgoing-call";
 
 interface PersonnelHubProps {
   projectId: string;
@@ -27,6 +29,16 @@ interface PersonnelHubProps {
 
 export function PersonnelHub({ projectId, orgId, members, tasks, events = [], selectedAssignee, onAssigneeSelect }: PersonnelHubProps) {
   const [now, setNow] = useState(Date.now());
+  const { user } = useAuth();
+
+  /* Who this operative is currently ringing. One at a time on purpose:
+     placing a second call while the first is still connecting has no
+     meaning, and the ring UI is a single fixed panel. */
+  const [calling, setCalling] = useState<{
+    uid: string;
+    name: string;
+    photoURL?: string | null;
+  } | null>(null);
 
   // Heartbeat local timer for offline detection
   useEffect(() => {
@@ -155,6 +167,36 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
                   </div>
 
                   <div className="flex flex-col items-end gap-1">
+                     {/* Calling yourself is not a thing, and someone
+                         already in a meeting or a call is reachable but
+                         probably should not be rung — so the button
+                         stays, disabled, and says why. Hiding it would
+                         make the row's capabilities depend on state the
+                         reader cannot see. */}
+                     {user?.id && t.id !== user.id && (
+                       <button
+                         type="button"
+                         onClick={(e) => {
+                           // The row itself filters by assignee.
+                           e.stopPropagation();
+                           if (t.presence || t.operationalStatus === "offline") return;
+                           setCalling({ uid: t.id, name: t.name, photoURL: t.photoURL });
+                         }}
+                         disabled={Boolean(t.presence) || t.operationalStatus === "offline"}
+                         title={
+                           t.presence
+                             ? `${t.name} is ${t.presence.label}`
+                             : t.operationalStatus === "offline"
+                               ? `${t.name} is offline`
+                               : `Call ${t.name}`
+                         }
+                         aria-label={`Call ${t.name}`}
+                         className="mb-1 flex items-center gap-1.5 rounded-lg border border-line/[0.06] bg-surface-control px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-ink-muted transition-colors hover:bg-surface-raised hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+                       >
+                         <Phone className="h-2.5 w-2.5" aria-hidden />
+                         Call
+                       </button>
+                     )}
                      <div className="flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.1em]">
                         <span className={cn(t.presence ? "text-orbit-amber" : "text-ink-dim")}>
                           {statusWord}
@@ -193,6 +235,10 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
            );
          })}
        </div>
+
+       {calling && (
+         <OutgoingCall target={calling} onClose={() => setCalling(null)} />
+       )}
     </div>
   );
 }

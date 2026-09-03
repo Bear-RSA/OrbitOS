@@ -62,6 +62,30 @@ export interface TierLimits {
    * it", not "unlimited".
    */
   maxGuestsPerEngagement: number;
+
+  /**
+   * People in one call, direct or scheduled.
+   *
+   * Metered because a call bills in participant-minutes — the first limit
+   * here that costs more the longer it is used rather than more the more
+   * often it is used. 2 is a working free tier: one operative can call
+   * another, which is the thing a solo studio actually needs.
+   *
+   * The hard ceiling in `lib/calls/ceiling` applies on top and is never
+   * widened by this value.
+   */
+  maxCallParticipants: number;
+
+  /**
+   * People from outside the workspace who may enter a call — invited
+   * guests and walk-ins alike.
+   *
+   * 0 means the paid-plan gate, the same idiom `maxGuestsPerEngagement`
+   * already uses. Letting an outside client into a room is the shape of
+   * the tier: it is what a studio pays for, and it is also the path that
+   * puts unauthenticated strangers on the invoice.
+   */
+  maxCallGuests: number;
 }
 
 /**
@@ -101,28 +125,28 @@ export const TIER_DEFINITIONS: Record<SubscriptionTier, TierDefinition> = {
     id: "exploration",
     name: "Exploration",
     description: "Free — for solo operators testing the waters.",
-    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10, maxGuestsPerEngagement: 0 },
+    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10, maxGuestsPerEngagement: 0, maxCallParticipants: 2, maxCallGuests: 0 },
     priceZAR: 0,
   },
   foundational: {
     id: "foundational",
     name: "Foundational",
     description: "Starter — for small teams building momentum.",
-    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30, maxGuestsPerEngagement: 3 },
+    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30, maxGuestsPerEngagement: 3, maxCallParticipants: 4, maxCallGuests: 0 },
     priceZAR: 299,
   },
   studio_core: {
     id: "studio_core",
     name: "Studio Core",
     description: "Team — for growing studios scaling operations.",
-    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4, maxTaskRemindersPerDay: 75, maxGuestsPerEngagement: 10 },
+    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4, maxTaskRemindersPerDay: 75, maxGuestsPerEngagement: 10, maxCallParticipants: 10, maxCallGuests: 5 },
     priceZAR: 699,
   },
   total_visibility: {
     id: "total_visibility",
     name: "Total Visibility",
     description: "Growth — full operational command. No limits.",
-    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1, maxGuestsPerEngagement: -1 },
+    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1, maxGuestsPerEngagement: -1, maxCallParticipants: -1, maxCallGuests: -1 },
     priceZAR: 1499,
   },
 };

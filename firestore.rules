@@ -81,10 +81,46 @@ service cloud.firestore {
          Leaving them open would let any Member forge an outsider's RSVP,
          rename a guest, or freeze SEQUENCE so that a reschedule never
          reaches anyone's calendar. */
+      /* The call fields are server-owned for the same reason, and one of
+         them is worse than the rest: `roomId` is the capability that
+         gets a person into the room. A Member able to write it could
+         point an engagement at a room they control and have the other
+         attendees walk into it. `callActive` is the gate the walk-in
+         path checks, so forging it would re-open a forwarded link. */
       allow update: if isMember(resource.data.orgId)
-        && !editedKeys().hasAny(['guests', 'guestRsvp', 'guestNames', 'sequence']);
+        && !editedKeys().hasAny([
+          'guests', 'guestRsvp', 'guestNames', 'sequence',
+          'callProvider', 'roomId', 'callActive', 'callStartedAt'
+        ]);
 
       allow delete: if isOwner(resource.data.orgId);
+    }
+
+    /* Direct calls — one operative ringing another.
+
+       Readable by the two people on it and nobody else. Org membership
+       is deliberately not enough: a call is between two named people,
+       and a third member of the same workspace has no more business
+       reading it than a stranger does. The one exception is the org-wide
+       read used to show "on a call" in the Personnel Network, which is
+       why an ACTIVE call is visible to the workspace — that a colleague
+       is busy is exactly what that view exists to say, and the document
+       carries no content beyond who and when.
+
+       Writes are server-only. `roomId` is a capability and `status` is
+       what the answer gate reads, so a client that could write either
+       could join a call it was never part of, or revive a ring that had
+       already timed out. */
+    match /calls/{callId} {
+      allow read: if isSignedIn()
+        && isInOrg(resource.data.orgId)
+        && (
+          request.auth.uid == resource.data.from ||
+          request.auth.uid == resource.data.to ||
+          resource.data.status == 'active'
+        );
+
+      allow write: if false;
     }
 
     /* Guests are server-only, and the read side is the point: a workspace's

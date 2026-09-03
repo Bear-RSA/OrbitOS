@@ -88,6 +88,29 @@ async function request<T>(
 /** Daily takes expiry as whole unix seconds. */
 const unix = (date: Date) => Math.floor(date.getTime() / 1000);
 
+/**
+ * Turns a provider failure into something the person reading it can act
+ * on.
+ *
+ * A rejected credential and a provider outage both used to surface as
+ * "unavailable", which is true and useless — one is a deploy to fix in a
+ * minute, the other is waiting. The most common cause of the first is an
+ * API key pasted WITH its surrounding quotes: dotenv strips those, most
+ * dashboards do not, so the same value works locally and 401s in
+ * production.
+ */
+function providerFailure(status: number, action: string): Error {
+  if (status === 401 || status === 403) {
+    return new Error(
+      "Calling is misconfigured on this deployment: the call service rejected our credentials. Check DAILY_API_KEY is set without surrounding quotes."
+    );
+  }
+  if (status === 0) {
+    return new Error("Could not reach the call service. Try again.");
+  }
+  return new Error(`The call service is unavailable (${action} failed).`);
+}
+
 export const dailyProvider: CallProvider = {
   id: "daily",
 
@@ -105,7 +128,7 @@ export const dailyProvider: CallProvider = {
       console.error(
         `[DailyProvider] Room lookup failed (${existing.status}): ${existing.detail}`
       );
-      throw new Error("The call service is unavailable.");
+      throw providerFailure(existing.status, "room lookup");
     }
 
     const created = await request<DailyRoom>("/rooms", {
@@ -150,7 +173,7 @@ export const dailyProvider: CallProvider = {
     console.error(
       `[DailyProvider] Room create failed (${created.status}): ${created.detail}`
     );
-    throw new Error("The call service is unavailable.");
+    throw providerFailure(created.status, "room create");
   },
 
   async mintAccessToken(options: MintTokenOptions): Promise<string> {
@@ -178,7 +201,7 @@ export const dailyProvider: CallProvider = {
       console.error(
         `[DailyProvider] Token mint failed (${result.status}): ${result.detail}`
       );
-      throw new Error("Could not get you into the call.");
+      throw providerFailure(result.status, "token mint");
     }
 
     return result.data.token;

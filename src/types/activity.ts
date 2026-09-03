@@ -36,7 +36,12 @@ export type ActivityEventType =
   | "ENGAGEMENT_SCHEDULED"
   | "ENGAGEMENT_REVISED"
   | "ENGAGEMENT_CANCELLED"
-  | "RSVP_RECORDED";
+  | "RSVP_RECORDED"
+  /* A direct call is neither work nor a scheduled meeting — it leaves no
+     calendar entry, so without its own event the feed has no record that
+     two operatives spoke at all. Only the placing of a call is logged:
+     who answered is between the two of them. */
+  | "CALL_STARTED";
 
 /* ------------------------------------------------------------------ */
 /*  Activity Document                                                  */

@@ -199,6 +199,34 @@ export async function resolveGuestInviteLimit(orgId: string): Promise<number> {
 }
 
 /**
+ * What this organization's plan allows in a call.
+ *
+ * Same contract as the three above: -1 on either field means "the tier
+ * does not narrow it", and the ceilings in `lib/calls/ceiling` govern
+ * regardless. A call is billed in participant-minutes, so those ceilings
+ * are live now even while the paywall stays dark.
+ *
+ * Returned as a pair because the two are always needed together — every
+ * join path has to know both how many people may be in the room and
+ * whether this one is allowed to be an outsider.
+ */
+export async function resolveCallLimits(
+  orgId: string
+): Promise<{ maxParticipants: number; maxGuests: number }> {
+  if (!GUARDRAILS_ENABLED || !orgId) {
+    return { maxParticipants: -1, maxGuests: -1 };
+  }
+
+  const tier = await resolveOrgTier(orgId);
+  const limits = TIER_DEFINITIONS[tier].limits;
+
+  return {
+    maxParticipants: limits.maxCallParticipants,
+    maxGuests: limits.maxCallGuests,
+  };
+}
+
+/**
  * Validates whether an organization's current resource usage allows
  * one more of the requested resource type under its active subscription tier.
  *

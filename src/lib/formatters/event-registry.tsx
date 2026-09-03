@@ -22,6 +22,7 @@ import {
   CalendarClock,
   CalendarX2,
   CalendarCheck,
+  PhoneCall,
   type LucideIcon,
 } from "lucide-react";
 import type { ActivityEventType } from "@/types/activity";
@@ -316,6 +317,20 @@ export const EVENT_REGISTRY: Record<ActivityEventType, EventDescriptor> = {
       <>
         replied <Detail val={RSVP_WORD[m.rsvp as string] ?? m.rsvp} tone={RSVP_TONE[m.rsvp as string]} />
         to <Target val={engagement(m)} />
+      </>
+    ),
+  },
+
+  /* A direct call leaves no calendar entry, so this line is the only
+     record that two operatives spoke. Who answered is not logged —
+     that is between them. */
+  CALL_STARTED: {
+    label: "CAL",
+    icon: PhoneCall,
+    tone: "info",
+    describe: (m) => (
+      <>
+        called <Target val={(m.toName as string) || "an operative"} />
       </>
     ),
   },

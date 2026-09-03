@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { InteractionProvider } from "@/components/ui/interaction-provider";
 import { PreferenceEffects } from "@/components/preference-effects";
 import { ThemeScript } from "@/components/theme-script";
+import { IncomingCall } from "@/components/calls/incoming-call";
 
 // Self-hosted at build time by next/font — no render-blocking @import, no FOUT,
 // and a size-adjusted fallback so there is no layout shift while they load.
@@ -75,6 +76,10 @@ export default function RootLayout({
           <AuthProvider>
             <PreferenceEffects />
             {children}
+            {/* A phone that only rings on the page you happen to be
+                looking at is not a phone. Mounted once for the whole
+                session; renders nothing until somebody calls. */}
+            <IncomingCall />
           </AuthProvider>
         </InteractionProvider>
       </body>
