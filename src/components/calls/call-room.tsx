@@ -85,6 +85,16 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
           showFullscreenButton: true,
         });
 
+        /* Daily Prebuilt renders its own loader and prejoin screen, so our
+           overlay has to step aside the moment that UI is up — not when
+           join() resolves. With prejoin enabled, join() does not resolve
+           until the participant clicks through the prejoin screen, and an
+           opaque loader painted on top hides the very Join button they need.
+           That is a deadlock that looks exactly like a call stuck on
+           "connecting". `loaded` fires once Daily's UI can take the frame. */
+        frame.on("loaded", () => {
+          if (!cancelled) setStatus("joined");
+        });
         frame.on("left-meeting", () => onLeaveRef.current?.());
         frame.on("error", (event: any) => {
           console.error("[CallRoom] Daily error:", event);
@@ -97,6 +107,8 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
           userName: grant.displayName,
         });
 
+        /* Belt-and-suspenders: if `loaded` never arrived, a resolved join
+           still means Daily owns the frame and the loader must go. */
         if (!cancelled) setStatus("joined");
       } catch (err: any) {
         if (cancelled) return;
