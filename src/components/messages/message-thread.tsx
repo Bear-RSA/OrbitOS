@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format, isSameDay, isToday, isYesterday } from "date-fns";
-import { Lock, Megaphone, MessagesSquare, SendHorizonal, Users } from "lucide-react";
+import { Lock, Megaphone, MessagesSquare, Phone, SendHorizonal, Users } from "lucide-react";
 import {
   MESSAGE_PAGE_SIZE,
   loadOlderMessages,
@@ -61,6 +61,8 @@ interface MessageThreadProps {
   subtitle?: string;
   /** Opens someone's profile card. Wired from the banner and every face. */
   onOpenProfile?: (uid: string) => void;
+  /** Rings the other person. Only offered in a dm — a room is two people. */
+  onCall?: (target: { uid: string; name: string; photoURL?: string | null }) => void;
 }
 
 /** "Today" and "Yesterday" beat a date somebody has to decode. */
@@ -77,6 +79,7 @@ export function MessageThread({
   fallbackTitle = "Conversation",
   subtitle,
   onOpenProfile,
+  onCall,
 }: MessageThreadProps) {
   const [live, setLive] = useState<Message[]>([]);
   const [older, setOlder] = useState<Message[]>([]);
@@ -202,13 +205,29 @@ export function MessageThread({
   const placeholder =
     conversation?.type === "townhall" ? "Post a notice…" : `Message ${title}…`;
 
+  const partnerTone = partner
+    ? partner.operationalStatus === "offline"
+      ? "bg-ink-faint"
+      : partner.operationalStatus === "focused"
+        ? "bg-orbit-amber"
+        : "bg-orbit-green"
+    : null;
+
+  /* Ringing somebody who is heads-down or gone is worse than waiting, so
+     the button stays and says why. */
+  const callBlocked = partner?.operationalStatus === "offline";
+  const callReason = callBlocked ? `${title} is offline` : `Call ${title}`;
+
   /* A full first page means there is probably more behind it. */
   const mayHaveHistory = !exhausted && live.length >= MESSAGE_PAGE_SIZE;
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-line/[0.06] bg-surface-card/40 shadow-raised ring-1 ring-line/5 backdrop-blur-sm">
+    /* The thread is the primary surface and now says so: it sits a rung
+       above the rail on the ladder, with a real shadow rather than the
+       same flat card treatment on both sides of the screen. */
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-line/[0.05] bg-surface-card shadow-raised">
       {/* ── Header ─────────────────────────────────────────────── */}
-      <header className="flex shrink-0 items-center gap-3 border-b border-line/[0.05] bg-surface-card/60 px-5 py-3.5">
+      <header className="flex shrink-0 items-center gap-3.5 border-b border-line/[0.05] bg-surface-card/70 px-5 py-4">
         {/* The picture opens the person — here, in the rail, and on every
             message. One rule, so it never has to be discovered twice. */}
         {conversation?.type === "dm" ? (
@@ -218,24 +237,61 @@ export function MessageThread({
               onClick={() => onOpenProfile(partnerUid)}
               title={`View ${title}`}
               aria-label={`View ${title}`}
-              className="shrink-0 rounded-xl transition-transform duration-200 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              className="relative shrink-0 rounded-xl transition-transform duration-200 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
-              <UserAvatar size="sm" name={title} photoURL={partner?.photoURL} />
+              <UserAvatar size="lg" name={title} photoURL={partner?.photoURL} />
+              {partnerTone && (
+                <span
+                  className={cn(
+                    "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-surface-card",
+                    partnerTone
+                  )}
+                />
+              )}
             </button>
           ) : (
-            <UserAvatar size="sm" name={title} photoURL={partner?.photoURL} />
+            <UserAvatar size="lg" name={title} photoURL={partner?.photoURL} />
           )
         ) : (
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-control shadow-card ring-1 ring-line/[0.06]">
+          <span
+            className={cn(
+              "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-card ring-1 ring-line/[0.06]",
+              conversation?.type === "townhall"
+                ? "bg-orbit-amber/10 ring-orbit-amber/20"
+                : "bg-surface-control"
+            )}
+          >
             {conversation?.type === "group" ? (
-              <Users className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
+              <Users className="h-4 w-4 text-ink-muted" aria-hidden />
             ) : (
-              <Megaphone className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
+              <Megaphone className="h-4 w-4 text-orbit-amber" aria-hidden />
             )}
           </span>
         )}
 
         <ThreadHeading title={title} subtitle={subtitle} />
+
+        {/* A room is two people, so this is offered in a dm and nowhere
+            else. Disabled with a reason rather than hidden, the same
+            bargain the Personnel Network makes. */}
+        {conversation?.type === "dm" && partnerUid && onCall && (
+          <button
+            type="button"
+            disabled={callBlocked}
+            title={callReason}
+            aria-label={callReason}
+            onClick={() =>
+              onCall({
+                uid: partnerUid,
+                name: title,
+                photoURL: partner?.photoURL,
+              })
+            }
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-control text-ink-muted ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <Phone className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        )}
 
         {/* A group's members, each a way into their card. */}
         {conversation?.type === "group" && onOpenProfile && (
@@ -511,11 +567,9 @@ export function MessageThread({
 function ThreadHeading({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="min-w-0 flex-1">
-      <h1 className="truncate text-[14px] font-medium tracking-tight text-ink">{title}</h1>
+      <h1 className="truncate text-[15px] font-medium tracking-tight text-ink-strong">{title}</h1>
       {subtitle && (
-        <p className="truncate font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim">
-          {subtitle}
-        </p>
+        <p className="mt-0.5 truncate text-[11px] text-ink-dim">{subtitle}</p>
       )}
     </div>
   );

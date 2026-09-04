@@ -4,6 +4,7 @@ import { Bell, Mail } from "lucide-react";
 
 import { User } from "@/types/auth";
 import { usePreferences } from "@/hooks/use-preferences";
+import { playMessageChime } from "@/lib/messages/chime";
 import {
   DashboardCard,
   CardHeader,
@@ -93,6 +94,19 @@ export function NotificationsSection({ user }: { user: User }) {
             onChange={(next) => update({ messageSounds: next })}
           />
         </SettingsList>
+
+        {/* A gesture and a check in one. Pressing it is exactly the
+            interaction a browser requires before it will let the page
+            make a sound, so it both proves the chime works and unblocks
+            it for the rest of the session. If this is audible and a real
+            message is not, the fault is in the notifier, not in audio. */}
+        <button
+          type="button"
+          onClick={playMessageChime}
+          className="mt-4 self-start rounded-lg border border-line/[0.06] bg-surface-control px-3 py-2 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
+        >
+          Play test sound
+        </button>
       </DashboardCard>
     </div>
   );

@@ -12,6 +12,7 @@ import { getOrCreateDmAction, getOrCreateTownHallAction } from "@/app/actions/me
 import { MessageThread } from "@/components/messages/message-thread";
 import { CreateGroupDialog } from "@/components/messages/create-group-dialog";
 import { MemberProfile } from "@/components/members/member-profile";
+import { OutgoingCall } from "@/components/calls/outgoing-call";
 import {
   ConversationList,
   type ConversationTab,
@@ -70,6 +71,13 @@ function MessagesScreen() {
   const [opening, setOpening] = useState<string | null>(null);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [profileUid, setProfileUid] = useState<string | null>(null);
+  /* Who this operative is ringing. One at a time — placing a second call
+     while the first is connecting has no meaning. */
+  const [calling, setCalling] = useState<{
+    uid: string;
+    name: string;
+    photoURL?: string | null;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -268,6 +276,7 @@ function MessagesScreen() {
               fallbackTitle={selectedId === townHallId ? TOWN_HALL_NAME : "Conversation"}
               subtitle={subtitleFor(active)}
               onOpenProfile={setProfileUid}
+              onCall={setCalling}
             />
           </div>
         </div>
@@ -290,6 +299,8 @@ function MessagesScreen() {
             : null
         }
       />
+
+      {calling && <OutgoingCall target={calling} onClose={() => setCalling(null)} />}
 
       <CreateGroupDialog
         open={createGroupOpen}

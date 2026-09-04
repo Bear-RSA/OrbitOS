@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
-import { playMessageChime } from "@/lib/messages/chime";
+import { playMessageChime, primeMessageChime } from "@/lib/messages/chime";
 
 /* ------------------------------------------------------------------ */
 /*  Message notifier                                                   */
@@ -44,6 +44,20 @@ export function MessageNotifier() {
       0
     );
   }, [unread]);
+
+  /* Open the audio context on the first real interaction of the session.
+     A browser will not let a page start audio it was not asked for, and
+     the moment a message lands is not a gesture — so without this, the
+     very tab you are watching while you test stays silent. */
+  useEffect(() => {
+    const prime = () => primeMessageChime();
+    window.addEventListener("pointerdown", prime, { once: true });
+    window.addEventListener("keydown", prime, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", prime);
+      window.removeEventListener("keydown", prime);
+    };
+  }, []);
 
   /* Reset when the account changes, so signing in as somebody else does
      not inherit the previous person's baseline. */

@@ -7,20 +7,39 @@
 /*  bad connection is a notification that silently stops working. Two  */
 /*  oscillators cost nothing, are instant, and work offline.           */
 /*                                                                     */
-/*  It is also quiet on purpose: a rising minor third at low gain,     */
-/*  ~200ms all in. This fires while somebody is working, possibly in a */
-/*  room with other people, and an alarming sound is one people turn   */
-/*  off — after which they hear nothing at all.                        */
+/*  TWO THINGS MAKE A CHIME LIKE THIS INAUDIBLE, and the first build   */
+/*  of this file had both.                                             */
+/*                                                                     */
+/*  The first is the autoplay gate. Every current browser starts an    */
+/*  AudioContext SUSPENDED unless it was created while the page held a */
+/*  user activation. Created lazily at the moment a message lands —    */
+/*  which is by definition not a gesture — it starts suspended, and on */
+/*  a tab the user has not clicked in, `resume()` is refused. That is  */
+/*  exactly the tab you are watching when you send yourself a test     */
+/*  message from another window. `primeMessageChime` exists to close   */
+/*  that hole: the context is opened on the first real interaction, so */
+/*  it is awake long before anything needs to be heard.                */
+/*                                                                     */
+/*  The second is simply level. The first version peaked at 0.06 for   */
+/*  90ms, which measures as a sound and does not register as one next  */
+/*  to a fan or a room.                                                */
 /* ------------------------------------------------------------------ */
 
-/** A4 and C#6 — a rising third, which reads as "arrived", not "wrong". */
+/** A5 then C#6 — a rising third, which reads as "arrived", not "wrong". */
 const NOTES = [880, 1108.73];
 
-const NOTE_MS = 90;
-const GAP_MS = 60;
+const NOTE_MS = 140;
+const GAP_MS = 70;
 
-/** Well below anything that would startle. */
-const PEAK_GAIN = 0.06;
+/**
+ * Peak amplitude per note.
+ *
+ * Audible across a room at a normal system volume, still well under
+ * anything that would make somebody jump. It fires while people are
+ * working, and an alarming sound is one they turn off — after which
+ * they hear nothing at all.
+ */
+const PEAK_GAIN = 0.22;
 
 /**
  * One AudioContext for the tab.
@@ -44,6 +63,19 @@ function audioContext(): AudioContext | null {
   return context;
 }
 
+/**
+ * Opens the audio context while a user gesture is in flight.
+ *
+ * Call from a real interaction — a click, a keypress. Cheap, idempotent,
+ * and the difference between a chime that works and one that is refused
+ * by the browser without saying so.
+ */
+export function primeMessageChime(): void {
+  const ctx = audioContext();
+  if (!ctx || ctx.state !== "suspended") return;
+  void ctx.resume().catch(() => {});
+}
+
 function tone(ctx: AudioContext, frequency: number, startAt: number): void {
   const oscillator = ctx.createOscillator();
   const gain = ctx.createGain();
@@ -55,8 +87,8 @@ function tone(ctx: AudioContext, frequency: number, startAt: number): void {
      an audible click at the boundary, which is the part that sounds
      cheap. */
   const end = startAt + NOTE_MS / 1000;
-  gain.gain.setValueAtTime(0, startAt);
-  gain.gain.linearRampToValueAtTime(PEAK_GAIN, startAt + 0.012);
+  gain.gain.setValueAtTime(0.0001, startAt);
+  gain.gain.linearRampToValueAtTime(PEAK_GAIN, startAt + 0.015);
   gain.gain.exponentialRampToValueAtTime(0.0001, end);
 
   oscillator.connect(gain).connect(ctx.destination);
@@ -64,34 +96,40 @@ function tone(ctx: AudioContext, frequency: number, startAt: number): void {
   oscillator.stop(end + 0.02);
 }
 
+function ring(ctx: AudioContext): void {
+  const now = ctx.currentTime;
+  NOTES.forEach((frequency, index) => {
+    tone(ctx, frequency, now + (index * (NOTE_MS + GAP_MS)) / 1000);
+  });
+}
+
 /**
- * Plays the arrival chime. Never throws and never blocks.
+ * Plays the arrival chime. Never throws.
  *
- * Audio is gated behind a user gesture in every current browser. A
- * signed-in user has clicked plenty, so the context is normally allowed
- * to resume — but on a tab restored from history it may not be, and a
- * notification sound is not worth an unhandled rejection. Silence is the
- * correct failure here.
+ * When the browser refuses — a tab restored from history that has never
+ * been clicked — it says so once in the console rather than failing
+ * silently. A notification you cannot hear and cannot diagnose is worse
+ * than one that is simply off.
  */
 export function playMessageChime(): void {
   const ctx = audioContext();
   if (!ctx) return;
 
-  const start = () => {
-    const now = ctx.currentTime;
-    NOTES.forEach((frequency, index) => {
-      tone(ctx, frequency, now + (index * (NOTE_MS + GAP_MS)) / 1000);
-    });
-  };
-
   if (ctx.state === "suspended") {
-    void ctx.resume().then(start).catch(() => {});
+    void ctx
+      .resume()
+      .then(() => ring(ctx))
+      .catch(() => {
+        console.warn(
+          "[Chime] Browser refused to start audio — the tab has not been interacted with yet."
+        );
+      });
     return;
   }
 
   try {
-    start();
-  } catch {
-    /* An oscillator that would not start is not worth a broken render. */
+    ring(ctx);
+  } catch (err) {
+    console.warn("[Chime] Could not play:", err);
   }
 }

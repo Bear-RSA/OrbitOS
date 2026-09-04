@@ -91,6 +91,15 @@ export function MessagesMenu({ uid, orgId, members, onOpen }: MessagesMenuProps)
   const directory = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
 
   const toggle = useCallback(() => {
+    /* Nothing waiting means there is nothing to show, and a panel that
+       opens only to say "nothing unread" is a tap the reader has to
+       spend before getting where they were going. With an empty queue
+       the button is simply the way into Messages. */
+    if (unread.length === 0) {
+      onOpen();
+      return;
+    }
+
     setOpen((wasOpen) => {
       const next = !wasOpen;
       /* Opening the panel IS being told. The mark is taken from the
@@ -102,7 +111,7 @@ export function MessagesMenu({ uid, orgId, members, onOpen }: MessagesMenuProps)
       }
       return next;
     });
-  }, [newestUnread]);
+  }, [unread.length, newestUnread, onOpen]);
 
   /* Click-away and Escape. Bound only while open, so the dashboard is
      not carrying two document listeners it does not need. */
