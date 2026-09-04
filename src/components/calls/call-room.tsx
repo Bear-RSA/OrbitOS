@@ -34,32 +34,65 @@ interface CallRoomProps {
 /* ------------------------------------------------------------------ */
 /*  Prebuilt theme                                                     */
 /*                                                                     */
-/*  The hex here mirrors the dark tokens in `globals.css` — this is    */
-/*  the one place Daily's UI is painted, and it has to read as part of */
-/*  the app rather than a third-party iframe dropped into it. Kept as  */
-/*  the DARK palette on purpose regardless of the app's light/dark     */
-/*  setting: the call always floats over a `bg-scrim/95` overlay, so a */
-/*  light room would clash with the dark chrome framing it.            */
+/*  Daily is the one surface in the product painted by someone else,   */
+/*  so its palette is READ from the live theme tokens rather than      */
+/*  restated here. A second copy of the palette would be a second      */
+/*  thing to remember when `globals.css` changes, and the copy is what */
+/*  would rot.                                                         */
 /*                                                                     */
-/*  `accent` is the app's near-white ink fill, not a colour, because   */
-/*  the product's primary actions are monochrome and the call should   */
-/*  not be the one screen shouting in green. orbit-red still lands on  */
-/*  the leave button, which Daily paints itself.                       */
+/*  Reading computed values also settles the three-way theme setting   */
+/*  for free: `dark`, `light` and `system` all resolve to real numbers */
+/*  on the root element, so this never has to know which is in force.  */
+/*  Daily can key its own theme off `prefers-color-scheme`, but that   */
+/*  is the OS asking — a user who picked light while their OS is dark  */
+/*  would get a room that disagrees with the app around it.            */
+/*                                                                     */
+/*  `accent` is the app's ink fill rather than a colour, because the   */
+/*  product's primary actions are monochrome in both themes and the    */
+/*  call should not be the one screen shouting. orbit-red still lands  */
+/*  on the leave button, which Daily paints itself.                    */
 /* ------------------------------------------------------------------ */
-const DAILY_THEME = {
-  colors: {
-    accent: "#EDEDED", // --ink
-    accentText: "#0B0B0B", // text on an ink fill
-    background: "#050505", // --base
-    backgroundAccent: "#141414", // --surface-control
-    baseText: "#EDEDED", // --ink
-    border: "#1E1E1E", // --surface-hover, as a hairline
-    mainAreaBg: "#0B0B0B", // --surface-card
-    mainAreaBgAccent: "#141414", // --surface-control
-    mainAreaText: "#EDEDED", // --ink
-    supportiveText: "#7E7E7E", // --ink-dim
-  },
-} as const;
+
+/** `"5 5 5"` — the channel triplet Tailwind's tokens hold — to `#050505`. */
+function channelsToHex(raw: string, fallback: string): string {
+  const parts = raw.trim().split(/[\s,/]+/).slice(0, 3).map(Number);
+  if (parts.length < 3 || parts.some((n) => !Number.isFinite(n))) return fallback;
+
+  return `#${parts
+    .map((n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+/**
+ * The app's palette, as Daily wants it.
+ *
+ * Fallbacks are the dark values: if a token is ever renamed the room
+ * lands on the original design rather than on Daily's stock blue, which
+ * is the same bargain the `:root` block in `globals.css` makes.
+ */
+function readDailyTheme() {
+  const root = getComputedStyle(document.documentElement);
+  const token = (name: string, fallback: string) =>
+    channelsToHex(root.getPropertyValue(name), fallback);
+
+  const ink = token("--ink", "#EDEDED");
+  const control = token("--surface-control", "#141414");
+
+  return {
+    colors: {
+      accent: ink,
+      accentText: token("--on-ink", "#0B0B0B"),
+      background: token("--base", "#050505"),
+      backgroundAccent: control,
+      baseText: ink,
+      border: token("--surface-hover", "#1E1E1E"),
+      mainAreaBg: token("--surface-card", "#0B0B0B"),
+      mainAreaBgAccent: control,
+      mainAreaText: ink,
+      supportiveText: token("--ink-dim", "#7E7E7E"),
+    },
+  };
+}
 
 export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -91,6 +124,7 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
 
     let cancelled = false;
     let frame: any = null;
+    let stopWatchingTheme: (() => void) | null = null;
 
     (async () => {
       try {
@@ -113,8 +147,37 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
           },
           showLeaveButton: true,
           showFullscreenButton: true,
-          theme: DAILY_THEME,
+          theme: readDailyTheme(),
         });
+
+        /* Follow the theme for as long as the room is open. Someone
+           flipping to light mid-call should not be left with a dark room,
+           and `system` can change under us without anyone touching the
+           app at all — so both the attribute and the OS query are
+           watched. Repainting is cheap and does not disturb the call. */
+        const repaint = () => {
+          try {
+            frame?.setTheme?.(readDailyTheme());
+          } catch {
+            /* A provider that cannot repaint is not a reason to drop a
+               call in progress; the room simply keeps the palette it
+               opened with. */
+          }
+        };
+
+        const themeAttr = new MutationObserver(repaint);
+        themeAttr.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["data-theme"],
+        });
+
+        const osTheme = window.matchMedia("(prefers-color-scheme: light)");
+        osTheme.addEventListener("change", repaint);
+
+        stopWatchingTheme = () => {
+          themeAttr.disconnect();
+          osTheme.removeEventListener("change", repaint);
+        };
 
         /* Daily Prebuilt renders its own loader and prejoin screen, so our
            overlay has to step aside the moment that UI is up — not when
@@ -150,6 +213,7 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
 
     return () => {
       cancelled = true;
+      stopWatchingTheme?.();
       // Destroy, never just leave: a surviving iframe keeps the mic open.
       frame?.destroy?.();
     };

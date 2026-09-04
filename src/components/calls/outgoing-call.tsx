@@ -120,7 +120,7 @@ export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
 
   if (grant) {
     return (
-      <div className="fixed inset-0 z-[60] flex flex-col bg-scrim/95 p-4 backdrop-blur-xl">
+      <div className="fixed inset-0 z-[60] flex flex-col bg-base/95 p-4 backdrop-blur-xl">
         <div className="mb-3 flex items-center justify-between">
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
             In a call with {target.name}
