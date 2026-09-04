@@ -9,6 +9,7 @@ import { OutgoingCall } from "@/components/calls/outgoing-call";
 import { getTasksByOrg } from "@/lib/queries/tasks";
 import { getEventsInRange } from "@/lib/queries/events";
 import { sharedEngagements, workloadFor } from "@/lib/members/profile";
+import { presenceTone, resolvePresence } from "@/lib/members/presence";
 import { engagementPresenceByMember } from "@/lib/calendar/presence";
 import { cn } from "@/lib/utils/classnames";
 import type { Member } from "@/types/member";
@@ -146,14 +147,15 @@ export function MemberProfile({
     ) : null;
   }
 
-  const status = presence ? presence.label : (member.operationalStatus ?? "available");
-  const statusTone = presence
-    ? "bg-orbit-amber"
-    : member.operationalStatus === "offline"
-      ? "bg-orbit-red"
-      : member.operationalStatus === "focused"
-        ? "bg-ink"
-        : "bg-orbit-green";
+  /* From the heartbeat, not the stored status — see `lib/members/
+     presence`. A live engagement still outranks both. */
+  const heartbeat = resolvePresence({
+    operationalStatus: member.operationalStatus,
+    lastActivityMs: member.lastActivity?.toMillis?.() ?? null,
+  });
+
+  const status = presence ? presence.label : heartbeat;
+  const statusTone = presence ? "bg-orbit-amber" : presenceTone(heartbeat);
 
   const descriptor =
     member.roleDescriptor || (member.role === "OWNER" ? "Owner" : "Member");
@@ -161,13 +163,12 @@ export function MemberProfile({
   /* Calling yourself is not a thing, and someone already in a meeting is
      reachable but probably should not be rung — so the button stays,
      disabled, and says why. Same philosophy as the Personnel Network. */
-  const callBlocked =
-    isSelf || Boolean(presence) || member.operationalStatus === "offline";
+  const callBlocked = isSelf || Boolean(presence) || heartbeat === "offline";
   const callReason = isSelf
     ? "This is you"
     : presence
       ? `${member.name} is ${presence.label}`
-      : member.operationalStatus === "offline"
+      : heartbeat === "offline"
         ? `${member.name} is offline`
         : `Call ${member.name}`;
 

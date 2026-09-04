@@ -91,6 +91,8 @@ export default function TeamsPage() {
   const { user, loading: authLoading } = useAuth();
   const [dataLoading, setDataLoading] = useState(true);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  // Seat controls are owner-only; createInviteAction re-checks server-side.
+  const isOwner = user?.role === "OWNER";
   const [profileOpen, setProfileOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -153,6 +155,7 @@ export default function TeamsPage() {
             <RefreshCw className="w-4 h-4" />
           </button>
 
+          {isOwner && (
           <button
             onClick={() => setAddMemberOpen(true)}
             className="gap-2.5 hidden sm:flex items-center justify-center bg-ink hover:bg-ink-strong hover:-translate-y-[2px] text-on-ink shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06),0_8px_24px_rgb(var(--scrim)_/_0.3)] hover:shadow-[0_4px_20px_rgb(var(--ink-strong)_/_0.12),0_12px_32px_rgb(var(--scrim)_/_0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-lg px-6 h-10 text-[13px] font-bold tracking-tight focus:outline-none ring-0"
@@ -160,6 +163,7 @@ export default function TeamsPage() {
             <UserPlus className="w-4 h-4" />
             Invite Member
           </button>
+          )}
 
           <button
             onClick={() => router.push("/profile")}
@@ -308,12 +312,14 @@ export default function TeamsPage() {
         onOpenChange={setProfileOpen}
         user={currentMember}
       />
+      {isOwner && (
       <AddMemberDialog
         open={addMemberOpen}
         onOpenChange={setAddMemberOpen}
         orgId={user.orgId || ""}
         invitedBy={user.id}
       />
+      )}
     </DashboardShell>
   );
 }

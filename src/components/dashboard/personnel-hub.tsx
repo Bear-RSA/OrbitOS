@@ -7,6 +7,7 @@ import { Member } from "@/types/member";
 import { Task } from "@/types/task";
 import { OrbitEvent } from "@/types/event";
 import { engagementPresenceByMember } from "@/lib/calendar/presence";
+import { resolvePresence } from "@/lib/members/presence";
 import { Loader2, Phone } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
@@ -73,13 +74,19 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
     let loadPercent = Math.round((count / MAX_SYSTEM_LOAD) * 100);
     if (loadPercent > 100) loadPercent = 100;
 
-    // Heartbeat logic: 5 minute threshold
-    let status = member.operationalStatus || "available";
-    if (member.lastActivity) {
-      const last = member.lastActivity.toDate().getTime();
-      const diffMins = (now - last) / (1000 * 60);
-      if (diffMins > 5) status = "offline";
-    }
+    /* Was inline here, and had a hole: a member with NO heartbeat at all
+       fell through to `operationalStatus || "available"` and showed
+       green forever — somebody invited but never seen, or an account
+       predating heartbeats, read as if they were at their desk. The
+       shared rule in `lib/members/presence` treats no pulse as offline,
+       and every other surface now asks it the same question. */
+    const status = resolvePresence(
+      {
+        operationalStatus: member.operationalStatus,
+        lastActivityMs: member.lastActivity?.toMillis?.() ?? null,
+      },
+      now
+    );
 
     return {
       id: member.id,

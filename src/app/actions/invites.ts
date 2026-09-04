@@ -7,7 +7,7 @@ import { getAppUrl } from "@/lib/utils/getAppUrl";
 import { sendInviteEmail } from "@/lib/email/sendInviteEmail";
 import { nanoid } from "@/lib/utils/nanoid";
 import { logActivity } from "@/lib/telemetry";
-import { validateTierQuota } from "@/lib/auth/permissions";
+import { validateOwner, validateTierQuota } from "@/lib/auth/permissions";
 
 /* ------------------------------------------------------------------ */
 /*  Create Invite — server action                                     */
@@ -37,6 +37,17 @@ export async function createInviteAction(
 ): Promise<CreateInviteResult> {
   try {
     const email = payload.email.toLowerCase().trim();
+
+    /* Only the owner adds seats. This used to lean on the invite dialog
+       being mounted for owners alone; the roster grid is now visible to
+       members too, so the rule is checked where it can be trusted. */
+    const authStatus = await validateOwner(payload.invitedBy);
+    if (!authStatus.isOwner) {
+      return { success: false, error: authStatus.error ?? "Unauthorized. Requires OWNER clearance." };
+    }
+    if (authStatus.orgId !== payload.orgId) {
+      return { success: false, error: "You can only invite operators to your own workspace." };
+    }
 
     // Enforce tier seat limit before proceeding
     const quota = await validateTierQuota(payload.orgId, "members");

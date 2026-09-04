@@ -13,6 +13,10 @@ import { themeColor } from "@/lib/theme/colors";
 
 interface TeamWorkloadCardProps {
   memberWorkloads: MemberWorkload[];
+  /**
+   * Owner-only. Members are shown the same grid without it — and the card
+   * suppresses the control anyway if it is ever handed to a non-owner.
+   */
   onInviteClick?: () => void;
 }
 
@@ -29,6 +33,9 @@ export function TeamWorkloadCard({ memberWorkloads, onInviteClick }: TeamWorkloa
   const [revokeMode, setRevokeMode] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
 
+  /* The grid is visible to everyone in the org; only the owner gets the
+     seat controls. Both server actions behind them re-check the role, so
+     this is presentation, not the security boundary. */
   const currentUserWorkload = memberWorkloads.find(w => w.member.id === user?.id);
   const isOwner = currentUserWorkload?.member.role === "OWNER";
 
@@ -72,7 +79,7 @@ export function TeamWorkloadCard({ memberWorkloads, onInviteClick }: TeamWorkloa
         icon={Users}
         action={
           <div className="flex shrink-0 items-center gap-2">
-            {onInviteClick && (
+            {isOwner && onInviteClick && (
               <ActionButton icon={UserPlus} label="Invite Node" collapsed onClick={onInviteClick} />
             )}
             {isOwner && memberWorkloads.length > 1 && (

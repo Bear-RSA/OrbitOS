@@ -132,6 +132,9 @@ function assembleMemberDashboard(
   const myUrgencyBuckets = categorizeTasksByUrgency(myTasks);
   const urgencyBuckets = categorizeTasksByUrgency(tasks); // Org-wide — mirrors project task views
   const myWorkload = calculateMemberWorkload(member, tasks);
+  // Same roster the owner sees — read-only for members, who get no
+  // invite or revoke controls on the card.
+  const teamWorkload = members.map(m => calculateMemberWorkload(m, tasks));
 
   return {
     role: "MEMBER",
@@ -141,6 +144,7 @@ function assembleMemberDashboard(
     myUrgencyBuckets,
     urgencyBuckets,
     myWorkload,
+    teamWorkload,
     recentActivity: []
   };
 }

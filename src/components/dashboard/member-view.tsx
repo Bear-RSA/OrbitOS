@@ -4,6 +4,7 @@ import { MemberDashboardData } from "@/types/dashboard";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { MemberPersonalMetricsCard } from "./member-personal-metrics-card";
 import { UrgencyBucketsCard } from "./urgency-buckets-card";
+import { TeamWorkloadCard } from "./team-workload-card";
 import { WorkspaceProjects } from "./workspace-projects";
 import { Member } from "@/types/member";
 import { Task } from "@/types/task";
@@ -32,6 +33,12 @@ export function MemberDashboardView({ data, members, tasks, orgId, userId, onRef
       {/* Personal Urgency Layer */}
       <ScrollReveal delay={100}>
         <UrgencyBucketsCard buckets={data.urgencyBuckets} projects={data.myProjects} />
+      </ScrollReveal>
+
+      {/* Team Load Grid — read-only here. No onInviteClick is passed and
+          the card hides its revoke control for anyone but the owner. */}
+      <ScrollReveal delay={160}>
+        <TeamWorkloadCard memberWorkloads={data.teamWorkload} />
       </ScrollReveal>
 
       {/* Personal Task Queue */}

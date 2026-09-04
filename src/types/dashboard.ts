@@ -79,6 +79,12 @@ export interface MemberDashboardData {
   /** Org-wide urgency buckets — mirrors the project-level task views */
   urgencyBuckets: UrgencyBuckets;
   myWorkload: MemberWorkload;
+  /**
+   * Every operator in the org, same shape the owner gets. Members can see
+   * who else is on the roster and how loaded they are; adding and revoking
+   * seats stays owner-only, enforced in the server actions.
+   */
+  teamWorkload: MemberWorkload[];
   recentActivity: ActivityFeedItem[];
 }
 

@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { Megaphone, Plus, Search, Users, X } from "lucide-react";
 import { conversationTitle, conversationUnread } from "@/lib/messages/summary";
+import { presenceTone, resolvePresence } from "@/lib/members/presence";
+import { useNow } from "@/hooks/use-now";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils/classnames";
 import { TOWN_HALL_NAME, type Conversation } from "@/types/message";
@@ -53,19 +55,6 @@ interface ConversationListProps {
   onCreateGroup: () => void;
 }
 
-/** Presence as a colour, matching the Personnel Network's vocabulary. */
-function presenceTone(member?: Member): string | null {
-  if (!member) return null;
-  switch (member.operationalStatus) {
-    case "offline":
-      return "bg-ink-faint";
-    case "focused":
-      return "bg-orbit-amber";
-    default:
-      return "bg-orbit-green";
-  }
-}
-
 export function ConversationList({
   viewerUid,
   members,
@@ -83,6 +72,23 @@ export function ConversationList({
   onCreateGroup,
 }: ConversationListProps) {
   const [search, setSearch] = useState("");
+
+  /* Presence expires on its own, so it needs a clock rather than a
+     re-render from somewhere else. */
+  const now = useNow();
+
+  const toneFor = (member?: Member): string | null =>
+    member
+      ? presenceTone(
+          resolvePresence(
+            {
+              operationalStatus: member.operationalStatus,
+              lastActivityMs: member.lastActivity?.toMillis?.() ?? null,
+            },
+            now
+          )
+        )
+      : null;
 
   const liveNames = useMemo(
     () => Object.fromEntries(members.map((m) => [m.id, m.name])),
@@ -224,7 +230,7 @@ export function ConversationList({
                       unread={conversationUnread(conversation, viewerUid)}
                       onClick={() => onSelect(conversation.id)}
                       avatar={{ name: title, photoURL: partner?.photoURL }}
-                      presence={presenceTone(partner)}
+                      presence={toneFor(partner)}
                       onAvatarClick={
                         partnerUid ? () => onOpenProfile(partnerUid) : undefined
                       }
@@ -268,7 +274,7 @@ export function ConversationList({
                   onClick={() => onOpenDm(member.id)}
                   onAvatarClick={() => onOpenProfile(member.id)}
                   avatar={{ name: member.name, photoURL: member.photoURL }}
-                  presence={presenceTone(member)}
+                  presence={toneFor(member)}
                 />
               ))}
             </Section>

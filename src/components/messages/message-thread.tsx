@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format, isSameDay, isToday, isYesterday } from "date-fns";
-import { Lock, Megaphone, MessagesSquare, Phone, SendHorizonal, Users } from "lucide-react";
+import {
+  Lock,
+  Megaphone,
+  MessagesSquare,
+  Phone,
+  SendHorizonal,
+  Smile,
+  Users,
+} from "lucide-react";
+import { EmojiPicker } from "@/components/messages/emoji-picker";
+import { emojiOnlyCount } from "@/lib/messages/emoji";
 import {
   MESSAGE_PAGE_SIZE,
   loadOlderMessages,
@@ -12,6 +22,8 @@ import {
 } from "@/lib/queries/messages";
 import { canPostToConversation } from "@/lib/messages/access";
 import { conversationTitle } from "@/lib/messages/summary";
+import { presenceTone, resolvePresence } from "@/lib/members/presence";
+import { useNow } from "@/hooks/use-now";
 import { MAX_MESSAGE_LENGTH } from "@/lib/validations/messages";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils/classnames";
@@ -88,10 +100,15 @@ export function MessageThread({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emojiOpen, setEmojiOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const conversationId = conversation?.id ?? null;
+
+  /* Presence goes stale on its own; without a clock the dot would only
+     update when something unrelated re-rendered this. */
+  const now = useNow();
 
   const directory = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
   const liveNames = useMemo(
@@ -172,6 +189,31 @@ export function MessageThread({
     }
   }, [conversationId, messages, loadingOlder]);
 
+  /* Inserted at the caret, not appended. Somebody who moved back to fix
+     a word and then reached for the picker means it to land where they
+     are looking, and the selection is restored after it so typing
+     continues from the right place. */
+  const insertEmoji = useCallback((emoji: string) => {
+    const el = composerRef.current;
+
+    setDraft((current) => {
+      const start = el?.selectionStart ?? current.length;
+      const end = el?.selectionEnd ?? current.length;
+      const next = current.slice(0, start) + emoji + current.slice(end);
+
+      /* After React has written the new value — setting it now would be
+         overwritten by the re-render. */
+      queueMicrotask(() => {
+        if (!el) return;
+        const caret = start + emoji.length;
+        el.focus();
+        el.setSelectionRange(caret, caret);
+      });
+
+      return next;
+    });
+  }, []);
+
   const send = useCallback(async () => {
     const text = draft.trim();
     if (!conversationId || !text || sending || !mayPost) return;
@@ -205,17 +247,24 @@ export function MessageThread({
   const placeholder =
     conversation?.type === "townhall" ? "Post a notice…" : `Message ${title}…`;
 
-  const partnerTone = partner
-    ? partner.operationalStatus === "offline"
-      ? "bg-ink-faint"
-      : partner.operationalStatus === "focused"
-        ? "bg-orbit-amber"
-        : "bg-orbit-green"
+  /* Derived from the heartbeat, not from the stored status — see
+     `lib/members/presence`. The same call every other surface makes, so
+     a person cannot read as available here and offline in the rail. */
+  const partnerPresence = partner
+    ? resolvePresence(
+        {
+          operationalStatus: partner.operationalStatus,
+          lastActivityMs: partner.lastActivity?.toMillis?.() ?? null,
+        },
+        now
+      )
     : null;
 
-  /* Ringing somebody who is heads-down or gone is worse than waiting, so
-     the button stays and says why. */
-  const callBlocked = partner?.operationalStatus === "offline";
+  const partnerTone = partnerPresence ? presenceTone(partnerPresence) : null;
+
+  /* Ringing somebody who is gone is worse than waiting, so the button
+     stays and says why. */
+  const callBlocked = partnerPresence === "offline";
   const callReason = callBlocked ? `${title} is offline` : `Call ${title}`;
 
   /* A full first page means there is probably more behind it. */
@@ -450,6 +499,22 @@ export function MessageThread({
                           <p className="rounded-2xl border border-dashed border-line/[0.1] px-4 py-2.5 text-[13px] italic text-ink-dim">
                             Message withdrawn
                           </p>
+                        ) : emojiOnlyCount(message.text) > 0 ? (
+                          /* A lone 👍 is a gesture, not a sentence. At
+                             body size inside a bubble it reads as a
+                             typo; given room it reads as the answer it
+                             is. No bubble, because there is no text for
+                             one to contain. */
+                          <p
+                            className={cn(
+                              "px-1 leading-none",
+                              emojiOnlyCount(message.text) === 1
+                                ? "text-[40px]"
+                                : "text-[30px]"
+                            )}
+                          >
+                            {message.text}
+                          </p>
                         ) : (
                           <div
                             className={cn(
@@ -505,8 +570,32 @@ export function MessageThread({
               e.preventDefault();
               void send();
             }}
-            className="flex items-end gap-2 rounded-xl border border-line/[0.06] bg-surface-control p-1.5 shadow-card transition-colors focus-within:border-line/[0.12]"
+            className="relative flex items-end gap-2 rounded-xl border border-line/[0.06] bg-surface-control p-1.5 shadow-card transition-colors focus-within:border-line/[0.12]"
           >
+            {emojiOpen && (
+              <EmojiPicker
+                onSelect={insertEmoji}
+                onClose={() => setEmojiOpen(false)}
+              />
+            )}
+
+            <button
+              type="button"
+              onClick={() => setEmojiOpen((open) => !open)}
+              aria-label="Add an emoji"
+              aria-expanded={emojiOpen}
+              title="Add an emoji"
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                emojiOpen
+                  ? "bg-surface-hover text-ink"
+                  : "text-ink-faint hover:bg-surface-hover hover:text-ink"
+              )}
+            >
+              <Smile className="h-4 w-4" aria-hidden />
+            </button>
+
             <textarea
               ref={composerRef}
               value={draft}
