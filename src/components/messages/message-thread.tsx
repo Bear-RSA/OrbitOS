@@ -24,12 +24,16 @@ import type { Conversation, Message } from "@/types/message";
 /*  Header, scrollback, composer. It holds exactly one listener — the  */
 /*  open thread — and drops it when the conversation changes.          */
 /*                                                                     */
-/*  Laid out the way the brief asked for: everything left-aligned      */
-/*  under its author, the way Teams and Slack do it, rather than the   */
-/*  two-sided SMS arrangement. Your own messages are told apart by a   */
-/*  lighter rung on the surface ladder, not by which wall they sit     */
-/*  against — in a group, "who said this" matters more than "was it    */
-/*  me", and alternating sides makes a five-person thread zigzag.      */
+/*  Two-sided: your own messages on the right, everyone else's on the  */
+/*  left under their face. The single-column arrangement this replaced */
+/*  made a thread hard to skim — with every line in one column and     */
+/*  only a shade of grey separating them, you had to read a name to    */
+/*  know who was talking. Side carries that instantly, and the name is */
+/*  then only needed where it is genuinely ambiguous: a group.         */
+/*                                                                     */
+/*  The transcript is anchored to the BOTTOM. A short conversation     */
+/*  pinned to the top of a tall pane reads as an error state; chat     */
+/*  grows upward from the composer.                                    */
 /*                                                                     */
 /*  Sender names are resolved here from the member list the page       */
 /*  already holds, rather than read off the message. Nothing is stored */
@@ -55,6 +59,8 @@ interface MessageThreadProps {
   /** Shown while the conversation is still materializing. */
   fallbackTitle?: string;
   subtitle?: string;
+  /** Opens someone's profile card. Wired from the banner and every face. */
+  onOpenProfile?: (uid: string) => void;
 }
 
 /** "Today" and "Yesterday" beat a date somebody has to decode. */
@@ -70,6 +76,7 @@ export function MessageThread({
   members,
   fallbackTitle = "Conversation",
   subtitle,
+  onOpenProfile,
 }: MessageThreadProps) {
   const [live, setLive] = useState<Message[]>([]);
   const [older, setOlder] = useState<Message[]>([]);
@@ -202,26 +209,64 @@ export function MessageThread({
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-line/[0.06] bg-surface-card/40 shadow-raised ring-1 ring-line/5 backdrop-blur-sm">
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="flex shrink-0 items-center gap-3 border-b border-line/[0.05] bg-surface-card/60 px-5 py-3.5">
-        {conversation?.type === "dm" ? (
-          <UserAvatar size="sm" name={title} photoURL={partner?.photoURL} />
+        {/* In a dm the banner IS a person, so the whole strip opens their
+            card. A group and Town Hall are not one person, so the strip
+            stays inert and the faces below carry the affordance. */}
+        {conversation?.type === "dm" && partnerUid && onOpenProfile ? (
+          <button
+            type="button"
+            onClick={() => onOpenProfile(partnerUid)}
+            title={`View ${title}`}
+            className="-mx-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-1 text-left transition-colors hover:bg-surface-hover"
+          >
+            <UserAvatar size="sm" name={title} photoURL={partner?.photoURL} />
+            <ThreadHeading title={title} subtitle={subtitle} />
+          </button>
         ) : (
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-control shadow-card ring-1 ring-line/[0.06]">
-            {conversation?.type === "group" ? (
-              <Users className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
+          <>
+            {conversation?.type === "dm" ? (
+              <UserAvatar size="sm" name={title} photoURL={partner?.photoURL} />
             ) : (
-              <Megaphone className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-control shadow-card ring-1 ring-line/[0.06]">
+                {conversation?.type === "group" ? (
+                  <Users className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
+                ) : (
+                  <Megaphone className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
+                )}
+              </span>
             )}
-          </span>
+            <ThreadHeading title={title} subtitle={subtitle} />
+          </>
         )}
 
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[14px] font-medium tracking-tight text-ink">{title}</h1>
-          {subtitle && (
-            <p className="truncate font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim">
-              {subtitle}
-            </p>
-          )}
-        </div>
+        {/* A group's members, each a way into their card. */}
+        {conversation?.type === "group" && onOpenProfile && (
+          <div className="hidden shrink-0 items-center -space-x-2 sm:flex">
+            {(conversation.participantIds ?? []).slice(0, 5).map((id) => {
+              const person = directory.get(id);
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => onOpenProfile(id)}
+                  title={person?.name ?? "Operative"}
+                  className="rounded-lg ring-2 ring-surface-card transition-transform duration-200 hover:z-10 hover:-translate-y-0.5"
+                >
+                  <UserAvatar
+                    size="sm"
+                    name={person?.name ?? "?"}
+                    photoURL={person?.photoURL}
+                  />
+                </button>
+              );
+            })}
+            {(conversation.participantIds?.length ?? 0) > 5 && (
+              <span className="pl-3.5 font-mono text-[9px] tabular-nums text-ink-dim">
+                +{(conversation.participantIds?.length ?? 0) - 5}
+              </span>
+            )}
+          </div>
+        )}
 
         {conversation?.type === "townhall" && (
           <span className="hidden shrink-0 items-center gap-1.5 rounded-md bg-surface-control px-2 py-1 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim ring-1 ring-line/[0.06] sm:flex">
@@ -232,125 +277,165 @@ export function MessageThread({
       </header>
 
       {/* ── Transcript ─────────────────────────────────────────── */}
-      <div className="custom-scrollbar flex-1 overflow-y-auto px-5 py-6">
-        {mayHaveHistory && (
-          <div className="mb-6 flex items-center gap-3">
-            <span className="h-px flex-1 bg-line/[0.06]" />
-            <button
-              type="button"
-              onClick={loadEarlier}
-              disabled={loadingOlder}
-              className="rounded-full border border-line/[0.06] bg-surface-control px-3 py-1 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink disabled:opacity-40"
-            >
-              {loadingOlder ? "Loading…" : "Load earlier"}
-            </button>
-            <span className="h-px flex-1 bg-line/[0.06]" />
-          </div>
-        )}
+      <div className="custom-scrollbar flex-1 overflow-y-auto px-5 py-5">
+        {/* `min-h-full` + `justify-end` is what pins a short thread to
+            the composer instead of stranding it at the top. */}
+        <div className="flex min-h-full flex-col justify-end">
+          {mayHaveHistory && (
+            <div className="mb-6 flex items-center gap-3">
+              <span className="h-px flex-1 bg-line/[0.06]" />
+              <button
+                type="button"
+                onClick={loadEarlier}
+                disabled={loadingOlder}
+                className="rounded-full border border-line/[0.06] bg-surface-control px-3 py-1 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink disabled:opacity-40"
+              >
+                {loadingOlder ? "Loading…" : "Load earlier"}
+              </button>
+              <span className="h-px flex-1 bg-line/[0.06]" />
+            </div>
+          )}
 
-        {messages.length === 0 ? (
-          <EmptyThread type={conversation?.type} mayPost={mayPost} />
-        ) : (
-          <ol className="flex flex-col">
-            {messages.map((message, index) => {
-              const previous = messages[index - 1];
-              const sender = directory.get(message.senderId);
-              const sentAt = message.createdAt?.toDate?.() ?? null;
-              const previousAt = previous?.createdAt?.toDate?.() ?? null;
-              const mine = message.senderId === viewer.id;
+          {messages.length === 0 ? (
+            <EmptyThread type={conversation?.type} mayPost={mayPost} />
+          ) : (
+            <ol className="flex flex-col">
+              {messages.map((message, index) => {
+                const previous = messages[index - 1];
+                const sender = directory.get(message.senderId);
+                const sentAt = message.createdAt?.toDate?.() ?? null;
+                const previousAt = previous?.createdAt?.toDate?.() ?? null;
+                const mine = message.senderId === viewer.id;
 
-              /* A new day, or a new voice, gets a heading. Consecutive
-                 lines from one person are one block — the name above
-                 every line makes a monologue unreadable. */
-              const newDay = Boolean(sentAt && (!previousAt || !isSameDay(sentAt, previousAt)));
-              const newSpeaker = newDay || previous?.senderId !== message.senderId;
+                /* A new day, or a new voice, starts a block. Consecutive
+                   lines from one person are one block — a name and a
+                   timestamp above every line makes a monologue
+                   unreadable. */
+                const newDay = Boolean(
+                  sentAt && (!previousAt || !isSameDay(sentAt, previousAt))
+                );
+                const newSpeaker = newDay || previous?.senderId !== message.senderId;
 
-              return (
-                <li key={message.id} className={message.id ? "stream-in" : undefined}>
-                  {newDay && sentAt && (
-                    <div className="my-6 flex items-center gap-3 first:mt-0">
-                      <span className="h-px flex-1 bg-line/[0.06]" />
-                      <span className="rounded-full bg-surface-control px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim ring-1 ring-line/[0.05]">
-                        {dayLabel(sentAt)}
-                      </span>
-                      <span className="h-px flex-1 bg-line/[0.06]" />
-                    </div>
-                  )}
+                /* In a dm the header already names the other person, so
+                   repeating it over every block is noise. A group is
+                   where the name earns its place. */
+                const showName = newSpeaker && !mine && conversation?.type !== "dm";
 
-                  <div className={cn("group/msg flex gap-3", newSpeaker ? "mt-5" : "mt-1")}>
-                    <div className="w-8 shrink-0">
-                      {newSpeaker ? (
-                        <UserAvatar
-                          size="sm"
-                          name={sender?.name ?? "Unknown operative"}
-                          photoURL={sender?.photoURL}
-                        />
-                      ) : (
-                        /* The timestamp takes the avatar's place on hover,
-                           so a grouped line can still be placed in time
-                           without a stamp on every row. */
-                        sentAt && (
-                          <span className="flex h-full items-start justify-end pr-0.5 pt-1 font-mono text-[9px] tabular-nums text-ink-faint opacity-0 transition-opacity group-hover/msg:opacity-100">
-                            {format(sentAt, "HH:mm")}
-                          </span>
-                        )
+                return (
+                  <li key={message.id} className="stream-in">
+                    {newDay && sentAt && (
+                      <div className="my-5 flex items-center gap-3 first:mt-0">
+                        <span className="h-px flex-1 bg-line/[0.06]" />
+                        <span className="rounded-full bg-surface-control px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim ring-1 ring-line/[0.05]">
+                          {dayLabel(sentAt)}
+                        </span>
+                        <span className="h-px flex-1 bg-line/[0.06]" />
+                      </div>
+                    )}
+
+                    <div
+                      className={cn(
+                        "flex gap-2.5",
+                        mine ? "flex-row-reverse" : "flex-row",
+                        newSpeaker ? "mt-4" : "mt-1"
                       )}
-                    </div>
+                    >
+                      {/* Reserved even when empty, so a block's second and
+                          third lines stay aligned under the first. */}
+                      <div className="w-8 shrink-0">
+                        {!mine &&
+                          newSpeaker &&
+                          (onOpenProfile ? (
+                            /* Most useful in a group or Town Hall, where
+                               the name above a message may belong to
+                               somebody you have not met. */
+                            <button
+                              type="button"
+                              onClick={() => onOpenProfile(message.senderId)}
+                              title={`View ${sender?.name ?? "operative"}`}
+                              className="rounded-lg transition-transform duration-200 hover:-translate-y-0.5"
+                            >
+                              <UserAvatar
+                                size="sm"
+                                name={sender?.name ?? "Unknown operative"}
+                                photoURL={sender?.photoURL}
+                              />
+                            </button>
+                          ) : (
+                            <UserAvatar
+                              size="sm"
+                              name={sender?.name ?? "Unknown operative"}
+                              photoURL={sender?.photoURL}
+                            />
+                          ))}
+                      </div>
 
-                    <div className="min-w-0 flex-1">
-                      {newSpeaker && (
-                        <div className="mb-1.5 flex items-baseline gap-2">
-                          <span className="text-[12px] font-medium tracking-tight text-ink-strong">
-                            {mine ? "You" : (sender?.name ?? "Unknown operative")}
-                          </span>
-                          {sentAt && (
-                            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim">
-                              {format(sentAt, "HH:mm")}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      <div
+                        className={cn(
+                          "flex min-w-0 flex-col",
+                          "max-w-[min(68%,40rem)]",
+                          mine ? "items-end" : "items-start"
+                        )}
+                      >
+                        {newSpeaker && (
+                          <div className="mb-1 flex items-baseline gap-2 px-1">
+                            {showName && (
+                              <span className="text-[12px] font-medium tracking-tight text-ink-strong">
+                                {sender?.name ?? "Unknown operative"}
+                              </span>
+                            )}
+                            {sentAt && (
+                              <span className="font-mono text-[9px] tabular-nums tracking-[0.12em] text-ink-dim">
+                                {format(sentAt, "HH:mm")}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
-                      {message.deletedAt ? (
-                        <p className="inline-block rounded-2xl border border-dashed border-line/[0.1] px-3.5 py-2 text-[13px] italic text-ink-dim">
-                          Message withdrawn
-                        </p>
-                      ) : (
-                        <div
-                          className={cn(
-                            "inline-block max-w-[46rem] rounded-2xl px-3.5 py-2.5 shadow-card ring-1 transition-colors",
-                            /* Own messages sit one rung higher on the
-                               surface ladder. Same shape, same side, a
-                               shade nearer the light. */
-                            mine
-                              ? "bg-surface-control ring-line/[0.07]"
-                              : "bg-surface-raised ring-line/[0.05]",
-                            newSpeaker && "rounded-tl-md"
-                          )}
-                        >
-                          <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ink">
-                            {message.text}
+                        {message.deletedAt ? (
+                          <p className="rounded-2xl border border-dashed border-line/[0.1] px-4 py-2.5 text-[13px] italic text-ink-dim">
+                            Message withdrawn
                           </p>
-                          {message.editedAt && (
-                            <span className="mt-1 block font-mono text-[9px] uppercase tracking-[0.15em] text-ink-faint">
-                              edited
-                            </span>
-                          )}
-                        </div>
-                      )}
+                        ) : (
+                          <div
+                            className={cn(
+                              "rounded-2xl px-4 py-2.5 shadow-card ring-1",
+                              /* Yours sits well up the surface ladder so
+                                 the two sides read apart at a glance, not
+                                 only on inspection. */
+                              mine
+                                ? "bg-surface-active ring-line/[0.08]"
+                                : "bg-surface-control ring-line/[0.06]",
+                              /* A squared corner on the side the block
+                                 comes from — the bubble points at its
+                                 author. */
+                              newSpeaker && (mine ? "rounded-tr-md" : "rounded-tl-md")
+                            )}
+                          >
+                            <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ink">
+                              {message.text}
+                            </p>
+                            {message.editedAt && (
+                              <span className="mt-1 block font-mono text-[9px] uppercase tracking-[0.15em] text-ink-faint">
+                                edited
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        )}
+                  </li>
+                );
+              })}
+            </ol>
+          )}
 
-        <div ref={bottomRef} />
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       {/* ── Composer ───────────────────────────────────────────── */}
-      <div className="shrink-0 border-t border-line/[0.05] bg-surface-card/60 p-4">
+      <div className="shrink-0 border-t border-line/[0.05] bg-surface-card/60 px-4 py-3">
         {error && (
           <p className="mb-2.5 rounded-lg bg-orbit-red/10 px-3 py-2 font-mono text-[11px] text-orbit-red ring-1 ring-orbit-red/20">
             {error}
@@ -383,7 +468,7 @@ export function MessageThread({
               placeholder={placeholder}
               aria-label="Message"
               disabled={sending || !conversation}
-              className="custom-scrollbar max-h-40 flex-1 resize-none bg-transparent px-2.5 py-2 text-[13px] leading-relaxed text-ink placeholder:text-ink-dim focus-visible:outline-none disabled:opacity-50"
+              className="custom-scrollbar max-h-40 flex-1 resize-none bg-transparent px-2.5 py-1.5 text-[13px] leading-relaxed text-ink placeholder:text-ink-dim focus-visible:outline-none disabled:opacity-50"
             />
             <button
               type="submit"
@@ -424,6 +509,19 @@ export function MessageThread({
 }
 
 /* ------------------------------------------------------------------ */
+
+function ThreadHeading({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="min-w-0 flex-1">
+      <h1 className="truncate text-[14px] font-medium tracking-tight text-ink">{title}</h1>
+      {subtitle && (
+        <p className="truncate font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim">
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
+}
 
 function EmptyThread({
   type,

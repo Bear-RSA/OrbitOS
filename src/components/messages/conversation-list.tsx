@@ -48,7 +48,10 @@ interface ConversationListProps {
   opening: string | null;
   onTabChange: (tab: ConversationTab) => void;
   onSelect: (conversationId: string) => void;
-  onOpenDm: (uid: string) => void;
+  /* People opens the person, not the thread. The dm is one button
+     away inside their card, alongside Call — which is the point: you
+     often want to know who somebody is before you write to them. */
+  onOpenPerson: (uid: string) => void;
   onCreateGroup: () => void;
 }
 
@@ -64,7 +67,7 @@ export function ConversationList({
   opening,
   onTabChange,
   onSelect,
-  onOpenDm,
+  onOpenPerson,
   onCreateGroup,
 }: ConversationListProps) {
   const liveNames = useMemo(
@@ -176,7 +179,7 @@ export function ConversationList({
                 selected={false}
                 unread={false}
                 busy={opening === member.id}
-                onClick={() => onOpenDm(member.id)}
+                onClick={() => onOpenPerson(member.id)}
                 avatar={{ name: member.name, photoURL: member.photoURL }}
               />
             </li>

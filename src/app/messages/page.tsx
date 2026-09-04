@@ -11,6 +11,7 @@ import { townHallConversationId } from "@/lib/messages/conversation-id";
 import { getOrCreateDmAction, getOrCreateTownHallAction } from "@/app/actions/messages";
 import { MessageThread } from "@/components/messages/message-thread";
 import { CreateGroupDialog } from "@/components/messages/create-group-dialog";
+import { MemberProfile } from "@/components/members/member-profile";
 import {
   ConversationList,
   type ConversationTab,
@@ -68,6 +69,7 @@ function MessagesScreen() {
   const [tab, setTab] = useState<ConversationTab>("chats");
   const [opening, setOpening] = useState<string | null>(null);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [profileUid, setProfileUid] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -237,7 +239,7 @@ function MessagesScreen() {
           opening={opening}
           onTabChange={setTab}
           onSelect={setSelectedId}
-          onOpenDm={(targetUid) => void openDm(targetUid)}
+          onOpenPerson={setProfileUid}
           onCreateGroup={() => setCreateGroupOpen(true)}
         />
 
@@ -264,10 +266,29 @@ function MessagesScreen() {
                  a dm that is still loading. */
               fallbackTitle={selectedId === townHallId ? TOWN_HALL_NAME : "Conversation"}
               subtitle={subtitleFor(active)}
+              onOpenProfile={setProfileUid}
             />
           </div>
         </div>
       </main>
+
+      {/* One card, four ways in: the dm banner, the faces on a group
+          header, any avatar in the transcript, and a row in People. */}
+      <MemberProfile
+        member={profileUid ? (directory.get(profileUid) ?? null) : null}
+        onClose={() => setProfileUid(null)}
+        viewer={{ id: user.id, orgId: user.orgId }}
+        onMessage={(targetUid) => void openDm(targetUid)}
+        /* Already in hand from the rail's listener — no second read, and
+           no denied get when the two have never spoken. */
+        dm={
+          profileUid
+            ? (threads.find(
+                (c) => c.type === "dm" && c.participantIds?.includes(profileUid)
+              ) ?? null)
+            : null
+        }
+      />
 
       <CreateGroupDialog
         open={createGroupOpen}

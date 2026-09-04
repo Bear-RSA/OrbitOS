@@ -11,6 +11,7 @@ import { Loader2, Phone } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { OutgoingCall } from "@/components/calls/outgoing-call";
+import { MemberProfile } from "@/components/members/member-profile";
 
 interface PersonnelHubProps {
   projectId: string;
@@ -39,6 +40,11 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
     name: string;
     photoURL?: string | null;
   } | null>(null);
+
+  /* Whose card is open. The row itself still filters by assignee — that
+     is what a row in this grid has always done — so the profile hangs
+     off the avatar instead of stealing the row's job. */
+  const [profileUid, setProfileUid] = useState<string | null>(null);
 
   // Heartbeat local timer for offline detection
   useEffect(() => {
@@ -142,10 +148,21 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
              >
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-4">
-                    <div className="relative">
+                    {/* The face opens the person; the row keeps filtering
+                        the board by them. */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setProfileUid(t.id);
+                      }}
+                      title={`View ${t.name}`}
+                      aria-label={`View ${t.name}`}
+                      className="relative rounded-lg transition-transform duration-300 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    >
                       <UserAvatar name={t.name} photoURL={t.photoURL} size="sm" />
                       <span className={cn("absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-scrim/60", statusColor)} />
-                    </div>
+                    </button>
                     <div className="flex flex-col">
                        <span className="text-[13px] font-medium text-ink tracking-tight group-hover:text-ink-strong transition-colors">
                          {t.name}
@@ -238,6 +255,18 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
 
        {calling && (
          <OutgoingCall target={calling} onClose={() => setCalling(null)} />
+       )}
+
+       {/* Tasks and engagements are already in hand here, so the card
+           costs no extra reads on this screen. */}
+       {user?.orgId && (
+         <MemberProfile
+           member={profileUid ? (members.find((m) => m.id === profileUid) ?? null) : null}
+           onClose={() => setProfileUid(null)}
+           viewer={{ id: user.id, orgId: user.orgId }}
+           tasks={tasks}
+           events={events}
+         />
        )}
     </div>
   );
