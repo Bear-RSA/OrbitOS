@@ -1,8 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Megaphone, Plus, Search, Users, X } from "lucide-react";
-import { conversationTitle, conversationUnread } from "@/lib/messages/summary";
+import { Eraser, Megaphone, Plus, Search, Users, X } from "lucide-react";
+import {
+  conversationCleared,
+  conversationTitle,
+  conversationUnread,
+} from "@/lib/messages/summary";
 import { presenceTone, resolvePresence } from "@/lib/members/presence";
 import { useNow } from "@/hooks/use-now";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -53,6 +57,8 @@ interface ConversationListProps {
   /** The picture, and only the picture, opens the person. */
   onOpenProfile: (uid: string) => void;
   onCreateGroup: () => void;
+  /** Clears a thread from THIS person's rail. Never deletes anything. */
+  onClearConversation: (conversationId: string) => void;
 }
 
 export function ConversationList({
@@ -70,6 +76,7 @@ export function ConversationList({
   onOpenDm,
   onOpenProfile,
   onCreateGroup,
+  onClearConversation,
 }: ConversationListProps) {
   const [search, setSearch] = useState("");
 
@@ -110,9 +117,16 @@ export function ConversationList({
     [threads, viewerUid, liveNames]
   );
 
+  /* Cleared threads leave the rail until somebody writes in them
+     again — see `conversationCleared`. Filtered before the search so a
+     query cannot resurrect one. */
+  const present = titled.filter(
+    (t) => !conversationCleared(t.conversation, viewerUid)
+  );
+
   const visible = needle
-    ? titled.filter((t) => t.title.toLowerCase().includes(needle))
-    : titled;
+    ? present.filter((t) => t.title.toLowerCase().includes(needle))
+    : present;
 
   const dms = visible.filter((t) => t.conversation.type === "dm");
   const groups = visible.filter((t) => t.conversation.type === "group");
@@ -234,6 +248,7 @@ export function ConversationList({
                       onAvatarClick={
                         partnerUid ? () => onOpenProfile(partnerUid) : undefined
                       }
+                      onClear={() => onClearConversation(conversation.id)}
                     />
                   );
                 })}
@@ -251,6 +266,7 @@ export function ConversationList({
                     selected={selectedId === conversation.id}
                     unread={conversationUnread(conversation, viewerUid)}
                     onClick={() => onSelect(conversation.id)}
+                    onClear={() => onClearConversation(conversation.id)}
                     icon={<Users className="h-3.5 w-3.5 text-ink-muted" aria-hidden />}
                   />
                 ))}
@@ -340,6 +356,11 @@ interface ConversationRowProps {
    * that answers it.
    */
   onAvatarClick?: () => void;
+  /**
+   * Clears this thread from the rail. Omitted for Town Hall and for
+   * People rows, neither of which is a thread you can put down.
+   */
+  onClear?: () => void;
 }
 
 function ConversationRow({
@@ -354,6 +375,7 @@ function ConversationRow({
   presence,
   previewStyle = "label",
   onAvatarClick,
+  onClear,
 }: ConversationRowProps) {
   const face = (
     <span className="relative block">
@@ -381,7 +403,7 @@ function ConversationRow({
        things. */
     <li
       className={cn(
-        "relative flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition-all duration-200",
+        "group/row relative flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition-all duration-200",
         busy && "opacity-50",
         selected
           ? "bg-surface-control shadow-card ring-1 ring-inset ring-line/[0.08]"
@@ -436,6 +458,21 @@ function ConversationRow({
           denormalized trio exists to avoid. */}
       {unread && (
         <span aria-label="Unread" className="h-2 w-2 shrink-0 rounded-full bg-orbit-red" />
+      )}
+
+      {/* Quiet until the row is under the cursor or the keyboard, so a
+          column of rails is not a column of buttons. Reachable by tab
+          either way — `focus-within` on the row brings it up. */}
+      {onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          title="Clear this chat"
+          aria-label={`Clear ${title} from your chats`}
+          className="shrink-0 rounded-md p-1 text-ink-faint opacity-0 transition-opacity hover:bg-surface-hover hover:text-ink focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus group-hover/row:opacity-100"
+        >
+          <Eraser className="h-3 w-3" aria-hidden />
+        </button>
       )}
     </li>
   );

@@ -194,6 +194,28 @@ service cloud.firestore {
             .hasOnly([request.auth.uid]);
       }
 
+      /* Clearing is per-person, and this is what keeps it that way: a
+         member may set their OWN entry and nobody else's. Without it,
+         "clear my chat" would be one dotted write away from clearing
+         the thread out of a colleague's rail too — and on a dm, from
+         hiding a conversation from the only other person in it.
+
+         The stored map is absent on conversations created before this
+         existed, and `diff` cannot read a field that is not there — so
+         a first clear is checked by looking at the incoming map
+         instead, which a dotted write leaves holding exactly one key. */
+      function touchesOnlyOwnClearedAt() {
+        return !editedKeys().hasAny(['clearedAt']) ||
+          (
+            'clearedAt' in resource.data
+              ? request.resource.data.clearedAt
+                  .diff(resource.data.clearedAt)
+                  .affectedKeys()
+                  .hasOnly([request.auth.uid])
+              : request.resource.data.clearedAt.keys().hasOnly([request.auth.uid])
+          );
+      }
+
       allow read: if isSignedIn() && mayRead();
 
       // Creation is server-only (Admin SDK) — see the block comment above.
@@ -219,12 +241,19 @@ service cloud.firestore {
          a notice could still forge the preview of one. */
       allow update: if isSignedIn()
         && editedKeys().hasOnly([
-             'lastMessageAt', 'lastMessagePreview', 'lastMessageBy', 'lastReadAt'
+             'lastMessageAt', 'lastMessagePreview', 'lastMessageBy',
+             'lastReadAt', 'clearedAt'
            ])
         && touchesOnlyOwnReadReceipt()
+        && touchesOnlyOwnClearedAt()
         && (!editedKeys().hasAny(['lastMessageBy']) ||
             request.resource.data.lastMessageBy == request.auth.uid)
-        && (editedKeys().hasOnly(['lastReadAt']) ? mayRead() : mayPost());
+        /* Marking a thread read, or clearing it from your own rail, are
+           things any reader may do to their own view. Writing the trio
+           is not — it is the rail's account of who said the last thing,
+           and in Town Hall a Member who cannot post a notice must not
+           be able to forge the preview of one. */
+        && (editedKeys().hasOnly(['lastReadAt', 'clearedAt']) ? mayRead() : mayPost());
 
       match /messages/{messageId} {
 

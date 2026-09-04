@@ -262,6 +262,26 @@ export async function sendMessage(
  * leaves everybody else's alone — which is exactly what the rule
  * enforces. Writing the whole map back would be rejected.
  */
+/**
+ * Clears the thread from this person's rail.
+ *
+ * A dotted field path, so it touches one key of `clearedAt` and leaves
+ * everybody else's alone — which is exactly what the rule enforces, and
+ * why "clear" here cannot become "delete for both of us".
+ *
+ * Nothing is removed. The messages stay, the other participant's view
+ * is untouched, and the thread returns to the rail as soon as somebody
+ * writes in it again.
+ */
+export async function clearConversation(
+  conversationId: string,
+  uid: string
+): Promise<void> {
+  await updateDoc(doc(db, CONVERSATIONS_COLLECTION, conversationId), {
+    [`clearedAt.${uid}`]: serverTimestamp(),
+  });
+}
+
 export async function markConversationRead(
   conversationId: string,
   uid: string

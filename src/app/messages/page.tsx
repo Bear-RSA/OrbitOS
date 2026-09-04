@@ -6,7 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { subscribeToMembersByOrg } from "@/lib/queries/members";
-import { subscribeToConversation, subscribeToConversations } from "@/lib/queries/messages";
+import {
+  clearConversation,
+  subscribeToConversation,
+  subscribeToConversations,
+} from "@/lib/queries/messages";
 import { townHallConversationId } from "@/lib/messages/conversation-id";
 import { getOrCreateDmAction, getOrCreateTownHallAction } from "@/app/actions/messages";
 import { MessageThread } from "@/components/messages/message-thread";
@@ -18,6 +22,8 @@ import {
   type ConversationTab,
 } from "@/components/messages/conversation-list";
 import { Loader } from "@/components/ui/loader";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { conversationTitle } from "@/lib/messages/summary";
 import { TOWN_HALL_NAME, type Conversation } from "@/types/message";
 import type { Member } from "@/types/member";
 
@@ -71,6 +77,10 @@ function MessagesScreen() {
   const [opening, setOpening] = useState<string | null>(null);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [profileUid, setProfileUid] = useState<string | null>(null);
+  /* The thread awaiting a "yes, clear it". Held by id rather than as a
+     boolean so the dialog can name what it is about to clear. */
+  const [clearingId, setClearingId] = useState<string | null>(null);
+  const [clearBusy, setClearBusy] = useState(false);
   /* Who this operative is ringing. One at a time — placing a second call
      while the first is connecting has no meaning. */
   const [calling, setCalling] = useState<{
@@ -173,6 +183,27 @@ function MessagesScreen() {
     [members]
   );
 
+  const confirmClear = useCallback(async () => {
+    if (!clearingId || !uid) return;
+
+    setClearBusy(true);
+    setError(null);
+    try {
+      await clearConversation(clearingId, uid);
+
+      /* Land somewhere real. The thread just left the rail, so leaving
+         it selected would show a pane for a chat that is no longer in
+         the list beside it. */
+      if (selectedId === clearingId) setSelectedId(townHallId);
+      setClearingId(null);
+    } catch (err) {
+      console.error("[Messages] Could not clear conversation:", err);
+      setError("Could not clear that chat.");
+    } finally {
+      setClearBusy(false);
+    }
+  }, [clearingId, uid, selectedId, townHallId]);
+
   const directory = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
 
   /* Owners first, then alphabetical — the same ordering the Personnel
@@ -189,6 +220,13 @@ function MessagesScreen() {
   );
 
   if (authLoading || !user?.orgId) return <OpeningChannels />;
+
+  /* Named in the confirmation, so nobody clears the wrong thread from a
+     rail of near-identical rows. */
+  const clearing = clearingId ? threads.find((c) => c.id === clearingId) : null;
+  const clearedTitle = clearing
+    ? conversationTitle(clearing, user.id, liveNames)
+    : "This chat";
 
   /* Who is in the room, by name. A count would tell the reader how many
      people can see what they are about to write but not which ones,
@@ -250,6 +288,7 @@ function MessagesScreen() {
           onOpenDm={(targetUid) => void openDm(targetUid)}
           onOpenProfile={setProfileUid}
           onCreateGroup={() => setCreateGroupOpen(true)}
+          onClearConversation={setClearingId}
         />
 
         <div className="flex min-w-0 flex-1 flex-col">
@@ -298,6 +337,24 @@ function MessagesScreen() {
               ) ?? null)
             : null
         }
+      />
+
+      {/* Worth a confirmation: it is undoable in the sense that a new
+          message brings the thread back, but the history before it is
+          gone from this person's view and there is no undo button. */}
+      <ConfirmDialog
+        open={clearingId !== null}
+        onOpenChange={(next) => !next && setClearingId(null)}
+        title="Clear this chat?"
+        description={
+          clearingId
+            ? `${clearedTitle} leaves your chats and its history is hidden from you. Nothing is deleted — everyone else keeps their copy, and the chat returns if anyone writes in it again.`
+            : ""
+        }
+        confirmText="Clear chat"
+        variant="destructive"
+        loading={clearBusy}
+        onConfirm={() => void confirmClear()}
       />
 
       {calling && <OutgoingCall target={calling} onClose={() => setCalling(null)} />}

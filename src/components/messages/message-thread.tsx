@@ -21,7 +21,7 @@ import {
   subscribeToMessages,
 } from "@/lib/queries/messages";
 import { canPostToConversation } from "@/lib/messages/access";
-import { conversationTitle } from "@/lib/messages/summary";
+import { clearedBeforeMs, conversationTitle } from "@/lib/messages/summary";
 import { presenceTone, resolvePresence } from "@/lib/members/presence";
 import { useNow } from "@/hooks/use-now";
 import { MAX_MESSAGE_LENGTH } from "@/lib/validations/messages";
@@ -127,7 +127,18 @@ export function MessageThread({
     return subscribeToMessages(conversationId, setLive);
   }, [conversationId]);
 
-  const messages = useMemo(() => [...older, ...live], [older, live]);
+  /* Anything said before this reader cleared the thread is theirs to
+     not see again — the messages are untouched and every other
+     participant still has them. */
+  const clearedBefore = clearedBeforeMs(conversation, viewer.id);
+
+  const messages = useMemo(
+    () =>
+      [...older, ...live].filter(
+        (m) => (m.createdAt?.toMillis?.() ?? 0) > clearedBefore
+      ),
+    [older, live, clearedBefore]
+  );
 
   /* Follow the transcript down as it grows. */
   useEffect(() => {
@@ -179,15 +190,25 @@ export function MessageThread({
     setLoadingOlder(true);
     try {
       const page = await loadOlderMessages(conversationId, oldest.createdAt);
-      if (page.length < MESSAGE_PAGE_SIZE) setExhausted(true);
-      setOlder((prev) => [...page, ...prev]);
+
+      /* A page that lies entirely before this reader's clear mark is a
+         page they will never see, so history ends here for them —
+         otherwise the button sits there fetching rows that are filtered
+         out and appearing to do nothing. */
+      const visible = page.filter(
+        (m) => (m.createdAt?.toMillis?.() ?? 0) > clearedBefore
+      );
+      if (visible.length === 0 || page.length < MESSAGE_PAGE_SIZE) {
+        setExhausted(true);
+      }
+      if (visible.length > 0) setOlder((prev) => [...visible, ...prev]);
     } catch (err) {
       console.error("[MessageThread] Could not load history:", err);
       setError("Could not load earlier messages.");
     } finally {
       setLoadingOlder(false);
     }
-  }, [conversationId, messages, loadingOlder]);
+  }, [conversationId, messages, loadingOlder, clearedBefore]);
 
   /* Inserted at the caret, not appended. Somebody who moved back to fix
      a word and then reached for the picker means it to land where they

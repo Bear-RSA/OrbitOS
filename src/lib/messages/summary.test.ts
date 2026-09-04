@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   conversationTitle,
+  isCleared,
   isUnread,
   type TitleFacts,
 } from "@/lib/messages/summary";
@@ -60,6 +61,31 @@ describe("naming a conversation", () => {
     expect(conversationTitle(dm({ type: "group", name: "   " }), SARAH)).toBe(
       "Untitled conversation"
     );
+  });
+});
+
+describe("cleared", () => {
+  it("hides a thread with nothing said since it was cleared", () => {
+    expect(isCleared({ clearedAtMs: 5_000, lastMessageAtMs: 4_000 })).toBe(true);
+  });
+
+  it("hides one cleared at the very moment of the last message", () => {
+    expect(isCleared({ clearedAtMs: 5_000, lastMessageAtMs: 5_000 })).toBe(true);
+  });
+
+  it("brings it back the moment somebody writes again", () => {
+    /* The point of dating the mark rather than setting a flag: a reply
+       must not vanish into a list nobody looks at. */
+    expect(isCleared({ clearedAtMs: 5_000, lastMessageAtMs: 6_000 })).toBe(false);
+  });
+
+  it("hides an empty thread that was cleared", () => {
+    expect(isCleared({ clearedAtMs: 5_000, lastMessageAtMs: null })).toBe(true);
+  });
+
+  it("shows a thread nobody has cleared", () => {
+    expect(isCleared({ clearedAtMs: null, lastMessageAtMs: 6_000 })).toBe(false);
+    expect(isCleared({ clearedAtMs: null, lastMessageAtMs: null })).toBe(false);
   });
 });
 

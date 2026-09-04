@@ -75,6 +75,54 @@ export function isUnread(facts: UnreadFacts): boolean {
   return (facts.lastReadAtMs ?? 0) < facts.lastMessageAtMs;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Cleared                                                            */
+/* ------------------------------------------------------------------ */
+
+export interface ClearedFacts {
+  clearedAtMs: number | null;
+  lastMessageAtMs: number | null;
+}
+
+/**
+ * Whether this thread should be out of this person's rail.
+ *
+ * Hidden only while nothing has happened since they cleared it. A
+ * message that arrives afterwards is newer than the mark, so the thread
+ * returns on its own — clearing is "I am done with this for now", not
+ * "never speak to me again", and a colleague's reply disappearing into
+ * a list nobody looks at is how a message goes unanswered for a week.
+ */
+export function isCleared(facts: ClearedFacts): boolean {
+  if (!facts.clearedAtMs) return false;
+  return (facts.lastMessageAtMs ?? 0) <= facts.clearedAtMs;
+}
+
+/** `isCleared` against a live conversation document. */
+export function conversationCleared(
+  conversation: Pick<Conversation, "lastMessageAt" | "clearedAt">,
+  viewerUid: string
+): boolean {
+  return isCleared({
+    clearedAtMs: conversation.clearedAt?.[viewerUid]?.toMillis?.() ?? null,
+    lastMessageAtMs: conversation.lastMessageAt?.toMillis?.() ?? null,
+  });
+}
+
+/**
+ * The moment before which this person should see no messages.
+ *
+ * Clearing empties the transcript for the person who cleared it, not
+ * for the room — so the thread still opens, and still shows anything
+ * said since.
+ */
+export function clearedBeforeMs(
+  conversation: Pick<Conversation, "clearedAt"> | null,
+  viewerUid: string
+): number {
+  return conversation?.clearedAt?.[viewerUid]?.toMillis?.() ?? 0;
+}
+
 /** `isUnread` against a live conversation document. */
 export function conversationUnread(
   conversation: Pick<Conversation, "lastMessageAt" | "lastMessageBy" | "lastReadAt">,

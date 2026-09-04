@@ -81,6 +81,25 @@ export interface Conversation {
    * else's.
    */
   lastReadAt: Record<string, Timestamp>;
+
+  /**
+   * When each person last cleared this thread from their own rail,
+   * keyed by uid.
+   *
+   * Per-participant, and that is the whole design. A dm belongs to two
+   * people: tidying your own list must not reach across and delete the
+   * other person's copy of what was said. So clearing hides the thread
+   * for you and touches nothing for them — the same bargain
+   * `lastReadAt` makes, enforced by the same rule.
+   *
+   * It hides rather than deletes, and it is dated rather than a flag:
+   * a new message is newer than the mark, so the thread comes back on
+   * its own. You cleared what had been said, not the relationship.
+   *
+   * Absent on conversations created before this existed, which reads as
+   * "never cleared" and needs no migration.
+   */
+  clearedAt?: Record<string, Timestamp>;
 }
 
 /**
