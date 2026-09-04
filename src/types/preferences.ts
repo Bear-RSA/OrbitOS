@@ -32,6 +32,15 @@ export interface UserPreferences {
   taskReminders: boolean;
   /** Email when someone RSVPs to an engagement you organize. */
   rsvpNotifications: boolean;
+  /**
+   * A short chime when a message arrives from a colleague.
+   *
+   * On by default, because a message you are not told about is a message
+   * that did not arrive — the unread dot only exists on screens you have
+   * to already be looking at. Off is one toggle away for anyone who
+   * works with the sound up.
+   */
+  messageSounds: boolean;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -41,6 +50,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   presence: "auto",
   taskReminders: true,
   rsvpNotifications: true,
+  messageSounds: true,
 };
 
 /** Fills in every missing key so callers never branch on `undefined`. */

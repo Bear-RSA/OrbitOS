@@ -239,7 +239,8 @@ function MessagesScreen() {
           opening={opening}
           onTabChange={setTab}
           onSelect={setSelectedId}
-          onOpenPerson={setProfileUid}
+          onOpenDm={(targetUid) => void openDm(targetUid)}
+          onOpenProfile={setProfileUid}
           onCreateGroup={() => setCreateGroupOpen(true)}
         />
 

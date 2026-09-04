@@ -71,13 +71,28 @@ export function NotificationsSection({ user }: { user: User }) {
         <FormNotice tone="error">{error}</FormNotice>
       </DashboardCard>
 
-      <DashboardCard interactive={false} tone="quiet">
-        <CardHeader title="In-app" icon={Bell} />
-        <p className="max-w-lg text-[13px] font-light leading-relaxed text-ink-muted">
-          Activity is surfaced live on the dashboard and in each project&apos;s
-          pulse feed. There is nothing to configure here yet — per-event alerts
-          land in a later release.
-        </p>
+      <DashboardCard interactive={false}>
+        <CardHeader
+          title="In-app"
+          icon={Bell}
+          meta={
+            <StatusChip
+              label={preferences.messageSounds ? "On" : "Off"}
+              tone={preferences.messageSounds ? "positive" : "neutral"}
+            />
+          }
+        />
+
+        <SettingsList>
+          <ToggleRow
+            id="pref-message-sounds"
+            title="Message sound"
+            description="A short chime when a colleague messages you directly or in a group. Town Hall notices stay silent — they reach the whole workspace at once."
+            checked={preferences.messageSounds}
+            busy={pending === "messageSounds"}
+            onChange={(next) => update({ messageSounds: next })}
+          />
+        </SettingsList>
       </DashboardCard>
     </div>
   );

@@ -7,6 +7,7 @@ import { InteractionProvider } from "@/components/ui/interaction-provider";
 import { PreferenceEffects } from "@/components/preference-effects";
 import { ThemeScript } from "@/components/theme-script";
 import { IncomingCall } from "@/components/calls/incoming-call";
+import { MessageNotifier } from "@/components/messages/message-notifier";
 
 // Self-hosted at build time by next/font — no render-blocking @import, no FOUT,
 // and a size-adjusted fallback so there is no layout shift while they load.
@@ -80,6 +81,11 @@ export default function RootLayout({
                 looking at is not a phone. Mounted once for the whole
                 session; renders nothing until somebody calls. */}
             <IncomingCall />
+            {/* Renders nothing; chimes when a colleague writes to you.
+                Mounted here for the same reason the phone is — a
+                notification that only reaches the page you are already
+                looking at has not notified anyone. */}
+            <MessageNotifier />
           </AuthProvider>
         </InteractionProvider>
       </body>

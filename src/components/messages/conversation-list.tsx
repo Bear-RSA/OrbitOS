@@ -48,10 +48,10 @@ interface ConversationListProps {
   opening: string | null;
   onTabChange: (tab: ConversationTab) => void;
   onSelect: (conversationId: string) => void;
-  /* People opens the person, not the thread. The dm is one button
-     away inside their card, alongside Call — which is the point: you
-     often want to know who somebody is before you write to them. */
-  onOpenPerson: (uid: string) => void;
+  /** A row in People starts the conversation — that is what People is for. */
+  onOpenDm: (uid: string) => void;
+  /** The picture, and only the picture, opens the person. */
+  onOpenProfile: (uid: string) => void;
   onCreateGroup: () => void;
 }
 
@@ -67,7 +67,8 @@ export function ConversationList({
   opening,
   onTabChange,
   onSelect,
-  onOpenPerson,
+  onOpenDm,
+  onOpenProfile,
   onCreateGroup,
 }: ConversationListProps) {
   const liveNames = useMemo(
@@ -159,6 +160,11 @@ export function ConversationList({
                         ? { name: title, photoURL: partner?.photoURL }
                         : undefined
                     }
+                    onAvatarClick={
+                      conversation.type === "dm" && partnerUid
+                        ? () => onOpenProfile(partnerUid)
+                        : undefined
+                    }
                   />
                 </li>
               );
@@ -179,7 +185,8 @@ export function ConversationList({
                 selected={false}
                 unread={false}
                 busy={opening === member.id}
-                onClick={() => onOpenPerson(member.id)}
+                onClick={() => onOpenDm(member.id)}
+                onAvatarClick={() => onOpenProfile(member.id)}
                 avatar={{ name: member.name, photoURL: member.photoURL }}
               />
             </li>
@@ -208,6 +215,16 @@ interface ConversationRowProps {
    * read as machine output rather than as something a person said.
    */
   previewStyle?: "label" | "text";
+  /**
+   * Opens the person, from the picture alone.
+   *
+   * The row itself keeps its own job — start the conversation. Tapping a
+   * name in People to be shown a card, then having to press Message from
+   * inside Messages, is a detour through the thing you were already
+   * doing. The face is the only part that means "who is this", so it is
+   * the only part that answers it.
+   */
+  onAvatarClick?: () => void;
 }
 
 function ConversationRow({
@@ -220,15 +237,24 @@ function ConversationRow({
   icon,
   avatar,
   previewStyle = "label",
+  onAvatarClick,
 }: ConversationRowProps) {
+  const face = avatar ? (
+    <UserAvatar size="sm" name={avatar.name} photoURL={avatar.photoURL} />
+  ) : (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-control ring-1 ring-line/[0.06]">
+      {icon}
+    </span>
+  );
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={busy}
-      aria-current={selected ? "page" : undefined}
+    /* A div holding two buttons rather than one button — a control
+       inside a control is invalid, and the picture and the row now do
+       different things. */
+    <div
       className={cn(
-        "relative flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-left transition-colors duration-200 disabled:opacity-50",
+        "relative flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 transition-colors duration-200",
+        busy && "opacity-50",
         /* A left rule rather than a heavier fill: the rail is a column of
            near-identical rows, and an edge marker is findable at a glance
            where a background shade is not. */
@@ -237,15 +263,28 @@ function ConversationRow({
           : "hover:bg-surface-card"
       )}
     >
-      {avatar ? (
-        <UserAvatar size="sm" name={avatar.name} photoURL={avatar.photoURL} />
+      {onAvatarClick && avatar ? (
+        <button
+          type="button"
+          onClick={onAvatarClick}
+          disabled={busy}
+          title={`View ${title}`}
+          aria-label={`View ${title}`}
+          className="shrink-0 rounded-xl transition-transform duration-200 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        >
+          {face}
+        </button>
       ) : (
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-control ring-1 ring-line/[0.06]">
-          {icon}
-        </span>
+        face
       )}
 
-      <span className="min-w-0 flex-1">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={busy}
+        aria-current={selected ? "page" : undefined}
+        className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+      >
         <span
           className={cn(
             "block truncate text-[13px] tracking-tight",
@@ -265,7 +304,7 @@ function ConversationRow({
         >
           {busy ? "Opening…" : preview}
         </span>
-      </span>
+      </button>
 
       {/* One dot, no count. A number here would need a per-thread read of
           the messages nobody has opened, which is the read the
@@ -273,6 +312,6 @@ function ConversationRow({
       {unread && (
         <span aria-label="Unread" className="h-2 w-2 shrink-0 rounded-full bg-orbit-red" />
       )}
-    </button>
+    </div>
   );
 }

@@ -209,35 +209,33 @@ export function MessageThread({
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-line/[0.06] bg-surface-card/40 shadow-raised ring-1 ring-line/5 backdrop-blur-sm">
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="flex shrink-0 items-center gap-3 border-b border-line/[0.05] bg-surface-card/60 px-5 py-3.5">
-        {/* In a dm the banner IS a person, so the whole strip opens their
-            card. A group and Town Hall are not one person, so the strip
-            stays inert and the faces below carry the affordance. */}
-        {conversation?.type === "dm" && partnerUid && onOpenProfile ? (
-          <button
-            type="button"
-            onClick={() => onOpenProfile(partnerUid)}
-            title={`View ${title}`}
-            className="-mx-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-1 text-left transition-colors hover:bg-surface-hover"
-          >
-            <UserAvatar size="sm" name={title} photoURL={partner?.photoURL} />
-            <ThreadHeading title={title} subtitle={subtitle} />
-          </button>
-        ) : (
-          <>
-            {conversation?.type === "dm" ? (
+        {/* The picture opens the person — here, in the rail, and on every
+            message. One rule, so it never has to be discovered twice. */}
+        {conversation?.type === "dm" ? (
+          partnerUid && onOpenProfile ? (
+            <button
+              type="button"
+              onClick={() => onOpenProfile(partnerUid)}
+              title={`View ${title}`}
+              aria-label={`View ${title}`}
+              className="shrink-0 rounded-xl transition-transform duration-200 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            >
               <UserAvatar size="sm" name={title} photoURL={partner?.photoURL} />
+            </button>
+          ) : (
+            <UserAvatar size="sm" name={title} photoURL={partner?.photoURL} />
+          )
+        ) : (
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-control shadow-card ring-1 ring-line/[0.06]">
+            {conversation?.type === "group" ? (
+              <Users className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
             ) : (
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-control shadow-card ring-1 ring-line/[0.06]">
-                {conversation?.type === "group" ? (
-                  <Users className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
-                ) : (
-                  <Megaphone className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
-                )}
-              </span>
+              <Megaphone className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
             )}
-            <ThreadHeading title={title} subtitle={subtitle} />
-          </>
+          </span>
         )}
+
+        <ThreadHeading title={title} subtitle={subtitle} />
 
         {/* A group's members, each a way into their card. */}
         {conversation?.type === "group" && onOpenProfile && (
