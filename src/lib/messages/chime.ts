@@ -1,3 +1,9 @@
+import {
+  getAudioContext,
+  primeAudio,
+  tone,
+} from "@/lib/audio/context";
+
 /* ------------------------------------------------------------------ */
 /*  Message chime                                                      */
 /*                                                                     */
@@ -10,15 +16,11 @@
 /*  TWO THINGS MAKE A CHIME LIKE THIS INAUDIBLE, and the first build   */
 /*  of this file had both.                                             */
 /*                                                                     */
-/*  The first is the autoplay gate. Every current browser starts an    */
-/*  AudioContext SUSPENDED unless it was created while the page held a */
-/*  user activation. Created lazily at the moment a message lands —    */
-/*  which is by definition not a gesture — it starts suspended, and on */
-/*  a tab the user has not clicked in, `resume()` is refused. That is  */
-/*  exactly the tab you are watching when you send yourself a test     */
-/*  message from another window. `primeMessageChime` exists to close   */
-/*  that hole: the context is opened on the first real interaction, so */
-/*  it is awake long before anything needs to be heard.                */
+/*  The first is the autoplay gate — the context has to be opened on a */
+/*  real gesture long before anything needs to be heard. That problem  */
+/*  is now solved once for the whole app in `@/lib/audio/context`,     */
+/*  which is also where the shared context and the click-free envelope */
+/*  live, so the call ringtone inherits the same unlock.               */
 /*                                                                     */
 /*  The second is simply level. The first version peaked at 0.06 for   */
 /*  90ms, which measures as a sound and does not register as one next  */
@@ -42,64 +44,22 @@ const GAP_MS = 70;
 const PEAK_GAIN = 0.22;
 
 /**
- * One AudioContext for the tab.
- *
- * Browsers cap how many a page may create, and a notifier that runs for
- * a whole session would exhaust that budget in an afternoon.
- */
-let context: AudioContext | null = null;
-
-function audioContext(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-
-  if (!context) {
-    const Ctor =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (!Ctor) return null;
-    context = new Ctor();
-  }
-  return context;
-}
-
-/**
  * Opens the audio context while a user gesture is in flight.
  *
- * Call from a real interaction — a click, a keypress. Cheap, idempotent,
- * and the difference between a chime that works and one that is refused
- * by the browser without saying so.
+ * Kept as its own export because the settings page calls it by name;
+ * the work itself is shared with every other sound in the app.
  */
 export function primeMessageChime(): void {
-  const ctx = audioContext();
-  if (!ctx || ctx.state !== "suspended") return;
-  void ctx.resume().catch(() => {});
-}
-
-function tone(ctx: AudioContext, frequency: number, startAt: number): void {
-  const oscillator = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  oscillator.type = "sine";
-  oscillator.frequency.value = frequency;
-
-  /* Ramped rather than switched. A square-edged start and stop produces
-     an audible click at the boundary, which is the part that sounds
-     cheap. */
-  const end = startAt + NOTE_MS / 1000;
-  gain.gain.setValueAtTime(0.0001, startAt);
-  gain.gain.linearRampToValueAtTime(PEAK_GAIN, startAt + 0.015);
-  gain.gain.exponentialRampToValueAtTime(0.0001, end);
-
-  oscillator.connect(gain).connect(ctx.destination);
-  oscillator.start(startAt);
-  oscillator.stop(end + 0.02);
+  primeAudio();
 }
 
 function ring(ctx: AudioContext): void {
   const now = ctx.currentTime;
   NOTES.forEach((frequency, index) => {
-    tone(ctx, frequency, now + (index * (NOTE_MS + GAP_MS)) / 1000);
+    tone(ctx, frequency, now + (index * (NOTE_MS + GAP_MS)) / 1000, {
+      durationMs: NOTE_MS,
+      peakGain: PEAK_GAIN,
+    });
   });
 }
 
@@ -112,7 +72,7 @@ function ring(ctx: AudioContext): void {
  * than one that is simply off.
  */
 export function playMessageChime(): void {
-  const ctx = audioContext();
+  const ctx = getAudioContext();
   if (!ctx) return;
 
   if (ctx.state === "suspended") {

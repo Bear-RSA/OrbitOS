@@ -41,6 +41,17 @@ export interface UserPreferences {
    * works with the sound up.
    */
   messageSounds: boolean;
+  /**
+   * A repeating ring while a colleague is calling you, and a ringback
+   * tone while you wait for them to pick up.
+   *
+   * Its own switch rather than a second use of `messageSounds`: a ring
+   * is louder and lasts forty-five seconds, so somebody may well want it
+   * when they have turned chimes off — and somebody working next to a
+   * sleeping baby wants the opposite. On by default, because a silent
+   * phone is not a phone.
+   */
+  callSounds: boolean;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -51,6 +62,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   taskReminders: true,
   rsvpNotifications: true,
   messageSounds: true,
+  callSounds: true,
 };
 
 /** Fills in every missing key so callers never branch on `undefined`. */

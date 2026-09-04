@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Phone, PhoneOff } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { usePreferences } from "@/hooks/use-preferences";
+import { installAudioPrimer } from "@/lib/audio/context";
+import { startIncomingRing } from "@/lib/calls/ringtone";
 import { subscribeToIncomingCalls } from "@/lib/queries/calls";
 import {
   answerCallAction,
@@ -22,6 +25,12 @@ import type { CallGrant, OrbitCall } from "@/types/call";
 /*  ringing` — which is the narrowest query in the app precisely       */
 /*  because it is the one that never gets torn down.                   */
 /*                                                                     */
+/*  THE SOUND IS OWNED BY AN EFFECT, not by the handlers. Answering,   */
+/*  declining, the ring expiring, signing out and unmounting all end   */
+/*  in the same cleanup, so none of them has to remember to stop the   */
+/*  ringtone and none of them can forget — which is the failure that   */
+/*  leaves a phone ringing over a live call.                           */
+/*                                                                     */
 /*  The ring is NOT trusted to expire itself. The document carries     */
 /*  `ringingExpiresAt` and the server refuses a late answer, so what   */
 /*  this timer does is stop showing a card nobody can act on — a       */
@@ -31,6 +40,7 @@ import type { CallGrant, OrbitCall } from "@/types/call";
 
 export function IncomingCall() {
   const { user } = useAuth();
+  const { preferences } = usePreferences();
   const [ringing, setRinging] = useState<OrbitCall | null>(null);
   const [grant, setGrant] = useState<CallGrant | null>(null);
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
@@ -39,6 +49,9 @@ export function IncomingCall() {
 
   const uid = user?.id ?? null;
   const orgId = user?.orgId ?? null;
+
+  const ringingId = ringing?.id ?? null;
+  const inRoom = Boolean(grant);
 
   /* Held in a ref so the expiry timer can read the current ring without
      restarting itself every render. */
@@ -72,6 +85,22 @@ export function IncomingCall() {
 
     return () => clearTimeout(timer);
   }, [ringing]);
+
+  /* A call arrives without a gesture, which is exactly what a browser
+     will not start audio for. Arming the session's first click here —
+     rather than relying on the message notifier having been mounted —
+     is what makes this component able to ring on its own. */
+  useEffect(() => {
+    installAudioPrimer();
+  }, []);
+
+  /* Ring. Keyed on the id rather than the document, because a snapshot
+     that changes nothing we care about would otherwise restart the
+     ringtone from the top on every write. */
+  useEffect(() => {
+    if (!ringingId || inRoom || !preferences.callSounds) return;
+    return startIncomingRing();
+  }, [ringingId, inRoom, preferences.callSounds]);
 
   const answer = useCallback(async () => {
     if (!ringing) return;

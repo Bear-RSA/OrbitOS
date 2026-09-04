@@ -5,6 +5,7 @@ import { Bell, Mail } from "lucide-react";
 import { User } from "@/types/auth";
 import { usePreferences } from "@/hooks/use-preferences";
 import { playMessageChime } from "@/lib/messages/chime";
+import { RING_CYCLE_MS, startIncomingRing } from "@/lib/calls/ringtone";
 import {
   DashboardCard,
   CardHeader,
@@ -24,6 +25,17 @@ import { FormNotice, ReadonlyRow, SettingsList, ToggleRow } from "./settings-pri
 export function NotificationsSection({ user }: { user: User }) {
   const { preferences, update, pending, error } = usePreferences();
   const isOwner = user.role === "OWNER";
+
+  const inAppOn = preferences.messageSounds && preferences.callSounds;
+  const inAppOff = !preferences.messageSounds && !preferences.callSounds;
+
+  /* The ring loops until something stops it, so a test button that only
+     started it would be a way to make the settings page ring forever.
+     One cycle, then silence. */
+  const testRing = () => {
+    const stop = startIncomingRing();
+    setTimeout(stop, RING_CYCLE_MS);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,8 +90,8 @@ export function NotificationsSection({ user }: { user: User }) {
           icon={Bell}
           meta={
             <StatusChip
-              label={preferences.messageSounds ? "On" : "Off"}
-              tone={preferences.messageSounds ? "positive" : "neutral"}
+              label={inAppOn ? "On" : inAppOff ? "Off" : "Partial"}
+              tone={inAppOff ? "neutral" : "positive"}
             />
           }
         />
@@ -93,6 +105,15 @@ export function NotificationsSection({ user }: { user: User }) {
             busy={pending === "messageSounds"}
             onChange={(next) => update({ messageSounds: next })}
           />
+
+          <ToggleRow
+            id="pref-call-sounds"
+            title="Call ringtone"
+            description="A repeating ring while a colleague is calling you, and a quieter ringback tone while you wait for them to answer. The call still appears on screen either way."
+            checked={preferences.callSounds}
+            busy={pending === "callSounds"}
+            onChange={(next) => update({ callSounds: next })}
+          />
         </SettingsList>
 
         {/* A gesture and a check in one. Pressing it is exactly the
@@ -100,13 +121,22 @@ export function NotificationsSection({ user }: { user: User }) {
             make a sound, so it both proves the chime works and unblocks
             it for the rest of the session. If this is audible and a real
             message is not, the fault is in the notifier, not in audio. */}
-        <button
-          type="button"
-          onClick={playMessageChime}
-          className="mt-4 self-start rounded-lg border border-line/[0.06] bg-surface-control px-3 py-2 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
-        >
-          Play test sound
-        </button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={playMessageChime}
+            className="self-start rounded-lg border border-line/[0.06] bg-surface-control px-3 py-2 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
+          >
+            Play test sound
+          </button>
+          <button
+            type="button"
+            onClick={testRing}
+            className="self-start rounded-lg border border-line/[0.06] bg-surface-control px-3 py-2 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
+          >
+            Play test ring
+          </button>
+        </div>
       </DashboardCard>
     </div>
   );

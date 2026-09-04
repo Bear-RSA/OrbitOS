@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PhoneOff } from "lucide-react";
+import { usePreferences } from "@/hooks/use-preferences";
+import { RING_TIMEOUT_SECONDS } from "@/lib/calls/ceiling";
+import { startRingback } from "@/lib/calls/ringtone";
 import { subscribeToCall } from "@/lib/queries/calls";
 import {
   endCallAction,
@@ -39,6 +42,7 @@ const ENDED: Record<string, string> = {
 };
 
 export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
+  const { preferences } = usePreferences();
   const [callId, setCallId] = useState<string | null>(null);
   const [status, setStatus] = useState<CallStatus | "placing">("placing");
   const [grant, setGrant] = useState<CallGrant | null>(null);
@@ -100,14 +104,27 @@ export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
     };
   }, [status, callId, grant]);
 
+  /* Ringback, for as long as the far end is ringing.
+    
+     Quieter than the ring the callee hears: this side already knows a
+     call is happening, because this side started it. Autoplay is never
+     in the way here — placing the call was itself the gesture. */
+  useEffect(() => {
+    if (status !== "ringing" || grant || !preferences.callSounds) return;
+    return startRingback();
+  }, [status, grant, preferences.callSounds]);
+
   /* Nobody picked up. Marking it missed is a tidy-up — the server
-     already refuses a late answer — so a failure here is ignored. */
+     already refuses a late answer — so a failure here is ignored.
+
+     Off the same constant the server answers by, so the ringback cannot
+     outlive the window in which anyone could pick up. */
   useEffect(() => {
     if (status !== "ringing" || !callId) return;
 
     const timer = setTimeout(() => {
       void markCallMissedAction(callId);
-    }, 45_000);
+    }, RING_TIMEOUT_SECONDS * 1_000);
 
     return () => clearTimeout(timer);
   }, [status, callId]);
