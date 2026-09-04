@@ -144,6 +144,8 @@ export function ActionButton({
   disabled,
   collapsed = false,
   variant = "default",
+  badge = false,
+  badgeLabel,
   className,
 }: {
   icon: LucideIcon;
@@ -153,6 +155,10 @@ export function ActionButton({
   /** Renders icon-only until hover/focus, expanding to reveal the label. */
   collapsed?: boolean;
   variant?: "default" | "danger" | "ghost";
+  /** Draws an attention dot on the icon. A boolean, never a count. */
+  badge?: boolean;
+  /** What the dot means, for screen readers. Required reading when `badge`. */
+  badgeLabel?: string;
   className?: string;
 }) {
   return (
@@ -180,8 +186,20 @@ export function ActionButton({
       )}
     >
       <span className={cn("flex shrink-0 items-center justify-center", collapsed && "h-9 w-9")}>
-        <Icon className="h-3.5 w-3.5" aria-hidden />
+        {/* Anchored to the icon, not to the 36px hit area — pinned to the
+            outer box the dot floats in the corner of a button that is
+            mostly padding, reading as a stray pixel rather than a mark on
+            the icon. */}
+        <span className="relative flex items-center justify-center">
+          <Icon className="h-3.5 w-3.5" aria-hidden />
+          {/* Ringed in the button's own ground so it stays legible over
+              whatever it overlaps, in either theme. */}
+          {badge && (
+            <span className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 rounded-full bg-orbit-red ring-2 ring-base" />
+          )}
+        </span>
       </span>
+      {badge && badgeLabel && <span className="sr-only">{badgeLabel}</span>}
       <span
         className={cn(
           "whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.18em]",

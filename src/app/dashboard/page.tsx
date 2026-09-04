@@ -23,6 +23,7 @@ import { OrbitalDashboardData, OwnerDashboardData, MemberDashboardData } from "@
 import { RefreshCw, Plus } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { ActionButton } from "@/components/dashboard/dashboard-card";
+import { MessagesMenu } from "@/components/messages/messages-menu";
 import { cn } from "@/lib/utils/classnames";
 
 export default function DashboardPage() {
@@ -133,6 +134,17 @@ export default function DashboardPage() {
               disabled={refreshing}
               onClick={() => { setRefreshing(true); setRefreshKey(prev => prev + 1); loadOperationalData(); }}
               className={cn(refreshing && "[&_svg]:animate-spin")}
+            />
+
+            <MessagesMenu
+              uid={user.id}
+              orgId={user.orgId}
+              members={rawMembers}
+              onOpen={(conversationId) =>
+                router.push(
+                  conversationId ? `/messages?c=${conversationId}` : "/messages"
+                )
+              }
             />
 
             <ActionButton

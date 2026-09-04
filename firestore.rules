@@ -123,6 +123,166 @@ service cloud.firestore {
       allow write: if false;
     }
 
+
+    /* Conversations — direct messages, groups, and the org's Town Hall.
+
+       Three shapes in one collection, told apart by `type`. The read
+       rule is the entire membership model for Town Hall: it carries no
+       participant list, because its membership is "everyone currently
+       in the org" and that changes on every invite accepted and every
+       person removed. Deriving it from the live `users/{uid}` doc — the
+       same way `tasks` and `events` derive theirs — means there is no
+       array to keep in sync, and no Cloud Function needed to do it.
+
+       Creation is server-only. A conversation names the people in it,
+       and a client able to write `participantIds` could add itself to a
+       thread it was never part of, or open one in somebody else's name.
+       `actions/messages` resolves the caller from the session cookie and
+       checks the org of every uid it is handed.
+
+       Sending, by contrast, IS a direct client write — see the
+       subcollection below. A message is ordinary org-scoped data like a
+       task, not a capability like a room id, so it is gated here rather
+       than round-tripped through a server action. */
+    match /conversations/{conversationId} {
+
+      /* Written as a disjunction rather than a ternary on `type`, and
+         that is load-bearing rather than a matter of taste.
+
+         A LIST — the rail's `orgId + array-contains uid + orderBy`
+         query — is authorized against the QUERY, not against the rows
+         it would return. Firestore has to prove the rule holds for
+         every document the query could possibly match, using only the
+         query's own constraints. Nothing in that query constrains
+         `type`, so a ternary branching on `type` is unresolvable and
+         the entire listen is refused.
+
+         In this form the `array-contains` filter proves the second
+         operand outright, so the OR is true whatever `type` turns out
+         to be, and the query is provable. A single-document GET was
+         never affected — `resource.data` is concrete there — which is
+         exactly why Town Hall kept working while every dm and group
+         silently vanished from the rail and the notification panel.
+
+         The permission granted is unchanged: townhall => any member of
+         the org; anything else => a participant, in the org. */
+      function mayRead() {
+        return isInOrg(resource.data.orgId)
+          && (resource.data.type == 'townhall' ||
+              request.auth.uid in resource.data.participantIds);
+      }
+
+      /* The same split `lib/messages/access` makes: in Town Hall,
+         posting is narrower than reading. Everyone gets the notices;
+         only the OWNER writes them. */
+      function mayPost() {
+        return resource.data.type == 'townhall'
+          ? isOwner(resource.data.orgId)
+          : (isInOrg(resource.data.orgId) &&
+             request.auth.uid in resource.data.participantIds);
+      }
+
+      /* `lastReadAt` is one map shared by everyone in the thread, so
+         "only these fields" is not enough on its own — without this, a
+         participant could mark a colleague's unread thread as read, or
+         wipe the entry of someone who had already read it. */
+      function touchesOnlyOwnReadReceipt() {
+        return !editedKeys().hasAny(['lastReadAt']) ||
+          request.resource.data.lastReadAt
+            .diff(resource.data.lastReadAt)
+            .affectedKeys()
+            .hasOnly([request.auth.uid]);
+      }
+
+      allow read: if isSignedIn() && mayRead();
+
+      // Creation is server-only (Admin SDK) — see the block comment above.
+      allow create: if false;
+
+      /* Cancelled engagements keep their record and so do conversations:
+         a thread is the account of what was said, and a hole in it is
+         worse than a message marked withdrawn. */
+      allow delete: if false;
+
+      /* A participant may only touch the fields their own use of the
+         thread is responsible for: their own `lastReadAt` entry, and the
+         denormalized "what happened last" trio that every send has to
+         keep current. Nothing here can add or remove a participant,
+         rename the conversation, or change its type — that stays
+         server-owned the same way `roomId` and `callActive` do on an
+         engagement.
+
+         Marking a thread read is something any reader may do; writing
+         the trio is not, because it is the left rail's account of who
+         said the last thing. So the trio needs post rights, which in
+         Town Hall means the OWNER — otherwise a Member who cannot post
+         a notice could still forge the preview of one. */
+      allow update: if isSignedIn()
+        && editedKeys().hasOnly([
+             'lastMessageAt', 'lastMessagePreview', 'lastMessageBy', 'lastReadAt'
+           ])
+        && touchesOnlyOwnReadReceipt()
+        && (!editedKeys().hasAny(['lastMessageBy']) ||
+            request.resource.data.lastMessageBy == request.auth.uid)
+        && (editedKeys().hasOnly(['lastReadAt']) ? mayRead() : mayPost());
+
+      match /messages/{messageId} {
+
+        /* One parent lookup per evaluation, the same pattern
+           `projects/{projectId}/files/{fileId}` already uses. Repeated
+           calls within a single evaluation are served from cache, so the
+           read and write rules below share one get(). */
+        function conversation() {
+          return get(/databases/$(database)/documents/conversations/$(conversationId)).data;
+        }
+
+        allow read: if isSignedIn() && (
+          conversation().type == 'townhall'
+            ? isInOrg(conversation().orgId)
+            : (isInOrg(conversation().orgId) &&
+               request.auth.uid in conversation().participantIds)
+        );
+
+        /* The client writes this one directly, so this rule is the only
+           thing standing between a text field and the collection: it
+           pins the author to the session, the timestamp to the server,
+           and the length to MAX_MESSAGE_LENGTH in
+           `lib/validations/messages`. `senderName` is deliberately not a
+           field — see the note in `types/message` — so there is nothing
+           here for a sender to forge a display name into. */
+        allow create: if isSignedIn()
+          && request.resource.data.keys().hasOnly([
+               'senderId', 'createdAt', 'text', 'editedAt', 'deletedAt'
+             ])
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 4000
+          && (
+            conversation().type == 'townhall'
+              ? isOwner(conversation().orgId)
+              : (isInOrg(conversation().orgId) &&
+                 request.auth.uid in conversation().participantIds)
+          );
+
+        /* Editing and soft-deleting your own message only. Deletion is
+           withheld outright: `deletedAt` keeps the row and the thread's
+           shape, and removing the document would leave replies answering
+           nothing. */
+        allow update: if isSignedIn()
+          && resource.data.senderId == request.auth.uid
+          && editedKeys().hasOnly(['text', 'editedAt', 'deletedAt'])
+          && (!editedKeys().hasAny(['text']) || (
+               request.resource.data.text is string &&
+               request.resource.data.text.size() > 0 &&
+               request.resource.data.text.size() <= 4000
+             ));
+
+        allow delete: if false;
+      }
+    }
+
     /* Guests are server-only, and the read side is the point: a workspace's
        guest list is its client list. Any Member could otherwise enumerate
        every outside party the studio has ever met with, along with their

@@ -1,0 +1,460 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { format, isSameDay, isToday, isYesterday } from "date-fns";
+import { Lock, Megaphone, MessagesSquare, SendHorizonal, Users } from "lucide-react";
+import {
+  MESSAGE_PAGE_SIZE,
+  loadOlderMessages,
+  markConversationRead,
+  sendMessage,
+  subscribeToMessages,
+} from "@/lib/queries/messages";
+import { canPostToConversation } from "@/lib/messages/access";
+import { conversationTitle } from "@/lib/messages/summary";
+import { MAX_MESSAGE_LENGTH } from "@/lib/validations/messages";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { cn } from "@/lib/utils/classnames";
+import type { Member } from "@/types/member";
+import type { Conversation, Message } from "@/types/message";
+
+/* ------------------------------------------------------------------ */
+/*  Message thread                                                     */
+/*                                                                     */
+/*  Header, scrollback, composer. It holds exactly one listener — the  */
+/*  open thread — and drops it when the conversation changes.          */
+/*                                                                     */
+/*  Laid out the way the brief asked for: everything left-aligned      */
+/*  under its author, the way Teams and Slack do it, rather than the   */
+/*  two-sided SMS arrangement. Your own messages are told apart by a   */
+/*  lighter rung on the surface ladder, not by which wall they sit     */
+/*  against — in a group, "who said this" matters more than "was it    */
+/*  me", and alternating sides makes a five-person thread zigzag.      */
+/*                                                                     */
+/*  Sender names are resolved here from the member list the page       */
+/*  already holds, rather than read off the message. Nothing is stored */
+/*  on a message that its author could have made up: see the note in   */
+/*  `types/message`.                                                   */
+/* ------------------------------------------------------------------ */
+
+/** Matches the composer's `max-h-40`, in pixels, for the auto-grow. */
+const COMPOSER_MAX_HEIGHT = 160;
+
+interface Viewer {
+  id: string;
+  name: string;
+  orgId: string;
+  role: string;
+  photoURL?: string | null;
+}
+
+interface MessageThreadProps {
+  conversation: Conversation | null;
+  viewer: Viewer;
+  members: Member[];
+  /** Shown while the conversation is still materializing. */
+  fallbackTitle?: string;
+  subtitle?: string;
+}
+
+/** "Today" and "Yesterday" beat a date somebody has to decode. */
+function dayLabel(date: Date): string {
+  if (isToday(date)) return "Today";
+  if (isYesterday(date)) return "Yesterday";
+  return format(date, "d MMMM yyyy");
+}
+
+export function MessageThread({
+  conversation,
+  viewer,
+  members,
+  fallbackTitle = "Conversation",
+  subtitle,
+}: MessageThreadProps) {
+  const [live, setLive] = useState<Message[]>([]);
+  const [older, setOlder] = useState<Message[]>([]);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const conversationId = conversation?.id ?? null;
+
+  const directory = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+  const liveNames = useMemo(
+    () => Object.fromEntries(members.map((m) => [m.id, m.name])),
+    [members]
+  );
+
+  /* One listener, bounded, torn down when the thread changes. */
+  useEffect(() => {
+    if (!conversationId) return;
+
+    setLive([]);
+    setOlder([]);
+    setExhausted(false);
+
+    return subscribeToMessages(conversationId, setLive);
+  }, [conversationId]);
+
+  const messages = useMemo(() => [...older, ...live], [older, live]);
+
+  /* Follow the transcript down as it grows. */
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [live.length, conversationId]);
+
+  /* Grow the composer to fit what is being typed, up to the cap. A
+     one-row box that scrolls internally hides the start of your own
+     paragraph while you are still writing it. */
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "0px";
+    el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_HEIGHT)}px`;
+  }, [draft]);
+
+  /* Mark it read once what is on screen is newer than the last receipt.
+     Self-limiting: the write moves the receipt past the message, so the
+     next run of this effect has nothing left to do. */
+  useEffect(() => {
+    if (!conversation) return;
+
+    const lastMessage = conversation.lastMessageAt?.toMillis?.() ?? 0;
+    const lastRead = conversation.lastReadAt?.[viewer.id]?.toMillis?.() ?? 0;
+    if (lastMessage === 0 || lastRead >= lastMessage) return;
+
+    void markConversationRead(conversation.id, viewer.id).catch((err) =>
+      console.error("[MessageThread] Could not mark read:", err)
+    );
+  }, [conversation, viewer.id]);
+
+  const decision = conversation
+    ? canPostToConversation({
+        type: conversation.type,
+        conversationOrgId: conversation.orgId,
+        participantIds: conversation.participantIds ?? [],
+        viewerUid: viewer.id,
+        viewerOrgId: viewer.orgId,
+        viewerRole: viewer.role,
+      })
+    : null;
+
+  const mayPost = decision?.allowed === true;
+
+  const loadEarlier = useCallback(async () => {
+    const oldest = messages[0];
+    if (!conversationId || !oldest?.createdAt || loadingOlder) return;
+
+    setLoadingOlder(true);
+    try {
+      const page = await loadOlderMessages(conversationId, oldest.createdAt);
+      if (page.length < MESSAGE_PAGE_SIZE) setExhausted(true);
+      setOlder((prev) => [...page, ...prev]);
+    } catch (err) {
+      console.error("[MessageThread] Could not load history:", err);
+      setError("Could not load earlier messages.");
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [conversationId, messages, loadingOlder]);
+
+  const send = useCallback(async () => {
+    const text = draft.trim();
+    if (!conversationId || !text || sending || !mayPost) return;
+
+    setSending(true);
+    setError(null);
+    try {
+      await sendMessage(conversationId, viewer.id, text);
+      setDraft("");
+    } catch (err) {
+      console.error("[MessageThread] Send failed:", err);
+      setError("That message did not send. Try again.");
+    } finally {
+      setSending(false);
+    }
+  }, [conversationId, draft, sending, mayPost, viewer.id]);
+
+  const title = conversation
+    ? conversationTitle(conversation, viewer.id, liveNames)
+    : fallbackTitle;
+
+  /* A dm is headed by the person on the other end, so it gets their
+     face rather than an icon — the same thing the rail and the
+     Personnel Network show, so the three agree at a glance. */
+  const partnerUid =
+    conversation?.type === "dm"
+      ? conversation.participantIds?.find((id) => id !== viewer.id)
+      : undefined;
+  const partner = partnerUid ? directory.get(partnerUid) : undefined;
+
+  const placeholder =
+    conversation?.type === "townhall" ? "Post a notice…" : `Message ${title}…`;
+
+  /* A full first page means there is probably more behind it. */
+  const mayHaveHistory = !exhausted && live.length >= MESSAGE_PAGE_SIZE;
+
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-line/[0.06] bg-surface-card/40 shadow-raised ring-1 ring-line/5 backdrop-blur-sm">
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <header className="flex shrink-0 items-center gap-3 border-b border-line/[0.05] bg-surface-card/60 px-5 py-3.5">
+        {conversation?.type === "dm" ? (
+          <UserAvatar size="sm" name={title} photoURL={partner?.photoURL} />
+        ) : (
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-control shadow-card ring-1 ring-line/[0.06]">
+            {conversation?.type === "group" ? (
+              <Users className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
+            ) : (
+              <Megaphone className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
+            )}
+          </span>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-[14px] font-medium tracking-tight text-ink">{title}</h1>
+          {subtitle && (
+            <p className="truncate font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim">
+              {subtitle}
+            </p>
+          )}
+        </div>
+
+        {conversation?.type === "townhall" && (
+          <span className="hidden shrink-0 items-center gap-1.5 rounded-md bg-surface-control px-2 py-1 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim ring-1 ring-line/[0.06] sm:flex">
+            <Megaphone className="h-2.5 w-2.5" aria-hidden />
+            Broadcast
+          </span>
+        )}
+      </header>
+
+      {/* ── Transcript ─────────────────────────────────────────── */}
+      <div className="custom-scrollbar flex-1 overflow-y-auto px-5 py-6">
+        {mayHaveHistory && (
+          <div className="mb-6 flex items-center gap-3">
+            <span className="h-px flex-1 bg-line/[0.06]" />
+            <button
+              type="button"
+              onClick={loadEarlier}
+              disabled={loadingOlder}
+              className="rounded-full border border-line/[0.06] bg-surface-control px-3 py-1 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink disabled:opacity-40"
+            >
+              {loadingOlder ? "Loading…" : "Load earlier"}
+            </button>
+            <span className="h-px flex-1 bg-line/[0.06]" />
+          </div>
+        )}
+
+        {messages.length === 0 ? (
+          <EmptyThread type={conversation?.type} mayPost={mayPost} />
+        ) : (
+          <ol className="flex flex-col">
+            {messages.map((message, index) => {
+              const previous = messages[index - 1];
+              const sender = directory.get(message.senderId);
+              const sentAt = message.createdAt?.toDate?.() ?? null;
+              const previousAt = previous?.createdAt?.toDate?.() ?? null;
+              const mine = message.senderId === viewer.id;
+
+              /* A new day, or a new voice, gets a heading. Consecutive
+                 lines from one person are one block — the name above
+                 every line makes a monologue unreadable. */
+              const newDay = Boolean(sentAt && (!previousAt || !isSameDay(sentAt, previousAt)));
+              const newSpeaker = newDay || previous?.senderId !== message.senderId;
+
+              return (
+                <li key={message.id} className={message.id ? "stream-in" : undefined}>
+                  {newDay && sentAt && (
+                    <div className="my-6 flex items-center gap-3 first:mt-0">
+                      <span className="h-px flex-1 bg-line/[0.06]" />
+                      <span className="rounded-full bg-surface-control px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim ring-1 ring-line/[0.05]">
+                        {dayLabel(sentAt)}
+                      </span>
+                      <span className="h-px flex-1 bg-line/[0.06]" />
+                    </div>
+                  )}
+
+                  <div className={cn("group/msg flex gap-3", newSpeaker ? "mt-5" : "mt-1")}>
+                    <div className="w-8 shrink-0">
+                      {newSpeaker ? (
+                        <UserAvatar
+                          size="sm"
+                          name={sender?.name ?? "Unknown operative"}
+                          photoURL={sender?.photoURL}
+                        />
+                      ) : (
+                        /* The timestamp takes the avatar's place on hover,
+                           so a grouped line can still be placed in time
+                           without a stamp on every row. */
+                        sentAt && (
+                          <span className="flex h-full items-start justify-end pr-0.5 pt-1 font-mono text-[9px] tabular-nums text-ink-faint opacity-0 transition-opacity group-hover/msg:opacity-100">
+                            {format(sentAt, "HH:mm")}
+                          </span>
+                        )
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      {newSpeaker && (
+                        <div className="mb-1.5 flex items-baseline gap-2">
+                          <span className="text-[12px] font-medium tracking-tight text-ink-strong">
+                            {mine ? "You" : (sender?.name ?? "Unknown operative")}
+                          </span>
+                          {sentAt && (
+                            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim">
+                              {format(sentAt, "HH:mm")}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {message.deletedAt ? (
+                        <p className="inline-block rounded-2xl border border-dashed border-line/[0.1] px-3.5 py-2 text-[13px] italic text-ink-dim">
+                          Message withdrawn
+                        </p>
+                      ) : (
+                        <div
+                          className={cn(
+                            "inline-block max-w-[46rem] rounded-2xl px-3.5 py-2.5 shadow-card ring-1 transition-colors",
+                            /* Own messages sit one rung higher on the
+                               surface ladder. Same shape, same side, a
+                               shade nearer the light. */
+                            mine
+                              ? "bg-surface-control ring-line/[0.07]"
+                              : "bg-surface-raised ring-line/[0.05]",
+                            newSpeaker && "rounded-tl-md"
+                          )}
+                        >
+                          <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ink">
+                            {message.text}
+                          </p>
+                          {message.editedAt && (
+                            <span className="mt-1 block font-mono text-[9px] uppercase tracking-[0.15em] text-ink-faint">
+                              edited
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+
+        <div ref={bottomRef} />
+      </div>
+
+      {/* ── Composer ───────────────────────────────────────────── */}
+      <div className="shrink-0 border-t border-line/[0.05] bg-surface-card/60 p-4">
+        {error && (
+          <p className="mb-2.5 rounded-lg bg-orbit-red/10 px-3 py-2 font-mono text-[11px] text-orbit-red ring-1 ring-orbit-red/20">
+            {error}
+          </p>
+        )}
+
+        {/* Disabled, and says why — the same bargain the Call button in
+            the Personnel Network makes. Hiding the composer would make
+            Town Hall look broken rather than deliberately one-way. */}
+        {mayPost ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void send();
+            }}
+            className="flex items-end gap-2 rounded-xl border border-line/[0.06] bg-surface-control p-1.5 shadow-card transition-colors focus-within:border-line/[0.12]"
+          >
+            <textarea
+              ref={composerRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void send();
+                }
+              }}
+              rows={1}
+              maxLength={MAX_MESSAGE_LENGTH}
+              placeholder={placeholder}
+              aria-label="Message"
+              disabled={sending || !conversation}
+              className="custom-scrollbar max-h-40 flex-1 resize-none bg-transparent px-2.5 py-2 text-[13px] leading-relaxed text-ink placeholder:text-ink-dim focus-visible:outline-none disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={sending || !draft.trim() || !conversation}
+              aria-label="Send message"
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-300",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                draft.trim() && !sending
+                  ? "bg-ink text-on-ink hover:-translate-y-px"
+                  : "bg-surface-raised text-ink-faint",
+                "disabled:cursor-not-allowed"
+              )}
+            >
+              <SendHorizonal className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </form>
+        ) : (
+          <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-line/[0.08] bg-surface-control/60 px-3.5 py-3">
+            <Lock className="h-3.5 w-3.5 shrink-0 text-ink-dim" aria-hidden />
+            <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-ink-dim">
+              {decision && decision.allowed === false
+                ? decision.message
+                : "Opening conversation…"}
+            </p>
+          </div>
+        )}
+
+        {/* Only once it matters — an always-on hint is chrome. */}
+        {mayPost && draft.length > MAX_MESSAGE_LENGTH - 200 && (
+          <p className="mt-2 text-right font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim">
+            {MAX_MESSAGE_LENGTH - draft.length} characters left
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+function EmptyThread({
+  type,
+  mayPost,
+}: {
+  type?: Conversation["type"];
+  mayPost: boolean;
+}) {
+  const isTownHall = type === "townhall";
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-control shadow-card ring-1 ring-line/[0.06]">
+        {isTownHall ? (
+          <Megaphone className="h-5 w-5 text-ink-faint" aria-hidden />
+        ) : (
+          <MessagesSquare className="h-5 w-5 text-ink-faint" aria-hidden />
+        )}
+      </span>
+      <div className="space-y-1.5">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+          {isTownHall ? "No notices yet" : "No messages yet"}
+        </p>
+        <p className="max-w-xs text-[12px] leading-relaxed text-ink-faint">
+          {isTownHall
+            ? mayPost
+              ? "Anything posted here reaches everyone in the workspace."
+              : "Notices from the owner will appear here."
+            : "Say something to get this started."}
+        </p>
+      </div>
+    </div>
+  );
+}
