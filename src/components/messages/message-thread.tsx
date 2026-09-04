@@ -11,7 +11,7 @@ import {
   Smile,
   Users,
 } from "lucide-react";
-import { EmojiPicker } from "@/components/messages/emoji-picker";
+import { MediaPicker } from "@/components/messages/media-picker";
 import { emojiOnlyCount } from "@/lib/messages/emoji";
 import {
   MESSAGE_PAGE_SIZE,
@@ -28,7 +28,7 @@ import { MAX_MESSAGE_LENGTH } from "@/lib/validations/messages";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils/classnames";
 import type { Member } from "@/types/member";
-import type { Conversation, Message } from "@/types/message";
+import type { Conversation, Message, MessageAttachment } from "@/types/message";
 
 /* ------------------------------------------------------------------ */
 /*  Message thread                                                     */
@@ -214,22 +214,29 @@ export function MessageThread({
     });
   }, []);
 
-  const send = useCallback(async () => {
-    const text = draft.trim();
-    if (!conversationId || !text || sending || !mayPost) return;
+  /* A picture may travel with whatever is already in the box, or on its
+     own — picking a GIF mid-sentence sends the sentence with it rather
+     than throwing the draft away. */
+  const send = useCallback(
+    async (attachment: MessageAttachment | null = null) => {
+      const text = draft.trim();
+      if (!conversationId || sending || !mayPost) return;
+      if (!text && !attachment) return;
 
-    setSending(true);
-    setError(null);
-    try {
-      await sendMessage(conversationId, viewer.id, text);
-      setDraft("");
-    } catch (err) {
-      console.error("[MessageThread] Send failed:", err);
-      setError("That message did not send. Try again.");
-    } finally {
-      setSending(false);
-    }
-  }, [conversationId, draft, sending, mayPost, viewer.id]);
+      setSending(true);
+      setError(null);
+      try {
+        await sendMessage(conversationId, viewer.id, text, attachment);
+        setDraft("");
+      } catch (err) {
+        console.error("[MessageThread] Send failed:", err);
+        setError("That message did not send. Try again.");
+      } finally {
+        setSending(false);
+      }
+    },
+    [conversationId, draft, sending, mayPost, viewer.id]
+  );
 
   const title = conversation
     ? conversationTitle(conversation, viewer.id, liveNames)
@@ -499,6 +506,12 @@ export function MessageThread({
                           <p className="rounded-2xl border border-dashed border-line/[0.1] px-4 py-2.5 text-[13px] italic text-ink-dim">
                             Message withdrawn
                           </p>
+                        ) : message.attachment ? (
+                          <MessageMedia
+                            attachment={message.attachment}
+                            caption={message.text}
+                            mine={mine}
+                          />
                         ) : emojiOnlyCount(message.text) > 0 ? (
                           /* A lone 👍 is a gesture, not a sentence. At
                              body size inside a bubble it reads as a
@@ -573,8 +586,12 @@ export function MessageThread({
             className="relative flex items-end gap-2 rounded-xl border border-line/[0.06] bg-surface-control p-1.5 shadow-card transition-colors focus-within:border-line/[0.12]"
           >
             {emojiOpen && (
-              <EmojiPicker
-                onSelect={insertEmoji}
+              <MediaPicker
+                onInsertEmoji={insertEmoji}
+                onSendAttachment={(attachment) => {
+                  setEmojiOpen(false);
+                  void send(attachment);
+                }}
                 onClose={() => setEmojiOpen(false)}
               />
             )}
@@ -582,9 +599,9 @@ export function MessageThread({
             <button
               type="button"
               onClick={() => setEmojiOpen((open) => !open)}
-              aria-label="Add an emoji"
+              aria-label="Emoji, GIFs and stickers"
               aria-expanded={emojiOpen}
-              title="Add an emoji"
+              title="Emoji, GIFs and stickers"
               className={cn(
                 "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
@@ -652,6 +669,69 @@ export function MessageThread({
 }
 
 /* ------------------------------------------------------------------ */
+
+/**
+ * A GIF or sticker in the transcript.
+ *
+ * The box is reserved from the stored dimensions before the image
+ * loads. Without that, every arriving GIF reflows the thread out from
+ * under whoever is reading it — the one thing a chat window must never
+ * do while somebody is mid-sentence.
+ *
+ * A sticker gets no bubble: transparency is the point of a sticker, and
+ * a panel behind it defeats it.
+ */
+function MessageMedia({
+  attachment,
+  caption,
+  mine,
+}: {
+  attachment: MessageAttachment;
+  caption: string;
+  mine: boolean;
+}) {
+  const isSticker = attachment.kind === "sticker";
+  const width = Math.min(attachment.width, isSticker ? 180 : 320);
+  const ratio = attachment.height / Math.max(attachment.width, 1);
+
+  return (
+    <figure className={cn("flex flex-col gap-1.5", mine ? "items-end" : "items-start")}>
+      <div
+        className={cn(
+          "overflow-hidden",
+          isSticker ? "rounded-lg" : "rounded-2xl bg-surface-control ring-1 ring-line/[0.06]"
+        )}
+        style={{ width, aspectRatio: `${attachment.width} / ${attachment.height}` }}
+      >
+        {/* Deliberately not next/image: the optimizer re-encodes, and a
+            re-encoded GIF is a still picture. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={attachment.url}
+          alt={attachment.alt}
+          width={attachment.width}
+          height={attachment.height}
+          loading="lazy"
+          className="h-full w-full object-cover"
+          style={{ maxHeight: width * ratio }}
+        />
+      </div>
+
+      {caption && (
+        <figcaption
+          className={cn(
+            "max-w-full rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed shadow-card ring-1",
+            mine
+              ? "bg-surface-active text-ink ring-line/[0.08]"
+              : "bg-surface-control text-ink ring-line/[0.06]"
+          )}
+        >
+          {caption}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
 
 function ThreadHeading({ title, subtitle }: { title: string; subtitle?: string }) {
   return (

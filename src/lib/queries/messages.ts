@@ -14,8 +14,9 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import type { Conversation, Message } from "@/types/message";
+import type { Conversation, Message, MessageAttachment } from "@/types/message";
 import { messagePreview, messageTextSchema } from "@/lib/validations/messages";
+import { hasContent, isValidAttachment } from "@/lib/messages/attachment";
 
 /* ------------------------------------------------------------------ */
 /*  Message subscriptions and writes                                   */
@@ -207,9 +208,25 @@ export async function loadOlderMessages(
 export async function sendMessage(
   conversationId: string,
   senderId: string,
-  rawText: string
+  rawText: string,
+  attachment: MessageAttachment | null = null
 ): Promise<void> {
-  const text = messageTextSchema.parse(rawText);
+  const text = rawText.trim();
+
+  /* A picture may travel with no words, and words with no picture, but
+     an empty row is not a message. */
+  if (!hasContent(text, attachment)) {
+    throw new Error("Write something first.");
+  }
+  if (text) messageTextSchema.parse(text);
+
+  /* Refused here so the sender gets a message rather than a rejected
+     write. The rules refuse it again — see the note in
+     `lib/messages/attachment` about why the URL is not the client's to
+     choose freely. */
+  if (attachment && !isValidAttachment(attachment)) {
+    throw new Error("That attachment is not allowed.");
+  }
 
   const batch = writeBatch(db);
   const messageRef = doc(messagesRef(conversationId));
@@ -217,6 +234,7 @@ export async function sendMessage(
   batch.set(messageRef, {
     senderId,
     text,
+    attachment,
     createdAt: serverTimestamp(),
     editedAt: null,
     deletedAt: null,
@@ -224,7 +242,13 @@ export async function sendMessage(
 
   batch.update(doc(db, CONVERSATIONS_COLLECTION, conversationId), {
     lastMessageAt: serverTimestamp(),
-    lastMessagePreview: messagePreview(text),
+    /* The rail cannot show a picture, so it says what arrived. Words win
+       when there are any — a caption is more use than "Sent a GIF". */
+    lastMessagePreview: text
+      ? messagePreview(text)
+      : attachment?.kind === "sticker"
+        ? "Sent a sticker"
+        : "Sent a GIF",
     lastMessageBy: senderId,
   });
 

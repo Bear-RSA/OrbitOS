@@ -250,15 +250,71 @@ service cloud.firestore {
            `lib/validations/messages`. `senderName` is deliberately not a
            field — see the note in `types/message` — so there is nothing
            here for a sender to forge a display name into. */
+        /* A GIF or sticker rides along as a reference, never as bytes.
+
+           The URL check is the load-bearing part, and it is a security
+           control rather than tidiness. An attachment becomes an
+           <img src> in every participant's browser, so a member able to
+           write an arbitrary URL there has a tracking pixel: point it at
+           a host they control and every colleague who scrolls past the
+           message reports their IP, their user agent and the moment they
+           read it. The image does not even have to exist.
+
+           So the host is pinned to the provider's own CDN, anchored at
+           both ends — an unanchored pattern would accept
+           `https://evil.test/media.giphy.com/x.gif`, which is the usual
+           way an allowlist turns out to allow everything. Mirrored in
+           `lib/messages/attachment` so the client refuses first and the
+           sender sees an error instead of a rejected write. */
+        function attachedMedia() {
+          return request.resource.data.attachment;
+        }
+
+        function hasAttachment() {
+          return 'attachment' in request.resource.data
+            && attachedMedia() != null;
+        }
+
+        function providerUrl(value) {
+          return value is string
+            && value.matches('^https://(media[0-9]*|i)[.]giphy[.]com/[A-Za-z0-9._~/-]+([?][A-Za-z0-9._~/&=%-]*)?$');
+        }
+
+        function attachmentIsSound() {
+          return attachedMedia().keys().hasAll([
+               'kind', 'url', 'previewUrl', 'width', 'height',
+               'alt', 'provider', 'providerId'
+             ])
+            && attachedMedia().keys().hasOnly([
+               'kind', 'url', 'previewUrl', 'width', 'height',
+               'alt', 'provider', 'providerId'
+             ])
+            && (attachedMedia().kind == 'gif' || attachedMedia().kind == 'sticker')
+            && attachedMedia().provider == 'giphy'
+            && providerUrl(attachedMedia().url)
+            && providerUrl(attachedMedia().previewUrl)
+            && attachedMedia().providerId is string
+            && attachedMedia().providerId.size() > 0
+            && attachedMedia().providerId.size() <= 64
+            && attachedMedia().alt is string
+            && attachedMedia().alt.size() <= 200
+            && attachedMedia().width is int
+            && attachedMedia().width >= 1 && attachedMedia().width <= 4000
+            && attachedMedia().height is int
+            && attachedMedia().height >= 1 && attachedMedia().height <= 4000;
+        }
+
         allow create: if isSignedIn()
           && request.resource.data.keys().hasOnly([
-               'senderId', 'createdAt', 'text', 'editedAt', 'deletedAt'
+               'senderId', 'createdAt', 'text', 'editedAt', 'deletedAt', 'attachment'
              ])
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.createdAt == request.time
           && request.resource.data.text is string
-          && request.resource.data.text.size() > 0
           && request.resource.data.text.size() <= 4000
+          /* Words, or a picture, or both — never neither. */
+          && (request.resource.data.text.size() > 0 || hasAttachment())
+          && (!hasAttachment() || attachmentIsSound())
           && (
             conversation().type == 'townhall'
               ? isOwner(conversation().orgId)

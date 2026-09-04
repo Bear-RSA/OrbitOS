@@ -83,13 +83,47 @@ export interface Conversation {
   lastReadAt: Record<string, Timestamp>;
 }
 
+/**
+ * A picture carried by a message — a GIF or a sticker.
+ *
+ * Stored by REFERENCE, not by value: the bytes stay on the providers
+ * CDN and the message holds a URL. That is what keeps a 3MB reaction
+ * out of Firestore, where every participants listener would pay to
+ * download it.
+ *
+ * The dimensions travel with it so the thread can reserve the right box
+ * before the image loads. Without them every incoming GIF reflows the
+ * transcript out from under whoever is reading it.
+ */
+export interface MessageAttachment {
+  kind: "gif" | "sticker";
+  /** The animated file. */
+  url: string;
+  /** A smaller still or low-res loop, for the grid and for slow links. */
+  previewUrl: string;
+  width: number;
+  height: number;
+  /** What it shows, for anyone who cannot see it. */
+  alt: string;
+  provider: "giphy";
+  /** The providers own id, so a duplicate send is recognisable. */
+  providerId: string;
+}
+
 export interface Message {
   id: string;
   senderId: string;
   createdAt: Timestamp;
 
-  /** Text-only for now; attachments ride the existing Cloudinary path later. */
+  /**
+   * The written part. May be empty when the message is only a picture —
+   * but a message with neither text nor attachment is not a message,
+   * and both the client and the rules refuse it.
+   */
   text: string;
+
+  /** null for an ordinary written message. */
+  attachment: MessageAttachment | null;
 
   editedAt: Timestamp | null;
 
