@@ -20,9 +20,35 @@ interface WorkspaceProjectsProps {
   userId?: string;
   isOwner?: boolean;
   onRefresh?: () => void;
+  /** Section heading. */
+  title?: string;
+  /** The pill under the heading. */
+  eyebrow?: string;
+  /**
+   * Whether the owner may reorder from here.
+   *
+   * Saving writes `priority: index + 1` across the projects on screen, so
+   * it is only correct when every project is on screen. The dashboard
+   * shows a filtered top-two, where saving would renumber those two and
+   * silently discard the ordering of everything absent.
+   */
+  allowReorder?: boolean;
+  /** The archive shelf belongs with the full listing, not a focus list. */
+  showArchiveShelf?: boolean;
 }
 
-export function WorkspaceProjects({ projectsHealth, projects, orgId, userId, isOwner, onRefresh }: WorkspaceProjectsProps) {
+export function WorkspaceProjects({
+  projectsHealth,
+  projects,
+  orgId,
+  userId,
+  isOwner,
+  onRefresh,
+  title = "Active Projects",
+  eyebrow = "Ecosystem Tracking",
+  allowReorder = true,
+  showArchiveShelf = true,
+}: WorkspaceProjectsProps) {
   const router = useRouter();
   const [reordering, setReordering] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -59,13 +85,13 @@ export function WorkspaceProjects({ projectsHealth, projects, orgId, userId, isO
   const [restoreError, setRestoreError] = useState<string | null>(null);
 
   const loadArchived = useCallback(async () => {
-    if (!orgId) return;
+    if (!orgId || !showArchiveShelf) return;
     try {
       setArchived(await getArchivedProjectsByOrg(orgId));
     } catch (err) {
       console.error("[WorkspaceProjects] Failed to load archived projects:", err);
     }
-  }, [orgId]);
+  }, [orgId, showArchiveShelf]);
 
   useEffect(() => {
     loadArchived();
@@ -141,10 +167,10 @@ export function WorkspaceProjects({ projectsHealth, projects, orgId, userId, isO
     <div className="w-full">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="mb-3 text-2xl font-light tracking-tight text-ink sm:text-3xl">Active Projects</h2>
+          <h2 className="mb-3 text-2xl font-light tracking-tight text-ink sm:text-3xl">{title}</h2>
           <div className="inline-flex items-center gap-2 rounded-full bg-surface-control px-3 py-1 ring-1 ring-inset ring-line/[0.07]">
              <span className="h-1.5 w-1.5 rounded-full bg-orbit-green shadow-[0_0_8px_rgb(var(--orbit-green)_/_0.4)]" aria-hidden />
-             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-muted">Ecosystem Tracking</span>
+             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-muted">{eyebrow}</span>
           </div>
         </div>
 
@@ -158,8 +184,9 @@ export function WorkspaceProjects({ projectsHealth, projects, orgId, userId, isO
             />
           )}
 
-        {/* Project Priority Controls — Owner only */}
-        {isOwner && (
+        {/* Project Priority Controls — Owner only, and only over a complete
+            listing. See `allowReorder`. */}
+        {isOwner && allowReorder && (
           <div className="flex items-center gap-2">
             {!reordering ? (
               <ActionButton icon={GripVertical} label="Project Priority" onClick={startReordering} />

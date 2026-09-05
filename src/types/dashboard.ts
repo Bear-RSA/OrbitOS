@@ -103,6 +103,12 @@ export interface DashboardData {
   personal: PersonalMetrics;
   projects: Project[];
   projectsHealth: ProjectHealth[];
+  /**
+   * The at most two projects the dashboard spotlights, ranked by how soon
+   * their next unfinished task is due. Empty when nothing anywhere carries
+   * a due date, in which case the dashboard shows no project section.
+   */
+  focusProjects: ProjectHealth[];
   /** Org-wide urgency. The Horizon default. */
   urgencyBuckets: UrgencyBuckets;
   /** The viewer's own tasks, behind the Horizon's Mine toggle. */

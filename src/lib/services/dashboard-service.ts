@@ -10,6 +10,7 @@ import {
 import {
   calculateProjectHealth,
   categorizeTasksByUrgency,
+  selectFocusProjects,
 } from "@/lib/utils/dashboard-logic";
 import { Member } from "@/types/member";
 import { Task } from "@/types/task";
@@ -213,14 +214,17 @@ function assembleDashboard(
   const sortedProjects = sortProjectsByPriority(projects);
   const myProjectIds = new Set(myTasks.map(t => t.projectId));
 
+  const projectsHealth = sortedProjects.map(p =>
+    calculateProjectHealth(p, tasks.filter(t => t.projectId === p.id))
+  );
+
   return {
     role: viewer.role === "OWNER" ? "OWNER" : "MEMBER",
     metrics,
     personal,
     projects: sortedProjects,
-    projectsHealth: sortedProjects.map(p =>
-      calculateProjectHealth(p, tasks.filter(t => t.projectId === p.id))
-    ),
+    projectsHealth,
+    focusProjects: selectFocusProjects(projectsHealth, tasks),
     urgencyBuckets: categorizeTasksByUrgency(tasks),
     myUrgencyBuckets: categorizeTasksByUrgency(myTasks),
     myProjects: sortedProjects.filter(p => myProjectIds.has(p.id)),

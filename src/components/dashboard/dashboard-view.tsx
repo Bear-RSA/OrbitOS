@@ -156,19 +156,31 @@ export function DashboardView({
         </div>
       </ScrollReveal>
 
-      {/* Projects Overview — every project in the workspace, for every seat.
-          Reordering and restoring remain owner-only inside the component. */}
-      <ScrollReveal delay={260}>
-        <div className="pt-8">
-          <WorkspaceProjects
-            projectsHealth={data.projectsHealth}
-            orgId={orgId}
-            userId={userId}
-            isOwner={isOwner}
-            onRefresh={onRefresh}
-          />
-        </div>
-      </ScrollReveal>
+      {/* Projects in Focus — at most two, ranked by how soon their next
+          unfinished task is due, so overdue work leads. Absent entirely
+          when nothing in the workspace carries a due date: an unranked
+          wall of project cards was the thing this replaced.
+
+          The full listing, the archive shelf and priority reordering all
+          live on /projects, which is the only place that sees every
+          project and can therefore renumber them safely. */}
+      {data.focusProjects.length > 0 && (
+        <ScrollReveal delay={260}>
+          <div className="pt-8">
+            <WorkspaceProjects
+              projectsHealth={data.focusProjects}
+              title="Projects in Focus"
+              eyebrow="Nearest Deadlines"
+              orgId={orgId}
+              userId={userId}
+              isOwner={isOwner}
+              allowReorder={false}
+              showArchiveShelf={false}
+              onRefresh={onRefresh}
+            />
+          </div>
+        </ScrollReveal>
+      )}
     </div>
   );
 }

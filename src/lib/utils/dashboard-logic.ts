@@ -150,3 +150,64 @@ export function calculateMemberWorkload(member: Member, tasks: Task[]): MemberWo
     }
   };
 }
+
+/* ------------------------------------------------------------------ */
+/*  Focus projects                                                     */
+/* ------------------------------------------------------------------ */
+
+/** How many projects the dashboard spotlights. */
+export const FOCUS_PROJECT_LIMIT = 2;
+
+/**
+ * The handful of projects worth putting on the dashboard.
+ *
+ * The dashboard listed every project in the workspace, which stops being
+ * a signal the moment there are more than a few: a wall of cards tells
+ * you nothing about where to look first. This ranks by the one thing
+ * that actually makes a project urgent — how soon its next unfinished
+ * task is due — and keeps the top two.
+ *
+ * Because the key is a timestamp sorted ascending, overdue work sorts
+ * ahead of upcoming work for free: a date in the past is smaller than a
+ * date in the future. No separate overdue pass is needed.
+ *
+ * A project with no unfinished, dated work is excluded outright rather
+ * than ranked last. There is no deadline to be near, so it cannot be
+ * urgent, and padding the list to two with an undated project would put
+ * something on the dashboard for no reason other than filling a slot.
+ * When nothing anywhere carries a due date the result is empty, and the
+ * caller renders no project section at all.
+ *
+ * Completed tasks are ignored. A project whose only dated task is done
+ * needs no attention, and letting a finished deadline rank it would
+ * spotlight the work least in need of looking at.
+ */
+export function selectFocusProjects(
+  projectsHealth: ProjectHealth[],
+  tasks: Task[],
+  limit: number = FOCUS_PROJECT_LIMIT
+): ProjectHealth[] {
+  const earliestDueByProject = new Map<string, number>();
+
+  for (const task of tasks) {
+    if (task.status === "done" || !task.dueDate) continue;
+    const due = task.dueDate.toMillis();
+    const current = earliestDueByProject.get(task.projectId);
+    if (current === undefined || due < current) {
+      earliestDueByProject.set(task.projectId, due);
+    }
+  }
+
+  return projectsHealth
+    .filter((ph) => earliestDueByProject.has(ph.project.id))
+    .sort((a, b) => {
+      const byDue =
+        earliestDueByProject.get(a.project.id)! - earliestDueByProject.get(b.project.id)!;
+      if (byDue !== 0) return byDue;
+      // Same deadline: fall back to the workspace's own priority order,
+      // which is how `projectsHealth` arrived. Keeps the list stable
+      // across refreshes rather than letting sort order decide.
+      return 0;
+    })
+    .slice(0, Math.max(0, limit));
+}
