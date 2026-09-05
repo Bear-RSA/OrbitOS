@@ -5,27 +5,19 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { getDashboardData } from "@/lib/services/dashboard-service";
-import { getOrgActivityAction } from "@/app/actions/activity";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Loader } from "@/components/ui/loader";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MailHealthBanner } from "@/components/dashboard/mail-health-banner";
-import { OwnerDashboardView } from "@/components/dashboard/owner-view";
-import { MemberDashboardView } from "@/components/dashboard/member-view";
+import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { EmptyDashboardState } from "@/components/dashboard/empty-dashboard-state";
-import { AddMemberDialog } from "@/components/members/add-member-dialog";
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog";
 import { CreateTaskDialog } from "@/components/tasks/create-task-dialog";
 import { AppNav } from "@/components/nav/app-nav";
 import { Task } from "@/types/task";
 import { Member } from "@/types/member";
 import { Project } from "@/types/project";
-import {
-  DashboardActivityItem,
-  OrbitalDashboardData,
-  OwnerDashboardData,
-  MemberDashboardData,
-} from "@/types/dashboard";
+import { DashboardData } from "@/types/dashboard";
 import { resolvePreferences } from "@/types/preferences";
 import { RefreshCw, Plus, ListPlus, AlertTriangle } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -37,12 +29,10 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  const [data, setData] = useState<OrbitalDashboardData | null>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [rawTasks, setRawTasks] = useState<Task[]>([]);
   const [rawMembers, setRawMembers] = useState<Member[]>([]);
   const [rawProjects, setRawProjects] = useState<Project[]>([]);
-  const [activity, setActivity] = useState<DashboardActivityItem[]>([]);
-  const [activityError, setActivityError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -51,7 +41,6 @@ export default function DashboardPage() {
   // an empty workspace.
   const [loadError, setLoadError] = useState(false);
 
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
 
@@ -63,10 +52,7 @@ export default function DashboardPage() {
       // the view model, and now hands them back. The page used to re-query
       // tasks and members alongside it — two extra org-wide collection
       // reads on every load and every refresh.
-      const [payload, activityResult] = await Promise.all([
-        getDashboardData(user.id),
-        getOrgActivityAction(),
-      ]);
+      const payload = await getDashboardData(user.id);
 
       if (!payload) {
         setLoadError(true);
@@ -78,10 +64,6 @@ export default function DashboardPage() {
       setRawMembers(payload.members);
       setRawProjects(payload.projects);
       setLoadError(false);
-
-      // The log is supplementary — its failure must not blank the page.
-      setActivity(activityResult.items);
-      setActivityError(activityResult.success ? null : activityResult.error ?? "Unavailable.");
     } catch (err) {
       console.error("Operational breach: Failed to fetch dashboard metrics", err);
       setLoadError(true);
@@ -144,17 +126,12 @@ export default function DashboardPage() {
   const clock24h = resolvePreferences(user.preferences).clock24h;
 
   // Safe resolution if data fails to load due to index propagation
-  const hasProject = data
-    ? (isOwner
-        ? (data as OwnerDashboardData).projectsHealth?.length > 0
-        : (data as MemberDashboardData).myProjects?.length > 0)
-    : false;
+  const hasProject = (data?.projectsHealth?.length ?? 0) > 0;
 
-  // Quick capture needs somewhere to put the task. Members can only file
-  // against projects they already hold work in.
-  const capturableProjects = isOwner
-    ? rawProjects
-    : ((data as MemberDashboardData | null)?.myProjects ?? []);
+  // Every seat sees every project, so every seat can file against any of
+  // them. Creating a task is member-permitted in firestore.rules and
+  // re-checked in createTaskAction.
+  const capturableProjects = data?.projects ?? rawProjects;
 
   return (
     <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
@@ -253,33 +230,21 @@ export default function DashboardPage() {
             <ActionButton icon={RefreshCw} label="Retry" onClick={refresh} disabled={refreshing} />
           </div>
         ) : !data || !hasProject ? (
+          /* Empty now means the workspace has no projects, for everyone —
+             it is no longer possible for one seat to see an empty
+             dashboard while another sees a full one. */
           <EmptyDashboardState
-            type={!isOwner && rawProjects.length > 0 ? "no_assigned_work" : "no_projects"}
+            type="no_projects"
             isOwner={isOwner}
             onCreateProject={() => setCreateProjectOpen(true)}
           />
-        ) : data.role === 'OWNER' ? (
-          <OwnerDashboardView
-            data={data as OwnerDashboardData}
+        ) : (
+          <DashboardView
+            data={data}
             members={rawMembers}
             tasks={rawTasks}
             orgId={user.orgId}
             userId={user.id}
-            activity={activity}
-            activityError={activityError}
-            clock24h={clock24h}
-            refreshKey={refreshKey}
-            onRefresh={loadOperationalData}
-            onInviteClick={() => setAddMemberOpen(true)}
-          />
-        ) : (
-          <MemberDashboardView
-            data={data as MemberDashboardData}
-            members={rawMembers}
-            orgId={user.orgId}
-            userId={user.id}
-            activity={activity}
-            activityError={activityError}
             clock24h={clock24h}
             refreshKey={refreshKey}
             onRefresh={loadOperationalData}
@@ -287,15 +252,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Telemetry Modals */}
-      {isOwner && (
-        <AddMemberDialog
-          open={addMemberOpen}
-          onOpenChange={setAddMemberOpen}
-          orgId={user.orgId}
-          invitedBy={user.id}
-        />
-      )}
+      {/* Telemetry Modals — seat management lives on /teams */}
       <CreateProjectDialog
         open={createProjectOpen}
         onOpenChange={setCreateProjectOpen}

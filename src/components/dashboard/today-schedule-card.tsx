@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { format } from "date-fns";
 import { CalendarClock, Video, MapPin, Users } from "lucide-react";
 import { OrbitEvent, RsvpStatus } from "@/types/event";
 import { Member } from "@/types/member";
-import { getEventsInRange } from "@/lib/queries/events";
 import { currentEngagement } from "@/lib/calendar/presence";
 import { cn } from "@/lib/utils/classnames";
 import { DashboardCard, CardHeader, CardEyebrow, StatusChip } from "./dashboard-card";
@@ -21,15 +20,19 @@ import { DashboardCard, CardHeader, CardEyebrow, StatusChip } from "./dashboard-
 /* ------------------------------------------------------------------ */
 
 interface TodayScheduleCardProps {
-  orgId: string;
+  /**
+   * Today's engagements, fetched once by the dashboard and shared with the
+   * presence card. Null while the read is in flight.
+   */
+  events: OrbitEvent[] | null;
+  /** The read failed. Distinct from a genuinely empty day. */
+  failed?: boolean;
   uid: string;
   members: Member[];
   /** Owners see the whole org's day; members see only their own. */
   scope: "org" | "mine";
   /** Mirrors the header clock so one page never shows both formats. */
   clock24h: boolean;
-  /** Bumped by the dashboard Refresh button to force a re-read. */
-  refreshKey?: number;
 }
 
 const RSVP_LABEL: Record<RsvpStatus, string> = {
@@ -40,44 +43,13 @@ const RSVP_LABEL: Record<RsvpStatus, string> = {
 };
 
 export function TodayScheduleCard({
-  orgId,
+  events,
+  failed = false,
   uid,
   members,
   scope,
   clock24h,
-  refreshKey = 0,
 }: TodayScheduleCardProps) {
-  const [events, setEvents] = useState<OrbitEvent[] | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-
-    setFailed(false);
-    getEventsInRange(orgId, start, end)
-      .then((result) => {
-        if (!cancelled) setEvents(result);
-      })
-      .catch((err) => {
-        // Most likely the (orgId, startAt) composite index. The schedule is
-        // one card, not the page — surface it here and let the rest render.
-        console.error("[TodaySchedule] range query failed", err);
-        if (!cancelled) {
-          setEvents([]);
-          setFailed(true);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [orgId, refreshKey]);
-
   const memberNames = useMemo(
     () => Object.fromEntries(members.map((m) => [m.id, m.name || "Operative"])),
     [members]

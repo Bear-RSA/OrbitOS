@@ -14,11 +14,13 @@ interface EmptyDashboardStateProps {
 
 export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMember }: EmptyDashboardStateProps) {
   const configs = {
+    /* One empty state for the whole org. The copy used to split on role
+       and tell a member to sit and wait, even though creating a project
+       is member-permitted in firestore.rules and in createProjectAction. */
     no_projects: {
-      title: isOwner ? "System Awaiting Signal" : "Workspace Connected",
-      description: isOwner
-        ? "OrbitOS is currently inactive. To begin surfacing telemetry on project health, team workload variance, and task clarity, initialize your first workspace module."
-        : "No active projects yet. Initialize a project to start tracking work and collaborating with your team.",
+      title: "System Awaiting Signal",
+      description:
+        "OrbitOS is currently inactive. To begin surfacing telemetry on project health, team workload variance, and task clarity, initialize your first workspace module.",
       icon: FolderPlus,
       action: (
         <button 
@@ -89,7 +91,7 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
             they rendered as adjacent inline-flex boxes with no gap. */}
         <div className="flex flex-wrap items-center gap-4">
           {config.action}
-          {!isOwner && type !== "no_assigned_work" && (
+          {!isOwner && type !== "no_assigned_work" && type !== "no_projects" && (
             <div className="inline-flex h-12 items-center gap-3 rounded-xl bg-surface-control px-5 ring-1 ring-inset ring-line/[0.07]">
               <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink/50 shadow-[0_0_8px_rgb(var(--ink)_/_0.2)]" aria-hidden />
               <span className="text-[13px] font-medium tracking-wide text-ink-muted">Your workspace is ready — waiting for assignments</span>

@@ -1,20 +1,22 @@
 "use client";
 
-import { OwnerDashboardData } from "@/types/dashboard";
+import { DashboardData } from "@/types/dashboard";
 import { DashboardCard, CardHeader, StatBlock, CardEyebrow } from "./dashboard-card";
 
-interface OwnerAttentionCardProps {
-  metrics: OwnerDashboardData["metrics"];
+interface WorkspaceAttentionCardProps {
+  metrics: DashboardData["metrics"];
   hasProject: boolean;
 }
 
-export function OwnerAttentionCard({ metrics, hasProject }: OwnerAttentionCardProps) {
+/* Renamed from OwnerAttentionCard: these are workspace figures, and every
+   seat in the org now sees them. */
+export function WorkspaceAttentionCard({ metrics, hasProject }: WorkspaceAttentionCardProps) {
   const { activeProjects, activeWorkload, completedThisWeek } = metrics;
 
   return (
     <DashboardCard className="h-full">
       <CardHeader
-        title="Executive Attention"
+        title="Workspace Attention"
         meta={
           <CardEyebrow className="flex items-center gap-2">
             <span

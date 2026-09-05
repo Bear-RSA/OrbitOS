@@ -42,23 +42,6 @@ export interface DashboardMetric {
   status?: "positive" | "negative" | "neutral";
 }
 
-/**
- * One row of the dashboard activity log.
- *
- * Deliberately not `ActivityEvent`: that carries a Firestore `Timestamp`,
- * and this crosses a server-action boundary where only plain values
- * survive. The action serializes `timestamp` to an ISO string.
- */
-export interface DashboardActivityItem {
-  id: string;
-  eventType: string;
-  projectId: string | null;
-  actorName: string;
-  metadata: Record<string, any>;
-  /** ISO 8601. Null when the server write has not resolved yet. */
-  timestamp: string | null;
-}
-
 export interface ProjectProgress {
   project: Project;
   percentComplete: number;
@@ -88,48 +71,45 @@ export interface BlockedWorkItem {
   blockedForDays: number;
 }
 
-export interface OwnerDashboardData {
-  role: "OWNER";
+/** The viewer's own slice. The only per-person numbers on the page. */
+export interface PersonalMetrics {
+  myActiveTasks: number;
+  myOverdueTasks: number;
+  myBlockedTasks: number;
+  myCompletedThisWeek: number;
+}
+
+/**
+ * One dashboard for the whole workspace.
+ *
+ * Owners and members used to get two different assemblies: a member saw
+ * only their own projects, no system health, no blocked work and no
+ * executive metrics. Everyone in an org now sees the same operational
+ * picture — the org is the unit, not the seat.
+ *
+ * `role` survives only to gate write controls (invite, revoke, reorder).
+ * It changes which buttons render, never which data does.
+ */
+export interface DashboardData {
+  role: "OWNER" | "MEMBER";
+  /** Org-wide. Identical for every seat in the workspace. */
   metrics: {
     activeProjects: number;
     overdueTasks: number;
     activeWorkload: number;
     completedThisWeek: number;
   };
+  /** The viewer's own numbers. The one card that differs per person. */
+  personal: PersonalMetrics;
+  projects: Project[];
   projectsHealth: ProjectHealth[];
+  /** Org-wide urgency. The Horizon default. */
   urgencyBuckets: UrgencyBuckets;
-  teamWorkload: MemberWorkload[];
+  /** The viewer's own tasks, behind the Horizon's Mine toggle. */
+  myUrgencyBuckets: UrgencyBuckets;
+  /** Only the projects the viewer holds work in — for the Mine toggle. */
+  myProjects: Project[];
   weeklyProgress: WeeklyProgressDay[];
   recentWins: RecentWin[];
   blockedWork: BlockedWorkItem[];
 }
-
-export interface MemberDashboardData {
-  role: "MEMBER";
-  metrics: {
-    myActiveTasks: number;
-    myOverdueTasks: number;
-    myBlockedTasks: number;
-    myCompletedThisWeek: number;
-  };
-  /** Only projects the member actually holds work in. */
-  myProjects: Project[];
-  myProjectsHealth: ProjectHealth[];
-  /** The member's own tasks. This is what their Horizon shows by default. */
-  myUrgencyBuckets: UrgencyBuckets;
-  /** Org-wide urgency buckets — reachable behind the Horizon's toggle. */
-  urgencyBuckets: UrgencyBuckets;
-  /** Every project in the org, for the toggled org-wide Horizon view. */
-  orgProjects: Project[];
-  myWorkload: MemberWorkload;
-  /**
-   * Every operator in the org, same shape the owner gets. Members can see
-   * who else is on the roster and how loaded they are; adding and revoking
-   * seats stays owner-only, enforced in the server actions.
-   */
-  teamWorkload: MemberWorkload[];
-  weeklyProgress: WeeklyProgressDay[];
-  recentWins: RecentWin[];
-}
-
-export type OrbitalDashboardData = OwnerDashboardData | MemberDashboardData;

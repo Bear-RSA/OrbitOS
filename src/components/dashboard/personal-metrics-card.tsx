@@ -1,13 +1,15 @@
 "use client";
 
-import { MemberDashboardData } from "@/types/dashboard";
+import { PersonalMetrics } from "@/types/dashboard";
 import { DashboardCard, CardEyebrow, StatBlock } from "./dashboard-card";
 
-interface MemberPersonalMetricsCardProps {
-  metrics: MemberDashboardData["metrics"];
+interface PersonalMetricsCardProps {
+  metrics: PersonalMetrics;
 }
 
-export function MemberPersonalMetricsCard({ metrics }: MemberPersonalMetricsCardProps) {
+/* The one card on the dashboard that differs per viewer. Everything else
+   is the workspace, identical for everyone in the org. */
+export function PersonalMetricsCard({ metrics }: PersonalMetricsCardProps) {
   const { myActiveTasks, myOverdueTasks, myCompletedThisWeek } = metrics;
 
   return (

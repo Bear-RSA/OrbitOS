@@ -3,16 +3,13 @@ import { getProjectsByOrg } from "@/lib/queries/projects";
 import { getMembersByOrg, getUserById } from "@/lib/queries/members";
 import {
   BlockedWorkItem,
-  MemberDashboardData,
-  OrbitalDashboardData,
-  OwnerDashboardData,
+  DashboardData,
   RecentWin,
   WeeklyProgressDay,
 } from "@/types/dashboard";
 import {
   calculateProjectHealth,
   categorizeTasksByUrgency,
-  calculateMemberWorkload
 } from "@/lib/utils/dashboard-logic";
 import { Member } from "@/types/member";
 import { Task } from "@/types/task";
@@ -33,7 +30,7 @@ import { Project } from "@/types/project";
  * load and every refresh.
  */
 export interface DashboardPayload {
-  data: OrbitalDashboardData;
+  data: DashboardData;
   tasks: Task[];
   projects: Project[];
   members: Member[];
@@ -170,93 +167,65 @@ export async function getDashboardData(userId: string): Promise<DashboardPayload
   const projects = projectResult.status === "fulfilled" ? projectResult.value : [];
   const members = membersResult.status === "fulfilled" ? membersResult.value : [];
 
-  const data = user.role === "OWNER"
-    ? assembleOwnerDashboard(user, tasks, projects, members)
-    : assembleMemberDashboard(user, tasks, projects, members);
-
-  return { data, tasks, projects, members };
+  return { data: assembleDashboard(user, tasks, projects, members), tasks, projects, members };
 }
 
-function assembleOwnerDashboard(
-  owner: Member,
+/**
+ * One assembly for every seat in the org.
+ *
+ * There used to be two — assembleOwnerDashboard and assembleMemberDashboard
+ * — and they disagreed about more than presentation: a member got no
+ * system-wide metrics, no blocked work, and only the projects they were
+ * assigned to. The workspace is the unit of visibility now. The only
+ * per-viewer values are the `personal` block and `myUrgencyBuckets`, and
+ * `role` is carried purely so the UI can hide write controls.
+ */
+function assembleDashboard(
+  viewer: Member,
   tasks: Task[],
   projects: Project[],
   members: Member[]
-): OwnerDashboardData {
+): DashboardData {
   const activeTasks = tasks.filter(t => t.status !== "done");
   const weekStart = startOfWeek(new Date());
   const today = todayMidnight();
+
+  const completedSinceWeekStart = (t: Task) =>
+    t.status === "done" && t.completedAt !== null && isAfter(t.completedAt.toDate(), weekStart);
 
   const metrics = {
     activeProjects: projects.length,
     overdueTasks: tasks.filter(t => isOverdueTask(t, today)).length,
     activeWorkload: activeTasks.length,
-    completedThisWeek: tasks.filter(t => t.status === "done" && t.completedAt && isAfter(t.completedAt.toDate(), weekStart)).length
+    completedThisWeek: tasks.filter(completedSinceWeekStart).length,
   };
 
-  const sortedProjects = sortProjectsByPriority(projects);
-  const projectsHealth = sortedProjects.map(p => calculateProjectHealth(p, tasks.filter(t => t.projectId === p.id)));
-  const urgencyBuckets = categorizeTasksByUrgency(tasks);
-  const teamWorkload = members.map(m => calculateMemberWorkload(m, tasks));
-
-  return {
-    role: "OWNER",
-    metrics,
-    projectsHealth,
-    urgencyBuckets,
-    teamWorkload,
-    weeklyProgress: buildWeeklyProgress(tasks),
-    recentWins: buildRecentWins(tasks, members),
-    blockedWork: buildBlockedWork(tasks, projects, members),
-  };
-}
-
-function assembleMemberDashboard(
-  member: Member,
-  tasks: Task[],
-  projects: Project[],
-  members: Member[]
-): MemberDashboardData {
-  const myTasks = tasks.filter(t => t.assignedTo.includes(member.id));
+  const myTasks = tasks.filter(t => t.assignedTo.includes(viewer.id));
   const myActiveTasks = myTasks.filter(t => t.status !== "done");
-  const weekStart = startOfWeek(new Date());
-  const today = todayMidnight();
 
-  const metrics = {
+  const personal = {
     myActiveTasks: myActiveTasks.length,
     myOverdueTasks: myActiveTasks.filter(t => isOverdueTask(t, today)).length,
     myBlockedTasks: myActiveTasks.filter(t => t.isBlocked).length,
-    myCompletedThisWeek: myTasks.filter(t => t.status === "done" && t.completedAt && isAfter(t.completedAt.toDate(), weekStart)).length
+    myCompletedThisWeek: myTasks.filter(completedSinceWeekStart).length,
   };
 
-  const orgProjects = sortProjectsByPriority(projects);
-
-  // Only the projects this member actually holds work in. Previously this
-  // was every project in the org, which meant the "no assigned work" empty
-  // state could never fire and the projects grid showed work they had no
-  // part in.
+  const sortedProjects = sortProjectsByPriority(projects);
   const myProjectIds = new Set(myTasks.map(t => t.projectId));
-  const myProjects = orgProjects.filter(p => myProjectIds.has(p.id));
-
-  const myProjectsHealth = myProjects.map(p => calculateProjectHealth(p, tasks.filter(t => t.projectId === p.id)));
-  const myUrgencyBuckets = categorizeTasksByUrgency(myTasks);
-  const urgencyBuckets = categorizeTasksByUrgency(tasks);
-  const myWorkload = calculateMemberWorkload(member, tasks);
-  // Same roster the owner sees — read-only for members, who get no
-  // invite or revoke controls on the card.
-  const teamWorkload = members.map(m => calculateMemberWorkload(m, tasks));
 
   return {
-    role: "MEMBER",
+    role: viewer.role === "OWNER" ? "OWNER" : "MEMBER",
     metrics,
-    myProjects,
-    myProjectsHealth,
-    myUrgencyBuckets,
-    urgencyBuckets,
-    orgProjects,
-    myWorkload,
-    teamWorkload,
-    weeklyProgress: buildWeeklyProgress(myTasks),
-    recentWins: buildRecentWins(myTasks, members),
+    personal,
+    projects: sortedProjects,
+    projectsHealth: sortedProjects.map(p =>
+      calculateProjectHealth(p, tasks.filter(t => t.projectId === p.id))
+    ),
+    urgencyBuckets: categorizeTasksByUrgency(tasks),
+    myUrgencyBuckets: categorizeTasksByUrgency(myTasks),
+    myProjects: sortedProjects.filter(p => myProjectIds.has(p.id)),
+    weeklyProgress: buildWeeklyProgress(tasks),
+    recentWins: buildRecentWins(tasks, members),
+    blockedWork: buildBlockedWork(tasks, projects, members),
   };
 }
