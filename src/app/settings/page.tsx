@@ -24,6 +24,7 @@ import { CalendarSection } from "@/components/settings/calendar-section";
 import { SecuritySection } from "@/components/settings/security-section";
 import { WorkspaceSection } from "@/components/settings/workspace-section";
 import { AppNav } from "@/components/nav/app-nav";
+import { ProfileLink } from "@/components/nav/profile-link";
 import { cn } from "@/lib/utils/classnames";
 
 /* ------------------------------------------------------------------ */
@@ -143,7 +144,7 @@ function SettingsView() {
   return (
     <DashboardShell className="min-h-[100dvh] bg-base text-ink selection:bg-surface-hover selection:text-ink-strong">
       {/* ── Chrome ─────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 -mx-5 mb-10 border-b border-line/[0.05] bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:mb-14 sm:px-8 lg:-mx-10 lg:px-10">
+      <header className="sticky top-0 z-40 -mx-5 mb-10 bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:mb-14 sm:px-8 lg:-mx-10 lg:px-10">
         {/* Three tracks so the nav sits on the page's centre line rather
             than wherever the two side clusters happen to leave it. */}
         <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-4 tracking-tight">
@@ -164,9 +165,11 @@ function SettingsView() {
               now reachable from every page, not just the one behind you. */}
           <AppNav uid={user?.id} orgId={user?.orgId} />
 
-          <span className="justify-self-end font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
-            Settings
-          </span>
+          <ProfileLink
+            photoURL={user?.photoURL}
+            name={user?.name}
+            className="justify-self-end"
+          />
         </div>
       </header>
 

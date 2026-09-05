@@ -43,6 +43,7 @@ import {
   Settings as SettingsIcon,
 } from "lucide-react";
 import { AppNav } from "@/components/nav/app-nav";
+import { ProfileLink } from "@/components/nav/profile-link";
 import { cn } from "@/lib/utils/classnames";
 import { ProfilePictureManager } from "@/components/profile/profile-picture-manager";
 import { themeColor } from "@/lib/theme/colors";
@@ -328,7 +329,7 @@ export default function ProfilePage() {
   return (
     <DashboardShell className="min-h-[100dvh] bg-base text-ink selection:bg-surface-hover selection:text-ink-strong">
       {/* ── Chrome ─────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 -mx-5 mb-10 border-b border-line/[0.05] bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:mb-14 sm:px-8 lg:-mx-10 lg:px-10">
+      <header className="sticky top-0 z-40 -mx-5 mb-10 bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:mb-14 sm:px-8 lg:-mx-10 lg:px-10">
         <div className="flex h-16 items-center justify-between gap-4 tracking-tight">
           {/* Replaces a lone "back to Dashboard" button: every destination is
               now reachable from every page, not just the one behind you. */}
@@ -387,6 +388,10 @@ export default function ProfilePage() {
                 {isSaving ? "Saving" : saveSuccess ? "Saved" : "Save"}
               </span>
             </button>
+
+            {/* Self-referential here, but the corner holds the same control
+                on every page — and it tracks the name being edited. */}
+            <ProfileLink photoURL={user.photoURL} name={displayName} className="ml-1" />
           </div>
         </div>
       </header>

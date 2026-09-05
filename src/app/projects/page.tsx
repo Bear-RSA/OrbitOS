@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { getProjectsByOrg } from "@/lib/queries/projects";
 import { AppNav } from "@/components/nav/app-nav";
+import { ProfileLink } from "@/components/nav/profile-link";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Loader } from "@/components/ui/loader";
 import { WorkspaceProjects } from "@/components/dashboard/workspace-projects";
@@ -56,7 +57,7 @@ export default function ProjectsPage() {
 
   return (
     <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
-      <header className="sticky top-0 z-40 -mx-5 mb-12 border-b border-line/[0.05] bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
+      <header className="sticky top-0 z-40 -mx-5 mb-12 bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
         {/* Three tracks so the nav sits on the page's centre line rather
             than wherever the two side clusters happen to leave it. */}
         <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-4 tracking-tight">
@@ -73,9 +74,13 @@ export default function ProjectsPage() {
             </span>
           </Link>
 
-          <AppNav uid={user?.id} orgId={user?.orgId} hide={["/settings"]} />
+          <AppNav uid={user?.id} orgId={user?.orgId} hide={["/dashboard", "/settings"]} />
 
-          <div />
+          <ProfileLink
+            photoURL={user?.photoURL}
+            name={user?.name}
+            className="justify-self-end"
+          />
         </div>
       </header>
 

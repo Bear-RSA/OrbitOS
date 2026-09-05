@@ -14,12 +14,12 @@ import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { EmptyDashboardState } from "@/components/dashboard/empty-dashboard-state";
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog";
 import { AppNav } from "@/components/nav/app-nav";
+import { ProfileLink } from "@/components/nav/profile-link";
 import { Task } from "@/types/task";
 import { Member } from "@/types/member";
 import { DashboardData } from "@/types/dashboard";
 import { resolvePreferences } from "@/types/preferences";
 import { RefreshCw, Plus, AlertTriangle } from "lucide-react";
-import { UserAvatar } from "@/components/ui/user-avatar";
 import { ActionButton } from "@/components/dashboard/dashboard-card";
 import { cn } from "@/lib/utils/classnames";
 
@@ -126,7 +126,7 @@ export default function DashboardPage() {
   return (
     <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
       {/* Structural Navigation Layer — stays reachable on a long scroll */}
-      <header className="sticky top-0 z-40 -mx-5 mb-12 border-b border-line/[0.05] bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
+      <header className="sticky top-0 z-40 -mx-5 mb-12 bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
         {/* Three tracks so the nav sits on the page's centre line rather
             than wherever the two side clusters happen to leave it. */}
         <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-4 tracking-tight">
@@ -168,18 +168,7 @@ export default function DashboardPage() {
               onClick={() => setCreateProjectOpen(true)}
             />
 
-            <button
-              onClick={() => router.push("/profile")}
-              aria-label="Open your profile"
-              title="Profile"
-              className="ml-1 rounded-full transition-transform duration-300 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
-            >
-              <UserAvatar
-                photoURL={user.photoURL}
-                name={user.name}
-                size="md"
-              />
-            </button>
+            <ProfileLink photoURL={user.photoURL} name={user.name} className="ml-1" />
           </div>
         </div>
       </header>

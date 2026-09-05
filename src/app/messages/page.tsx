@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AppNav } from "@/components/nav/app-nav";
+import { ProfileLink } from "@/components/nav/profile-link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -253,7 +254,7 @@ function MessagesScreen() {
 
   return (
     <div className="flex h-[100dvh] flex-col bg-base text-ink">
-      <header className="shrink-0 border-b border-line/[0.05] bg-base/80 px-5 backdrop-blur-xl sm:px-8 lg:px-10">
+      <header className="shrink-0 bg-base/80 px-5 backdrop-blur-xl sm:px-8 lg:px-10">
         {/* Three tracks so the nav sits on the page's centre line rather
             than wherever the two side clusters happen to leave it. */}
         <div className="mx-auto grid h-16 w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 tracking-tight">
@@ -276,7 +277,11 @@ function MessagesScreen() {
             hide={["/dashboard", "/messages", "/settings"]}
           />
 
-          <div />
+          <ProfileLink
+            photoURL={user.photoURL}
+            name={user.name}
+            className="justify-self-end"
+          />
         </div>
       </header>
 

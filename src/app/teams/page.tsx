@@ -9,10 +9,13 @@ import { Loader } from "@/components/ui/loader";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { InteractiveCard } from "@/components/ui/interactive-card";
 import { AppNav } from "@/components/nav/app-nav";
+import { ProfileLink } from "@/components/nav/profile-link";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { AddMemberDialog } from "@/components/members/add-member-dialog";
+import { MemberProfile } from "@/components/members/member-profile";
 import { DestructiveActionModal } from "@/components/ui/destructive-action-modal";
 import { removeMemberAction } from "@/app/actions/members/removeMemberAction";
+import { getOrCreateDmAction } from "@/app/actions/messages";
 import { getMembersByOrg } from "@/lib/queries/members";
 import { getTasksByOrg } from "@/lib/queries/tasks";
 import { getProjectsByOrg } from "@/lib/queries/projects";
@@ -111,6 +114,11 @@ export default function TeamsPage() {
   const [revokeMode, setRevokeMode] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
 
+  // The same read-only card Messages and the project Personnel Hub open —
+  // a face is a face everywhere in the app.
+  const [profileUid, setProfileUid] = useState<string | null>(null);
+  const [messageError, setMessageError] = useState<string | null>(null);
+
   // Seat controls are owner-only; createInviteAction and removeMemberAction
   // both re-check the role server-side, so this is presentation, not the
   // security boundary.
@@ -202,6 +210,32 @@ export default function TeamsPage() {
     [workloads, user?.id]
   );
 
+  /**
+   * Message from the profile card.
+   *
+   * The dm may not exist yet, and /messages only deep-links by
+   * conversation id, so the thread is resolved here first and the page is
+   * handed a real id. The card has already closed itself by the time this
+   * runs, which is why a failure needs somewhere on the page to land.
+   */
+  const openDm = useCallback(
+    async (targetUid: string) => {
+      setMessageError(null);
+      try {
+        const result = await getOrCreateDmAction({ targetUid });
+        if (result.success) {
+          router.push(`/messages?c=${result.conversationId}`);
+        } else {
+          setMessageError(result.error);
+        }
+      } catch (err) {
+        console.error("[Teams] Could not open the conversation:", err);
+        setMessageError("Could not open that conversation. Try again from Messages.");
+      }
+    },
+    [router]
+  );
+
   const handleRemove = async (): Promise<{ success: boolean; error?: string }> => {
     if (!memberToRemove || !user?.id) {
       return { success: false, error: "Missing target or session. Re-authenticate and retry." };
@@ -257,15 +291,7 @@ export default function TeamsPage() {
 
         <AppNav uid={user.id} orgId={user.orgId} hide={["/dashboard", "/settings"]} />
 
-        <div className="flex items-center justify-end gap-5">
-          <button
-            onClick={() => router.push("/profile")}
-            aria-label="Open your profile"
-            className="rounded-full transition-transform duration-300 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
-          >
-            <UserAvatar photoURL={user.photoURL} name={user.name} size="md" />
-          </button>
-        </div>
+        <ProfileLink photoURL={user.photoURL} name={user.name} className="justify-self-end" />
       </div>
 
       {/* Header */}
@@ -312,6 +338,22 @@ export default function TeamsPage() {
           )}
         </div>
       </ScrollReveal>
+
+      {messageError && (
+        <div className="mb-10 flex items-start justify-between gap-4 rounded-2xl bg-surface-sunken px-6 py-4 ring-1 ring-inset ring-orbit-amber/20">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-orbit-amber" aria-hidden />
+            <p className="text-[13px] font-light text-ink-muted">{messageError}</p>
+          </div>
+          <button
+            onClick={() => setMessageError(null)}
+            aria-label="Dismiss"
+            className="shrink-0 rounded-full p-1 text-ink-faint transition-colors hover:text-ink"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {loadError ? (
         <div className="mb-32 flex flex-col items-start gap-5 rounded-3xl bg-surface-sunken p-8 shadow-card ring-1 ring-inset ring-line/[0.06]">
@@ -370,7 +412,12 @@ export default function TeamsPage() {
                     )}
 
                     <div className="flex items-start justify-between gap-4 mb-8">
-                      <div className="relative shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setProfileUid(member.id)}
+                        aria-label={`View ${member.name || member.email}'s profile`}
+                        className="relative shrink-0 rounded-full transition-transform duration-300 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
+                      >
                         <UserAvatar
                           photoURL={member.photoURL}
                           name={member.name}
@@ -384,7 +431,7 @@ export default function TeamsPage() {
                           )}
                           aria-hidden
                         />
-                      </div>
+                      </button>
                       <div className="min-w-0 text-right">
                         <h3 className="truncate text-xl font-light text-ink">
                           {member.name || member.email}
@@ -486,6 +533,20 @@ export default function TeamsPage() {
             </div>
           </ScrollReveal>
         </>
+      )}
+
+      {/* Tapping any face on the roster opens the same read-only card the
+          Messages rail and the project Personnel Hub open. Tasks are
+          already in hand here, so the card costs no extra read for them;
+          engagements it fetches itself, on open rather than on load. */}
+      {user.orgId && (
+        <MemberProfile
+          member={profileUid ? (workloads.find((w) => w.member.id === profileUid)?.member ?? null) : null}
+          onClose={() => setProfileUid(null)}
+          viewer={{ id: user.id, orgId: user.orgId }}
+          tasks={tasks}
+          onMessage={openDm}
+        />
       )}
 
       {/* Modals */}
