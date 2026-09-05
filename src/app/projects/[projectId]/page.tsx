@@ -194,7 +194,7 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
          )}
 
          {viewMode === "strategy" && (
-           <SystemRoadmap projectId={project.id} tasks={tasks} />
+           <SystemRoadmap tasks={tasks} members={members} />
          )}
 
          {viewMode === "personnel" && (

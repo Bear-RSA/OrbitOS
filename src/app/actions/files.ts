@@ -4,6 +4,18 @@ import { adminDb } from "@/lib/firebase/admin";
 import { cloudinary } from "@/lib/cloudinary";
 import { logActivity } from "@/lib/telemetry";
 import { verifyProjectAccess } from "@/lib/auth/permissions";
+import { requireCaller } from "@/lib/auth/caller";
+
+/* ------------------------------------------------------------------ */
+/*  Asset actions                                                      */
+/*                                                                     */
+/*  Every action here took the acting uid in its payload, and the      */
+/*  access checks then ran against that claim. Any signed-in user      */
+/*  could name a member of another workspace and sign a download URL   */
+/*  for their files, index an asset into their project, or delete one. */
+/*  The uid comes from the session now; the payload field stays so     */
+/*  existing call sites keep compiling, and is ignored.                */
+/* ------------------------------------------------------------------ */
 
 /* ------------------------------------------------------------------ */
 /*  Signed Download URL                                                */
@@ -13,7 +25,8 @@ interface SignedDownloadPayload {
   projectId: string;
   publicId: string;
   resourceType: string; // "image" | "video" | "raw"
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
 }
 
 /**
@@ -24,9 +37,13 @@ interface SignedDownloadPayload {
 export async function getSignedDownloadUrlAction(
   payload: SignedDownloadPayload
 ): Promise<{ success: boolean; url?: string; error?: string }> {
-  const { projectId, publicId, uid } = payload;
+  const { projectId, publicId } = payload;
 
   try {
+    const caller = await requireCaller();
+    if (!caller.ok) return { success: false, error: caller.error };
+    const { uid } = caller;
+
     // 1. Verify the user has access to this project (OWNER or MEMBER)
     const { hasAccess, error } = await verifyProjectAccess(uid, projectId);
     if (!hasAccess) {
@@ -108,7 +125,8 @@ interface DeleteFilePayload {
   fileId: string;
   publicId: string;
   resourceType: string;
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
   fileName?: string;
 }
 
@@ -119,18 +137,27 @@ interface RegisterFilePayload {
   size: number;
   url: string;
   publicId: string;
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
 }
 
 export async function registerProjectFileAction(
   payload: RegisterFilePayload
 ): Promise<{ success: boolean; fileId?: string; error?: string }> {
-  const { projectId, name, type, size, url, publicId, uid } = payload;
+  const { projectId, name, type, size, url, publicId } = payload;
 
   try {
-    const userSnap = await adminDb.collection("users").doc(uid).get();
-    if (!userSnap.exists) return { success: false, error: "User not found" };
-    const userData = userSnap.data()!;
+    const caller = await requireCaller();
+    if (!caller.ok) return { success: false, error: caller.error };
+    const { uid } = caller;
+
+    /* This indexes a document into the project's own subcollection, so
+       it needs the same membership check the download path applies —
+       it had none, and would file an asset into any project named. */
+    const access = await verifyProjectAccess(uid, projectId);
+    if (!access.hasAccess) {
+      return { success: false, error: access.error || "Access denied." };
+    }
 
     // Derive Cloudinary resource_type from the browser MIME type so
     // download URL generation can read it directly from Firestore.
@@ -158,9 +185,9 @@ export async function registerProjectFileAction(
     // Log activity
     await logActivity({
       eventType: "ASSET_INGESTED",
-      orgId: userData.orgId,
+      orgId: caller.orgId,
       projectId,
-      actor: { uid, name: userData.name || "System" },
+      actor: { uid, name: caller.name },
       metadata: { fileName: name, fileId: fileRef.id },
     });
 
@@ -174,27 +201,19 @@ export async function registerProjectFileAction(
 export async function deleteProjectFileAction(
   payload: DeleteFilePayload
 ): Promise<{ success: boolean; error?: string }> {
-  const { projectId, fileId, publicId, resourceType, uid } = payload;
-
-  console.log("[DeleteFile] Deleting asset:", { projectId, fileId, publicId, resourceType, uid });
+  const { projectId, fileId, publicId, resourceType } = payload;
 
   try {
-    // 1. Validate the authenticated user exists and is an owner
-    const userSnap = await adminDb.collection("users").doc(uid).get();
-    if (!userSnap.exists) {
-      console.error("[DeleteFile] User not found:", uid);
-      return { success: false, error: "Authenticated user profile not found." };
-    }
+    // 1. Resolve the caller from the session
+    const caller = await requireCaller();
+    if (!caller.ok) return { success: false, error: caller.error };
+    const { uid } = caller;
 
-    const userData = userSnap.data()!;
-    if (!["OWNER", "MEMBER"].includes(userData.role)) {
-      console.error("[DeleteFile] Unauthorized attempted file deletion:", uid, userData.role);
+    console.log("[DeleteFile] Deleting asset:", { projectId, fileId, publicId, resourceType, uid });
+
+    if (!["OWNER", "MEMBER"].includes(caller.role)) {
+      console.error("[DeleteFile] Unauthorized attempted file deletion:", uid, caller.role);
       return { success: false, error: "Only workspace members can delete files." };
-    }
-
-    if (!userData.orgId) {
-      console.error("[DeleteFile] User has no org:", uid);
-      return { success: false, error: "User is not assigned to a workspace." };
     }
 
     // 2. Validate the project exists and belongs to the user's org
@@ -205,10 +224,10 @@ export async function deleteProjectFileAction(
     }
 
     const projectData = projectSnap.data()!;
-    if (projectData.orgId !== userData.orgId) {
+    if (projectData.orgId !== caller.orgId) {
       console.error("[DeleteFile] Org mismatch:", {
         projectOrg: projectData.orgId,
-        userOrg: userData.orgId,
+        userOrg: caller.orgId,
       });
       return { success: false, error: "Project does not belong to your workspace." };
     }
@@ -241,9 +260,9 @@ export async function deleteProjectFileAction(
     try {
       await logActivity({
         eventType: "ASSET_DESTROYED",
-        orgId: userData.orgId,
+        orgId: caller.orgId,
         projectId,
-        actor: { uid, name: userData.name || "System" },
+        actor: { uid, name: caller.name },
         metadata: { fileName: payload.fileName || "unknown", fileId },
       });
     } catch (telemetryError) {

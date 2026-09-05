@@ -3,6 +3,7 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { validateOwner, verifyProjectAccess, validateTierQuota } from "@/lib/auth/permissions";
+import { getServerSession } from "@/lib/auth/session";
 import { logActivity } from "@/lib/telemetry";
 
 /* ------------------------------------------------------------------ */
@@ -12,13 +13,20 @@ import { logActivity } from "@/lib/telemetry";
 interface RenameProjectPayload {
   projectId: string;
   newName: string;
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
 }
 
 export async function renameProjectAction(
   payload: RenameProjectPayload
 ): Promise<{ success: boolean; error?: string }> {
-  const { projectId, newName, uid } = payload;
+  const { projectId, newName } = payload;
+
+  const session = await getServerSession();
+  if (!session) {
+    return { success: false, error: "Your session has expired. Sign in again." };
+  }
+  const uid = session.uid;
 
   console.log("[RenameProject] Starting rename:", { projectId, uid });
 
@@ -71,13 +79,20 @@ export async function renameProjectAction(
 
 interface DeleteProjectPayload {
   projectId: string;
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
 }
 
 export async function deleteProjectAction(
   payload: DeleteProjectPayload
 ): Promise<{ success: boolean; error?: string; deletedTasks?: number }> {
-  const { projectId, uid } = payload;
+  const { projectId } = payload;
+
+  const session = await getServerSession();
+  if (!session) {
+    return { success: false, error: "Your session has expired. Sign in again." };
+  }
+  const uid = session.uid;
 
   console.log("[DeleteProject] Starting deletion:", { projectId, uid });
 
@@ -178,13 +193,20 @@ export async function deleteProjectAction(
 
 interface ArchiveProjectPayload {
   projectId: string;
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
 }
 
 export async function archiveProjectAction(
   payload: ArchiveProjectPayload
 ): Promise<{ success: boolean; error?: string }> {
-  const { projectId, uid } = payload;
+  const { projectId } = payload;
+
+  const session = await getServerSession();
+  if (!session) {
+    return { success: false, error: "Your session has expired. Sign in again." };
+  }
+  const uid = session.uid;
 
   console.log("[ArchiveProject] Starting archive:", { projectId, uid });
 
@@ -256,7 +278,13 @@ export async function archiveProjectAction(
 export async function unarchiveProjectAction(
   payload: ArchiveProjectPayload
 ): Promise<{ success: boolean; error?: string }> {
-  const { projectId, uid } = payload;
+  const { projectId } = payload;
+
+  const session = await getServerSession();
+  if (!session) {
+    return { success: false, error: "Your session has expired. Sign in again." };
+  }
+  const uid = session.uid;
 
   console.log("[UnarchiveProject] Starting restore:", { projectId, uid });
 
@@ -307,14 +335,21 @@ export async function unarchiveProjectAction(
 }
 
 interface UpdateProjectPriorityPayload {
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
   priorities: Array<{ projectId: string; priority: number }>;
 }
 
 export async function updateProjectPriorityAction(
   payload: UpdateProjectPriorityPayload
 ): Promise<{ success: boolean; error?: string }> {
-  const { uid, priorities } = payload;
+  const { priorities } = payload;
+
+  const session = await getServerSession();
+  if (!session) {
+    return { success: false, error: "Your session has expired. Sign in again." };
+  }
+  const uid = session.uid;
 
   console.log("[UpdateProjectPriority] Starting priority update:", { uid, count: priorities.length });
 
@@ -371,13 +406,20 @@ export async function updateProjectPriorityAction(
 interface UpdateProjectDescriptionPayload {
   projectId: string;
   description: string;
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
 }
 
 export async function updateProjectDescriptionAction(
   payload: UpdateProjectDescriptionPayload
 ): Promise<{ success: boolean; error?: string }> {
-  const { projectId, description, uid } = payload;
+  const { projectId, description } = payload;
+
+  const session = await getServerSession();
+  if (!session) {
+    return { success: false, error: "Your session has expired. Sign in again." };
+  }
+  const uid = session.uid;
 
   console.log("[UpdateProjectDescription] Starting update:", { projectId, uid });
 
@@ -433,14 +475,22 @@ import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 interface CreateProjectPayload {
   name: string;
   description?: string;
-  orgId: string;
-  uid: string;
+  /** @deprecated Ignored — the workspace comes from the caller's session. */
+  orgId?: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
 }
 
 export async function createProjectAction(
   payload: CreateProjectPayload
 ): Promise<{ success: boolean; projectId?: string; error?: string }> {
-  const { name, description, orgId, uid } = payload;
+  const { name, description } = payload;
+
+  const session = await getServerSession();
+  if (!session) {
+    return { success: false, error: "Your session has expired. Sign in again." };
+  }
+  const uid = session.uid;
 
   const trimmedName = name.trim();
   if (!trimmedName) {
@@ -448,14 +498,18 @@ export async function createProjectAction(
   }
 
   try {
-    // 1. Verify the user exists and belongs to the org
+    /* 1. The workspace is the caller's own. It used to come from the
+       payload and be compared against the claimed uid's record, which
+       any signed-in user satisfied by naming a member of the workspace
+       they wanted to create a project in. */
     const userSnap = await adminDb.collection("users").doc(uid).get();
     if (!userSnap.exists) {
       return { success: false, error: "User not found." };
     }
     const userData = userSnap.data()!;
-    if (userData.orgId !== orgId) {
-      return { success: false, error: "Unauthorized. Org mismatch." };
+    const orgId = userData.orgId as string | undefined;
+    if (!orgId) {
+      return { success: false, error: "User is not assigned to a workspace." };
     }
 
     // 2. Enforce tier quota for projects

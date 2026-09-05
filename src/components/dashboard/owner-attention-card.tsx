@@ -9,7 +9,7 @@ interface OwnerAttentionCardProps {
 }
 
 export function OwnerAttentionCard({ metrics, hasProject }: OwnerAttentionCardProps) {
-  const { activeProjects, activeWorkload } = metrics;
+  const { activeProjects, activeWorkload, completedThisWeek } = metrics;
 
   return (
     <DashboardCard className="h-full">
@@ -39,16 +39,26 @@ export function OwnerAttentionCard({ metrics, hasProject }: OwnerAttentionCardPr
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-3 gap-4 sm:gap-6">
             <StatBlock
+              size="md"
               value={activeProjects}
               label="Active Projects"
               tone={activeProjects > 0 ? "default" : "idle"}
             />
             <StatBlock
+              size="md"
               value={activeWorkload}
               label="Active Workload"
               tone={activeWorkload > 0 ? "default" : "idle"}
+            />
+            {/* Computed by the service since day one and rendered nowhere —
+                the owner had no read on throughput, only on backlog. */}
+            <StatBlock
+              size="md"
+              value={completedThisWeek}
+              label="Done This Week"
+              tone={completedThisWeek > 0 ? "positive" : "idle"}
             />
           </div>
         )}

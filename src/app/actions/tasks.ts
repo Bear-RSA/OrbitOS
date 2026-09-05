@@ -4,6 +4,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import { FieldValue, Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 import { coerceDateKey, dateKeyToInstant } from "@/lib/utils/dates";
 import { logActivity } from "@/lib/telemetry";
+import { getServerSession } from "@/lib/auth/session";
 
 /* ------------------------------------------------------------------ */
 /*  Task Server Actions                                                */
@@ -76,7 +77,8 @@ async function logAssignment(params: {
 interface AddTaskNotePayload {
   taskId: string;
   content: string;
-  createdBy: string;
+  /** @deprecated Ignored — the author's identity comes from the session. */
+  createdBy?: string;
 }
 
 /**
@@ -88,11 +90,17 @@ export async function addTaskNoteAction(
   payload: AddTaskNotePayload
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { taskId, content, createdBy } = payload;
+    const { taskId, content } = payload;
 
-    if (!taskId || !content.trim() || !createdBy) {
+    if (!taskId || !content.trim()) {
       return { success: false, error: "Missing required fields." };
     }
+
+    const session = await getServerSession();
+    if (!session) {
+      return { success: false, error: "Your session has expired. Sign in again." };
+    }
+    const createdBy = session.uid;
 
     // Verify the user exists and has an org
     const userSnap = await adminDb.collection("users").doc(createdBy).get();
@@ -147,14 +155,21 @@ interface UpdateTaskStatusPayload {
   taskId: string;
   status: string;
   previousStatus: string;
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
 }
 
 export async function updateTaskStatusAction(
   payload: UpdateTaskStatusPayload
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { taskId, status, previousStatus, uid } = payload;
+    const { taskId, status, previousStatus } = payload;
+
+    const session = await getServerSession();
+    if (!session) {
+      return { success: false, error: "Your session has expired. Sign in again." };
+    }
+    const uid = session.uid;
 
     // Verify org membership
     const userSnap = await adminDb.collection("users").doc(uid).get();
@@ -222,7 +237,8 @@ export async function updateTaskStatusAction(
 interface ToggleTaskBlockedPayload {
   taskId: string;
   isBlocked: boolean;
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
   blockedReason?: string;
 }
 
@@ -230,7 +246,13 @@ export async function toggleTaskBlockedAction(
   payload: ToggleTaskBlockedPayload
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { taskId, isBlocked, uid, blockedReason } = payload;
+    const { taskId, isBlocked, blockedReason } = payload;
+
+    const session = await getServerSession();
+    if (!session) {
+      return { success: false, error: "Your session has expired. Sign in again." };
+    }
+    const uid = session.uid;
 
     const userSnap = await adminDb.collection("users").doc(uid).get();
     if (!userSnap.exists || !userSnap.data()?.orgId) {
@@ -268,14 +290,21 @@ export async function toggleTaskBlockedAction(
 
 interface DeleteTaskPayload {
   taskId: string;
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
 }
 
 export async function deleteTaskAction(
   payload: DeleteTaskPayload
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { taskId, uid } = payload;
+    const { taskId } = payload;
+
+    const session = await getServerSession();
+    if (!session) {
+      return { success: false, error: "Your session has expired. Sign in again." };
+    }
+    const uid = session.uid;
     console.log(`[TaskAction:Delete] Starting delete for task=${taskId} by uid=${uid}`);
 
     const userSnap = await adminDb.collection("users").doc(uid).get();
@@ -311,7 +340,8 @@ export async function deleteTaskAction(
 
 interface UpdateTaskPayload {
   taskId: string;
-  uid: string;
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
   updates: {
     title?: string;
     description?: string;
@@ -325,7 +355,13 @@ export async function updateTaskAction(
   payload: UpdateTaskPayload
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { taskId, uid, updates } = payload;
+    const { taskId, updates } = payload;
+
+    const session = await getServerSession();
+    if (!session) {
+      return { success: false, error: "Your session has expired. Sign in again." };
+    }
+    const uid = session.uid;
 
     // Server-side enforcement: max 2 operatives
     if (updates.assignedTo && updates.assignedTo.length > 2) {
@@ -423,13 +459,15 @@ export async function updateTaskAction(
 /* ------------------------------------------------------------------ */
 
 interface CreateTaskPayload {
-  orgId: string;
+  /** @deprecated Ignored — the workspace comes from the caller's session. */
+  orgId?: string;
   projectId: string;
   title: string;
   description?: string;
   assignedTo?: string[];
   milestone?: string;
-  createdBy: string;
+  /** @deprecated Ignored — the author's identity comes from the session. */
+  createdBy?: string;
   dueDate?: string | null; // ISO string — converted server-side
 }
 
@@ -437,7 +475,13 @@ export async function createTaskAction(
   payload: CreateTaskPayload
 ): Promise<{ success: boolean; taskId?: string; error?: string }> {
   try {
-    const { orgId, projectId, title, description, assignedTo, milestone, createdBy, dueDate } = payload;
+    const { projectId, title, description, assignedTo, milestone, dueDate } = payload;
+
+    const session = await getServerSession();
+    if (!session) {
+      return { success: false, error: "Your session has expired. Sign in again." };
+    }
+    const createdBy = session.uid;
 
     if (!title.trim()) {
       return { success: false, error: "Title is required." };
@@ -454,8 +498,9 @@ export async function createTaskAction(
       return { success: false, error: "User not found." };
     }
     const userData = userSnap.data()!;
-    if (userData.orgId !== orgId) {
-      return { success: false, error: "Unauthorized. Org mismatch." };
+    const orgId = userData.orgId as string | undefined;
+    if (!orgId) {
+      return { success: false, error: "User is not assigned to a workspace." };
     }
 
     // Verify the project exists

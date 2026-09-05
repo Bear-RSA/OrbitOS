@@ -68,6 +68,28 @@ export const createGroupSchema = z.object({
     .max(MAX_GROUP_PARTICIPANTS - 1, "That is too many people for one group."),
 });
 
+/**
+ * How much may ride along with a forwarded task.
+ *
+ * Shorter than a message on purpose. The card carries the substance;
+ * this is the sentence that says why it landed in your thread, and a
+ * field that invites a paragraph turns the card into a footnote.
+ */
+export const MAX_FORWARD_NOTE_LENGTH = 500;
+
+export const forwardTaskSchema = z.object({
+  taskId: z.string().trim().min(1, "Required").max(128, "Not a valid task."),
+  conversationId: conversationIdSchema,
+  /* Optional, and that is the point: the card already says what it is,
+     so forwarding with nothing to add must not be a validation error. */
+  note: z
+    .string()
+    .trim()
+    .max(MAX_FORWARD_NOTE_LENGTH, "That note is too long.")
+    .optional()
+    .default(""),
+});
+
 export const sendMessageSchema = z.object({
   conversationId: conversationIdSchema,
   text: messageTextSchema,
@@ -76,6 +98,7 @@ export const sendMessageSchema = z.object({
 export type OpenDmInput = z.infer<typeof openDmSchema>;
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
+export type ForwardTaskInput = z.infer<typeof forwardTaskSchema>;
 
 /** Trims a message down to what the left rail shows. */
 export function messagePreview(text: string): string {

@@ -2,6 +2,7 @@
 
 import { adminDb } from "@/lib/firebase/admin";
 import { validateOwner } from "@/lib/auth/permissions";
+import { requireServerUid } from "@/lib/auth/session";
 import { logActivity } from "@/lib/telemetry";
 import {
   TIER_DEFINITIONS,
@@ -15,6 +16,12 @@ import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 /*                                                                     */
 /*  All actions are OWNER-gated via validateOwner.                     */
 /*  Reads/writes target the `organizations/{orgId}.subscription` path. */
+/*                                                                     */
+/*  The OWNER check runs against the session, never against a uid from */
+/*  the caller. It used to take one as an argument, and owner uids are */
+/*  not secret — they appear in member lists and activity logs — so a  */
+/*  signed-in user could read any workspace's plan and usage, or       */
+/*  cancel its paid subscription outright, by naming that owner.       */
 /* ------------------------------------------------------------------ */
 
 interface SubscriptionInfo {
@@ -31,10 +38,14 @@ interface SubscriptionInfo {
  * Retrieves the organization's current subscription state and resource usage.
  * OWNER-only — validates the caller holds the OWNER role before proceeding.
  */
-export async function getSubscriptionAction(
-  uid: string
-): Promise<{ success: boolean; data?: SubscriptionInfo; error?: string }> {
+export async function getSubscriptionAction(): Promise<{
+  success: boolean;
+  data?: SubscriptionInfo;
+  error?: string;
+}> {
   try {
+    const uid = await requireServerUid();
+
     // 1. Validate OWNER
     const auth = await validateOwner(uid);
     if (!auth.isOwner) {
@@ -99,10 +110,13 @@ export async function getSubscriptionAction(
  * Cancels the organization's paid subscription and downgrades to Exploration.
  * OWNER-only — validates the caller holds the OWNER role before proceeding.
  */
-export async function cancelSubscriptionAction(
-  uid: string
-): Promise<{ success: boolean; error?: string }> {
+export async function cancelSubscriptionAction(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
   try {
+    const uid = await requireServerUid();
+
     // 1. Validate OWNER
     const auth = await validateOwner(uid);
     if (!auth.isOwner) {

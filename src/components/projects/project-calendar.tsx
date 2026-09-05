@@ -233,7 +233,7 @@ export function ProjectCalendar({
     }
 
     let active = true;
-    getEngagementGuestsAction(uid, selectedEventId).then((result) => {
+    getEngagementGuestsAction(selectedEventId).then((result) => {
       if (!active) return;
       // A failure here means the names are missing, not that the people
       // are — the count still comes from the engagement itself.
@@ -321,27 +321,27 @@ export function ProjectCalendar({
     async (eventId: string, status: RsvpStatus) => {
       setBusy(true);
       try {
-        const result = await setRsvpAction(uid, eventId, status);
+        const result = await setRsvpAction(eventId, status);
         if (!result.success) console.error("[Calendar] RSVP rejected:", result.error);
       } finally {
         setBusy(false);
       }
     },
-    [uid]
+    []
   );
 
   const cancelEngagement = useCallback(
     async (eventId: string) => {
       setBusy(true);
       try {
-        const result = await cancelEventAction(uid, eventId);
+        const result = await cancelEventAction(eventId);
         if (!result.success) console.error("[Calendar] Cancel rejected:", result.error);
         else setSelectedEventId(null);
       } finally {
         setBusy(false);
       }
     },
-    [uid]
+    []
   );
 
   const endDrag = useCallback(() => {

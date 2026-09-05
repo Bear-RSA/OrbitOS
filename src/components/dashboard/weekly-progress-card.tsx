@@ -1,74 +1,92 @@
 "use client";
 
+import { TrendingUp } from "lucide-react";
 import { WeeklyProgressDay } from "@/types/dashboard";
 import { cn } from "@/lib/utils/classnames";
+import { DashboardCard, CardHeader, CardEyebrow, StatBlock } from "./dashboard-card";
+
+/* ------------------------------------------------------------------ */
+/*  This Week                                                          */
+/*                                                                     */
+/*  Every other number on the dashboard is a point-in-time count. This */
+/*  is the only one with a shape: seven bars showing whether the week  */
+/*  is accelerating or stalling.                                       */
+/* ------------------------------------------------------------------ */
 
 interface WeeklyProgressCardProps {
   weeklyProgress: WeeklyProgressDay[];
+  /** Rendered as the headline figure. Owners see org-wide completions. */
+  completedThisWeek: number;
 }
 
-export function WeeklyProgressCard({ weeklyProgress }: WeeklyProgressCardProps) {
+export function WeeklyProgressCard({ weeklyProgress, completedThisWeek }: WeeklyProgressCardProps) {
   const today = new Date();
   const maxCount = Math.max(...weeklyProgress.map((d) => d.count), 1);
-  const totalThisWeek = weeklyProgress.reduce((sum, day) => sum + day.count, 0);
 
   return (
-    <div className="rounded-[20px] p-8 animate-fade-in bg-surface-sunken hover:bg-surface-control hover:-translate-y-1 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ring-1 ring-line/[0.02] shadow-card flex flex-col relative w-full overflow-hidden">
-      <h3 className="text-[11px] font-medium uppercase tracking-[0.15em] text-ink-muted mb-8">
-        This Week
-      </h3>
-      
-      <div className="flex-1 flex flex-col justify-end">
-        {totalThisWeek === 0 ? (
-          <div className="h-24 flex flex-col justify-end space-y-2 pb-2">
-            <p className="text-[14px] font-medium text-ink">No activity recorded.</p>
-            <p className="text-[13px] text-ink-muted font-light leading-relaxed">Complete tasks to visualize operational momentum.</p>
-          </div>
-        ) : (
-          <div className="flex items-end gap-3 h-24 mt-4">
-            {weeklyProgress.map((day) => {
-              const isToday = day.date.toDateString() === today.toDateString();
-              const isFuture = day.date > today;
-              const heightPercent = isFuture ? 0 : (day.count / maxCount) * 100;
+    <DashboardCard className="h-full" tone="quiet" interactive={false}>
+      <CardHeader
+        title="This Week"
+        icon={TrendingUp}
+        meta={<CardEyebrow>{completedThisWeek > 0 ? "In motion" : "Idle"}</CardEyebrow>}
+      />
 
-              return (
-                <div key={day.day} className="flex flex-col items-center gap-2.5 flex-1 relative group">
-                  {day.count > 0 && !isFuture && (
-                    <span className="absolute -top-6 text-[11px] text-ink tabular-nums font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                      {day.count}
-                    </span>
-                  )}
-                  <div className="w-full flex flex-col justify-end h-[60px]">
-                    <div
-                      className={cn(
-                        "w-full rounded-[3px] transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                        isFuture
-                          ? "bg-surface-hover h-1"
-                          : day.count > 0
-                          ? isToday
-                            ? "bg-ink shadow-[0_0_12px_rgb(var(--ink-strong)_/_0.2)]"
-                            : "bg-surface-highest"
-                          : "bg-surface-hover h-1"
-                      )}
-                      style={{
-                        height: isFuture || day.count === 0 ? undefined : `${Math.max(heightPercent, 12)}%`,
-                      }}
-                    />
-                  </div>
-                  <span
-                    className={cn(
-                      "text-[10px] font-medium uppercase tracking-wider transition-colors",
-                      isToday ? "text-ink" : "text-ink-dim"
-                    )}
-                  >
-                    {day.shortDay}
+      <div className="flex flex-1 flex-col justify-between gap-8">
+        <StatBlock
+          size="md"
+          value={completedThisWeek}
+          label="Completed This Week"
+          tone={completedThisWeek > 0 ? "positive" : "idle"}
+        />
+
+        <div className="flex h-24 items-end gap-2 sm:gap-3">
+          {weeklyProgress.map((day) => {
+            const isToday = day.date.toDateString() === today.toDateString();
+            const isFuture = day.date > today && !isToday;
+            const heightPercent = isFuture ? 0 : (day.count / maxCount) * 100;
+
+            return (
+              <div key={day.day} className="group/day relative flex flex-1 flex-col items-center gap-2.5">
+                {day.count > 0 && !isFuture && (
+                  <span className="absolute -top-5 font-mono text-[10px] tabular-nums text-ink opacity-0 transition-opacity group-hover/day:opacity-100">
+                    {day.count}
                   </span>
+                )}
+
+                <div className="flex h-[60px] w-full flex-col justify-end">
+                  <div
+                    className={cn(
+                      "w-full rounded-[3px] transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                      isFuture || day.count === 0
+                        ? "h-1 bg-surface-hover"
+                        : isToday
+                        ? "bg-ink"
+                        : "bg-surface-highest"
+                    )}
+                    style={{
+                      height: isFuture || day.count === 0 ? undefined : `${Math.max(heightPercent, 12)}%`,
+                    }}
+                  />
                 </div>
-              );
-            })}
-          </div>
-        )}
+
+                <span
+                  className={cn(
+                    "font-mono text-[9px] uppercase tracking-[0.12em] transition-colors",
+                    isToday ? "text-ink" : "text-ink-dim"
+                  )}
+                >
+                  {day.shortDay}
+                </span>
+
+                {/* The bars are decorative; this is the readable version. */}
+                <span className="sr-only">
+                  {day.day}: {day.count} completed
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </DashboardCard>
   );
 }

@@ -8,6 +8,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Loader } from "@/components/ui/loader";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { InteractiveCard } from "@/components/ui/interactive-card";
+import { AppNav } from "@/components/nav/app-nav";
 import { ProfileModal } from "@/components/dashboard/profile-modal";
 import { AddMemberDialog } from "@/components/members/add-member-dialog";
 import { 
@@ -142,6 +143,8 @@ export default function TeamsPage() {
           </div>
           <span className="text-[17px] font-medium text-ink tracking-tight group-hover:text-ink-strong transition-colors">OrbitOS</span>
         </div>
+
+        <AppNav uid={user?.id} orgId={user?.orgId} className="ml-4 mr-auto" />
         
         <div className="flex items-center gap-5">
           <button

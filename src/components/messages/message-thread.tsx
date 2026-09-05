@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format, isSameDay, isToday, isYesterday } from "date-fns";
+import Link from "next/link";
 import {
+  ArrowUpRight,
+  CircleSlash,
+  ClipboardList,
   Lock,
   Megaphone,
   MessagesSquare,
@@ -21,14 +25,21 @@ import {
   subscribeToMessages,
 } from "@/lib/queries/messages";
 import { canPostToConversation } from "@/lib/messages/access";
+import { TASK_STATUS_LABEL, isValidTaskRef } from "@/lib/messages/task-ref";
 import { clearedBeforeMs, conversationTitle } from "@/lib/messages/summary";
 import { presenceTone, resolvePresence } from "@/lib/members/presence";
 import { useNow } from "@/hooks/use-now";
+import { parseDateKey } from "@/lib/utils/dates";
 import { MAX_MESSAGE_LENGTH } from "@/lib/validations/messages";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils/classnames";
 import type { Member } from "@/types/member";
-import type { Conversation, Message, MessageAttachment } from "@/types/message";
+import type {
+  Conversation,
+  Message,
+  MessageAttachment,
+  MessageTaskRef,
+} from "@/types/message";
 
 /* ------------------------------------------------------------------ */
 /*  Message thread                                                     */
@@ -527,6 +538,16 @@ export function MessageThread({
                           <p className="rounded-2xl border border-dashed border-line/[0.1] px-4 py-2.5 text-[13px] italic text-ink-dim">
                             Message withdrawn
                           </p>
+                        ) : isValidTaskRef(message.taskRef) ? (
+                          /* A forwarded directive. Ahead of the media
+                             branch because a card never travels with a
+                             GIF, and behind the withdrawn one because a
+                             withdrawn message shows nothing at all. */
+                          <ForwardedTask
+                            taskRef={message.taskRef}
+                            note={message.text}
+                            mine={mine}
+                          />
                         ) : message.attachment ? (
                           <MessageMedia
                             attachment={message.attachment}
@@ -751,6 +772,116 @@ function MessageMedia({
         </figcaption>
       )}
     </figure>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+/** The pill colours, matching the checklist's own reading of status. */
+const TASK_STATUS_TONE: Record<MessageTaskRef["status"], string> = {
+  todo: "text-ink-dim ring-line/[0.1]",
+  doing: "text-orbit-amber ring-orbit-amber/20",
+  done: "text-orbit-green ring-orbit-green/20",
+};
+
+/**
+ * A directive forwarded into the thread.
+ *
+ * Drawn as a quotation, not as a live view. Everything on the face of
+ * the card is the snapshot taken when it was sent — see the note on
+ * `MessageTaskRef` — which is what keeps an old thread readable: a
+ * question about a task that was idle in March should still be sitting
+ * next to a card that says idle.
+ *
+ * So the link is the important part. It is the one thing on the card
+ * that is not a copy, and it goes to the directive itself, opened in
+ * the checklist by its own anchor.
+ *
+ * The note the sender added rides underneath in an ordinary bubble
+ * rather than inside the card. It is a message; the card is the
+ * subject, and merging the two would make it unclear which words are
+ * the workspace's and which are the sender's.
+ */
+function ForwardedTask({
+  taskRef,
+  note,
+  mine,
+}: {
+  taskRef: MessageTaskRef;
+  note: string;
+  mine: boolean;
+}) {
+  return (
+    <div className={cn("flex flex-col gap-1.5", mine ? "items-end" : "items-start")}>
+      <Link
+        href={`/projects/${taskRef.projectId}#task-${taskRef.taskId}`}
+        className={cn(
+          "group/task w-full max-w-[22rem] rounded-2xl px-4 py-3 shadow-card ring-1 transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+          mine
+            ? "bg-surface-active ring-line/[0.08] hover:bg-surface-raised"
+            : "bg-surface-control ring-line/[0.06] hover:bg-surface-raised"
+        )}
+      >
+        <span className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.22em] text-ink-dim">
+          <ClipboardList className="h-3 w-3" aria-hidden />
+          Directive
+          <ArrowUpRight
+            className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover/task:opacity-100"
+            aria-hidden
+          />
+        </span>
+
+        <span className="mt-2 block break-words text-[13px] font-medium leading-snug tracking-tight text-ink">
+          {taskRef.title}
+        </span>
+
+        <span className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.15em] ring-1",
+              TASK_STATUS_TONE[taskRef.status]
+            )}
+          >
+            {TASK_STATUS_LABEL[taskRef.status]}
+          </span>
+
+          {taskRef.isBlocked && (
+            <span className="flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.15em] text-orbit-red ring-1 ring-orbit-red/20">
+              <CircleSlash className="h-2.5 w-2.5" aria-hidden />
+              Blocked
+            </span>
+          )}
+
+          {taskRef.dueDateKey && (
+            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim tabular-nums">
+              {/* Through `parseDateKey`, which lands at midday — reading
+                  the day off the stored instant shifts it by a timezone. */}
+              Due {format(parseDateKey(taskRef.dueDateKey), "dd MMM yyyy")}
+            </span>
+          )}
+        </span>
+
+        <span className="mt-2 block truncate font-mono text-[9px] uppercase tracking-[0.15em] text-ink-faint">
+          {taskRef.assigneeNames.length > 0
+            ? taskRef.assigneeNames.join(", ")
+            : "Unassigned"}
+        </span>
+      </Link>
+
+      {note && (
+        <p
+          className={cn(
+            "max-w-full whitespace-pre-wrap break-words rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed text-ink shadow-card ring-1",
+            mine
+              ? "bg-surface-active ring-line/[0.08]"
+              : "bg-surface-control ring-line/[0.06]"
+          )}
+        >
+          {note}
+        </p>
+      )}
+    </div>
   );
 }
 

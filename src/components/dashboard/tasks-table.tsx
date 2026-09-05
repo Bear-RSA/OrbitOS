@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { format } from "date-fns";
-import { Plus, Pencil, ChevronDown, ChevronRight, Check } from "lucide-react";
+import { Plus, Pencil, ChevronDown, ChevronRight, Check, CheckCircle2, ListChecks } from "lucide-react";
 import { Task } from "@/types/task";
 import { Member } from "@/types/member";
 import { CreateTaskDialog } from "@/components/tasks/create-task-dialog";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { DeleteTaskDialog } from "@/components/tasks/delete-task-dialog";
+import { ForwardTaskDialog } from "@/components/tasks/forward-task-dialog";
 import { addTaskNoteAction, updateTaskStatusAction, toggleTaskBlockedAction, deleteTaskAction } from "@/app/actions/tasks";
 import { cn } from "@/lib/utils/classnames";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { recordTelemetryAction } from "@/app/actions/telemetry";
 import { syncOperationalStatusAction } from "@/app/actions/personnel";
@@ -49,6 +51,75 @@ export function TasksTable({
   const [noteContent, setNoteContent] = useState("");
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
+  /* The directive being sent into a chat. Held here rather than per row
+     so one dialog serves the whole checklist — a picker mounted under
+     every node would open a conversation listener for each one. */
+  const [forwardingTask, setForwardingTask] = useState<Task | null>(null);
+
+  /* Which half of the checklist is on screen.
+     
+     Executed directives leave the master list rather than sitting in it
+     greyed out. A finished node is not a lighter version of an open one
+     — it is a different question ("what did we do") from the one the
+     list is meant to answer ("what is left"), and a month of them
+     between you and today's work is a list you stop reading. They keep
+     the grey and the strikethrough once you go looking for them, where
+     the styling means "closed" instead of "ignore me". */
+  const [view, setView] = useState<"active" | "completed">("active");
+
+  const reducedMotion = useReducedMotion();
+
+  /* Arriving from a forwarded card. The link carries `#task-<id>`, and
+     a row that merely scrolls into view still hides everything the card
+     promised — status, scope, the notes — behind a chevron. So the
+     anchor opens the node as well as finding it.
+
+     Once, and the latch is what makes it once. The effect has to wait
+     for `allTasks` to arrive before it can find the row, and that array
+     is replaced on every snapshot — without the latch, any task update
+     would re-open a node the reader had since collapsed. The hash is
+     how you got here, not state to keep in sync. */
+  const arrivedAt = useRef(false);
+
+  useEffect(() => {
+    if (arrivedAt.current || typeof window === "undefined") return;
+
+    const match = window.location.hash.match(/^#task-(.+)$/);
+    if (!match) return;
+
+    const taskId = decodeURIComponent(match[1]);
+    const target = allTasks.find((t) => t.id === taskId);
+    if (!target) return;
+
+    arrivedAt.current = true;
+
+    /* A forwarded card may point at something already executed, and that
+       row is not in the master list any more. Land on the view that
+       actually holds it, or the link goes nowhere. */
+    if (target.status === "done") setView("completed");
+
+    setExpandedTasks((prev) => (prev[taskId] ? prev : { ...prev, [taskId]: true }));
+
+    /* Two frames: one for the view switch and the expand to commit, one
+       for the row to be laid out. Scrolling in the first would aim at
+       where the row used to be, or at nothing at all. */
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => {
+        document.getElementById(`task-${taskId}`)?.scrollIntoView({
+          block: "center",
+          /* JS-driven motion, so CSS cannot reach it — see
+             `hooks/use-reduced-motion`. */
+          behavior: reducedMotion ? "auto" : "smooth",
+        });
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+    };
+  }, [allTasks, reducedMotion]);
 
   const getMemberName = (memberId: string | null) => {
     return members.find((m) => m.id === memberId || (m as any).uid === memberId)?.name ?? "Unknown";
@@ -150,9 +221,22 @@ export function TasksTable({
     }
   };
 
-  const tasks = selectedAssignee 
+  /* Everything the assignee filter lets through, both statuses.
+     Milestone completion is counted against THIS rather than against
+     what is on screen — a milestone is finished when all of its nodes
+     are done, and asking that of a list with the done ones filtered out
+     would make the answer either always true or never. */
+  const scoped = selectedAssignee 
     ? allTasks.filter(t => t.assignedTo.includes(selectedAssignee))
     : allTasks;
+
+  const completedCount = scoped.filter(t => t.status === "done").length;
+
+  const tasks = scoped.filter(t =>
+    view === "completed" ? t.status === "done" : t.status !== "done"
+  );
+
+  const showingCompleted = view === "completed";
 
   const sortTasks = (taskList: Task[]) => {
     return [...taskList].sort((a, b) => {
@@ -199,10 +283,15 @@ export function TasksTable({
             Operational Log
           </h2>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <h3 className="text-2xl font-light text-ink tracking-tight">Master Objective List</h3>
+            {/* The heading is the label for what is on screen, so it
+                changes with the view. The button opposite always names
+                where it goes, never where you are. */}
+            <h3 className="text-2xl font-light text-ink tracking-tight">
+              {showingCompleted ? "Completed Objectives" : "Master Objective List"}
+            </h3>
             <span className="hidden h-4 w-px bg-surface-control sm:block" />
             <span className="text-[12px] text-ink-dim font-mono tabular-nums">
-              {tasks.length} Nodes Registered 
+              {tasks.length} {showingCompleted ? "Nodes Executed" : "Nodes Registered"}
               {selectedAssignee && ` [FILTERED: ${getMemberName(selectedAssignee)}]`}
             </span>
             {selectedAssignee && (
@@ -215,7 +304,7 @@ export function TasksTable({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => { setCreateOpen(true); }}
             disabled={!projectId}
@@ -224,6 +313,38 @@ export function TasksTable({
           >
             <Plus className="w-3.5 h-3.5 text-ink-dim group-hover:text-ink-muted transition-colors duration-300" />
             Insert Directive
+          </button>
+
+          {/* One button, both directions — it names the destination, so
+              it reads as a place to go rather than a state to decode.
+              Quieter than Insert Directive on purpose: creating work is
+              the primary act on this screen, reviewing finished work is
+              the occasional one.
+
+              The tally rides on the label rather than sitting in the
+              heading, because it is the reason to press it: "3" is what
+              tells you there is anything through there. */}
+          <button
+            onClick={() => setView(showingCompleted ? "active" : "completed")}
+            aria-pressed={showingCompleted}
+            title={
+              showingCompleted
+                ? "Back to the directives still open"
+                : "Review the directives already executed"
+            }
+            className="group flex h-9 items-center justify-center gap-2.5 rounded-lg border border-line/[0.06] bg-transparent px-5 text-[12px] font-medium text-ink-muted transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-line/[0.12] hover:bg-surface-card hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            {showingCompleted ? (
+              <ListChecks className="h-3.5 w-3.5 text-ink-dim transition-colors duration-300 group-hover:text-ink-muted" />
+            ) : (
+              <CheckCircle2 className="h-3.5 w-3.5 text-ink-dim transition-colors duration-300 group-hover:text-orbit-green" />
+            )}
+            {showingCompleted ? "Master Objective List" : "Completed Objectives"}
+            {!showingCompleted && completedCount > 0 && (
+              <span className="font-mono text-[10px] tabular-nums text-ink-dim">
+                {completedCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -247,13 +368,30 @@ export function TasksTable({
             {!tasks || tasks.length === 0 ? (
               <tr>
                 <td colSpan={2} className="py-16 text-center">
+                  {/* Three empty states, not one. "No directives listed"
+                      under Completed Objectives would read as though the
+                      project had nothing in it at all, when the truth is
+                      that nothing has been finished yet. */}
                   <p className="text-[14px] font-medium text-ink mb-1 font-mono">
-                    {selectedAssignee ? "No nodes matching current frequency." : "No directives listed."}
+                    {showingCompleted
+                      ? "No objectives executed yet."
+                      : selectedAssignee ? "No nodes matching current frequency." : "All directives cleared."}
                   </p>
                   <p className="text-[13px] text-ink-muted font-light mt-1 font-mono">
-                    {selectedAssignee 
-                      ? "The selected operator has no directives in this sector."
-                      : projectId ? "Append your first directive to begin." : "Initialize a project first."}
+                    {showingCompleted
+                      ? selectedAssignee
+                        ? "The selected operator has closed nothing in this sector."
+                        : "Directives land here once they are marked executed."
+                      : selectedAssignee 
+                        ? "The selected operator has no open directives in this sector."
+                        : projectId
+                          ? completedCount > 0
+                            /* Not the same as an empty project: everything
+                               that existed has been done, and the button
+                               opposite is where it went. */
+                            ? "Nothing open. The executed ones are under Completed Objectives."
+                            : "Append your first directive to begin."
+                          : "Initialize a project first."}
                   </p>
                   {selectedAssignee && (
                     <button
@@ -322,7 +460,17 @@ export function TasksTable({
                       id={`task-${task.id}`}
                       className={cn(
                         "row-enter group/row transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-b border-line/[0.02] last:border-b-0 cursor-pointer font-mono",
-                        isDone && "opacity-40 grayscale-[0.5]",
+                        /* Grey and struck through in both views, but not
+                           equally faint. In the master list the 40% is
+                           there to push a finished node out of the way of
+                           live ones. Under Completed Objectives there is
+                           nothing to push it behind — every row is done —
+                           so the same 40% just makes the whole page hard
+                           to read. The grey and the line still say
+                           "closed" at an opacity you can actually read. */
+                        isDone && (showingCompleted
+                          ? "opacity-70 hover:opacity-100 hover:bg-surface-card"
+                          : "opacity-40 grayscale-[0.5]"),
                         task.isBlocked && !isDone && "bg-orbit-red/[0.03]",
                         !task.isBlocked && !isDone && "hover:bg-surface-card",
                         isExpanded && "bg-surface-sunken"
@@ -377,7 +525,7 @@ export function TasksTable({
                                   disabled={!canEdit}
                                   onClick={(e) => { 
                                     e.stopPropagation(); 
-                                    const msTasks = task.milestone ? tasks.filter(t => t.milestone === task.milestone) : tasks;
+                                    const msTasks = task.milestone ? scoped.filter(t => t.milestone === task.milestone) : scoped;
                                     handleStatusChange(task, isDone ? "todo" : "done", task.milestone || "Global", msTasks); 
                                   }}
                                   className={cn(
@@ -392,7 +540,7 @@ export function TasksTable({
                                 <Select 
                                   value={task.status} 
                                   onValueChange={(val: Task["status"]) => {
-                                    const msTasks = task.milestone ? tasks.filter(t => t.milestone === task.milestone) : tasks;
+                                    const msTasks = task.milestone ? scoped.filter(t => t.milestone === task.milestone) : scoped;
                                     handleStatusChange(task, val, task.milestone || "Global", msTasks);
                                   }} 
                                   disabled={!canEdit}
@@ -410,6 +558,17 @@ export function TasksTable({
                               <div className="flex flex-wrap items-center gap-2">
                                 <button onClick={(e) => { e.stopPropagation(); setActiveNoteInputId(task.id); setNoteContent(""); }} className="px-2 py-1 rounded bg-surface-card text-ink-dim border border-line/[0.05] hover:text-ink-muted hover:border-line/[0.1] text-[9px] uppercase tracking-widest transition-all">
                                   [ADD NOTE]
+                                </button>
+                                {/* Open to everyone, on purpose. Anyone who can
+                                    see a directive can ask about it — where it
+                                    may land is the only thing gated, and that
+                                    decision stays in the dialog. */}
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setForwardingTask(task); }}
+                                  title="Send this directive into a chat"
+                                  className="px-2 py-1 rounded bg-surface-card text-ink-dim border border-line/[0.05] hover:text-ink-muted hover:border-line/[0.1] text-[9px] uppercase tracking-widest transition-all"
+                                >
+                                  [DISCUSS]
                                 </button>
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); setEditingTask(task); }} 
@@ -574,6 +733,20 @@ export function TasksTable({
           setEditingTask(null);
           onTaskUpdated();
         }}
+      />
+
+      {/* The viewer's role decides whether Town Hall is a legal target,
+          and the directory already holds it — no second read. */}
+      <ForwardTaskDialog
+        task={forwardingTask}
+        open={!!forwardingTask}
+        onOpenChange={(isOpen) => !isOpen && setForwardingTask(null)}
+        viewer={{
+          id: currentUserId,
+          orgId,
+          role: members.find((m) => m.id === currentUserId)?.role ?? "MEMBER",
+        }}
+        members={members}
       />
 
       <DeleteTaskDialog

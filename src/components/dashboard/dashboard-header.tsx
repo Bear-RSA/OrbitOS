@@ -11,10 +11,11 @@ import { resolvePreferences } from "@/types/preferences";
 
 interface DashboardHeaderProps {
   currentUser: Member;
-  orgName: string;
 }
 
-export function DashboardHeader({ currentUser, orgName }: DashboardHeaderProps) {
+/* `orgName` used to be a prop here. It was passed an orgId rather than a
+   name, and this component never read it either way. */
+export function DashboardHeader({ currentUser }: DashboardHeaderProps) {
   const { user } = useAuth();
   const { clock24h } = resolvePreferences(user?.preferences);
   const [time, setTime] = useState(new Date());

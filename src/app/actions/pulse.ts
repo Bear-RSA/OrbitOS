@@ -1,9 +1,36 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase/admin";
-import { Timestamp } from "firebase-admin/firestore";
+import { getServerSession } from "@/lib/auth/session";
+import { verifyProjectAccess } from "@/lib/auth/permissions";
+
+/* ------------------------------------------------------------------ */
+/*  Project pulse read path                                            */
+/*                                                                     */
+/*  This action used to take a `projectId` and nothing else, then read */
+/*  through the Admin SDK — which bypasses Firestore rules by design.  */
+/*  A project id is a target the client chose, not a credential, so    */
+/*  any signed-in user could pass one belonging to another workspace   */
+/*  and read back its task counts, its operatives' names and activity, */
+/*  and its storage figures. Project ids appear in URLs, so they are   */
+/*  not a secret either.                                               */
+/*                                                                     */
+/*  The caller now comes from the verified session cookie and the      */
+/*  project has to sit in that caller's organization, matching the     */
+/*  telemetry write path and the files read path.                      */
+/* ------------------------------------------------------------------ */
 
 export async function getProjectPulseAction(projectId: string) {
+  const session = await getServerSession();
+  if (!session) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const access = await verifyProjectAccess(session.uid, projectId);
+  if (!access.hasAccess) {
+    return { success: false, error: "Forbidden" };
+  }
+
   try {
     const now = Date.now();
     const fiveMinsAgo = new Date(now - 5 * 60 * 1000);

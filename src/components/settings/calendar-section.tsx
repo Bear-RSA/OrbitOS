@@ -36,11 +36,11 @@ export function CalendarSection({ user }: { user: User }) {
   const [confirmRotate, setConfirmRotate] = useState(false);
 
   const load = useCallback(async () => {
-    const result = await getCalendarFeedAction(user.id);
+    const result = await getCalendarFeedAction();
     if (result.success) setUrl(result.url);
     else setError(result.error);
     setLoading(false);
-  }, [user.id]);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -64,7 +64,7 @@ export function CalendarSection({ user }: { user: User }) {
     }
     setRotating(true);
     setError(null);
-    const result = await regenerateCalendarFeedAction(user.id);
+    const result = await regenerateCalendarFeedAction();
     if (result.success) setUrl(result.url);
     else setError(result.error);
     setRotating(false);

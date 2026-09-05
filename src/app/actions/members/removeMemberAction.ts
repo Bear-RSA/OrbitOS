@@ -3,18 +3,27 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { validateOwner } from "@/lib/auth/permissions";
+import { requireServerUid } from "@/lib/auth/session";
 import { logActivity } from "@/lib/telemetry";
 
 /* ------------------------------------------------------------------ */
 /*  Remove Member — server action                                      */
 /*  Atomically removes a user from the org and unassigns their tasks   */
 /*  within the specified project. Owner-only operation.                */
+/*                                                                     */
+/*  The caller used to name themselves in the payload, and the OWNER   */
+/*  check below ran against that name. Owner uids are not secret —     */
+/*  they sit in member lists and activity logs — so any signed-in user */
+/*  could borrow one and evict people from that workspace. The uid now */
+/*  comes from the session; `uid` stays in the payload so existing     */
+/*  call sites keep compiling, and is ignored.                         */
 /* ------------------------------------------------------------------ */
 
 interface RemoveMemberPayload {
   projectId?: string;
   targetUserId: string;
-  uid: string; // Caller (must be OWNER)
+  /** @deprecated Ignored — the caller's identity comes from the session. */
+  uid?: string;
 }
 
 interface RemoveMemberResult {
@@ -25,9 +34,16 @@ interface RemoveMemberResult {
 export async function removeMemberAction(
   payload: RemoveMemberPayload
 ): Promise<RemoveMemberResult> {
-  const { projectId, targetUserId, uid } = payload;
+  const { projectId, targetUserId } = payload;
 
   try {
+    let uid: string;
+    try {
+      uid = await requireServerUid();
+    } catch {
+      return { success: false, error: "Your session has expired. Sign in again." };
+    }
+
     // 1. Validate caller is OWNER and scope is valid
     const authStatus = await validateOwner(uid, targetUserId, projectId);
     if (!authStatus.isOwner) {

@@ -11,6 +11,7 @@ import { loadGuests, resolveGuestInvites } from "@/lib/guests/registry";
 import { dispatchEngagementInvites, type DispatchReport } from "@/lib/calendar/invite-dispatch";
 import { notifyOrganizerOfRsvp } from "@/lib/calendar/notify-organizer";
 import { resolveGuestInviteLimit } from "@/lib/auth/permissions";
+import { requireCaller } from "@/lib/auth/caller";
 
 /* ------------------------------------------------------------------ */
 /*  Engagement Server Actions                                          */
@@ -67,30 +68,9 @@ function outcomeFrom(report: DispatchReport, invalid: string[], promoted: number
    an `in` check — the narrowing is unambiguous and the call sites read
    the same way. */
 
-type Caller =
-  | { ok: true; uid: string; orgId: string; name: string; role: string }
-  | { ok: false; error: string };
-
 type FoundEvent =
   | { ok: true; ref: FirebaseFirestore.DocumentReference; data: FirebaseFirestore.DocumentData }
   | { ok: false; error: string };
-
-/** Resolves the caller and guarantees they belong to an organization. */
-async function requireCaller(uid: string): Promise<Caller> {
-  const snap = await adminDb.collection("users").doc(uid).get();
-  if (!snap.exists) return { ok: false, error: "User not found." };
-
-  const data = snap.data()!;
-  if (!data.orgId) return { ok: false, error: "Unauthorized." };
-
-  return {
-    ok: true,
-    uid,
-    orgId: data.orgId as string,
-    name: (data.name as string) || "Operative",
-    role: (data.role as string) || "MEMBER",
-  };
-}
 
 /**
  * Who may change an engagement once it exists.
@@ -149,7 +129,6 @@ async function checkGuestAllowance(
 /* ------------------------------------------------------------------ */
 
 export async function createEventAction(
-  uid: string,
   input: CreateEventInput
 ): Promise<CreateEventResult> {
   try {
@@ -159,8 +138,9 @@ export async function createEventAction(
     }
     const value = parsed.data;
 
-    const caller = await requireCaller(uid);
+    const caller = await requireCaller();
     if (!caller.ok) return { success: false, error: caller.error };
+    const { uid } = caller;
 
     // A project-scoped engagement must point at a project in the same org.
     if (value.projectId) {
@@ -274,7 +254,6 @@ export async function createEventAction(
 /* ------------------------------------------------------------------ */
 
 export async function updateEventAction(
-  uid: string,
   eventId: string,
   updates: UpdateEventInput
 ): Promise<UpdateEventResult> {
@@ -285,8 +264,9 @@ export async function updateEventAction(
     }
     const value = parsed.data;
 
-    const caller = await requireCaller(uid);
+    const caller = await requireCaller();
     if (!caller.ok) return { success: false, error: caller.error };
+    const { uid } = caller;
 
     const found = await requireEventInOrg(eventId, caller.orgId);
     if (!found.ok) return { success: false, error: found.error };
@@ -494,13 +474,13 @@ export async function updateEventAction(
 /* ------------------------------------------------------------------ */
 
 export async function setRsvpAction(
-  uid: string,
   eventId: string,
   status: RsvpStatus
 ): Promise<ActionResult> {
   try {
-    const caller = await requireCaller(uid);
+    const caller = await requireCaller();
     if (!caller.ok) return { success: false, error: caller.error };
+    const { uid } = caller;
 
     const found = await requireEventInOrg(eventId, caller.orgId);
     if (!found.ok) return { success: false, error: found.error };
@@ -555,12 +535,12 @@ export async function setRsvpAction(
 /* ------------------------------------------------------------------ */
 
 export async function cancelEventAction(
-  uid: string,
   eventId: string
 ): Promise<ActionResult> {
   try {
-    const caller = await requireCaller(uid);
+    const caller = await requireCaller();
     if (!caller.ok) return { success: false, error: caller.error };
+    const { uid } = caller;
 
     const found = await requireEventInOrg(eventId, caller.orgId);
     if (!found.ok) return { success: false, error: found.error };
@@ -631,11 +611,10 @@ type GuestsResult =
   | { success: false; error: string };
 
 export async function getEngagementGuestsAction(
-  uid: string,
   eventId: string
 ): Promise<GuestsResult> {
   try {
-    const caller = await requireCaller(uid);
+    const caller = await requireCaller();
     if (!caller.ok) return { success: false, error: caller.error };
 
     const found = await requireEventInOrg(eventId, caller.orgId);

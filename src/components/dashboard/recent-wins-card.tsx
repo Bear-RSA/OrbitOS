@@ -1,48 +1,59 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Trophy } from "lucide-react";
 import { RecentWin } from "@/types/dashboard";
 import { formatRelativeTime } from "@/lib/utils/dates";
+import { DashboardCard, CardHeader, CardEyebrow } from "./dashboard-card";
 
 interface RecentWinsCardProps {
   wins: RecentWin[];
 }
 
 export function RecentWinsCard({ wins }: RecentWinsCardProps) {
+  const router = useRouter();
+
   return (
-    <div className="rounded-[20px] p-8 animate-fade-in bg-surface-sunken hover:bg-surface-control hover:-translate-y-1 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ring-1 ring-line/[0.02] shadow-card flex flex-col relative overflow-hidden">
-      <h3 className="text-[11px] font-medium uppercase tracking-[0.15em] text-ink-muted mb-8 flex items-center gap-2">
-        <Trophy className="w-3.5 h-3.5 opacity-60" />
-        Recent Wins
-      </h3>
-      
-      <div className="flex-1 flex flex-col justify-end">
-        {wins.length === 0 ? (
-          <div className="h-24 flex flex-col justify-end space-y-2 pb-2">
-            <p className="text-[14px] font-medium text-ink">No recent wins.</p>
-            <p className="text-[13px] text-ink-muted font-light leading-relaxed">Completed operations will stream here.</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {wins.map((win) => (
-              <div
-                key={win.task.id}
-                className="flex items-start gap-4 group rounded-xl hover:bg-surface-hover hover:-translate-y-[2px] -mx-4 px-4 py-3 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-default"
+    <DashboardCard className="h-full" tone="quiet" interactive={false}>
+      <CardHeader
+        title="Recent Wins"
+        icon={Trophy}
+        meta={<CardEyebrow>{wins.length > 0 ? `Last ${wins.length}` : "None yet"}</CardEyebrow>}
+      />
+
+      {wins.length === 0 ? (
+        <div className="flex flex-1 flex-col justify-end space-y-2">
+          <p className="text-[14px] font-medium text-ink">No recent wins.</p>
+          <p className="text-[13px] font-light leading-relaxed text-ink-muted">
+            Completed directives stream here as they land.
+          </p>
+        </div>
+      ) : (
+        <ul className="flex flex-col">
+          {wins.map((win) => (
+            <li key={win.task.id}>
+              <button
+                type="button"
+                onClick={() => router.push(`/projects/${win.task.projectId}`)}
+                className="group/win -mx-2 flex w-[calc(100%+1rem)] items-start gap-3 rounded-lg px-2 py-2.5 text-left transition-colors duration-300 hover:bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-ink/30 mt-2.5 flex-shrink-0 group-hover:bg-ink/60 transition-colors" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-medium text-ink truncate mb-1">
+                <span
+                  className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-orbit-green/60 transition-colors group-hover/win:bg-orbit-green"
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-medium leading-tight text-ink-muted transition-colors group-hover/win:text-ink-strong">
                     {win.task.title}
-                  </p>
-                  <p className="text-[12px] text-ink-dim font-light tracking-wide">
-                    <span className="text-ink-muted font-medium">{win.assigneeName}</span> · {formatRelativeTime(win.completedAt)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+                  </span>
+                  <span className="mt-1.5 block truncate font-mono text-[9px] uppercase tracking-[0.12em] text-ink-dim">
+                    {win.assigneeName} · {formatRelativeTime(win.completedAt)}
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </DashboardCard>
   );
 }

@@ -186,7 +186,7 @@ export function EngagementDialog({
       const from = new Date(Math.max(Date.now(), combine(date, "00:00").getTime()));
       const to = new Date(from.getTime() + 14 * 86_400_000);
 
-      const result = await getAvailabilityAction(currentUserId, {
+      const result = await getAvailabilityAction({
         attendees,
         from: from.toISOString(),
         to: to.toISOString(),
@@ -256,7 +256,7 @@ export function EngagementDialog({
     setGuestsEditable(false);
 
     let active = true;
-    getEngagementGuestsAction(currentUserId, current!.id).then((result) => {
+    getEngagementGuestsAction(current!.id).then((result) => {
       if (!active) return;
 
       if (!result.success) {
@@ -427,7 +427,7 @@ export function EngagementDialog({
       ? new Date(start.getTime() + 86_400_000) // exclusive end, next midnight
       : new Date(start.getTime() + Number(data.durationMins) * 60_000);
 
-    return createEventAction(currentUserId, {
+    return createEventAction({
       projectId,
       title: data.title,
       description: data.description,
@@ -452,7 +452,7 @@ export function EngagementDialog({
     const diff = diffEngagement(target, data, originalGuests, guestsEditable);
     if (!diff.hasChanges) return "unchanged" as const;
 
-    return updateEventAction(currentUserId, target.id, diff.patch);
+    return updateEventAction(target.id, diff.patch);
   }
 
   return (

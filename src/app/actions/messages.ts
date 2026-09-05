@@ -4,10 +4,13 @@ import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { requireServerUid } from "@/lib/auth/session";
 import { dmConversationId, townHallConversationId } from "@/lib/messages/conversation-id";
-import { canCreateGroup, canOpenDm } from "@/lib/messages/access";
+import { canCreateGroup, canOpenDm, canPostToConversation } from "@/lib/messages/access";
+import { taskForwardPreview, taskRefFromTask } from "@/lib/messages/task-ref";
+import { dueDateKeyOf } from "@/lib/utils/dates";
 import {
   MAX_GROUP_PARTICIPANTS,
   createGroupSchema,
+  forwardTaskSchema,
   openDmSchema,
 } from "@/lib/validations/messages";
 import { TOWN_HALL_NAME } from "@/types/message";
@@ -35,6 +38,7 @@ import { TOWN_HALL_NAME } from "@/types/message";
 /* ------------------------------------------------------------------ */
 
 const CONVERSATIONS = "conversations";
+const MESSAGES = "messages";
 
 export type ConversationResult =
   | { success: true; conversationId: string }
@@ -306,5 +310,145 @@ export async function createGroupAction(input: unknown): Promise<ConversationRes
   } catch (err: any) {
     console.error("[MessageAction] Failed to create group:", err);
     return { success: false, error: "Could not create that group." };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Forwarding a task                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Puts a directive into a conversation so the thread can be about it.
+ *
+ * The one message path that does NOT go through the client, and the
+ * reason is the card rather than the latency. `sendMessage` writes from
+ * the browser because a message is text somebody typed and the rules
+ * can pin everything that matters about it — author, time, length. A
+ * task card is different: it is drawn as a quotation of a real
+ * directive, with its title, its status and its horizon, and a browser
+ * able to mint one could put a convincing card for a task that says
+ * whatever it likes into a colleague's thread. So `taskRef` is absent
+ * from the key allowlist in `firestore.rules`, no client write carrying
+ * one is accepted, and the snapshot is taken here from the document.
+ *
+ * The extra round trip costs nothing that matters — forwarding is a
+ * dialog with a Send button, not a keystroke.
+ *
+ * Open to every member, deliberately. Anyone who can see a directive
+ * can hand it to someone and ask about it; what is checked is the
+ * boundary that was already there — the task is in the caller's
+ * workspace, and the caller may post in the thread. Town Hall stays
+ * owner-only for the same reason it always was: it is the notice
+ * board, and `canPostToConversation` is the single place that says so.
+ */
+export async function forwardTaskAction(input: unknown): Promise<ConversationResult> {
+  try {
+    const parsed = forwardTaskSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.issues[0]?.message ?? "Invalid forward.",
+      };
+    }
+    const { taskId, conversationId, note } = parsed.data;
+
+    const caller = await requireCaller();
+    if (!caller.ok) return { success: false, error: caller.error };
+
+    const conversationRef = adminDb.collection(CONVERSATIONS).doc(conversationId);
+    const [taskSnap, conversationSnap] = await Promise.all([
+      adminDb.collection("tasks").doc(taskId).get(),
+      conversationRef.get(),
+    ]);
+
+    if (!taskSnap.exists) return { success: false, error: "That task no longer exists." };
+    const task = taskSnap.data()!;
+
+    /* The workspace boundary, read off the task rather than taken from
+       the client. Without it a member could forward a directive out of
+       an org they merely knew the id of. */
+    if ((task.orgId as string) !== caller.orgId) {
+      return { success: false, error: "That task is not in your workspace." };
+    }
+
+    if (!conversationSnap.exists) {
+      return { success: false, error: "That conversation no longer exists." };
+    }
+    const conversation = conversationSnap.data()!;
+
+    /* The same decision the composer's disabled state asks, so a thread
+       you cannot type in is not a thread you can forward into either. */
+    const decision = canPostToConversation({
+      type: conversation.type,
+      conversationOrgId: (conversation.orgId as string) ?? "",
+      participantIds: (conversation.participantIds as string[]) ?? [],
+      viewerUid: caller.uid,
+      viewerOrgId: caller.orgId,
+      viewerRole: caller.role,
+    });
+    if (!decision.allowed) return { success: false, error: decision.message };
+
+    const assigneeUids = Array.isArray(task.assignedTo) ? (task.assignedTo as string[]) : [];
+    const assigneeSnaps = assigneeUids.length
+      ? await adminDb.getAll(
+          ...assigneeUids.map((id) => adminDb.collection("users").doc(id))
+        )
+      : [];
+    const assigneeNames = assigneeSnaps
+      .filter((snap) => snap.exists)
+      .map((snap) => (snap.data()?.name as string) || "Operative");
+
+    const taskRef = taskRefFromTask({
+      taskId: taskSnap.id,
+      projectId: (task.projectId as string) ?? "",
+      title: (task.title as string) ?? "",
+      status: task.status,
+      /* Not `task.dueDateKey` directly: rows written before that field
+         existed carry the day only in `dueDate`, and a card that says
+         "no horizon" about a directive that has one is worse than one
+         that says nothing. */
+      dueDateKey: dueDateKeyOf({
+        dueDateKey: task.dueDateKey as string | null | undefined,
+        dueDate: (task.dueDate as { toDate: () => Date } | null) ?? null,
+      }),
+      isBlocked: task.isBlocked === true,
+      assigneeNames,
+    });
+
+    if (!taskRef.projectId) {
+      return { success: false, error: "That task is not attached to a project." };
+    }
+
+    /* One batch, for the reason `sendMessage` gives: the message and the
+       rail's account of it are one fact, and a failure between them
+       leaves a thread whose preview disagrees with its last line. */
+    const batch = adminDb.batch();
+    const messageRef = conversationRef.collection(MESSAGES).doc();
+
+    batch.set(messageRef, {
+      senderId: caller.uid,
+      /* A forwarded task may travel with no words — the card is what is
+         being said. Stored as "" rather than omitted so every message
+         in the collection has the same shape. */
+      text: note,
+      attachment: null,
+      taskRef,
+      createdAt: AdminTimestamp.now(),
+      editedAt: null,
+      deletedAt: null,
+    });
+
+    batch.update(conversationRef, {
+      lastMessageAt: AdminTimestamp.now(),
+      lastMessagePreview: taskForwardPreview(taskRef.title, note),
+      lastMessageBy: caller.uid,
+    });
+
+    await batch.commit();
+
+    return { success: true, conversationId };
+  } catch (err: any) {
+    console.error("[MessageAction] Failed to forward task:", err);
+    return { success: false, error: "Could not forward that task." };
   }
 }

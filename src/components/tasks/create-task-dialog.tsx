@@ -26,7 +26,14 @@ interface CreateTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orgId: string;
-  projectId: string;
+  /** Fixed destination. Omit when `projects` is supplied and the user picks. */
+  projectId?: string;
+  /**
+   * Offering a choice turns this into quick capture: the dashboard has no
+   * project in scope, so without a picker a task could only be created by
+   * navigating into a project first.
+   */
+  projects?: { id: string; name: string }[];
   members: Member[];
   currentUserId: string;
   onCreated: () => void;
@@ -37,6 +44,7 @@ export function CreateTaskDialog({
   onOpenChange,
   orgId,
   projectId,
+  projects,
   members,
   currentUserId,
   onCreated,
@@ -44,7 +52,12 @@ export function CreateTaskDialog({
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [chosenProjectId, setChosenProjectId] = useState(projectId ?? "");
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const showProjectPicker = !projectId && Boolean(projects?.length);
+  const targetProjectId = projectId ?? chosenProjectId;
 
   const {
     register,
@@ -63,8 +76,11 @@ export function CreateTaskDialog({
   useEffect(() => {
     if (open) {
       setValue("milestone", null);
+      setError(null);
+      // Default to the first project so the common case is one click.
+      setChosenProjectId(projectId ?? projects?.[0]?.id ?? "");
     }
-  }, [open, setValue]);
+  }, [open, setValue, projectId, projects]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -91,11 +107,17 @@ export function CreateTaskDialog({
   };
 
   const onSubmit = async (data: CreateTaskInput) => {
+    if (!targetProjectId) {
+      setError("Select a project for this directive.");
+      return;
+    }
+
     setLoading(true);
+    setError(null);
     try {
       const result = await createTaskAction({
         orgId,
-        projectId,
+        projectId: targetProjectId,
         title: data.title,
         description: data.description ?? "",
         assignedTo: data.assignedTo,
@@ -115,7 +137,7 @@ export function CreateTaskDialog({
         recordTelemetryAction({
           eventType: "WORKLOAD_SHIFT",
           orgId,
-          projectId,
+          projectId: targetProjectId,
           actor: { uid: currentUserId, name: actorName },
           metadata: { taskTitle: data.title, assignedTo: data.assignedTo },
         }).catch(err => console.error("[Telemetry Error]:", err));
@@ -132,7 +154,11 @@ export function CreateTaskDialog({
       onCreated();
       setShowSuccess(true);
     } catch (err) {
+      // Previously swallowed into the console, so a server-side rejection
+      // (org mismatch, missing project, the two-operative cap) closed
+      // nothing and explained nothing.
       console.error("Failed to create task:", err);
+      setError(err instanceof Error ? err.message : "Failed to insert directive.");
     } finally {
       setLoading(false);
     }
@@ -151,6 +177,28 @@ export function CreateTaskDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-2">
+          {showProjectPicker && (
+            <div className="space-y-2.5">
+              <Label htmlFor="task-project">Target Project</Label>
+              {/* A native select rather than the Radix one: this form's other
+                  fields use the ink/line token family, and the Radix trigger
+                  is built on a different palette. */}
+              <select
+                id="task-project"
+                value={chosenProjectId}
+                onChange={(e) => setChosenProjectId(e.target.value)}
+                disabled={loading}
+                className="w-full h-9 bg-surface-sunken border border-line/[0.1] rounded-md px-3 text-[13px] text-ink transition-colors focus:outline-none focus:border-line/[0.2] disabled:opacity-50"
+              >
+                {projects!.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="space-y-2.5">
             <Label htmlFor="task-title">Directive Title</Label>
             <Input
@@ -259,10 +307,12 @@ export function CreateTaskDialog({
           </div>
 
 
+          {error && <p role="alert" className="text-[12px] text-orbit-red">{error}</p>}
+
           <DialogFooter className="flex-row justify-start sm:justify-start gap-4 mt-10">
-            <Button 
-              type="submit" 
-              disabled={loading} 
+            <Button
+              type="submit"
+              disabled={loading}
               id="submit-create-task"
               className="h-9 px-5 rounded-lg text-[12px] min-w-[120px]"
             >

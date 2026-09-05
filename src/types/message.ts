@@ -1,4 +1,5 @@
 import { Timestamp } from "firebase/firestore";
+import type { TaskStatus } from "@/types/task";
 
 /* ------------------------------------------------------------------ */
 /*  Messages Schema                                                    */
@@ -129,6 +130,43 @@ export interface MessageAttachment {
   providerId: string;
 }
 
+/**
+ * A task carried into a conversation, so the thread can be about it.
+ *
+ * By REFERENCE and by SNAPSHOT at once, and the pair is the whole
+ * design. `taskId` and `projectId` are the reference — the card opens
+ * the live directive, which is where its real state lives. The rest is
+ * a snapshot of how the task looked at the moment it was forwarded, so
+ * a thread from March still reads as the conversation it was: "why is
+ * this still IDLE" makes no sense against a card that has quietly
+ * caught up with the task.
+ *
+ * Same contract as `participantNames` and `lastMessagePreview` — a
+ * cache for a label, never an authority. The card says when it was
+ * taken, and the link is how you find out what is true now.
+ *
+ * Written ONLY by `forwardTaskAction` on the Admin SDK. `firestore.rules`
+ * does not list `taskRef` among the keys a client may write on a
+ * message, so a browser cannot mint one — which is what lets the card
+ * be drawn as a quotation of a real directive rather than as text
+ * somebody typed.
+ */
+export interface MessageTaskRef {
+  taskId: string;
+  /** Where the card links back to. */
+  projectId: string;
+
+  /* ---- The snapshot. Taken on the server from the task document. ---- */
+
+  title: string;
+  status: TaskStatus;
+  /** "YYYY-MM-DD", or null for a directive with no horizon. */
+  dueDateKey: string | null;
+  /** Names at forward time, so an unassigned task reads as unassigned. */
+  assigneeNames: string[];
+  isBlocked: boolean;
+}
+
 export interface Message {
   id: string;
   senderId: string;
@@ -143,6 +181,16 @@ export interface Message {
 
   /** null for an ordinary written message. */
   attachment: MessageAttachment | null;
+
+  /**
+   * The directive this message is about, when it was forwarded from a
+   * project rather than typed. null on every ordinary message.
+   *
+   * A forwarded task may travel with no words — "look at this" is what
+   * the card already says — so unlike an attachment it satisfies the
+   * "a message must say something" test on its own.
+   */
+  taskRef?: MessageTaskRef | null;
 
   editedAt: Timestamp | null;
 

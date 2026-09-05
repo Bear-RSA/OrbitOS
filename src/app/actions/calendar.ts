@@ -3,6 +3,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { feedUrlFor } from "@/lib/calendar/feed-token";
+import { requireServerUid } from "@/lib/auth/session";
 
 /* ------------------------------------------------------------------ */
 /*  Calendar feed actions                                              */
@@ -10,6 +11,14 @@ import { feedUrlFor } from "@/lib/calendar/feed-token";
 /*  The feed URL is derived, never stored — only the version counter   */
 /*  lives on the user document, so there is no secret at rest to leak  */
 /*  from Firestore. Rotating is a single increment.                    */
+/*                                                                     */
+/*  Derived, but still a capability: whoever holds the URL can read    */
+/*  that operative's calendar without signing in. Both actions used to */
+/*  take the uid to build it for, which meant any signed-in user could */
+/*  ask for somebody else's feed URL and subscribe to their calendar,  */
+/*  or rotate it and silently break the subscription they already had. */
+/*  The uid comes from the session now, so these only ever act on the  */
+/*  caller's own feed.                                                 */
 /* ------------------------------------------------------------------ */
 
 type FeedResult =
@@ -24,9 +33,10 @@ async function buildUrl(uid: string): Promise<FeedResult> {
   return { success: true, url: feedUrlFor(uid, version) };
 }
 
-/** The current subscription URL for this operative. */
-export async function getCalendarFeedAction(uid: string): Promise<FeedResult> {
+/** The current subscription URL for the calling operative. */
+export async function getCalendarFeedAction(): Promise<FeedResult> {
   try {
+    const uid = await requireServerUid();
     return await buildUrl(uid);
   } catch (err: any) {
     console.error("[CalendarAction] Failed to resolve feed URL:", err);
@@ -39,8 +49,9 @@ export async function getCalendarFeedAction(uid: string): Promise<FeedResult> {
  * Existing subscriptions will start 404ing until they are re-pointed —
  * that is the intent, so the copy around this needs to say so.
  */
-export async function regenerateCalendarFeedAction(uid: string): Promise<FeedResult> {
+export async function regenerateCalendarFeedAction(): Promise<FeedResult> {
   try {
+    const uid = await requireServerUid();
     const ref = adminDb.collection("users").doc(uid);
     const snap = await ref.get();
     if (!snap.exists) return { success: false, error: "User not found." };

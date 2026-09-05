@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import { AppNav } from "@/components/nav/app-nav";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { subscribeToMembersByOrg } from "@/lib/queries/members";
 import {
@@ -261,14 +261,7 @@ function MessagesScreen() {
             <span className="text-[15px] font-medium tracking-tight text-ink">Messages</span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard")}
-            className="flex items-center gap-2 rounded-lg border border-line/[0.06] bg-surface-control px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-raised hover:text-ink"
-          >
-            <ArrowLeft className="h-3 w-3" aria-hidden />
-            Dashboard
-          </button>
+          <AppNav uid={user.id} orgId={user.orgId} />
         </div>
       </header>
 

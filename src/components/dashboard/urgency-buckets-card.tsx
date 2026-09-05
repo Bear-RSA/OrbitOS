@@ -2,6 +2,7 @@
 
 import { UrgencyBuckets } from "@/types/dashboard";
 import { Project } from "@/types/project";
+import { Task } from "@/types/task";
 import { cn } from "@/lib/utils/classnames";
 import { Clock, Calendar, AlertCircle, Inbox } from "lucide-react";
 import { format } from "date-fns";
@@ -10,9 +11,17 @@ import { DashboardCard, CardHeader, CardEyebrow } from "./dashboard-card";
 interface UrgencyBucketsCardProps {
   buckets: UrgencyBuckets;
   projects?: Project[];
+  /**
+   * Opens the task's project. Without it the rows are inert — which is how
+   * they shipped: styled with `cursor-pointer` and a hover state, wired to
+   * nothing.
+   */
+  onTaskClick?: (task: Task) => void;
+  /** Optional control rendered in the header, e.g. the Mine/Everyone toggle. */
+  action?: React.ReactNode;
 }
 
-export function UrgencyBucketsCard({ buckets, projects = [] }: UrgencyBucketsCardProps) {
+export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action }: UrgencyBucketsCardProps) {
   const categories = [
     { id: 'overdue', label: 'Overdue', tasks: buckets.overdue, icon: AlertCircle, accent: 'text-orbit-red', dueAccent: 'text-orbit-red/90', isUrgent: true },
     { id: 'dueToday', label: 'Due Today', tasks: buckets.dueToday, icon: Clock, accent: 'text-orbit-amber', dueAccent: 'text-orbit-amber/90', isUrgent: true },
@@ -27,6 +36,20 @@ export function UrgencyBucketsCard({ buckets, projects = [] }: UrgencyBucketsCar
       <CardHeader
         title="Operational Horizon"
         icon={Clock}
+        action={
+          action ? (
+            <div className="flex shrink-0 items-center gap-3">
+              {totalUrgent > 0 ? (
+                <CardEyebrow className="hidden text-orbit-amber sm:inline">
+                  {totalUrgent} requiring attention
+                </CardEyebrow>
+              ) : (
+                <CardEyebrow className="hidden sm:inline">All clear</CardEyebrow>
+              )}
+              {action}
+            </div>
+          ) : undefined
+        }
         meta={
           totalUrgent > 0 ? (
             <CardEyebrow className="text-orbit-amber">
@@ -99,10 +122,24 @@ export function UrgencyBucketsCard({ buckets, projects = [] }: UrgencyBucketsCar
                       }
                     }
 
+                    const Row = onTaskClick ? "button" : "div";
+
                     return (
-                      <div
+                      <Row
                         key={task.id}
-                        className="group/task -mx-2 cursor-pointer rounded-lg px-2 py-2 transition-colors duration-300 hover:bg-surface-raised"
+                        {...(onTaskClick
+                          ? {
+                              type: "button" as const,
+                              onClick: () => onTaskClick(task),
+                              // The row was never keyboard-reachable. A real
+                              // button makes it focusable and activatable.
+                              className:
+                                "group/task -mx-2 block w-[calc(100%+1rem)] rounded-lg px-2 py-2 text-left transition-colors duration-300 hover:bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                            }
+                          : {
+                              className:
+                                "group/task -mx-2 rounded-lg px-2 py-2 transition-colors duration-300",
+                            })}
                       >
                         <p className="truncate text-[13px] font-medium leading-tight text-ink-muted transition-colors duration-300 group-hover/task:text-ink-strong">
                           {task.title}
@@ -112,7 +149,7 @@ export function UrgencyBucketsCard({ buckets, projects = [] }: UrgencyBucketsCar
                           <span className="text-ink-faint" aria-hidden>•</span>
                           <span className={cn("shrink-0", cat.dueAccent)}>{dueStatusStr}</span>
                         </p>
-                      </div>
+                      </Row>
                     );
                   })
                 )}

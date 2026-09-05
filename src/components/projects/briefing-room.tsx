@@ -40,7 +40,6 @@ export function BriefingRoom({ projectId, uid, isOpen, onClose }: BriefingRoomPr
     const result = await sendBriefingAction({
       projectId,
       milestoneId: "global",
-      uid,
       content: content.trim(),
     });
     

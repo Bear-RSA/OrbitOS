@@ -34,7 +34,6 @@ import {
   Lock,
   Minus,
   ChevronRight,
-  ArrowLeft,
   CalendarDays,
   ShieldCheck,
   UserRound,
@@ -43,6 +42,7 @@ import {
   HardDriveUpload,
   Settings as SettingsIcon,
 } from "lucide-react";
+import { AppNav } from "@/components/nav/app-nav";
 import { cn } from "@/lib/utils/classnames";
 import { ProfilePictureManager } from "@/components/profile/profile-picture-manager";
 import { themeColor } from "@/lib/theme/colors";
@@ -330,17 +330,9 @@ export default function ProfilePage() {
       {/* ── Chrome ─────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 -mx-5 mb-10 border-b border-line/[0.05] bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:mb-14 sm:px-8 lg:-mx-10 lg:px-10">
         <div className="flex h-16 items-center justify-between gap-4 tracking-tight">
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="group flex items-center gap-3 rounded-lg py-1 pr-2 text-ink-muted transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-raised ring-1 ring-inset ring-line/[0.06] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-x-0.5 group-hover:bg-surface-hover">
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-            </span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em]">
-              Dashboard
-            </span>
-          </button>
+          {/* Replaces a lone "back to Dashboard" button: every destination is
+              now reachable from every page, not just the one behind you. */}
+          <AppNav uid={user?.id} orgId={user?.orgId} />
 
           <div className="flex items-center gap-2">
             {hasChanges && (

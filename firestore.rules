@@ -333,6 +333,22 @@ service cloud.firestore {
             && attachedMedia().height >= 1 && attachedMedia().height <= 4000;
         }
 
+        /* `taskRef` is deliberately NOT in the list below, and its
+           absence is the control rather than an oversight.
+
+           A forwarded task renders as a card quoting a real directive —
+           its title, its status, its horizon, its assignees. A member
+           able to write one from a browser could drop a convincing card
+           for a task that says whatever they like into a colleague's
+           thread, which is a different thing from typing a sentence:
+           the card carries the workspace's authority, not the sender's.
+
+           So it is written only by `forwardTaskAction` on the Admin SDK,
+           which reads the task document, checks it is in the caller's
+           org, and takes the snapshot itself. `hasOnly` here refuses any
+           client message carrying the field, and the update rule below
+           refuses adding one to a message afterwards — so a card in a
+           thread is provably server-written. */
         allow create: if isSignedIn()
           && request.resource.data.keys().hasOnly([
                'senderId', 'createdAt', 'text', 'editedAt', 'deletedAt', 'attachment'
@@ -355,6 +371,9 @@ service cloud.firestore {
            withheld outright: `deletedAt` keeps the row and the thread's
            shape, and removing the document would leave replies answering
            nothing. */
+        /* `taskRef` is not in the editable set either: a card cannot be
+           added to an ordinary message, and one already on a message
+           cannot be re-pointed at a different directive after the fact. */
         allow update: if isSignedIn()
           && resource.data.senderId == request.auth.uid
           && editedKeys().hasOnly(['text', 'editedAt', 'deletedAt'])

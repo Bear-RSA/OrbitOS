@@ -4,11 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { getProjectsByOrg } from "@/lib/queries/projects";
+import { AppNav } from "@/components/nav/app-nav";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Loader } from "@/components/ui/loader";
 import { WorkspaceProjects } from "@/components/dashboard/workspace-projects";
 import { Project } from "@/types/project";
-import { ArrowLeft } from "lucide-react";
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -54,17 +54,15 @@ export default function ProjectsPage() {
 
   return (
     <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
-      <div className="flex items-center gap-4 mb-20 group">
-        <button 
-          onClick={() => router.push("/dashboard")}
-          className="p-2 -ml-2 text-ink-dim hover:text-ink transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-sm font-mono tracking-[0.2em] text-ink-dim uppercase">Workspace</h1>
-          <div className="text-xl font-medium tracking-tight mt-1">Operational Projects</div>
+      <header className="sticky top-0 z-40 -mx-5 mb-12 border-b border-line/[0.05] bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
+        <div className="flex h-16 items-center tracking-tight">
+          <AppNav uid={user?.id} orgId={user?.orgId} />
         </div>
+      </header>
+
+      <div className="mb-20">
+        <h1 className="text-sm font-mono tracking-[0.2em] text-ink-dim uppercase">Workspace</h1>
+        <div className="text-xl font-medium tracking-tight mt-1">Operational Projects</div>
       </div>
 
       <WorkspaceProjects

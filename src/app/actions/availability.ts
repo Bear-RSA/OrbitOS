@@ -2,6 +2,7 @@
 
 import { Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
+import { requireServerUid } from "@/lib/auth/session";
 import {
   DEFAULT_WORKING_HOURS,
   findSlots,
@@ -62,11 +63,24 @@ const iso = (r: TimeRange): AvailabilitySlot => ({
   end: r.end.toISOString(),
 });
 
+/**
+ * Free/busy across a set of colleagues.
+ *
+ * The organizer comes from the session. It used to be an argument, and
+ * the workspace was resolved from it — so naming any member of another
+ * org reported that org's schedule back to the caller.
+ */
 export async function getAvailabilityAction(
-  uid: string,
   request: AvailabilityRequest
 ): Promise<AvailabilityResult> {
   try {
+    let uid: string;
+    try {
+      uid = await requireServerUid();
+    } catch {
+      return { success: false, error: "Your session has expired. Sign in again." };
+    }
+
     const from = new Date(request.from);
     const to = new Date(request.to);
 

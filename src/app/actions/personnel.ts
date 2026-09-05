@@ -3,22 +3,52 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { logActivity } from "@/lib/telemetry";
 import { FieldValue } from "firebase-admin/firestore";
+import { requireCaller } from "@/lib/auth/caller";
+import { verifyProjectAccess } from "@/lib/auth/permissions";
 
 const MAX_SYSTEM_LOAD = 5;
+
+/* ------------------------------------------------------------------ */
+/*  Personnel engine                                                   */
+/*                                                                     */
+/*  Both actions took the workspace to operate on as an argument. An   */
+/*  orgId is not a credential — it is on every member document and in  */
+/*  every log entry — so passing someone else's read back their whole  */
+/*  roster, or wrote a status transition into their workspace.         */
+/*                                                                     */
+/*  The workspace is now the caller's own, resolved from the session.  */
+/*  The `orgId` parameters remain so existing call sites keep          */
+/*  compiling, and are ignored.                                        */
+/* ------------------------------------------------------------------ */
 
 /**
  * Monitors a member's active workload and auto-transitions status.
  * Triggered whenever a directive status changes.
+ *
+ * `userId` is a colleague rather than the caller — assigning work to
+ * someone re-evaluates their load, not yours — so it stays a parameter.
+ * It is confined to the caller's own workspace below.
+ *
+ * @param _orgId @deprecated Ignored — resolved from the caller's session.
  */
-export async function syncOperationalStatusAction(userId: string | null, orgId: string) {
+export async function syncOperationalStatusAction(userId: string | null, _orgId?: string) {
   if (!userId) return; // Silent return for unassigned tasks
   try {
+    const caller = await requireCaller();
+    if (!caller.ok) return { success: false, error: caller.error };
+
     const userRef = adminDb.collection("users").doc(userId);
     const userSnap = await userRef.get();
     if (!userSnap.exists) return { success: false, error: "User not found" };
-    
+
     const userData = userSnap.data()!;
-    
+
+    // The target has to be a colleague. Without this the action would
+    // write a status transition onto any user document in the system.
+    if (userData.orgId !== caller.orgId) {
+      return { success: false, error: "Unauthorized." };
+    }
+
     // Rule: Respect manual status overrides
     if (userData.manualOverride === true) {
       console.log(`[Status Engine] Manual override active for ${userData.name}. Skipping auto-sync.`);
@@ -30,7 +60,7 @@ export async function syncOperationalStatusAction(userId: string | null, orgId: 
     // so we fetch all non-done tasks for the org and filter in-memory.
     const tasksSnap = await adminDb
       .collection("tasks")
-      .where("orgId", "==", orgId)
+      .where("orgId", "==", caller.orgId)
       .where("status", "!=", "done")
       .get();
     
@@ -68,7 +98,7 @@ export async function syncOperationalStatusAction(userId: string | null, orgId: 
 
       await logActivity({
         eventType: "STATUS_TRANSITION",
-        orgId,
+        orgId: caller.orgId,
         actor: { uid: userId, name: userData.name || "System" },
         metadata: { from: currentStatus, to: newStatus, load: `${Math.round(loadPercentage)}%` }
       });
@@ -83,14 +113,27 @@ export async function syncOperationalStatusAction(userId: string | null, orgId: 
   }
 }
 
-export async function getWorkloadTelemetryAction(projectId: string, orgId: string) {
+/**
+ * Per-operative workload across one project.
+ *
+ * @param _orgId @deprecated Ignored — resolved from the caller's session.
+ */
+export async function getWorkloadTelemetryAction(projectId: string, _orgId?: string) {
   try {
+    const caller = await requireCaller();
+    if (!caller.ok) return { success: false, error: caller.error };
+
+    const access = await verifyProjectAccess(caller.uid, projectId);
+    if (!access.hasAccess) {
+      return { success: false, error: "Unauthorized access to project." };
+    }
+
     // 1. Fetch Node Network (Users in Org)
     const membersSnap = await adminDb
       .collection("users")
-      .where("orgId", "==", orgId)
+      .where("orgId", "==", caller.orgId)
       .get();
-    
+
     if (membersSnap.empty) return { success: true, data: [] };
 
     const membersMap = new Map<string, any>();
@@ -101,7 +144,7 @@ export async function getWorkloadTelemetryAction(projectId: string, orgId: strin
     // 2. Fetch Active Directives for this Project (Hardened Scoping)
     const tasksSnap = await adminDb
       .collection("tasks")
-      .where("orgId", "==", orgId)
+      .where("orgId", "==", caller.orgId)
       .where("projectId", "==", projectId)
       .where("status", "!=", "done")
       .get();
