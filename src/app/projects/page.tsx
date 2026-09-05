@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { getProjectsByOrg } from "@/lib/queries/projects";
@@ -55,8 +57,25 @@ export default function ProjectsPage() {
   return (
     <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
       <header className="sticky top-0 z-40 -mx-5 mb-12 border-b border-line/[0.05] bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
-        <div className="flex h-16 items-center tracking-tight">
-          <AppNav uid={user?.id} orgId={user?.orgId} />
+        {/* Three tracks so the nav sits on the page's centre line rather
+            than wherever the two side clusters happen to leave it. */}
+        <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-4 tracking-tight">
+          <Link
+            href="/dashboard"
+            aria-label="OrbitOS home"
+            className="group flex min-w-0 items-center gap-3.5 justify-self-start rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
+          >
+            <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[10px] bg-surface-control shadow-raised">
+              <Image src="/logo.png" alt="" fill className="z-10 rounded-[inherit] object-cover" />
+            </div>
+            <span className="hidden text-[15px] font-medium tracking-tight text-ink transition-colors group-hover:text-ink-strong md:inline">
+              OrbitOS
+            </span>
+          </Link>
+
+          <AppNav uid={user?.id} orgId={user?.orgId} hide={["/settings"]} />
+
+          <div />
         </div>
       </header>
 

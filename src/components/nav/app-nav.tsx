@@ -36,19 +36,25 @@ interface AppNavProps {
   uid?: string;
   orgId?: string;
   className?: string;
+  /**
+   * Destinations to leave out on this page — a page does not need to
+   * advertise itself, and Settings is reachable from the profile menu.
+   */
+  hide?: string[];
 }
 
-export function AppNav({ uid, orgId, className }: AppNavProps) {
+export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
   const pathname = usePathname();
   const unread = useUnreadMessages(uid, orgId);
   const hasUnread = unread.length > 0;
+  const items = hide?.length ? ITEMS.filter((item) => !hide.includes(item.href)) : ITEMS;
 
   return (
     <nav aria-label="Primary" className={cn("min-w-0", className)}>
       {/* Scrolls rather than wraps on a narrow viewport — a nav that
           reflows to two rows changes the header height on every route. */}
-      <ul className="flex items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {ITEMS.map((item) => {
+      <ul className="flex items-center justify-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {items.map((item) => {
           const Icon = item.icon;
           // Exact match for /dashboard, prefix match elsewhere so a
           // project detail route still lights up Projects.

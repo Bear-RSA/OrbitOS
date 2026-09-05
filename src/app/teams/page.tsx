@@ -244,8 +244,10 @@ export default function TeamsPage() {
   return (
     <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
       {/* Top nav */}
-      <div className="flex items-center justify-between mb-24 tracking-tight pt-4">
-        <div className="flex items-center gap-5 cursor-pointer group" onClick={() => router.push("/dashboard")}>
+      {/* Three tracks so the nav sits on the page's centre line rather
+          than wherever the two side clusters happen to leave it. */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mb-24 tracking-tight pt-4">
+        <div className="flex items-center gap-5 cursor-pointer group justify-self-start" onClick={() => router.push("/dashboard")}>
           <div className="w-10 h-10 rounded-xl bg-surface-control shadow-raised flex items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-b from-sheen/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none"></div>
             <Image src="/logo.png" alt="OrbitOS Logo" fill className="object-cover rounded-[inherit] z-10" />
@@ -253,46 +255,9 @@ export default function TeamsPage() {
           <span className="text-[17px] font-medium text-ink tracking-tight group-hover:text-ink-strong transition-colors">OrbitOS</span>
         </div>
 
-        <AppNav uid={user.id} orgId={user.orgId} className="ml-4 mr-auto" />
+        <AppNav uid={user.id} orgId={user.orgId} hide={["/dashboard", "/settings"]} />
 
-        <div className="flex items-center gap-5">
-          <button
-            onClick={refresh}
-            disabled={refreshing}
-            aria-label="Refresh roster"
-            className={cn(
-              "flex items-center justify-center w-10 h-10 rounded-full bg-transparent hover:bg-surface-control text-ink-muted hover:text-ink transition-all focus:outline-none ring-0",
-              refreshing && "animate-spin text-ink-dim"
-            )}
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-
-          {isOwner && removableCount > 0 && (
-            <button
-              onClick={() => setRevokeMode(!revokeMode)}
-              className={cn(
-                "gap-2.5 hidden sm:flex items-center justify-center rounded-lg px-5 h-10 text-[13px] font-bold tracking-tight transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] focus:outline-none ring-0",
-                revokeMode
-                  ? "bg-orbit-red/12 text-orbit-red ring-1 ring-inset ring-orbit-red/25 hover:bg-orbit-red/20"
-                  : "bg-surface-control text-ink-muted hover:bg-surface-hover hover:text-ink"
-              )}
-            >
-              <UserMinus className="w-4 h-4" />
-              {revokeMode ? "Done" : "Revoke"}
-            </button>
-          )}
-
-          {isOwner && (
-            <button
-              onClick={() => setAddMemberOpen(true)}
-              className="gap-2.5 hidden sm:flex items-center justify-center bg-ink hover:bg-ink-strong hover:-translate-y-[2px] text-on-ink shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06),0_8px_24px_rgb(var(--scrim)_/_0.3)] hover:shadow-[0_4px_20px_rgb(var(--ink-strong)_/_0.12),0_12px_32px_rgb(var(--scrim)_/_0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-lg px-6 h-10 text-[13px] font-bold tracking-tight focus:outline-none ring-0"
-            >
-              <UserPlus className="w-4 h-4" />
-              Invite Member
-            </button>
-          )}
-
+        <div className="flex items-center justify-end gap-5">
           <button
             onClick={() => router.push("/profile")}
             aria-label="Open your profile"
@@ -316,6 +281,35 @@ export default function TeamsPage() {
               {roster.length} {roster.length === 1 ? "Active Member" : "Active Members"}
             </span>
           </div>
+
+          {/* Seat management sits under the roster status line, where it
+              reads as an action on the team rather than page chrome. */}
+          {isOwner && (
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              {removableCount > 0 && (
+                <button
+                  onClick={() => setRevokeMode(!revokeMode)}
+                  className={cn(
+                    "gap-2.5 flex items-center justify-center rounded-lg px-5 h-10 text-[13px] font-bold tracking-tight transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] focus:outline-none ring-0",
+                    revokeMode
+                      ? "bg-orbit-red/12 text-orbit-red ring-1 ring-inset ring-orbit-red/25 hover:bg-orbit-red/20"
+                      : "bg-surface-control text-ink-muted hover:bg-surface-hover hover:text-ink"
+                  )}
+                >
+                  <UserMinus className="w-4 h-4" />
+                  {revokeMode ? "Done" : "Revoke"}
+                </button>
+              )}
+
+              <button
+                onClick={() => setAddMemberOpen(true)}
+                className="gap-2.5 flex items-center justify-center bg-ink hover:bg-ink-strong hover:-translate-y-[2px] text-on-ink shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06),0_8px_24px_rgb(var(--scrim)_/_0.3)] hover:shadow-[0_4px_20px_rgb(var(--ink-strong)_/_0.12),0_12px_32px_rgb(var(--scrim)_/_0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-lg px-6 h-10 text-[13px] font-bold tracking-tight focus:outline-none ring-0"
+              >
+                <UserPlus className="w-4 h-4" />
+                Invite Member
+              </button>
+            </div>
+          )}
         </div>
       </ScrollReveal>
 

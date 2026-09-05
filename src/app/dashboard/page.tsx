@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -12,17 +13,14 @@ import { MailHealthBanner } from "@/components/dashboard/mail-health-banner";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { EmptyDashboardState } from "@/components/dashboard/empty-dashboard-state";
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog";
-import { CreateTaskDialog } from "@/components/tasks/create-task-dialog";
 import { AppNav } from "@/components/nav/app-nav";
 import { Task } from "@/types/task";
 import { Member } from "@/types/member";
-import { Project } from "@/types/project";
 import { DashboardData } from "@/types/dashboard";
 import { resolvePreferences } from "@/types/preferences";
-import { RefreshCw, Plus, ListPlus, AlertTriangle } from "lucide-react";
+import { RefreshCw, Plus, AlertTriangle } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { ActionButton } from "@/components/dashboard/dashboard-card";
-import { MessagesMenu } from "@/components/messages/messages-menu";
 import { cn } from "@/lib/utils/classnames";
 
 export default function DashboardPage() {
@@ -32,7 +30,6 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [rawTasks, setRawTasks] = useState<Task[]>([]);
   const [rawMembers, setRawMembers] = useState<Member[]>([]);
-  const [rawProjects, setRawProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -42,7 +39,6 @@ export default function DashboardPage() {
   const [loadError, setLoadError] = useState(false);
 
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
-  const [createTaskOpen, setCreateTaskOpen] = useState(false);
 
   const loadOperationalData = useCallback(async () => {
     if (!user?.id || !user?.orgId) return;
@@ -62,7 +58,6 @@ export default function DashboardPage() {
       setData(payload.data);
       setRawTasks(payload.tasks);
       setRawMembers(payload.members);
-      setRawProjects(payload.projects);
       setLoadError(false);
     } catch (err) {
       console.error("Operational breach: Failed to fetch dashboard metrics", err);
@@ -128,26 +123,34 @@ export default function DashboardPage() {
   // Safe resolution if data fails to load due to index propagation
   const hasProject = (data?.projectsHealth?.length ?? 0) > 0;
 
-  // Every seat sees every project, so every seat can file against any of
-  // them. Creating a task is member-permitted in firestore.rules and
-  // re-checked in createTaskAction.
-  const capturableProjects = data?.projects ?? rawProjects;
-
   return (
     <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
       {/* Structural Navigation Layer — stays reachable on a long scroll */}
       <header className="sticky top-0 z-40 -mx-5 mb-12 border-b border-line/[0.05] bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
-        <div className="flex h-16 items-center justify-between gap-4 tracking-tight">
+        {/* Three tracks so the nav sits on the page's centre line rather
+            than wherever the two side clusters happen to leave it. */}
+        <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-4 tracking-tight">
           <div className="flex min-w-0 items-center gap-3.5">
-            <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[10px] bg-surface-control shadow-raised">
-              <Image src="/logo.png" alt="" fill className="z-10 rounded-[inherit] object-cover" />
-            </div>
-            {/* The wordmark yields to the nav on small screens. */}
-            <span className="hidden text-[15px] font-medium tracking-tight text-ink md:inline">OrbitOS</span>
-            <AppNav uid={user.id} orgId={user.orgId} className="ml-1" />
+            <Link
+              href="/dashboard"
+              aria-label="OrbitOS home"
+              className="group flex min-w-0 items-center gap-3.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
+            >
+              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[10px] bg-surface-control shadow-raised">
+                <Image src="/logo.png" alt="" fill className="z-10 rounded-[inherit] object-cover" />
+              </div>
+              {/* The wordmark yields to the nav on small screens. */}
+              <span className="hidden text-[15px] font-medium tracking-tight text-ink transition-colors group-hover:text-ink-strong md:inline">OrbitOS</span>
+            </Link>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <AppNav
+            uid={user.id}
+            orgId={user.orgId}
+            hide={["/dashboard", "/settings"]}
+          />
+
+          <div className="flex shrink-0 items-center justify-end gap-2">
             <ActionButton
               icon={RefreshCw}
               label="Refresh"
@@ -156,28 +159,6 @@ export default function DashboardPage() {
               disabled={refreshing}
               onClick={refresh}
               className={cn(refreshing && "[&_svg]:animate-spin")}
-            />
-
-            <MessagesMenu
-              uid={user.id}
-              orgId={user.orgId}
-              members={rawMembers}
-              onOpen={(conversationId) =>
-                router.push(
-                  conversationId ? `/messages?c=${conversationId}` : "/messages"
-                )
-              }
-            />
-
-            {/* Quick capture — a task could previously only be created from
-                inside a project page. */}
-            <ActionButton
-              icon={ListPlus}
-              label="New Task"
-              variant="ghost"
-              collapsed
-              disabled={capturableProjects.length === 0}
-              onClick={() => setCreateTaskOpen(true)}
             />
 
             <ActionButton
@@ -259,16 +240,6 @@ export default function DashboardPage() {
         orgId={user.orgId}
         createdBy={user.id}
         onSuccess={loadOperationalData}
-      />
-
-      <CreateTaskDialog
-        open={createTaskOpen}
-        onOpenChange={setCreateTaskOpen}
-        orgId={user.orgId}
-        projects={capturableProjects.map((p) => ({ id: p.id, name: p.name }))}
-        members={rawMembers}
-        currentUserId={user.id}
-        onCreated={loadOperationalData}
       />
     </DashboardShell>
   );
