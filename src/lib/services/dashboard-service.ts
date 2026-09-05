@@ -16,6 +16,7 @@ import { Member } from "@/types/member";
 import { Task } from "@/types/task";
 import { startOfWeek, isAfter, addDays, format, differenceInCalendarDays } from "date-fns";
 import { Project } from "@/types/project";
+import { sortProjectsByPriority } from "@/lib/utils/project-order";
 
 /**
  * Dashboard Data Orchestration Service
@@ -35,21 +36,6 @@ export interface DashboardPayload {
   tasks: Task[];
   projects: Project[];
   members: Member[];
-}
-
-/**
- * Sorts projects by priority ascending (P1 first), then unprioritized by createdAt descending.
- */
-function sortProjectsByPriority<T extends Project>(projects: T[]): T[] {
-  return [...projects].sort((a, b) => {
-    const aPri = a.priority ?? Infinity;
-    const bPri = b.priority ?? Infinity;
-    if (aPri !== bPri) return aPri - bPri;
-    // Both unprioritized — newest first
-    const aTime = a.createdAt?.toMillis?.() ?? 0;
-    const bTime = b.createdAt?.toMillis?.() ?? 0;
-    return bTime - aTime;
-  });
 }
 
 /** Midnight today, for calendar-day comparisons rather than instant ones. */

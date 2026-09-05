@@ -12,6 +12,75 @@ export const metadata: Metadata = {
 export default function ChangelogPage() {
   const releases = [
     {
+      month: "September 2026",
+      entries: [
+        {
+          title: "Voice & Video Calls",
+          desc: "Deployed the call room on Daily, covering direct calls between operators and multi-party rooms. The prejoin screen and connection states are handled inside the app rather than left to the provider's defaults."
+        },
+        {
+          title: "Call Access & Tier Limits",
+          desc: "Participant and guest ceilings resolve from the workspace tier and are enforced before a room is ever issued. Incoming call subscriptions are scoped by organisation, so a ring never crosses workspace boundaries."
+        },
+        {
+          title: "Call Room Theming",
+          desc: "The embedded call surface now carries the OrbitOS palette and follows the operator's light or dark mode instead of rendering in the provider's own chrome."
+        },
+        {
+          title: "Audible Ringing",
+          desc: "Internal calls ring through a generated tone on both ends, driven by a shared audio context and switchable per operator from notification settings."
+        },
+        {
+          title: "Direct Messages",
+          desc: "Shipped workspace messaging with one-to-one conversations and groups. Posting rights derive from role rather than channel ownership, and group size is bounded by the workspace tier."
+        },
+        {
+          title: "Unread State & Chimes",
+          desc: "Added an unread hook that drives the message rail, and a notifier mounted at the application root so a new message chimes wherever the operator happens to be."
+        },
+        {
+          title: "Emoji, GIFs & Stickers",
+          desc: "Added an emoji picker and a media picker backed by a session-gated, rate-limited search route. The provider key stays on the server, and attachments are validated before they reach a thread."
+        },
+        {
+          title: "Conversation Clearing",
+          desc: "Operators can clear a conversation from their own rail without removing it for anyone else in the thread."
+        },
+        {
+          title: "Member Profiles",
+          desc: "Introduced the member profile panel, reachable from both the message rail and the personnel hub."
+        },
+        {
+          title: "Presence from Heartbeat",
+          desc: "Presence is now decided by a live heartbeat rather than a self-set status that never decays. A stored status only counts once the heartbeat has vouched for it, and relative times tick without a refresh."
+        },
+        {
+          title: "Password Reset Delivery",
+          desc: "Reset credentials are minted server side and carried by Resend, replacing the client SDK path that had no delivery log and no bounce reporting. A reset that never landed used to look identical to one that was never sent."
+        },
+        {
+          title: "Unified Caller Resolution",
+          desc: "Every server action now authenticates through one shared caller resolver instead of parsing the session itself. Task references were reworked in the same pass."
+        },
+        {
+          title: "Dashboard Consolidation",
+          desc: "Collapsed the separate owner and member dashboards into a single view, and retired the team workload card in favour of a personal metrics card and a workspace attention card."
+        },
+        {
+          title: "Projects in Focus",
+          desc: "The dashboard now spotlights projects by urgency and due date, with the ranking rules pinned by unit tests."
+        },
+        {
+          title: "Shared Application Chrome",
+          desc: "Extracted the application header and profile link into shared components, so navigation reads the same across dashboard, projects, messages, teams, settings, and profile."
+        },
+        {
+          title: "Reduced Motion Coverage",
+          desc: "Scroll reveals and JavaScript-driven effects now honour the reduced-motion preference, closing the gap left by CSS transitions that already respected it."
+        }
+      ]
+    },
+    {
       month: "August 2026",
       entries: [
         {
@@ -53,6 +122,46 @@ export default function ChangelogPage() {
         {
           title: "Data Integrity Backfill",
           desc: "Shipped a backfill routine alongside expanded Firestore rules and indexes to normalise historical records against the current schema."
+        },
+        {
+          title: "Execution View Tabs",
+          desc: "Reorganised the project surface into tabbed execution views, separating the directive table, the file explorer, and the command center behind one shell."
+        },
+        {
+          title: "Task Due Reminders",
+          desc: "Assignees are emailed 24 hours before a directive falls due, dispatched from a scheduled run with its own test coverage."
+        },
+        {
+          title: "Engagement Scheduling",
+          desc: "Added the engagement creation dialog with validated form logic, and reworked its layout to hold up on wider screens."
+        },
+        {
+          title: "RSVP Responses",
+          desc: "Invitees respond to an engagement from a signed link, and the organiser is notified when a response lands. RSVP and calendar feed links now resolve through a single app URL helper."
+        },
+        {
+          title: "Scheduled Mail Consolidation",
+          desc: "Added a due-today digest and a metered end-of-day debrief, then fitted four scheduled mails into the two cron slots the hosting plan allows. The due-today digest and owner debrief were retired shortly after."
+        },
+        {
+          title: "Mail Health Monitoring",
+          desc: "Added a mail health endpoint and a dashboard banner that raises delivery trouble to owners instead of leaving it in the logs."
+        },
+        {
+          title: "Delivery Failure Tracking",
+          desc: "Provider webhooks now record bounces and delivery failures against the send that caused them."
+        },
+        {
+          title: "Canonical Host Correction",
+          desc: "Made www the canonical host rather than the apex, and routed generated links through the configured application URL."
+        },
+        {
+          title: "Framework Security Update",
+          desc: "Moved Next.js from 15.5.18 to 15.5.23 to take upstream security fixes."
+        },
+        {
+          title: "Lint & Test Baseline",
+          desc: "Added an ESLint configuration and cleared what it found, untracked build artefacts from the repository, and covered iCalendar generation, invite dispatch, the guest registry, presence, and the due-reminder run with unit tests."
         }
       ]
     },
