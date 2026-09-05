@@ -42,8 +42,7 @@ import {
   HardDriveUpload,
   Settings as SettingsIcon,
 } from "lucide-react";
-import { AppNav } from "@/components/nav/app-nav";
-import { ProfileLink } from "@/components/nav/profile-link";
+import { AppHeader } from "@/components/nav/app-header";
 import { cn } from "@/lib/utils/classnames";
 import { ProfilePictureManager } from "@/components/profile/profile-picture-manager";
 import { themeColor } from "@/lib/theme/colors";
@@ -329,13 +328,10 @@ export default function ProfilePage() {
   return (
     <DashboardShell className="min-h-[100dvh] bg-base text-ink selection:bg-surface-hover selection:text-ink-strong">
       {/* ── Chrome ─────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 -mx-5 mb-10 bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:mb-14 sm:px-8 lg:-mx-10 lg:px-10">
-        <div className="flex h-16 items-center justify-between gap-4 tracking-tight">
-          {/* Replaces a lone "back to Dashboard" button: every destination is
-              now reachable from every page, not just the one behind you. */}
-          <AppNav uid={user?.id} orgId={user?.orgId} />
-
-          <div className="flex items-center gap-2">
+      <AppHeader
+        user={{ ...user, name: displayName }}
+        actions={
+          <>
             {hasChanges && (
               <span className="mr-1 hidden items-center gap-2 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-dim sm:inline-flex">
                 <span className="urgency-breath h-1.5 w-1.5 rounded-full bg-orbit-amber" />
@@ -370,7 +366,7 @@ export default function ProfilePage() {
                 "inline-flex h-9 items-center gap-2 rounded-lg bg-ink px-3.5 text-on-ink",
                 "shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06)]",
                 "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                "hover:-translate-y-px hover:bg-ink-strong",
+                "hover:-translate-y-px hover:bg-ink-strong",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base",
                 "disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0 disabled:hover:bg-ink"
               )}
@@ -388,13 +384,9 @@ export default function ProfilePage() {
                 {isSaving ? "Saving" : saveSuccess ? "Saved" : "Save"}
               </span>
             </button>
-
-            {/* Self-referential here, but the corner holds the same control
-                on every page — and it tracks the name being edited. */}
-            <ProfileLink photoURL={user.photoURL} name={displayName} className="ml-1" />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <div className="flex flex-col gap-6 sm:gap-8">
         {/* ══ Identity ═══════════════════════════════════════════════════ */}

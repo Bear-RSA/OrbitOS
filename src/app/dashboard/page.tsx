@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -13,8 +11,7 @@ import { MailHealthBanner } from "@/components/dashboard/mail-health-banner";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { EmptyDashboardState } from "@/components/dashboard/empty-dashboard-state";
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog";
-import { AppNav } from "@/components/nav/app-nav";
-import { ProfileLink } from "@/components/nav/profile-link";
+import { AppHeader } from "@/components/nav/app-header";
 import { Task } from "@/types/task";
 import { Member } from "@/types/member";
 import { DashboardData } from "@/types/dashboard";
@@ -126,31 +123,10 @@ export default function DashboardPage() {
   return (
     <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
       {/* Structural Navigation Layer — stays reachable on a long scroll */}
-      <header className="sticky top-0 z-40 -mx-5 mb-12 bg-base/80 px-5 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
-        {/* Three tracks so the nav sits on the page's centre line rather
-            than wherever the two side clusters happen to leave it. */}
-        <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-4 tracking-tight">
-          <div className="flex min-w-0 items-center gap-3.5">
-            <Link
-              href="/dashboard"
-              aria-label="OrbitOS home"
-              className="group flex min-w-0 items-center gap-3.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
-            >
-              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[10px] bg-surface-control shadow-raised">
-                <Image src="/logo.png" alt="" fill className="z-10 rounded-[inherit] object-cover" />
-              </div>
-              {/* The wordmark yields to the nav on small screens. */}
-              <span className="hidden text-[15px] font-medium tracking-tight text-ink transition-colors group-hover:text-ink-strong md:inline">OrbitOS</span>
-            </Link>
-          </div>
-
-          <AppNav
-            uid={user.id}
-            orgId={user.orgId}
-            hide={["/dashboard", "/settings"]}
-          />
-
-          <div className="flex shrink-0 items-center justify-end gap-2">
+      <AppHeader
+        user={user}
+        actions={
+          <>
             <ActionButton
               icon={RefreshCw}
               label="Refresh"
@@ -167,11 +143,9 @@ export default function DashboardPage() {
               collapsed
               onClick={() => setCreateProjectOpen(true)}
             />
-
-            <ProfileLink photoURL={user.photoURL} name={user.name} className="ml-1" />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {/* Narrative Header Layer */}
       <div className="mb-12 sm:mb-16">

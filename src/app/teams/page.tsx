@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -8,8 +7,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Loader } from "@/components/ui/loader";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { InteractiveCard } from "@/components/ui/interactive-card";
-import { AppNav } from "@/components/nav/app-nav";
-import { ProfileLink } from "@/components/nav/profile-link";
+import { AppHeader } from "@/components/nav/app-header";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { AddMemberDialog } from "@/components/members/add-member-dialog";
 import { MemberProfile } from "@/components/members/member-profile";
@@ -278,21 +276,7 @@ export default function TeamsPage() {
   return (
     <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
       {/* Top nav */}
-      {/* Three tracks so the nav sits on the page's centre line rather
-          than wherever the two side clusters happen to leave it. */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mb-24 tracking-tight pt-4">
-        <div className="flex items-center gap-5 cursor-pointer group justify-self-start" onClick={() => router.push("/dashboard")}>
-          <div className="w-10 h-10 rounded-xl bg-surface-control shadow-raised flex items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-sheen/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none"></div>
-            <Image src="/logo.png" alt="OrbitOS Logo" fill className="object-cover rounded-[inherit] z-10" />
-          </div>
-          <span className="text-[17px] font-medium text-ink tracking-tight group-hover:text-ink-strong transition-colors">OrbitOS</span>
-        </div>
-
-        <AppNav uid={user.id} orgId={user.orgId} hide={["/dashboard", "/settings"]} />
-
-        <ProfileLink photoURL={user.photoURL} name={user.name} className="justify-self-end" />
-      </div>
+      <AppHeader user={user} />
 
       {/* Header */}
       <ScrollReveal>
