@@ -18,6 +18,7 @@ import {
   endCallAction,
 } from "@/app/actions/calls";
 import { CallRoom } from "@/components/calls/call-room";
+import { CallShell } from "@/components/calls/call-shell";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { CallGrant, OrbitCall } from "@/types/call";
 
@@ -49,6 +50,9 @@ export function IncomingCall() {
   const [ringing, setRinging] = useState<OrbitCall | null>(null);
   const [grant, setGrant] = useState<CallGrant | null>(null);
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
+  /* Kept because the ring it came from is cleared on answer, and a
+     parked call in the corner has to say whose voice it is. */
+  const [activeWith, setActiveWith] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -149,6 +153,7 @@ export function IncomingCall() {
     const result = await answerCallAction(ringing.id);
     if (result.success) {
       setActiveCallId(ringing.id);
+      setActiveWith(ringing.fromName);
       setGrant(result.grant);
       setRinging(null);
     } else {
@@ -172,27 +177,19 @@ export function IncomingCall() {
     const id = activeCallId;
     setGrant(null);
     setActiveCallId(null);
+    setActiveWith(null);
     if (id) await endCallAction(id);
   }, [activeCallId]);
 
   if (grant) {
     return (
-      <div className="fixed inset-0 z-[60] flex flex-col bg-base/95 p-4 backdrop-blur-xl">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
-            In a call
-          </p>
-          <button
-            type="button"
-            onClick={hangUp}
-            className="flex items-center gap-2 rounded-lg bg-orbit-red/90 px-3 py-1.5 text-[11px] font-medium tracking-wide text-white transition-opacity hover:opacity-90"
-          >
-            <PhoneOff className="h-3.5 w-3.5" aria-hidden />
-            Hang up
-          </button>
-        </div>
-        <CallRoom grant={grant} onLeave={hangUp} className="min-h-0 flex-1" />
-      </div>
+      <CallShell
+        title={activeWith ?? "Call"}
+        headline={activeWith ? `In a call with ${activeWith}` : "In a call"}
+        onHangUp={hangUp}
+      >
+        <CallRoom grant={grant} onLeave={hangUp} className="h-full w-full" />
+      </CallShell>
     );
   }
 

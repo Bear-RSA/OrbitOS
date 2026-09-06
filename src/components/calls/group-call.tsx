@@ -1,22 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PhoneOff } from "lucide-react";
 import {
   leaveGroupCallAction,
   startGroupCallAction,
 } from "@/app/actions/calls";
 import { CallRoom } from "@/components/calls/call-room";
+import { CallShell } from "@/components/calls/call-shell";
 import { Loader } from "@/components/ui/loader";
 import type { CallGrant } from "@/types/call";
 
 /* ------------------------------------------------------------------ */
 /*  Group call                                                         */
 /*                                                                     */
-/*  The room beside a group thread. Mounted when somebody starts or    */
-/*  joins one and unmounted when they leave, so being in a call is one */
-/*  piece of state on the Messages page rather than a flow spread      */
-/*  across it — the same shape `OutgoingCall` has.                     */
+/*  The room behind a group thread. Mounted by `CallHost` when         */
+/*  somebody starts or joins one and unmounted when they leave, so     */
+/*  being in a call is one piece of session state rather than a flow   */
+/*  spread across the Messages page — the same shape `OutgoingCall`    */
+/*  has. Living in the root layout is what lets the room outlast the   */
+/*  page it was opened from: see `contexts/call-context`.              */
 /*                                                                     */
 /*  There is no ringing half here, and no incoming half either. One    */
 /*  action opens the room or walks into the open one, because from     */
@@ -25,11 +27,12 @@ import type { CallGrant } from "@/types/call";
 /*  decides which of the two actually happened.                        */
 /*                                                                     */
 /*  LEAVING IS OWNED BY AN EFFECT, not by the button. Clicking Hang    */
-/*  up, Daily's own leave button, closing the tab, navigating away and */
-/*  signing out all end in the same cleanup, so none of them has to    */
-/*  remember to take this person out of the participant list and none  */
-/*  of them can forget — which is the failure that leaves a call lit   */
-/*  in everyone's rail long after the room emptied.                    */
+/*  up, Daily's own leave button, closing the tab and signing out all  */
+/*  end in the same cleanup, so none of them has to remember to take   */
+/*  this person out of the participant list and none of them can       */
+/*  forget — which is the failure that leaves a call lit in everyone's */
+/*  rail long after the room emptied. Walking to another page is       */
+/*  pointedly NOT on that list any more; it no longer unmounts this.   */
 /* ------------------------------------------------------------------ */
 
 interface GroupCallProps {
@@ -101,25 +104,16 @@ export function GroupCall({ conversationId, title, onClose }: GroupCallProps) {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-base/95 p-4 backdrop-blur-xl">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="truncate font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
-          {error ? "Call unavailable" : `In a call — ${title}`}
-        </p>
-        <button
-          type="button"
-          onClick={hangUp}
-          className="flex shrink-0 items-center gap-2 rounded-lg bg-orbit-red/90 px-3 py-1.5 text-[11px] font-medium tracking-wide text-white transition-opacity hover:opacity-90"
-        >
-          <PhoneOff className="h-3.5 w-3.5" aria-hidden />
-          {error ? "Close" : "Hang up"}
-        </button>
-      </div>
-
+    <CallShell
+      title={title}
+      headline={error ? "Call unavailable" : undefined}
+      hangUpLabel={error ? "Close" : "Hang up"}
+      onHangUp={hangUp}
+    >
       {grant ? (
-        <CallRoom grant={grant} onLeave={hangUp} className="min-h-0 flex-1" />
+        <CallRoom grant={grant} onLeave={hangUp} className="h-full w-full" />
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 rounded-xl bg-surface-card">
+        <div className="flex h-full flex-col items-center justify-center gap-4 rounded-xl bg-surface-card">
           {error ? (
             <p className="max-w-sm px-6 text-center text-[13px] font-light leading-relaxed text-orbit-red">
               {error}
@@ -134,6 +128,6 @@ export function GroupCall({ conversationId, title, onClose }: GroupCallProps) {
           )}
         </div>
       )}
-    </div>
+    </CallShell>
   );
 }

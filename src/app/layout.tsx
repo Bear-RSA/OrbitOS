@@ -6,7 +6,8 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { InteractionProvider } from "@/components/ui/interaction-provider";
 import { PreferenceEffects } from "@/components/preference-effects";
 import { ThemeScript } from "@/components/theme-script";
-import { IncomingCall } from "@/components/calls/incoming-call";
+import { CallProvider } from "@/contexts/call-context";
+import { CallHost } from "@/components/calls/call-host";
 import { MessageNotifier } from "@/components/messages/message-notifier";
 
 // Self-hosted at build time by next/font — no render-blocking @import, no FOUT,
@@ -76,11 +77,15 @@ export default function RootLayout({
         <InteractionProvider>
           <AuthProvider>
             <PreferenceEffects />
-            {children}
-            {/* A phone that only rings on the page you happen to be
-                looking at is not a phone. Mounted once for the whole
-                session; renders nothing until somebody calls. */}
-            <IncomingCall />
+            {/* Calls live above the router. A room mounted inside a page
+                is a room that ends when somebody clicks Projects, which
+                is not what leaving a call is supposed to mean — so the
+                session is held here and the host renders it, and every
+                screen underneath can come and go around a live call. */}
+            <CallProvider>
+              {children}
+              <CallHost />
+            </CallProvider>
             {/* Renders nothing; chimes when a colleague writes to you.
                 Mounted here for the same reason the phone is — a
                 notification that only reaches the page you are already

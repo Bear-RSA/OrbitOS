@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader } from "@/components/ui/loader";
 import { AlertCircle } from "lucide-react";
+import { useCall } from "@/contexts/call-context";
 import type { CallGrant } from "@/types/call";
 
 /* ------------------------------------------------------------------ */
@@ -99,6 +100,14 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
   const [status, setStatus] = useState<"joining" | "joined" | "failed">("joining");
   const [error, setError] = useState<string | null>(null);
 
+  /* The shell paints a microphone button and a way out when the room is
+     parked in the corner, and the continuity hook has to reach the
+     camera when a phone locks. Both need the handle this file creates,
+     so it is published upward for as long as the room is open — and
+     withdrawn in the same cleanup that destroys it, because a handle to
+     a destroyed frame is worse than none. */
+  const { registerFrame } = useCall();
+
   /* Held in a ref so the leave handler can reach the current callback
      without the effect re-running and tearing the room down mid-call. */
   const onLeaveRef = useRef(onLeave);
@@ -187,7 +196,12 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
            That is a deadlock that looks exactly like a call stuck on
            "connecting". `loaded` fires once Daily's UI can take the frame. */
         frame.on("loaded", () => {
-          if (!cancelled) setStatus("joined");
+          if (cancelled) return;
+          setStatus("joined");
+          /* Published here rather than after `join()` resolves. With a
+             prejoin screen that promise waits on a click, and the corner
+             controls should work from the moment the room is on screen. */
+          registerFrame(frame);
         });
         frame.on("left-meeting", () => onLeaveRef.current?.());
         frame.on("error", (event: any) => {
@@ -203,7 +217,10 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
 
         /* Belt-and-suspenders: if `loaded` never arrived, a resolved join
            still means Daily owns the frame and the loader must go. */
-        if (!cancelled) setStatus("joined");
+        if (!cancelled) {
+          setStatus("joined");
+          registerFrame(frame);
+        }
       } catch (err: any) {
         if (cancelled) return;
         console.error("[CallRoom] Failed to join:", err);
@@ -214,10 +231,11 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
     return () => {
       cancelled = true;
       stopWatchingTheme?.();
+      registerFrame(null);
       // Destroy, never just leave: a surviving iframe keeps the mic open.
       frame?.destroy?.();
     };
-  }, [grant, fail]);
+  }, [grant, fail, registerFrame]);
 
   return (
     <div className={className}>

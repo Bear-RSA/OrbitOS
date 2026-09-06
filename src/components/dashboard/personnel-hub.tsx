@@ -11,7 +11,7 @@ import { resolvePresence } from "@/lib/members/presence";
 import { Loader2, Phone } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
-import { OutgoingCall } from "@/components/calls/outgoing-call";
+import { useCall } from "@/contexts/call-context";
 import { MemberProfile } from "@/components/members/member-profile";
 
 interface PersonnelHubProps {
@@ -33,14 +33,11 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
   const [now, setNow] = useState(Date.now());
   const { user } = useAuth();
 
-  /* Who this operative is currently ringing. One at a time on purpose:
-     placing a second call while the first is still connecting has no
-     meaning, and the ring UI is a single fixed panel. */
-  const [calling, setCalling] = useState<{
-    uid: string;
-    name: string;
-    photoURL?: string | null;
-  } | null>(null);
+  /* The ring belongs to the session, not to this grid. One at a time on
+     purpose — placing a second call while the first is still connecting
+     has no meaning — and that rule lives in `contexts/call-context`
+     now, where every screen that can start a call shares it. */
+  const { callPerson } = useCall();
 
   /* Whose card is open. The row itself still filters by assignee — that
      is what a row in this grid has always done — so the profile hangs
@@ -205,7 +202,7 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
                          onClick={(e) => {
                            // The row itself filters by assignee.
                            e.stopPropagation();
-                           setCalling({ uid: t.id, name: t.name, photoURL: t.photoURL });
+                           callPerson({ uid: t.id, name: t.name, photoURL: t.photoURL });
                          }}
                          title={
                            t.presence
@@ -259,10 +256,6 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
            );
          })}
        </div>
-
-       {calling && (
-         <OutgoingCall target={calling} onClose={() => setCalling(null)} />
-       )}
 
        {/* Tasks and engagements are already in hand here, so the card
            costs no extra reads on this screen. */}

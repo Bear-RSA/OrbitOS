@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { CalendarClock, MessageSquare, Phone } from "lucide-react";
+import { useCall } from "@/contexts/call-context";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { OutgoingCall } from "@/components/calls/outgoing-call";
 import { getTasksByOrg } from "@/lib/queries/tasks";
 import { getEventsInRange } from "@/lib/queries/events";
 import { sharedEngagements, workloadFor } from "@/lib/members/profile";
@@ -26,10 +26,10 @@ import type { Conversation } from "@/types/message";
 /*  questions, and merging them would put a Save button on somebody    */
 /*  else's record.                                                     */
 /*                                                                     */
-/*  It hosts the ring itself rather than raising an `onCall` to four   */
-/*  different callers. `OutgoingCall` has to outlive the dialog — a    */
-/*  call that hangs up because a card closed is not a call — so the    */
-/*  dialog closes and the ring keeps its own mount here.               */
+/*  It places the call itself rather than raising an `onCall` to four  */
+/*  different callers. The ring has to outlive the dialog — a call     */
+/*  that hangs up because a card closed is not a call — so the card    */
+/*  hands it to the session and closes; see `contexts/call-context`.   */
 /*                                                                     */
 /*  Everything shown is already readable by any member of the org:     */
 /*  the user doc, org-wide `events`, org-wide `tasks`, and the dm the  */
@@ -76,11 +76,7 @@ export function MemberProfile({
 }: MemberProfileProps) {
   const [tasks, setTasks] = useState<Task[]>(providedTasks ?? []);
   const [events, setEvents] = useState<OrbitEvent[]>(providedEvents ?? []);
-  const [calling, setCalling] = useState<{
-    uid: string;
-    name: string;
-    photoURL?: string | null;
-  } | null>(null);
+  const { callPerson } = useCall();
 
   const memberId = member?.id ?? null;
   const isSelf = memberId === viewer.id;
@@ -141,11 +137,7 @@ export function MemberProfile({
     return map[member.id] ?? null;
   }, [events, member]);
 
-  if (!member) {
-    return calling ? (
-      <OutgoingCall target={calling} onClose={() => setCalling(null)} />
-    ) : null;
-  }
+  if (!member) return null;
 
   /* From the heartbeat, not the stored status — see `lib/members/
      presence`. A live engagement still outranks both. */
@@ -213,7 +205,7 @@ export function MemberProfile({
               disabled={callBlocked}
               title={callReason}
               onClick={() => {
-                setCalling({
+                callPerson({
                   uid: member.id,
                   name: member.name,
                   photoURL: member.photoURL,
@@ -307,7 +299,6 @@ export function MemberProfile({
         </DialogContent>
       </Dialog>
 
-      {calling && <OutgoingCall target={calling} onClose={() => setCalling(null)} />}
     </>
   );
 }

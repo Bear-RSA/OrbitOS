@@ -13,16 +13,18 @@ import {
   startCallAction,
 } from "@/app/actions/calls";
 import { CallRoom } from "@/components/calls/call-room";
+import { CallShell } from "@/components/calls/call-shell";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { CallGrant, CallStatus } from "@/types/call";
 
 /* ------------------------------------------------------------------ */
 /*  Outgoing call                                                      */
 /*                                                                     */
-/*  The caller's half of a ring. Mounted when somebody clicks Call and */
-/*  unmounted when the call is over, so placing a call is one piece of */
-/*  state in the Personnel Network rather than a flow spread across    */
-/*  it.                                                                */
+/*  The caller's half of a ring. Mounted by `CallHost` when somebody  */
+/*  clicks Call and unmounted when the call is over, so placing a call */
+/*  is one piece of session state rather than a flow spread across the */
+/*  four screens that can start one — and so the room outlasts every   */
+/*  one of them. See `contexts/call-context`.                          */
 /*                                                                     */
 /*  It watches the single call document rather than a query of ringing */
 /*  calls, because the transition it exists to catch — the callee      */
@@ -137,22 +139,13 @@ export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
 
   if (grant) {
     return (
-      <div className="fixed inset-0 z-[60] flex flex-col bg-base/95 p-4 backdrop-blur-xl">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
-            In a call with {target.name}
-          </p>
-          <button
-            type="button"
-            onClick={hangUp}
-            className="flex items-center gap-2 rounded-lg bg-orbit-red/90 px-3 py-1.5 text-[11px] font-medium tracking-wide text-white transition-opacity hover:opacity-90"
-          >
-            <PhoneOff className="h-3.5 w-3.5" aria-hidden />
-            Hang up
-          </button>
-        </div>
-        <CallRoom grant={grant} onLeave={hangUp} className="min-h-0 flex-1" />
-      </div>
+      <CallShell
+        title={target.name}
+        headline={`In a call with ${target.name}`}
+        onHangUp={hangUp}
+      >
+        <CallRoom grant={grant} onLeave={hangUp} className="h-full w-full" />
+      </CallShell>
     );
   }
 
