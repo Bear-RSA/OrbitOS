@@ -16,6 +16,7 @@ import { MessageThread } from "@/components/messages/message-thread";
 import { CreateGroupDialog } from "@/components/messages/create-group-dialog";
 import { MemberProfile } from "@/components/members/member-profile";
 import { OutgoingCall } from "@/components/calls/outgoing-call";
+import { GroupCall } from "@/components/calls/group-call";
 import {
   ConversationList,
   type ConversationTab,
@@ -87,6 +88,10 @@ function MessagesScreen() {
     name: string;
     photoURL?: string | null;
   } | null>(null);
+  /* The group thread whose room this operative is sitting in. One at a
+     time, for the same reason as `calling` above: a person is in one
+     room or none. */
+  const [inGroupCall, setInGroupCall] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -297,6 +302,7 @@ function MessagesScreen() {
               subtitle={subtitleFor(active)}
               onOpenProfile={setProfileUid}
               onCall={setCalling}
+              onGroupCall={setInGroupCall}
             />
           </div>
         </div>
@@ -339,6 +345,20 @@ function MessagesScreen() {
       />
 
       {calling && <OutgoingCall target={calling} onClose={() => setCalling(null)} />}
+
+      {/* Held here rather than inside the thread so the room survives
+          the rail being clicked. Leaving a call should be a decision,
+          not a side effect of opening another chat to check something
+          while you are talking. */}
+      {inGroupCall && (
+        <GroupCall
+          conversationId={inGroupCall}
+          title={
+            threads.find((c) => c.id === inGroupCall)?.name?.trim() || "Group call"
+          }
+          onClose={() => setInGroupCall(null)}
+        />
+      )}
 
       <CreateGroupDialog
         open={createGroupOpen}

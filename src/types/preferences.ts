@@ -52,7 +52,37 @@ export interface UserPreferences {
    * phone is not a phone.
    */
   callSounds: boolean;
+  /**
+   * A desktop notification when a colleague calls and OrbitOS is not
+   * the window you are looking at.
+   *
+   * Separate from `callSounds` because they fail in different
+   * directions. A ring is useless in a muted tab and a notification is
+   * useless when you are already staring at the screen, so somebody
+   * who works with the sound off wants exactly this one and somebody in
+   * an open-plan studio wants exactly the other.
+   *
+   * On by default, but it grants nothing on its own: the browser's own
+   * permission still has to be given, and it can only be asked for
+   * from a real click. See `lib/notifications/desktop`.
+   */
+  desktopNotifications: boolean;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Not stored here: ringing a closed browser                          */
+/*                                                                     */
+/*  Web push is deliberately NOT a preference, and the reason is that  */
+/*  a preference would be a lie. Every field above is one answer per   */
+/*  account; push is one answer per DEVICE — a laptop can be           */
+/*  registered while a phone is not, and no single boolean on the user */
+/*  document can say that truthfully.                                  */
+/*                                                                     */
+/*  So the registration itself is the setting. A row in `pushTokens`   */
+/*  means this device rings; no row means it does not, and the toggle  */
+/*  in Settings reads the browser rather than the profile. See         */
+/*  `lib/notifications/push`.                                          */
+/* ------------------------------------------------------------------ */
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   theme: "dark",
@@ -63,6 +93,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   rsvpNotifications: true,
   messageSounds: true,
   callSounds: true,
+  desktopNotifications: true,
 };
 
 /** Fills in every missing key so callers never branch on `undefined`. */

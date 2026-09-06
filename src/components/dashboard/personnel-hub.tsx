@@ -191,31 +191,31 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
                   </div>
 
                   <div className="flex flex-col items-end gap-1">
-                     {/* Calling yourself is not a thing, and someone
-                         already in a meeting or a call is reachable but
-                         probably should not be rung — so the button
-                         stays, disabled, and says why. Hiding it would
-                         make the row's capabilities depend on state the
-                         reader cannot see. */}
+                     {/* Live for everybody but yourself. A meeting or a
+                         stale heartbeat used to grey this out, which
+                         refused calls that would have connected —
+                         presence is a heuristic, and the ring listener
+                         runs on every open client whatever the dot
+                         says. The status still sits beside the button,
+                         so the reader knows what they are walking into
+                         and decides for themselves. */}
                      {user?.id && t.id !== user.id && (
                        <button
                          type="button"
                          onClick={(e) => {
                            // The row itself filters by assignee.
                            e.stopPropagation();
-                           if (t.presence || t.operationalStatus === "offline") return;
                            setCalling({ uid: t.id, name: t.name, photoURL: t.photoURL });
                          }}
-                         disabled={Boolean(t.presence) || t.operationalStatus === "offline"}
                          title={
                            t.presence
-                             ? `${t.name} is ${t.presence.label}`
+                             ? `${t.name} is ${t.presence.label} — call anyway`
                              : t.operationalStatus === "offline"
-                               ? `${t.name} is offline`
+                               ? `${t.name} looks offline — call anyway`
                                : `Call ${t.name}`
                          }
                          aria-label={`Call ${t.name}`}
-                         className="mb-1 flex items-center gap-1.5 rounded-lg border border-line/[0.06] bg-surface-control px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-ink-muted transition-colors hover:bg-surface-raised hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+                         className="mb-1 flex items-center gap-1.5 rounded-lg border border-line/[0.06] bg-surface-control px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-ink-muted transition-colors hover:bg-surface-raised hover:text-ink"
                        >
                          <Phone className="h-2.5 w-2.5" aria-hidden />
                          Call

@@ -8,6 +8,7 @@ import {
   conversationUnread,
 } from "@/lib/messages/summary";
 import { presenceTone, resolvePresence } from "@/lib/members/presence";
+import { groupCallLive } from "@/lib/calls/access";
 import { useNow } from "@/hooks/use-now";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils/classnames";
@@ -268,6 +269,12 @@ export function ConversationList({
                     onClick={() => onSelect(conversation.id)}
                     onClear={() => onClearConversation(conversation.id)}
                     icon={<Users className="h-3.5 w-3.5 text-ink-muted" aria-hidden />}
+                    /* Nothing rings for a group call, so this pill is
+                       how one reaches somebody who is looking at another
+                       thread. It costs no new listener: the rail is
+                       already watching these documents, and the call
+                       lives on them. */
+                    live={groupCallLive(conversation.activeCall, now)}
                   />
                 ))}
               </Section>
@@ -341,6 +348,8 @@ interface ConversationRowProps {
   avatar?: { name: string; photoURL?: string | null };
   /** Tailwind background class for the presence dot, or null for none. */
   presence?: string | null;
+  /** A call is running in this thread right now. */
+  live?: boolean;
   /**
    * `label` is the mono-uppercase treatment the rest of the app uses for
    * system text — right for a role descriptor. A message preview is
@@ -373,6 +382,7 @@ function ConversationRow({
   icon,
   avatar,
   presence,
+  live = false,
   previewStyle = "label",
   onAvatarClick,
   onClear,
@@ -452,6 +462,21 @@ function ConversationRow({
           {busy ? "Opening…" : preview}
         </span>
       </button>
+
+      {/* Louder than the unread dot, and deliberately so: an unread
+          message will still be there in an hour and a call will not. */}
+      {live && (
+        <span
+          aria-label="Call in progress"
+          className="flex shrink-0 items-center gap-1.5 rounded-md bg-orbit-green/15 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.15em] text-orbit-green ring-1 ring-inset ring-orbit-green/25"
+        >
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orbit-green opacity-75" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-orbit-green" />
+          </span>
+          Live
+        </span>
+      )}
 
       {/* One dot, no count. A number here would need a per-thread read of
           the messages nobody has opened, which is the read the

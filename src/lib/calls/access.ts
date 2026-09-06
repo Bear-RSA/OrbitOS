@@ -170,6 +170,133 @@ export function canStartDirectCall(facts: DirectCallFacts): JoinDecision {
   return ALLOWED;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Group calls                                                        */
+/*                                                                     */
+/*  A room beside a conversation. Nobody is rung and nobody answers:   */
+/*  one person opens it and everyone in the thread can walk in, which  */
+/*  is why none of this reuses the ringing decisions above.            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The smallest room worth calling a group call.
+ *
+ * This is the tier gate, and it is expressed in seats rather than as a
+ * feature flag so it stays honest against the one table that decides
+ * it. A plan capped at two people can seat a caller and a callee and
+ * nobody else — that is a direct call, whatever surface it was started
+ * from — so a tier has to allow a third body before a group call means
+ * anything. Exploration allows two; every paid plan allows more.
+ */
+export const GROUP_CALL_MIN_SEATS = 3;
+
+/**
+ * The live-or-not question, in one place.
+ *
+ * The rail, the thread header and the server all ask it, and they must
+ * not be able to disagree: a badge saying a call is running over a
+ * button the server would refuse is worse than no badge. The expiry is
+ * the whole of it — see `ConversationCall.expiresAt` for why a group
+ * call cannot be trusted to end itself.
+ */
+export function groupCallLive(
+  call: { expiresAt?: { toMillis?: () => number } | null } | null | undefined,
+  now: number = Date.now()
+): boolean {
+  if (!call) return false;
+  const expiresAt = call.expiresAt?.toMillis?.() ?? 0;
+  return expiresAt > now;
+}
+
+export interface GroupCallFacts {
+  /** The conversation's own `type`. */
+  conversationType: string;
+  conversationOrgId: string;
+  participantIds: string[];
+  viewerUid: string;
+  viewerOrgId: string;
+  /** From `resolveCallLimits`. -1 means the tier does not narrow it. */
+  maxParticipants: number;
+}
+
+/**
+ * The three questions every group-call path asks first: is this thread
+ * one that can hold a call, is this person in it, and does the plan
+ * seat more than a pair.
+ */
+function vetGroupCall(facts: GroupCallFacts): JoinDecision {
+  if (facts.conversationType !== "group") {
+    return refuse("not-a-call", "Calls run in groups, not in this thread.");
+  }
+  if (!facts.viewerOrgId || facts.viewerOrgId !== facts.conversationOrgId) {
+    return refuse("not-invited", "That conversation is not in your workspace.");
+  }
+  if (!facts.participantIds.includes(facts.viewerUid)) {
+    return refuse("not-invited", "You are not in this conversation.");
+  }
+  if (
+    facts.maxParticipants !== -1 &&
+    facts.maxParticipants < GROUP_CALL_MIN_SEATS
+  ) {
+    return refuse("tier", "Your plan does not include group calls.");
+  }
+  return ALLOWED;
+}
+
+export interface StartGroupCallFacts extends GroupCallFacts {
+  /** Group calls already live in this workspace. */
+  activeGroupCalls: number;
+  /** The always-on ceiling from `lib/calls/ceiling`. */
+  hardMaxConcurrent: number;
+}
+
+/** Whether this person may open a room beside this thread. */
+export function canStartGroupCall(facts: StartGroupCallFacts): JoinDecision {
+  const vetted = vetGroupCall(facts);
+  if (!vetted.allowed) return vetted;
+
+  if (facts.activeGroupCalls >= facts.hardMaxConcurrent) {
+    return refuse("tier", "Too many calls are already running in this workspace.");
+  }
+  return ALLOWED;
+}
+
+export interface JoinGroupCallFacts extends GroupCallFacts {
+  /** True when a call is running and has not expired — `groupCallLive`. */
+  live: boolean;
+  /** Bodies already in the room, from `activeCall.participants`. */
+  occupants: number;
+  /** From `groupCallSeats`. */
+  seats: number;
+  /** True when the joiner is already counted among the occupants. */
+  alreadyIn: boolean;
+}
+
+/**
+ * Whether this person may walk into a room that is already open.
+ *
+ * The seat check is the one thing this asks that starting does not, and
+ * it is a cost control rather than a courtesy: the provider bills every
+ * body in the room, and `groupCallSeats` is what decided how many the
+ * plan and the ceiling between them allow.
+ *
+ * Someone already counted in the room is let back in regardless — that
+ * is a reconnect, not a thirteenth person, and refusing it would lock
+ * people out of the call they are sitting in.
+ */
+export function canJoinGroupCall(facts: JoinGroupCallFacts): JoinDecision {
+  const vetted = vetGroupCall(facts);
+  if (!vetted.allowed) return vetted;
+
+  if (!facts.live) {
+    return refuse("ended", "That call has ended.");
+  }
+  if (!facts.alreadyIn && facts.occupants >= facts.seats) {
+    return refuse("tier", "This call is full.");
+  }
+  return ALLOWED;
+}
+
 /**
  * Whether a ringing call may still be answered.
  *

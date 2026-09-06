@@ -12,6 +12,7 @@ import {
   StatusChip,
 } from "@/components/dashboard/dashboard-card";
 import { FormNotice, ReadonlyRow, SettingsList, ToggleRow } from "./settings-primitives";
+import { DeviceNotificationsCard } from "./device-notifications-card";
 
 /* ------------------------------------------------------------------ */
 /*  Notifications                                                      */
@@ -138,6 +139,11 @@ export function NotificationsSection({ user }: { user: User }) {
           </button>
         </div>
       </DashboardCard>
+
+      {/* Last, because it is the only card here that is about the
+          browser rather than the account — see the note in
+          `device-notifications-card`. */}
+      <DeviceNotificationsCard />
     </div>
   );
 }

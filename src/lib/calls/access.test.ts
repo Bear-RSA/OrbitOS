@@ -3,10 +3,15 @@ import {
   JOIN_WINDOW_AFTER_MS,
   JOIN_WINDOW_BEFORE_MS,
   canAnswerCall,
+  canJoinGroupCall,
   canJoinScheduledCall,
   canStartDirectCall,
+  canStartGroupCall,
   canWalkIn,
+  groupCallLive,
+  type JoinGroupCallFacts,
   type ScheduledCallFacts,
+  type StartGroupCallFacts,
   type WalkInFacts,
 } from "@/lib/calls/access";
 
@@ -210,5 +215,153 @@ describe("answering", () => {
 
   it("refuses a missed call", () => {
     expect(canAnswerCall("missed", NOW + 30_000, NOW).allowed).toBe(false);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Group calls                                                        */
+/*                                                                     */
+/*  Nothing rings here, so the refusals are the entire security model: */
+/*  a room beside a thread is open to whoever the thread says is in    */
+/*  it, and to nobody else.                                            */
+/* ------------------------------------------------------------------ */
+
+/** A stand-in for a Firestore Timestamp, which is all these read. */
+const at = (ms: number) => ({ toMillis: () => ms });
+
+const startGroup = (
+  over: Partial<StartGroupCallFacts> = {}
+): StartGroupCallFacts => ({
+  conversationType: "group",
+  conversationOrgId: "org_1",
+  participantIds: ["u_1", "u_2", "u_3"],
+  viewerUid: "u_1",
+  viewerOrgId: "org_1",
+  maxParticipants: 10,
+  activeGroupCalls: 0,
+  hardMaxConcurrent: 5,
+  ...over,
+});
+
+const joinGroup = (over: Partial<JoinGroupCallFacts> = {}): JoinGroupCallFacts => ({
+  conversationType: "group",
+  conversationOrgId: "org_1",
+  participantIds: ["u_1", "u_2", "u_3"],
+  viewerUid: "u_1",
+  viewerOrgId: "org_1",
+  maxParticipants: 10,
+  live: true,
+  occupants: 1,
+  seats: 3,
+  alreadyIn: false,
+  ...over,
+});
+
+describe("whether a group call is live", () => {
+  it("is live until its deadline", () => {
+    expect(groupCallLive({ expiresAt: at(NOW + 1_000) }, NOW)).toBe(true);
+  });
+
+  /* The reason no cleanup cron is needed: nobody has to write down that
+     a call everyone walked away from is over. */
+  it("is over once the deadline passes, however it was left", () => {
+    expect(groupCallLive({ expiresAt: at(NOW - 1) }, NOW)).toBe(false);
+  });
+
+  it("reads a thread that never had a call as not live", () => {
+    expect(groupCallLive(null, NOW)).toBe(false);
+    expect(groupCallLive(undefined, NOW)).toBe(false);
+  });
+});
+
+describe("starting a group call", () => {
+  it("lets a member of the group open a room", () => {
+    expect(canStartGroupCall(startGroup()).allowed).toBe(true);
+  });
+
+  it("refuses somebody who is not in the conversation", () => {
+    expect(canStartGroupCall(startGroup({ viewerUid: "u_9" }))).toMatchObject({
+      allowed: false,
+      reason: "not-invited",
+    });
+  });
+
+  it("refuses a thread in another workspace", () => {
+    expect(canStartGroupCall(startGroup({ viewerOrgId: "org_2" }))).toMatchObject({
+      allowed: false,
+      reason: "not-invited",
+    });
+  });
+
+  it("refuses a dm — those ring instead", () => {
+    expect(canStartGroupCall(startGroup({ conversationType: "dm" }))).toMatchObject({
+      allowed: false,
+      reason: "not-a-call",
+    });
+  });
+
+  it("refuses Town Hall, which is a notice board", () => {
+    expect(
+      canStartGroupCall(startGroup({ conversationType: "townhall" }))
+    ).toMatchObject({ allowed: false, reason: "not-a-call" });
+  });
+
+  /* The tier gate, expressed in seats: a plan that seats two seats a
+     caller and a callee, which is a direct call by another name. */
+  it("refuses a plan that seats only a pair", () => {
+    expect(canStartGroupCall(startGroup({ maxParticipants: 2 }))).toMatchObject({
+      allowed: false,
+      reason: "tier",
+    });
+  });
+
+  it("allows a plan that seats a third person", () => {
+    expect(canStartGroupCall(startGroup({ maxParticipants: 3 })).allowed).toBe(true);
+  });
+
+  it("allows a plan that does not narrow the ceiling", () => {
+    expect(canStartGroupCall(startGroup({ maxParticipants: -1 })).allowed).toBe(true);
+  });
+
+  it("refuses once the workspace is at its concurrency ceiling", () => {
+    expect(canStartGroupCall(startGroup({ activeGroupCalls: 5 }))).toMatchObject({
+      allowed: false,
+      reason: "tier",
+    });
+  });
+});
+
+describe("joining a group call", () => {
+  it("lets a member walk into an open room", () => {
+    expect(canJoinGroupCall(joinGroup()).allowed).toBe(true);
+  });
+
+  it("refuses a call that has ended", () => {
+    expect(canJoinGroupCall(joinGroup({ live: false }))).toMatchObject({
+      allowed: false,
+      reason: "ended",
+    });
+  });
+
+  it("refuses somebody outside the conversation", () => {
+    expect(canJoinGroupCall(joinGroup({ viewerUid: "u_9" }))).toMatchObject({
+      allowed: false,
+      reason: "not-invited",
+    });
+  });
+
+  it("refuses a full room", () => {
+    expect(canJoinGroupCall(joinGroup({ occupants: 3, seats: 3 }))).toMatchObject({
+      allowed: false,
+      reason: "tier",
+    });
+  });
+
+  /* A reconnect is not a thirteenth body. Refusing it would lock people
+     out of the call they are already sitting in. */
+  it("lets somebody already counted in the room back in when it is full", () => {
+    expect(
+      canJoinGroupCall(joinGroup({ occupants: 3, seats: 3, alreadyIn: true })).allowed
+    ).toBe(true);
   });
 });

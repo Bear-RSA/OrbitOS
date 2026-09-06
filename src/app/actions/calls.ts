@@ -1,23 +1,33 @@
 "use server";
 
 import { createHash } from "crypto";
-import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
+import { FieldValue, Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { requireServerUid } from "@/lib/auth/session";
 import { resolveCallLimits } from "@/lib/auth/permissions";
 import { logActivity } from "@/lib/telemetry";
+import { sendCallPush } from "@/lib/notifications/push-sender";
 import { getCallProvider } from "@/lib/calls/provider";
 import { participantName } from "@/lib/calls/display-name";
 import { newRoomId } from "@/lib/calls/room-id";
-import { canAnswerCall, canStartDirectCall } from "@/lib/calls/access";
 import {
+  canAnswerCall,
+  canJoinGroupCall,
+  canStartGroupCall,
+  canStartDirectCall,
+  groupCallLive,
+} from "@/lib/calls/access";
+import {
+  GROUP_CALL_MINUTES,
   HARD_MAX_CONCURRENT_DIRECT_CALLS,
+  HARD_MAX_CONCURRENT_GROUP_CALLS,
   RING_TIMEOUT_SECONDS,
   capParticipants,
   capRoomExpiry,
   capTokenSeconds,
+  groupCallSeats,
 } from "@/lib/calls/ceiling";
-import { startCallSchema } from "@/lib/validations/call";
+import { groupCallSchema, startCallSchema } from "@/lib/validations/call";
 import type { CallGrant } from "@/types/call";
 
 /* ------------------------------------------------------------------ */
@@ -39,6 +49,7 @@ import type { CallGrant } from "@/types/call";
 /* ------------------------------------------------------------------ */
 
 const CALLS = "calls";
+const CONVERSATIONS = "conversations";
 
 export type GrantResult =
   | { success: true; grant: CallGrant }
@@ -93,6 +104,17 @@ interface GrantRequest {
   /** Members get room-management rights; guests and walk-ins never do. */
   isMember: boolean;
   minutes: number;
+  /**
+   * Seats in the room. Clamped again by `capParticipants` below, so a
+   * caller that gets this wrong cannot widen the ceiling.
+   *
+   * Defaults to a pair, which is what a direct call is. A group call
+   * passes the number `groupCallSeats` worked out from the thread and
+   * the plan — the room is created on first join and every joiner after
+   * that finds it, so a room built for two would turn the third person
+   * away from a call they belong in.
+   */
+  maxParticipants?: number;
 }
 
 /**
@@ -111,7 +133,7 @@ async function grantFor(request: GrantRequest): Promise<CallGrant> {
   const room = await provider.createRoom({
     name: request.roomId,
     expiresAt: capRoomExpiry(new Date(Date.now() + request.minutes * 60_000)),
-    maxParticipants: capParticipants(4),
+    maxParticipants: capParticipants(request.maxParticipants ?? 2),
   });
 
   const displayName = participantName(request.displayName, !request.isMember);
@@ -224,6 +246,20 @@ export async function startCallAction(input: unknown): Promise<CallActionResult>
         to: targetUid,
         toName: (target.name as string) || null,
       },
+    });
+
+    /* Ring the callee's registered devices, for the case no listener can
+       cover: a browser that is closed.
+
+       NOT awaited, and that is the design. The `calls` document is
+       already written, so the call is already ringing on every client
+       that has OrbitOS open — a push service having a slow morning must
+       not hold up the caller's screen behind it. `sendCallPush`
+       swallows its own failures for the same reason. */
+    void sendCallPush({
+      toUid: targetUid,
+      fromName: caller.name,
+      callId: ref.id,
     });
 
     return { success: true, callId: ref.id };
@@ -373,6 +409,263 @@ export async function markCallMissedAction(callId: string): Promise<ActionOutcom
 }
 
 /* ------------------------------------------------------------------ */
+/*  Group calls                                                        */
+/*                                                                     */
+/*  A room beside a conversation. Nothing rings: one person opens the  */
+/*  room and everyone in the thread sees it is open and can walk in.   */
+/*                                                                     */
+/*  That is a deliberate refusal of the obvious design, which is to    */
+/*  fan a ring out to every member of the group. One click would then  */
+/*  place eight calls, eight phones would ring across the studio for a */
+/*  conversation two people needed, and the way to make that stop      */
+/*  would be to turn call sounds off — after which the direct calls    */
+/*  that DO need to interrupt somebody stop landing too. A group call  */
+/*  is a door held open, not a summons.                                */
+/*                                                                     */
+/*  The state lives on the conversation rather than in `calls`. See    */
+/*  the note on `ConversationCall` in `types/message` for why: the     */
+/*  thread already knows who may join, and the left rail is already    */
+/*  listening to it.                                                   */
+/* ------------------------------------------------------------------ */
+
+/** The conversation, once its workspace has been confirmed. */
+async function requireConversation(conversationId: string, orgId: string) {
+  const ref = adminDb.collection(CONVERSATIONS).doc(conversationId);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    return { ok: false as const, error: "That conversation no longer exists." };
+  }
+
+  const data = snap.data()!;
+  /* Read off the document rather than taken from the client, the same
+     boundary `forwardTaskAction` enforces before it will quote a task. */
+  if ((data.orgId as string) !== orgId) {
+    return { ok: false as const, error: "Unauthorized." };
+  }
+
+  return { ok: true as const, ref, data };
+}
+
+/**
+ * How many group calls this workspace has live right now.
+ *
+ * Equality-only, so no composite index — which is the whole reason
+ * `callActive` exists beside `activeCall`. Expiry is applied here in
+ * memory rather than in the query: a room whose deadline has passed is
+ * over whether or not anybody wrote that down, and filtering on it in
+ * Firestore would mean an inequality and a second index.
+ */
+async function liveGroupCallCount(orgId: string, now: number): Promise<number> {
+  const snap = await adminDb
+    .collection(CONVERSATIONS)
+    .where("orgId", "==", orgId)
+    .where("callActive", "==", true)
+    .get();
+
+  return snap.docs.filter((doc) => groupCallLive(doc.data().activeCall, now)).length;
+}
+
+/**
+ * Opens a room beside a group thread, or walks into the one already
+ * open, and hands back a pass either way.
+ *
+ * ONE action for both, and the transaction is why. Two people clicking
+ * Start in the same second both read a thread with no call; without a
+ * transaction both would write one, and the studio would end up with
+ * two rooms holding one person each and no way to tell which was the
+ * meeting. Claiming the room inside a transaction makes the loser find
+ * the winner's room and join that, which is what the two of them meant.
+ *
+ * The room itself is not materialized here. `grantFor` creates it, is
+ * idempotent by contract, and runs for every joiner — so the room comes
+ * into existence with its first pass rather than with this write, and a
+ * call nobody ever entered costs the provider nothing.
+ */
+export async function startGroupCallAction(input: unknown): Promise<GrantResult> {
+  try {
+    const parsed = groupCallSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.issues[0]?.message ?? "Invalid conversation.",
+      };
+    }
+    const { conversationId } = parsed.data;
+
+    const caller = await requireCaller();
+    if (!caller.ok) return { success: false, error: caller.error };
+
+    const found = await requireConversation(conversationId, caller.orgId);
+    if (!found.ok) return { success: false, error: found.error };
+
+    const now = Date.now();
+    const participantIds = (found.data.participantIds as string[]) ?? [];
+
+    /* Counted outside the transaction on purpose. Pulling the query in
+       would lock every conversation in the workspace to enforce a
+       ceiling that is a cost backstop rather than a correctness rule —
+       two calls starting in the same instant may briefly make six, and
+       six rooms is not the failure this number exists to prevent. */
+    const [limits, activeGroupCalls] = await Promise.all([
+      resolveCallLimits(caller.orgId),
+      liveGroupCallCount(caller.orgId, now),
+    ]);
+
+    const shared = {
+      conversationType: (found.data.type as string) ?? "",
+      conversationOrgId: (found.data.orgId as string) ?? "",
+      participantIds,
+      viewerUid: caller.uid,
+      viewerOrgId: caller.orgId,
+      maxParticipants: limits.maxParticipants,
+    };
+
+    const seats = groupCallSeats(participantIds.length, limits.maxParticipants);
+
+    /* Resolved inside the transaction: which room this person is about
+       to enter, or why they may not. */
+    let roomId: string | null = null;
+    let refusal: string | null = null;
+
+    await adminDb.runTransaction(async (tx) => {
+      const fresh = await tx.get(found.ref);
+      const call = fresh.data()?.activeCall;
+
+      if (groupCallLive(call, now)) {
+        const occupants = Object.keys(call.participants ?? {}).length;
+        const decision = canJoinGroupCall({
+          ...shared,
+          live: true,
+          occupants,
+          seats,
+          alreadyIn: Boolean(call.participants?.[caller.uid]),
+        });
+        if (!decision.allowed) {
+          refusal = decision.message;
+          return;
+        }
+
+        roomId = call.roomId as string;
+        /* A dotted write, so joining touches one key and cannot clobber
+           the account of who else is in the room. */
+        tx.update(found.ref, {
+          [`activeCall.participants.${caller.uid}`]: caller.name,
+        });
+        return;
+      }
+
+      const decision = canStartGroupCall({
+        ...shared,
+        activeGroupCalls,
+        hardMaxConcurrent: HARD_MAX_CONCURRENT_GROUP_CALLS,
+      });
+      if (!decision.allowed) {
+        refusal = decision.message;
+        return;
+      }
+
+      roomId = newRoomId();
+      tx.update(found.ref, {
+        activeCall: {
+          roomId,
+          startedBy: caller.uid,
+          startedByName: caller.name,
+          startedAt: AdminTimestamp.now(),
+          participants: { [caller.uid]: caller.name },
+          /* The same deadline the room is created with, written down so
+             every client can see when this call is over without asking
+             the provider. */
+          expiresAt: AdminTimestamp.fromDate(
+            capRoomExpiry(new Date(now + GROUP_CALL_MINUTES * 60_000), new Date(now))
+          ),
+        },
+        callActive: true,
+      });
+    });
+
+    if (refusal) return { success: false, error: refusal };
+    if (!roomId) return { success: false, error: "Could not open that call." };
+
+    const grant = await grantFor({
+      roomId,
+      identity: caller.uid,
+      displayName: caller.name,
+      isMember: true,
+      minutes: GROUP_CALL_MINUTES,
+      maxParticipants: seats,
+    });
+
+    await logActivity({
+      eventType: "CALL_STARTED",
+      orgId: caller.orgId,
+      projectId: null,
+      actor: { uid: caller.uid, name: caller.name },
+      metadata: {
+        conversationId,
+        groupName: (found.data.name as string) ?? null,
+        participants: participantIds.length,
+      },
+    });
+
+    return { success: true, grant };
+  } catch (err: any) {
+    console.error("[CallAction] Failed to start group call:", err);
+    return { success: false, error: err?.message || "Could not open that call." };
+  }
+}
+
+/**
+ * Leaves the room.
+ *
+ * Best effort, and the design says so out loud. A browser closed
+ * mid-call never reaches here, so the participant map can hold a name
+ * whose owner has gone — which is why nothing that decides permission
+ * rests on it, and why `expiresAt` rather than an empty map is what
+ * finally ends a call.
+ *
+ * The last person out does close it when they leave properly, and that
+ * is the common case. A rail badge still lit two hours after everyone
+ * hung up is a badge people stop believing.
+ */
+export async function leaveGroupCallAction(input: unknown): Promise<ActionOutcome> {
+  try {
+    const parsed = groupCallSchema.safeParse(input);
+    if (!parsed.success) return { success: false, error: "Invalid conversation." };
+
+    const caller = await requireCaller();
+    if (!caller.ok) return { success: false, error: caller.error };
+
+    const found = await requireConversation(parsed.data.conversationId, caller.orgId);
+    if (!found.ok) return { success: false, error: found.error };
+
+    await adminDb.runTransaction(async (tx) => {
+      const fresh = await tx.get(found.ref);
+      const call = fresh.data()?.activeCall;
+      if (!call) return;
+
+      const remaining = Object.keys(call.participants ?? {}).filter(
+        (uid) => uid !== caller.uid
+      );
+
+      if (remaining.length === 0) {
+        // Both fields together, always — see `Conversation.callActive`.
+        tx.update(found.ref, { activeCall: null, callActive: false });
+        return;
+      }
+
+      tx.update(found.ref, {
+        [`activeCall.participants.${caller.uid}`]: FieldValue.delete(),
+      });
+    });
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("[CallAction] Failed to leave group call:", err);
+    return { success: false, error: "Could not leave the call." };
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Proof room — TEMPORARY                                             */
 /*                                                                     */
 /*  Step one of the build: two people, one room, media flowing, before */
@@ -411,6 +704,7 @@ export async function getProofCallGrantAction(
       displayName: rawDisplayName || caller.name,
       isMember: true,
       minutes: 60,
+      maxParticipants: 4,
     });
 
     return { success: true, grant };

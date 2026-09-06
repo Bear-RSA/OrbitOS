@@ -32,6 +32,60 @@ export type ConversationType = "dm" | "group" | "townhall";
  */
 export const TOWN_HALL_NAME = "Town Hall";
 
+/**
+ * The live call in a conversation, or the absence of one.
+ *
+ * Stored ON the conversation rather than in the `calls` collection, and
+ * the two are deliberately different records.
+ *
+ * A DIRECT call is one person ringing another: it has a caller, a
+ * callee, and an answer, and `OrbitCall` exists to hold that answer. A
+ * GROUP call has none of those. Nobody is summoned — a room is opened
+ * beside a thread, and whoever is in the thread may walk into it. The
+ * only questions it answers are "is one running" and "who is in it",
+ * and both belong to the conversation.
+ *
+ * Keeping it here also settles two things for free. Membership is
+ * already `participantIds`, so there is no second answer to who may
+ * join. And the left rail is already listening to every conversation
+ * this person is in, so a live call shows up there without a new query
+ * — the same bargain `lastMessagePreview` makes.
+ *
+ * Server-owned. `firestore.rules` does not list it among the keys a
+ * client may write, so a browser cannot open a room, add itself to one,
+ * or hang up on the room.
+ */
+export interface ConversationCall {
+  /** Opaque room capability — see `lib/calls/room-id`. */
+  roomId: string;
+
+  startedBy: string;
+  /** Denormalized for the banner, same contract as `participantNames`. */
+  startedByName: string;
+  startedAt: Timestamp;
+
+  /**
+   * Who is in the room right now, uid to name.
+   *
+   * A best-effort account, not an authority: a browser that dies mid
+   * call never sends its goodbye, so a name can linger here after its
+   * owner has gone. It drives an avatar row, which is allowed to be a
+   * beat stale, and nothing that decides permission.
+   */
+  participants: Record<string, string>;
+
+  /**
+   * When the provider stops serving the room.
+   *
+   * This is what makes the absence of a cleanup job safe. A call whose
+   * last participant closed their laptop is never explicitly ended, so
+   * without a deadline it would read as live forever — in the rail, in
+   * the header, and in the workspace's concurrency count. Past this
+   * moment `groupCallLive` says no, and everything downstream agrees.
+   */
+  expiresAt: Timestamp;
+}
+
 export interface Conversation {
   id: string;
   orgId: string;
@@ -101,6 +155,32 @@ export interface Conversation {
    * "never cleared" and needs no migration.
    */
   clearedAt?: Record<string, Timestamp>;
+
+  /**
+   * The call running in this thread, if one is. Groups only — a dm
+   * rings (see `OrbitCall`) and Town Hall is a notice board.
+   *
+   * Absent on every conversation written before this existed, which
+   * reads as "no call" and needs no migration.
+   */
+  activeCall?: ConversationCall | null;
+
+  /**
+   * Whether `activeCall` is set — the same fact, in a shape Firestore
+   * can filter on.
+   *
+   * Redundant on purpose, and it is the only denormalization here that
+   * exists for the database rather than for a reader. The workspace's
+   * concurrency ceiling has to count live calls, and counting them off
+   * `activeCall` means an inequality against a map, which drags in a
+   * composite index and puts this query in a different class from every
+   * other subscription in the app. A boolean keeps it equality-only.
+   *
+   * Written in the same update as `activeCall`, always, so the two
+   * cannot drift. `groupCallLive` is what decides whether a call is
+   * really live — this field only says a document is worth looking at.
+   */
+  callActive?: boolean;
 }
 
 /**

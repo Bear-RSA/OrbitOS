@@ -160,16 +160,23 @@ export function MemberProfile({
   const descriptor =
     member.roleDescriptor || (member.role === "OWNER" ? "Owner" : "Member");
 
-  /* Calling yourself is not a thing, and someone already in a meeting is
-     reachable but probably should not be rung — so the button stays,
-     disabled, and says why. Same philosophy as the Personnel Network. */
-  const callBlocked = isSelf || Boolean(presence) || heartbeat === "offline";
+  /* Calling yourself is the one thing that is not a call, so it is the
+     one thing still refused here — and the server refuses it too.
+
+     Everything else is now the caller's judgement rather than this
+     component's. Being in a meeting, or reading as offline, does not
+     make somebody unreachable: presence is a heartbeat heuristic, and
+     `IncomingCall` rings on any client with OrbitOS open regardless of
+     what the dot says. The status is still on the card, right above
+     this button — that is the honest way to tell somebody what they
+     are interrupting. Refusing to place the call was not. */
+  const callBlocked = isSelf;
   const callReason = isSelf
     ? "This is you"
     : presence
-      ? `${member.name} is ${presence.label}`
+      ? `${member.name} is ${presence.label} — call anyway`
       : heartbeat === "offline"
-        ? `${member.name} is offline`
+        ? `${member.name} looks offline — call anyway`
         : `Call ${member.name}`;
 
   return (

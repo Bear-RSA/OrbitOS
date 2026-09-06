@@ -124,6 +124,25 @@ service cloud.firestore {
     }
 
 
+    /* Push tokens — the authority to interrupt somebody.
+
+       Entirely server-owned, in both directions, and the read side is
+       the unusual half. A token is a bearer credential: anyone holding
+       one can raise a notification on that device, so a client able to
+       read this collection could ring a colleague's phone at will. No
+       screen in the app needs to see them — Settings infers whether
+       THIS browser is registered from the browser itself — so nothing
+       is lost by closing it completely.
+
+       Writes go through `actions/notifications`, which takes the uid
+       from the session cookie rather than the payload. A client able to
+       write the uid beside a token could point its own device at a
+       colleague's calls, or theirs at its own. */
+    match /pushTokens/{tokenId} {
+      allow read, write: if false;
+    }
+
+
     /* Conversations — direct messages, groups, and the org's Town Hall.
 
        Three shapes in one collection, told apart by `type`. The read
@@ -233,6 +252,14 @@ service cloud.firestore {
          rename the conversation, or change its type — that stays
          server-owned the same way `roomId` and `callActive` do on an
          engagement.
+
+         `activeCall` and `callActive` are absent from this list for the
+         same reason, and it is the whole access model for a group call.
+         The pair says a room is open and names who is in it, and a
+         client able to write them could open a room in a thread it may
+         not join, add itself to one, or end everyone else's call — so
+         `actions/calls` writes them on the Admin SDK after checking the
+         participant list, and nothing here can. 
 
          Marking a thread read is something any reader may do; writing
          the trio is not, because it is the left rail's account of who

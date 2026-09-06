@@ -6,6 +6,11 @@ import { useAuth } from "@/contexts/auth-context";
 import { usePreferences } from "@/hooks/use-preferences";
 import { installAudioPrimer } from "@/lib/audio/context";
 import { startIncomingRing } from "@/lib/calls/ringtone";
+import {
+  notificationAccess,
+  shouldNotify,
+  showDesktopNotification,
+} from "@/lib/notifications/desktop";
 import { subscribeToIncomingCalls } from "@/lib/queries/calls";
 import {
   answerCallAction,
@@ -101,6 +106,39 @@ export function IncomingCall() {
     if (!ringingId || inRoom || !preferences.callSounds) return;
     return startIncomingRing();
   }, [ringingId, inRoom, preferences.callSounds]);
+
+  /* The same shape as the ringtone above, deliberately, and owned by an
+     effect for the identical reason: answering, declining, the ring
+     expiring and this component unmounting all end in one cleanup, so
+     nothing has to remember to withdraw the notification and nothing
+     can forget. A desktop card does not expire on its own, so a card
+     left behind would go on offering a call that ended.
+
+     Only raised when OrbitOS is not the window being looked at. The
+     card is already on screen for anyone watching this tab, and a
+     notification duplicating it is how people learn to dismiss these
+     without reading them. */
+  useEffect(() => {
+    if (!ringing || inRoom) return;
+
+    if (
+      !shouldNotify({
+        access: notificationAccess(),
+        enabled: preferences.desktopNotifications,
+        visible: document.visibilityState === "visible",
+      })
+    ) {
+      return;
+    }
+
+    return showDesktopNotification({
+      title: `${ringing.fromName} is calling`,
+      body: "Answer in OrbitOS.",
+      /* Shared with the push payload in `lib/notifications/push-sender`,
+         so a device that receives both shows one card rather than two. */
+      tag: `orbit-call-${ringing.id}`,
+    });
+  }, [ringing, inRoom, preferences.desktopNotifications]);
 
   const answer = useCallback(async () => {
     if (!ringing) return;

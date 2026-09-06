@@ -6,6 +6,7 @@ import {
   capParticipants,
   capRoomExpiry,
   capTokenSeconds,
+  groupCallSeats,
 } from "@/lib/calls/ceiling";
 
 /* ------------------------------------------------------------------ */
@@ -77,5 +78,26 @@ describe("room expiry", () => {
     expect(capRoomExpiry(new Date("nonsense"), now).getTime()).toBe(
       now.getTime() + HARD_MAX_ROOM_MINUTES * 60_000
     );
+  });
+});
+
+describe("group call seats", () => {
+  /* The room is sized for the thread, not for the plan. A group of four
+     on a plan that allows ten does not need six empty seats — it needs
+     four, and every extra one is a body the provider could bill for. */
+  it("sizes the room to the group when the plan is roomier", () => {
+    expect(groupCallSeats(4, 10)).toBe(4);
+  });
+
+  it("sizes it to the plan when the group is bigger", () => {
+    expect(groupCallSeats(20, 6)).toBe(6);
+  });
+
+  it("still clamps to the hard ceiling when the plan does not narrow it", () => {
+    expect(groupCallSeats(40, -1)).toBe(HARD_MAX_PARTICIPANTS);
+  });
+
+  it("never goes below a pair", () => {
+    expect(groupCallSeats(1, 10)).toBe(2);
   });
 });

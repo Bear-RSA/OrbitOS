@@ -25,6 +25,18 @@ export const startCallSchema = z.object({
 export const callIdSchema = z.string().trim().min(1).max(128);
 
 /**
+ * Every group-call action takes the thread and nothing else.
+ *
+ * Not the room id, deliberately. The room a group call runs in is read
+ * off the conversation on the server — a client that could name its own
+ * room could ask for a pass to one it merely knew the id of, and a room
+ * id is a capability precisely because it travels.
+ */
+export const groupCallSchema = z.object({
+  conversationId: z.string().trim().min(1, "Required").max(1_500),
+});
+
+/**
  * The walk-in name field.
  *
  * Deliberately permissive here and cleaned properly in
@@ -42,4 +54,5 @@ export const walkInSchema = z.object({
 });
 
 export type StartCallSchema = z.infer<typeof startCallSchema>;
+export type GroupCallSchema = z.infer<typeof groupCallSchema>;
 export type WalkInSchema = z.infer<typeof walkInSchema>;

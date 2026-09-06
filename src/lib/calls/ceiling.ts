@@ -55,6 +55,45 @@ export const HARD_MAX_CONCURRENT_DIRECT_CALLS = 10;
  */
 export const RING_TIMEOUT_SECONDS = 45;
 
+/**
+ * Group calls one workspace may have running at once.
+ *
+ * Lower than the direct-call ceiling, and the arithmetic is why: a
+ * direct call is two people, a group call is up to twelve, so five of
+ * these can already cost more than ten of those. It is also the harder
+ * one to notice — a direct call ends when one of two people hangs up,
+ * while a room beside a thread stays open until the last person
+ * remembers to leave.
+ */
+export const HARD_MAX_CONCURRENT_GROUP_CALLS = 5;
+
+/**
+ * How long a group call room lives.
+ *
+ * The backstop for the failure this feature actually has: nobody hangs
+ * up. A group call has no callee to decline it and no calendar entry to
+ * end it, so the expiry is the only thing that ever closes the room —
+ * which is why the deadline is written onto the conversation and read
+ * by every surface, rather than left to the provider alone.
+ */
+export const GROUP_CALL_MINUTES = 120;
+
+/**
+ * Seats in a group call room.
+ *
+ * The narrowest of three numbers: how many people are in the thread,
+ * what the plan allows, and the always-on ceiling. Nobody outside the
+ * conversation can join, so a room sized for the plan when the group
+ * holds four people is just a larger bill waiting for a mistake.
+ *
+ * `tierMax` of -1 means the plan does not narrow it — not unlimited.
+ */
+export function groupCallSeats(groupSize: number, tierMax: number): number {
+  const size = Number.isFinite(groupSize) ? Math.floor(groupSize) : 2;
+  const wanted = tierMax === -1 ? size : Math.min(size, Math.floor(tierMax));
+  return capParticipants(wanted);
+}
+
 /** Clamps a requested participant cap to the ceiling. */
 export function capParticipants(requested: number): number {
   if (!Number.isFinite(requested) || requested < 2) return 2;

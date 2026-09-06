@@ -1,6 +1,7 @@
 import { initializeApp, getApps, cert, App } from "firebase-admin/app";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
 import { getAuth, Auth } from "firebase-admin/auth";
+import { getMessaging, Messaging } from "firebase-admin/messaging";
 
 let _app: App | null = null;
 let _db: Firestore | null = null;
@@ -50,6 +51,25 @@ export const adminAuth: Auth = new Proxy({} as Auth, {
     const value = (_auth as any)[prop];
     if (typeof value === "function") {
       return value.bind(_auth);
+    }
+    return value;
+  },
+});
+
+/**
+ * Cloud Messaging, for ringing a device whose browser is closed.
+ *
+ * Same lazy proxy as the two above, and for the same reason: the admin
+ * app is only built when something actually reaches for it, so a route
+ * that never sends a push never pays for the credential parse. See
+ * `lib/notifications/push-sender` for the only thing that uses it.
+ */
+export const adminMessaging: Messaging = new Proxy({} as Messaging, {
+  get(_target, prop) {
+    const messaging = getMessaging(getAdminApp());
+    const value = (messaging as any)[prop];
+    if (typeof value === "function") {
+      return value.bind(messaging);
     }
     return value;
   },

@@ -14,6 +14,7 @@ import {
   SendHorizonal,
   Smile,
   Users,
+  Video,
 } from "lucide-react";
 import { MediaPicker } from "@/components/messages/media-picker";
 import { emojiOnlyCount } from "@/lib/messages/emoji";
@@ -25,6 +26,7 @@ import {
   subscribeToMessages,
 } from "@/lib/queries/messages";
 import { canPostToConversation } from "@/lib/messages/access";
+import { groupCallLive } from "@/lib/calls/access";
 import { TASK_STATUS_LABEL, isValidTaskRef } from "@/lib/messages/task-ref";
 import { clearedBeforeMs, conversationTitle } from "@/lib/messages/summary";
 import { presenceTone, resolvePresence } from "@/lib/members/presence";
@@ -86,6 +88,14 @@ interface MessageThreadProps {
   onOpenProfile?: (uid: string) => void;
   /** Rings the other person. Only offered in a dm — a room is two people. */
   onCall?: (target: { uid: string; name: string; photoURL?: string | null }) => void;
+  /**
+   * Opens the group's room, or walks into the one already open.
+   *
+   * One callback for both, because from here they are the same gesture
+   * — the button only changes what it says. Which of the two actually
+   * happened is decided on the server, where the thread is read.
+   */
+  onGroupCall?: (conversationId: string) => void;
 }
 
 /** "Today" and "Yesterday" beat a date somebody has to decode. */
@@ -103,6 +113,7 @@ export function MessageThread({
   subtitle,
   onOpenProfile,
   onCall,
+  onGroupCall,
 }: MessageThreadProps) {
   const [live, setLive] = useState<Message[]>([]);
   const [older, setOlder] = useState<Message[]>([]);
@@ -301,10 +312,49 @@ export function MessageThread({
 
   const partnerTone = partnerPresence ? presenceTone(partnerPresence) : null;
 
-  /* Ringing somebody who is gone is worse than waiting, so the button
-     stays and says why. */
-  const callBlocked = partnerPresence === "offline";
-  const callReason = callBlocked ? `${title} is offline` : `Call ${title}`;
+  /* The dot informs; it does not decide. Presence here is a heartbeat
+     heuristic — a tab that has not pulsed in five minutes, or somebody
+     who set themselves Offline on purpose — and neither of those means
+     unreachable. `IncomingCall` is mounted app-wide and listens on
+     Firestore, so a ring lands on any client that has OrbitOS open,
+     whatever colour the dot is.
+
+     Which is why this used to be wrong. A button greyed out for
+     somebody sitting right there, idle, was refusing a call that would
+     have connected. Placing it is the caller's judgement to make; the
+     dot is what they make it with. */
+  const callReason =
+    partnerPresence === "offline"
+      ? `${title} looks offline — call anyway`
+      : `Call ${title}`;
+
+  /* Whether a room is open beside this thread. Off the same function
+     the rail and the server use, against the same clock the presence
+     dots read — a call that expired while this pane sat open must stop
+     offering a button the server would refuse. */
+  const activeCall = conversation?.activeCall ?? null;
+  const callLive = conversation?.type === "group" && groupCallLive(activeCall, now);
+
+  /* Who is in the room, by name. The map is a best-effort account — a
+     browser that died mid-call never sent its goodbye — so it draws
+     faces and decides nothing. */
+  const inTheRoom = callLive ? Object.keys(activeCall?.participants ?? {}) : [];
+  const viewerInRoom = inTheRoom.includes(viewer.id);
+
+  /* Names, not a count. "3 people are in a call" tells you how many
+     colleagues are talking without you; the names tell you whether it
+     is a conversation you belong in, which is the thing that decides
+     whether anyone clicks Join.
+
+     Resolved through the live directory first, like every other name
+     in this file — the copy on the call is a cache for a label. */
+  const callRoster = (() => {
+    const names = inTheRoom.map(
+      (id) => liveNames[id] || activeCall?.participants?.[id] || "Someone"
+    );
+    if (names.length <= 2) return names.join(" and ");
+    return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+  })();
 
   /* A full first page means there is probably more behind it. */
   const mayHaveHistory = !exhausted && live.length >= MESSAGE_PAGE_SIZE;
@@ -360,12 +410,10 @@ export function MessageThread({
         <ThreadHeading title={title} subtitle={subtitle} />
 
         {/* A room is two people, so this is offered in a dm and nowhere
-            else. Disabled with a reason rather than hidden, the same
-            bargain the Personnel Network makes. */}
+            else. Never disabled — see `callReason`. */}
         {conversation?.type === "dm" && partnerUid && onCall && (
           <button
             type="button"
-            disabled={callBlocked}
             title={callReason}
             aria-label={callReason}
             onClick={() =>
@@ -375,9 +423,44 @@ export function MessageThread({
                 photoURL: partner?.photoURL,
               })
             }
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-control text-ink-muted ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-control text-ink-muted ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-hover hover:text-ink"
           >
             <Phone className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        )}
+
+        {/* One button, two sentences. Start when the thread is quiet,
+            Join when a room is already open — and when it is, it says
+            so loudly, because a call happening in a thread you are
+            looking at is the most time-sensitive thing on the screen.
+
+            Nothing rang to tell anyone about it: see the note in
+            `actions/calls`. This button and the rail's pill are the
+            whole of how a group call announces itself. */}
+        {conversation?.type === "group" && onGroupCall && (
+          <button
+            type="button"
+            onClick={() => onGroupCall(conversation.id)}
+            title={callLive ? "Join the call" : "Start a call"}
+            aria-label={callLive ? "Join the call" : "Start a call in this group"}
+            className={cn(
+              "flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-medium tracking-wide transition-colors",
+              callLive
+                ? "bg-orbit-green/15 text-orbit-green ring-1 ring-inset ring-orbit-green/25 hover:bg-orbit-green/20"
+                : "h-9 w-9 justify-center bg-surface-control px-0 py-0 text-ink-muted ring-1 ring-inset ring-line/[0.06] hover:bg-surface-hover hover:text-ink"
+            )}
+          >
+            {callLive ? (
+              <>
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orbit-green opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-orbit-green" />
+                </span>
+                {viewerInRoom ? "Rejoin" : "Join call"}
+              </>
+            ) : (
+              <Video className="h-3.5 w-3.5" aria-hidden />
+            )}
           </button>
         )}
 
@@ -417,6 +500,37 @@ export function MessageThread({
           </span>
         )}
       </header>
+
+      {/* ── Live call ──────────────────────────────────────────── */}
+      {/* A strip rather than a modal, and rather than a message in the
+          transcript. A modal would take the thread away from people who
+          are typing in it while two colleagues talk; a message would
+          scroll off, which is exactly wrong for a fact that is only
+          true right now. So it sits between the header and the
+          scrollback, and it leaves when the room does. */}
+      {callLive && !viewerInRoom && (
+        <div className="flex shrink-0 items-center gap-3 border-b border-orbit-green/15 bg-orbit-green/[0.07] px-5 py-2.5">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orbit-green opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-orbit-green" />
+          </span>
+
+          <p className="min-w-0 flex-1 truncate text-[12px] font-light text-ink-muted">
+            <span className="font-medium text-ink">{callRoster}</span>
+            {inTheRoom.length === 1 ? " is in a call" : " are in a call"}
+          </p>
+
+          {onGroupCall && conversation && (
+            <button
+              type="button"
+              onClick={() => onGroupCall(conversation.id)}
+              className="shrink-0 rounded-lg bg-orbit-green px-3 py-1.5 text-[11px] font-medium tracking-wide text-white transition-opacity hover:opacity-90"
+            >
+              Join
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Transcript ─────────────────────────────────────────── */}
       <div className="custom-scrollbar flex-1 overflow-y-auto px-5 py-5">
