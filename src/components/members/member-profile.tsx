@@ -182,13 +182,16 @@ export function MemberProfile({
   return (
     <>
       <Dialog open onOpenChange={(next) => !next && onClose()}>
-        <DialogContent className="sm:max-w-md" id="member-profile">
+        <DialogContent
+          className="gap-0 overflow-hidden rounded-[28px] p-6 sm:max-w-md"
+          id="member-profile"
+        >
           {/* ── Banner ─────────────────────────────────────────── */}
-          <div className="-mx-6 -mt-6 mb-5 border-b border-line/[0.05] bg-surface-control/50 px-6 pb-5 pt-6">
+          <div className="-mx-6 -mt-6 mb-5 border-b border-line/[0.07] bg-surface-hover/60 px-6 pb-5 pt-6">
             <div className="flex items-start gap-4">
               <UserAvatar size="xl" name={member.name} photoURL={member.photoURL} />
 
-              <div className="min-w-0 flex-1 pt-1">
+              <div className="min-w-0 flex-1 pr-10 pt-1">
                 <DialogTitle className="truncate text-[18px] font-medium tracking-tight text-ink-strong">
                   {member.name}
                 </DialogTitle>
@@ -248,7 +251,7 @@ export function MemberProfile({
           {/* ── Workload ───────────────────────────────────────── */}
           <Section label="Current load">
             <div className="flex items-center gap-3">
-              <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-control">
+              <div className="h-1 flex-1 overflow-hidden rounded-full bg-line/[0.09]">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500",
@@ -313,7 +316,7 @@ export function MemberProfile({
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <section className="mt-5 border-t border-line/[0.04] pt-4">
+    <section className="mt-5 border-t border-line/[0.07] pt-4">
       <h3 className="mb-2.5 font-mono text-[9px] uppercase tracking-[0.2em] text-ink-dim">
         {label}
       </h3>
