@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, FolderKanban, Users, MessageSquare, Settings, LucideIcon } from "lucide-react";
+import { LayoutGrid, FolderKanban, Users, MessageSquare, Lock, Settings, LucideIcon } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { cn } from "@/lib/utils/classnames";
 
@@ -29,6 +29,9 @@ const ITEMS: NavItem[] = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/teams", label: "Teams", icon: Users },
   { href: "/messages", label: "Messages", icon: MessageSquare },
+  /* Sits after the day-to-day destinations and before Settings: the
+     Vault is something you go to on purpose, not somewhere you live. */
+  { href: "/vault", label: "Vault", icon: Lock },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

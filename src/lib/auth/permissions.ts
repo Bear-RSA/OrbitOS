@@ -227,6 +227,56 @@ export async function resolveCallLimits(
 }
 
 /**
+ * What this organization's plan allows the Vault to hold.
+ *
+ * Same contract as the resolvers above: -1 on either field means "the
+ * tier does not narrow it", and the ceilings in `lib/vault/ceiling`
+ * govern regardless. Stored bytes are a Cloudinary invoice that keeps
+ * arriving every month, so those ceilings are live now even while the
+ * paywall stays dark.
+ *
+ * Returned as a pair because admitting an upload needs both: a workspace
+ * can be inside its byte allowance and out of document slots, or the
+ * reverse, and checking one without the other lets an upload through on
+ * a limit it already passed.
+ */
+export async function resolveVaultLimits(
+  orgId: string
+): Promise<{ maxStorageMb: number; maxDocuments: number }> {
+  if (!GUARDRAILS_ENABLED || !orgId) {
+    return { maxStorageMb: -1, maxDocuments: -1 };
+  }
+
+  const tier = await resolveOrgTier(orgId);
+  const limits = TIER_DEFINITIONS[tier].limits;
+
+  return {
+    maxStorageMb: limits.maxVaultStorageMb,
+    maxDocuments: limits.maxVaultDocuments,
+  };
+}
+
+/**
+ * Calls this organization's plan may transcribe in a month.
+ *
+ * Same contract as the resolvers above: -1 means "the tier does not
+ * narrow it", and the ceiling in `lib/transcripts/ceiling` governs
+ * regardless.
+ *
+ * Unlike the others there is no vendor invoice behind this one — capture
+ * runs in each participant's browser. What it protects is Firestore write
+ * volume, which is a Blaze line item all the same, so the ceiling is live
+ * now even while the paywall stays dark.
+ */
+export async function resolveTranscriptLimit(orgId: string): Promise<number> {
+  if (!GUARDRAILS_ENABLED) return -1;
+  if (!orgId) return -1;
+
+  const tier = await resolveOrgTier(orgId);
+  return TIER_DEFINITIONS[tier].limits.maxTranscriptsPerMonth;
+}
+
+/**
  * Validates whether an organization's current resource usage allows
  * one more of the requested resource type under its active subscription tier.
  *

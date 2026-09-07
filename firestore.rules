@@ -123,6 +123,38 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    /* ---- Meeting transcripts ---- */
+
+    /* Readable by the whole workspace, and that is deliberate rather
+       than lax: this document holds STATUS AND CONSENT, never a word of
+       what was said. The room has to be able to see that it is being
+       asked, and a late joiner has to be able to discover that the call
+       they just walked into is being transcribed — before they are in
+       anyone's participant map, which is the only reason a narrower
+       rule was not written here.
+
+       Every write is a server action on the Admin SDK. A client that
+       could write this could vote on its own behalf twice, or flip a
+       pending request straight to `recording`. */
+    match /transcripts/{roomId} {
+      allow read: if isSignedIn() && isInOrg(resource.data.orgId);
+      allow write: if false;
+
+      /* The transcript itself. Denied outright — including to the people
+         who were in the call, who read it through `getTranscriptAction`
+         after being checked against the consent map.
+
+         Rules do not cascade, so the parent's read above never reached
+         this; it is spelled out because an unwritten rule looks like an
+         oversight to the next person, and this one is a decision. A
+         subcollection every participant subscribed to would put a live
+         copy of the meeting in every browser and need a per-line rule
+         to say who may hold it. */
+      match /lines/{lineId} {
+        allow read, write: if false;
+      }
+    }
+
 
     /* Push tokens — the authority to interrupt somebody.
 
@@ -492,6 +524,34 @@ service cloud.firestore {
     match /organizations/{orgId} {
       allow read: if isInOrg(orgId);
 
+      /* ---- The Vault: company records ---- */
+
+      /* Clearance, spelled to match `canReadVaultDocument` exactly.
+         INTERNAL is anyone in the workspace; RESTRICTED is owners plus
+         whoever filed it, so a member who files their own signed
+         contract does not lose sight of it.
+
+         Rules do not filter — a query touching one denied document
+         fails whole — so a member's client cannot read this collection
+         directly. `subscribeToVault` runs two queries a member is fully
+         allowed to run and merges them; if that predicate and this one
+         ever drift apart, the member's shelf goes blank rather than
+         leaking, which is the right direction to fail. */
+      match /vault/{documentId} {
+        allow read: if isMember(orgId)
+          && (
+            resource.data.clearance == 'INTERNAL'
+            || isOwner(orgId)
+            || resource.data.uploadedBy == request.auth.uid
+          );
+
+        /* Every write goes through a server action on the Admin SDK.
+           Filing a document has to move the org's usage counters in the
+           same transaction, and a client that could write here directly
+           could file bytes it never accounted for. */
+        allow write: if false;
+      }
+
       /* You may only create an organization you own. `isWorkspaceGenesis`
          above depends on this to keep org binding self-referential. */
       allow create: if isSignedIn()
@@ -501,8 +561,12 @@ service cloud.firestore {
          write `subscription` from the client would let them grant
          themselves any tier for free; PayFast's webhook and the billing
          server actions use the Admin SDK and are unaffected by this. */
+      /* `vaultUsage` and `transcriptUsage` join the server-owned fields.
+         Each one IS a quota — an owner who could edit them from the
+         client would grant themselves unlimited Cloudinary storage, or
+         an unlimited monthly transcript allowance, by writing a zero. */
       allow update: if isOwner(orgId)
-        && !editedKeys().hasAny(['subscription', 'ownerId']);
+        && !editedKeys().hasAny(['subscription', 'ownerId', 'vaultUsage', 'transcriptUsage']);
     }
 
     match /{document=**} {

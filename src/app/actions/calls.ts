@@ -150,6 +150,7 @@ async function grantFor(request: GrantRequest): Promise<CallGrant> {
 
   return {
     provider: provider.id,
+    roomId: request.roomId,
     roomUrl: room.roomUrl,
     token,
     displayName,

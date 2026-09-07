@@ -108,6 +108,11 @@ export function GroupCall({ conversationId, title, onClose }: GroupCallProps) {
       title={title}
       headline={error ? "Call unavailable" : undefined}
       hangUpLabel={error ? "Close" : "Hang up"}
+      call={
+        grant
+          ? { roomId: grant.roomId, callKind: "group", conversationId, title }
+          : null
+      }
       onHangUp={hangUp}
     >
       {grant ? (

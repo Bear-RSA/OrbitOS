@@ -142,6 +142,16 @@ export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
       <CallShell
         title={target.name}
         headline={`In a call with ${target.name}`}
+        call={
+          callId
+            ? {
+                roomId: grant.roomId,
+                callKind: "direct",
+                callId,
+                title: `Call with ${target.name}`,
+              }
+            : null
+        }
         onHangUp={hangUp}
       >
         <CallRoom grant={grant} onLeave={hangUp} className="h-full w-full" />

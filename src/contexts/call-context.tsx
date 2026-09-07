@@ -42,6 +42,18 @@ export interface GroupRoom {
   title: string;
 }
 
+/**
+ * A transcript that outlived the call it came from.
+ *
+ * Held here rather than inside the call surfaces because the point of it
+ * is to still be on screen after those have unmounted — the room is
+ * gone, and the thing it produced is what the person wanted.
+ */
+export interface FinishedTranscript {
+  roomId: string;
+  title: string;
+}
+
 interface CallContextValue {
   /** Who is being rung, if anyone. */
   outgoing: CallTarget | null;
@@ -57,6 +69,8 @@ interface CallContextValue {
   engaged: boolean;
   /** The room is parked in the corner rather than filling the screen. */
   minimized: boolean;
+  /** The last call that produced a transcript, until it is dismissed. */
+  lastTranscript: FinishedTranscript | null;
 
   callPerson: (target: CallTarget) => void;
   joinGroupCall: (conversationId: string, title: string) => void;
@@ -65,6 +79,7 @@ interface CallContextValue {
   minimize: () => void;
   expand: () => void;
   registerFrame: (frame: DailyCall | null) => void;
+  noteTranscript: (transcript: FinishedTranscript | null) => void;
 }
 
 const noop = () => {};
@@ -78,6 +93,7 @@ const CallContext = createContext<CallContextValue>({
   frame: null,
   engaged: false,
   minimized: false,
+  lastTranscript: null,
   callPerson: noop,
   joinGroupCall: noop,
   endOutgoing: noop,
@@ -85,6 +101,7 @@ const CallContext = createContext<CallContextValue>({
   minimize: noop,
   expand: noop,
   registerFrame: noop,
+  noteTranscript: noop,
 });
 
 export function CallProvider({ children }: { children: React.ReactNode }) {
@@ -92,6 +109,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [group, setGroup] = useState<GroupRoom | null>(null);
   const [frame, setFrame] = useState<DailyCall | null>(null);
   const [minimized, setMinimized] = useState(false);
+  const [lastTranscript, setLastTranscript] = useState<FinishedTranscript | null>(null);
 
   /* An answered incoming call has no entry above — `IncomingCall` owns
      its own ring and grant — but it does publish a frame, so a room is
@@ -105,6 +123,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
          click than to tear down the conversation it interrupts. */
       if (outgoing || group || frame) return;
       setMinimized(false);
+      setLastTranscript(null);
       setOutgoing(target);
     },
     [outgoing, group, frame]
@@ -121,6 +140,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }
       if (outgoing || group || frame) return;
       setMinimized(false);
+      setLastTranscript(null);
       setGroup({ conversationId, title });
     },
     [outgoing, group, frame]
@@ -134,6 +154,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const endGroup = useCallback(() => {
     setGroup(null);
     setMinimized(false);
+  }, []);
+
+  /* Set by the call shell on its way out, cleared when the card is
+     dismissed or when the next call starts — a card offering the last
+     meeting's transcript over a live room is in the way, and there is
+     only ever one call. */
+  const noteTranscript = useCallback((next: FinishedTranscript | null) => {
+    setLastTranscript(next);
   }, []);
 
   const minimize = useCallback(() => setMinimized(true), []);
@@ -153,6 +181,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       frame,
       engaged,
       minimized,
+      lastTranscript,
       callPerson,
       joinGroupCall,
       endOutgoing,
@@ -160,6 +189,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       minimize,
       expand,
       registerFrame,
+      noteTranscript,
     }),
     [
       outgoing,
@@ -167,6 +197,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       frame,
       engaged,
       minimized,
+      lastTranscript,
       callPerson,
       joinGroupCall,
       endOutgoing,
@@ -174,6 +205,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       minimize,
       expand,
       registerFrame,
+      noteTranscript,
     ]
   );
 

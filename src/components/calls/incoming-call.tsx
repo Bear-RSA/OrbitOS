@@ -186,6 +186,16 @@ export function IncomingCall() {
       <CallShell
         title={activeWith ?? "Call"}
         headline={activeWith ? `In a call with ${activeWith}` : "In a call"}
+        call={
+          activeCallId
+            ? {
+                roomId: grant.roomId,
+                callKind: "direct",
+                callId: activeCallId,
+                title: activeWith ? `Call with ${activeWith}` : "Call",
+              }
+            : null
+        }
         onHangUp={hangUp}
       >
         <CallRoom grant={grant} onLeave={hangUp} className="h-full w-full" />

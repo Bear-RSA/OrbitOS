@@ -4,6 +4,7 @@ import { useCall } from "@/contexts/call-context";
 import { GroupCall } from "@/components/calls/group-call";
 import { IncomingCall } from "@/components/calls/incoming-call";
 import { OutgoingCall } from "@/components/calls/outgoing-call";
+import { TranscriptOutcome } from "@/components/calls/transcript-outcome";
 
 /* ------------------------------------------------------------------ */
 /*  Call host                                                          */
@@ -23,7 +24,8 @@ import { OutgoingCall } from "@/components/calls/outgoing-call";
 /* ------------------------------------------------------------------ */
 
 export function CallHost() {
-  const { outgoing, group, endOutgoing, endGroup } = useCall();
+  const { outgoing, group, endOutgoing, endGroup, lastTranscript, noteTranscript } =
+    useCall();
 
   return (
     <>
@@ -38,6 +40,16 @@ export function CallHost() {
           conversationId={group.conversationId}
           title={group.title}
           onClose={endGroup}
+        />
+      )}
+
+      {/* Mounted here rather than inside a call surface because its whole
+          job is to still be on screen once that surface has gone. */}
+      {lastTranscript && (
+        <TranscriptOutcome
+          roomId={lastTranscript.roomId}
+          title={lastTranscript.title}
+          onClose={() => noteTranscript(null)}
         />
       )}
     </>

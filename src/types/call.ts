@@ -88,6 +88,17 @@ export type CallProviderId = "daily" | "livekit";
  */
 export interface CallGrant {
   provider: CallProviderId;
+  /**
+   * Our own room id, handed back so the client can name the room it is
+   * sitting in.
+   *
+   * Not a second copy of `roomUrl`: that is the provider's address and
+   * is parsed by nobody, while this is the id everything on our side
+   * keys off — the transcript of this call is stored under it. It is
+   * safe to hand over because the person holding it is already in the
+   * room; a room id is a capability to JOIN, and joining took a token.
+   */
+  roomId: string;
   /** The provider's own join target. */
   roomUrl: string;
   token: string;

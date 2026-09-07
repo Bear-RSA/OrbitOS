@@ -23,6 +23,10 @@ import {
   CalendarX2,
   CalendarCheck,
   PhoneCall,
+  Vault,
+  ShieldAlert,
+  FileLock2,
+  Captions,
   type LucideIcon,
 } from "lucide-react";
 import type { ActivityEventType } from "@/types/activity";
@@ -335,6 +339,21 @@ export const EVENT_REGISTRY: Record<ActivityEventType, EventDescriptor> = {
     ),
   },
 
+  /* The room agreed to this one. The line count is what says whether
+     the transcript is worth opening — a call where nobody spoke into a
+     supported browser ends with a session and no words in it. */
+  MEETING_TRANSCRIBED: {
+    label: "TRX",
+    icon: Captions,
+    tone: "info",
+    describe: (m) => (
+      <>
+        transcribed <Target val={(m.title as string) || "a meeting"} />
+        <Detail val={`${m.lines ?? 0} lines`} />
+      </>
+    ),
+  },
+
   /* ---- Assets ---- */
   ASSET_INGESTED: {
     label: "AST",
@@ -353,6 +372,47 @@ export const EVENT_REGISTRY: Record<ActivityEventType, EventDescriptor> = {
     describe: (m) => (
       <>
         deleted <Target val={m.fileName} />
+      </>
+    ),
+  },
+
+  /* ---- The Vault ---- */
+  VAULT_DOCUMENT_FILED: {
+    label: "VLT",
+    icon: Vault,
+    tone: "info",
+    describe: (m) => (
+      <>
+        filed <Target val={m.fileName} />
+        {m.category ? (
+          <>
+            {" "}under <Detail val={m.category as string} />
+          </>
+        ) : null}
+      </>
+    ),
+  },
+  VAULT_DOCUMENT_PURGED: {
+    label: "VPG",
+    icon: FileLock2,
+    tone: "critical",
+    describe: (m) => (
+      <>
+        purged <Target val={m.fileName} /> from the vault
+      </>
+    ),
+  },
+  /* Warning rather than info: widening a record's clearance is the one
+     vault action nobody can undo the effect of — whoever read it in the
+     meantime has already read it. */
+  VAULT_CLEARANCE_CHANGED: {
+    label: "CLR",
+    icon: ShieldAlert,
+    tone: "warning",
+    describe: (m) => (
+      <>
+        set <Target val={m.fileName} /> to{" "}
+        <Detail val={m.to === "RESTRICTED" ? "restricted" : "internal"} />
       </>
     ),
   },

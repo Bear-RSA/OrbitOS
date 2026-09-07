@@ -41,7 +41,19 @@ export type ActivityEventType =
      calendar entry, so without its own event the feed has no record that
      two operatives spoke at all. Only the placing of a call is logged:
      who answered is between the two of them. */
-  | "CALL_STARTED";
+  | "CALL_STARTED"
+  /* A transcript is the one artefact here that exists because people
+     agreed to it, so the feed records that it was made and by whom.
+     Only the making — not who read it afterwards, and never the text,
+     which would put the meeting in a second place with weaker rules. */
+  | "MEETING_TRANSCRIBED"
+  /* The Vault holds company records rather than project work, so its
+     events carry no projectId and are org-wide. Only filing, purging
+     and clearance changes are logged — not reads. A log of who opened
+     the payroll register would be a second copy of the same secret. */
+  | "VAULT_DOCUMENT_FILED"
+  | "VAULT_DOCUMENT_PURGED"
+  | "VAULT_CLEARANCE_CHANGED";
 
 /* ------------------------------------------------------------------ */
 /*  Activity Document                                                  */

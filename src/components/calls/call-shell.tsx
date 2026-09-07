@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Maximize2,
   Mic,
@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 import { useCall } from "@/contexts/call-context";
 import { useCallContinuity } from "@/hooks/use-call-continuity";
+import { useTranscription, type TranscriptionCall } from "@/hooks/use-transcription";
+import { TranscriptConsentDialog } from "@/components/calls/transcript-consent-dialog";
+import { TranscriptControl, TranscriptNotice } from "@/components/calls/transcript-control";
 import { cn } from "@/lib/utils/classnames";
 
 /* ------------------------------------------------------------------ */
@@ -45,6 +48,14 @@ interface CallShellProps {
   headline?: string;
   /** Overridden when there is no call to hang up from — see `GroupCall`. */
   hangUpLabel?: string;
+  /**
+   * Which call this is, for the transcript.
+   *
+   * Absent until the room opens — a call that never connected has
+   * nothing to transcribe — and absent entirely from surfaces that have
+   * no transcript, which is how this stays optional.
+   */
+  call?: TranscriptionCall | null;
   onHangUp: () => void;
   /** The room, or whatever stands in for it while it opens. */
   children: React.ReactNode;
@@ -54,13 +65,42 @@ export function CallShell({
   title,
   headline,
   hangUpLabel = "Hang up",
+  call = null,
   onHangUp,
   children,
 }: CallShellProps) {
-  const { frame, minimized, minimize, expand } = useCall();
+  const { frame, minimized, minimize, expand, noteTranscript } = useCall();
   const [micOn, setMicOn] = useState(true);
 
   useCallContinuity({ frame, title, onHangUp });
+
+  /* The transcript lives here rather than in the three surfaces because
+     this is the one component all of them wrap themselves in, and it
+     unmounts exactly when the call ends however the call ended. */
+  const transcription = useTranscription(call);
+
+  /* Mirrored where the unmount cleanup can reach it. A call that reached
+     `recording` produced something worth handing over — even if nobody
+     said anything, because "nothing was captured" is itself worth
+     seeing rather than silently discarding. */
+  const producedRef = useRef<{ roomId: string; title: string } | null>(null);
+
+  /* Keyed on the two strings rather than on `call`, which the surfaces
+     rebuild every render — an effect that depends on the object would
+     re-run on every keystroke elsewhere in the app. */
+  const roomId = call?.roomId ?? null;
+  const callTitle = call?.title ?? "";
+
+  useEffect(() => {
+    if (transcription.status !== "recording" || !roomId) return;
+    producedRef.current = { roomId, title: callTitle };
+  }, [transcription.status, roomId, callTitle]);
+
+  useEffect(() => {
+    return () => {
+      if (producedRef.current) noteTranscript(producedRef.current);
+    };
+  }, [noteTranscript]);
 
   /* Read from the provider rather than tracked here. The microphone can
      be turned off from inside the room's own controls too, and a button
@@ -113,6 +153,11 @@ export function CallShell({
         </p>
 
         <div className="flex shrink-0 items-center gap-1.5">
+          {/* Asking for a transcript, and the sign that one is being
+              taken — visible to everyone in the room, including whoever
+              declined. See `transcript-control`. */}
+          <TranscriptControl state={transcription} minimized={minimized} />
+
           {/* Only while parked. At full size the room paints its own,
               and two microphone buttons on one screen is a question
               about which one is real. */}
@@ -164,11 +209,20 @@ export function CallShell({
         </div>
       </div>
 
+      {/* One child position, always. A sibling that appears and
+          disappears ABOVE the room would shift the slot below it, and
+          React reconciles these children by position — see the note at
+          the top for what re-parenting the iframe costs. So this always
+          renders and decides for itself whether it has anything to say. */}
+      <TranscriptNotice state={transcription} minimized={minimized} />
+
       {/* The slot the room lives in for the whole call. Its position in
           this tree never changes — see the note at the top. */}
       <div className={cn("min-h-0 flex-1", minimized && "px-2 pb-2")}>
         {children}
       </div>
+
+      <TranscriptConsentDialog state={transcription} />
     </div>
   );
 }
