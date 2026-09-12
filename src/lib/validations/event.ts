@@ -33,6 +33,13 @@ const optionalUrl = z
   .nullable()
   .optional();
 
+/**
+ * Where the meeting happens. Optional on the wire for older callers; the
+ * action infers "external" from a link and "none" otherwise, so nothing
+ * that never heard of Orbit calls changes behaviour.
+ */
+const callProvider = z.enum(["none", "orbit", "external"]).optional();
+
 const attendees = z
   .array(z.string().min(1))
   .max(50, "Maximum 50 attendees per engagement");
@@ -91,6 +98,25 @@ function checkSpan(
   }
 }
 
+/**
+ * An external meeting is a link, so choosing "external" without one is
+ * an engagement nobody can get to. Only checked on create — an edit may
+ * switch to external while the link is already stored, and the action
+ * checks the merged result.
+ */
+function checkExternalLink(
+  value: { callProvider?: string; meetingUrl?: string | null },
+  ctx: z.RefinementCtx
+) {
+  if (value.callProvider === "external" && !value.meetingUrl) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["meetingUrl"],
+      message: "Add the link for the meeting",
+    });
+  }
+}
+
 export const createEventSchema = z
   .object({
     projectId: z.string().nullable().default(null),
@@ -102,10 +128,12 @@ export const createEventSchema = z
     timeZone: z.string().max(64).optional(),
     location: z.string().trim().max(200, "Location too long").nullable().optional(),
     meetingUrl: optionalUrl,
+    callProvider,
     attendees: attendees.optional().default([]),
     guests: guests.optional().default([]),
   })
-  .superRefine(checkSpan);
+  .superRefine(checkSpan)
+  .superRefine(checkExternalLink);
 
 export const updateEventSchema = z
   .object({
@@ -117,6 +145,7 @@ export const updateEventSchema = z
     timeZone: z.string().max(64).optional(),
     location: z.string().trim().max(200, "Location too long").nullable().optional(),
     meetingUrl: optionalUrl,
+    callProvider,
     attendees: attendees.optional(),
     guests: guests.optional(),
   })

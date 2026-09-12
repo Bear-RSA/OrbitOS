@@ -1,5 +1,6 @@
-import type { OrbitEvent, UpdateEventInput } from "@/types/event";
+import type { EngagementCallProvider, OrbitEvent, UpdateEventInput } from "@/types/event";
 import { toDateKey } from "@/lib/utils/dates";
+import { effectiveCallProvider } from "@/lib/calls/scheduled";
 
 /* ------------------------------------------------------------------ */
 /*  Engagement form logic                                              */
@@ -33,11 +34,40 @@ export interface FormShape {
   durationMins: number;
   allDay: boolean;
   location: string;
+  /**
+   * Where the meeting happens. An Orbit call has no link to type — the
+   * server issues one — so `meetingUrl` is only read when this is
+   * "external".
+   */
+  callProvider: EngagementCallProvider;
   meetingUrl: string;
   attendees: string[];
   /** Bare addresses for people with no OrbitOS account. */
   guests: string[];
 }
+
+/** The choices the form offers, in the order they are shown. */
+export const CALL_PROVIDER_OPTIONS: {
+  value: EngagementCallProvider;
+  label: string;
+  hint: string;
+}[] = [
+  {
+    value: "orbit",
+    label: "Orbit call",
+    hint: "OrbitOS hosts the room. Everyone invited gets a link that opens it.",
+  },
+  {
+    value: "external",
+    label: "Elsewhere",
+    hint: "Paste the link for the meeting — Meet, Zoom, Teams.",
+  },
+  {
+    value: "none",
+    label: "In person",
+    hint: "No call. Put the place in the location.",
+  },
+];
 
 /**
  * Vets one typed address against a list already in hand. Pure on purpose
@@ -100,6 +130,10 @@ export function valuesFor(
       durationMins: 30,
       allDay: false,
       location: "",
+      /* Hosted here by default. The app can run the meeting, so asking
+         where it will be — the old default — was a question with an
+         obvious answer that every organizer had to give anyway. */
+      callProvider: "orbit",
       meetingUrl: "",
       attendees: [],
       guests: [],
@@ -108,6 +142,7 @@ export function valuesFor(
 
   const start = event.startAt.toDate();
   const end = event.endAt.toDate();
+  const callProvider = effectiveCallProvider(event);
 
   return {
     title: event.title,
@@ -118,7 +153,11 @@ export function valuesFor(
     durationMins: Math.max(15, Math.round((end.getTime() - start.getTime()) / 60_000)),
     allDay: event.allDay,
     location: event.location || "",
-    meetingUrl: event.meetingUrl || "",
+    callProvider,
+    /* An Orbit call's stored link is the room's, not something the
+       organizer typed; loading it into the field would offer it for
+       editing and then carry it along if they switched to Elsewhere. */
+    meetingUrl: callProvider === "external" ? event.meetingUrl || "" : "",
     /* The organizer is dropped: they are implicit, the server puts them
        back on every write, and showing them as a removable chip offers a
        removal that silently does nothing. */
@@ -166,8 +205,18 @@ export function diffEngagement(
   const location = (values.location || "").trim();
   if (location !== (event.location || "")) patch.location = location || null;
 
-  const meetingUrl = (values.meetingUrl || "").trim();
-  if (meetingUrl !== (event.meetingUrl || "")) patch.meetingUrl = meetingUrl || null;
+  /* Where the meeting is, and — only when it is elsewhere — the link.
+     An Orbit call's link belongs to the server and an in-person
+     engagement has none, so the field is not diffed for either: sending
+     it would be sending a value the organizer never chose. */
+  const previousProvider = effectiveCallProvider(event);
+  if (values.callProvider !== previousProvider) patch.callProvider = values.callProvider;
+
+  if (values.callProvider === "external") {
+    const meetingUrl = (values.meetingUrl || "").trim();
+    const previousUrl = previousProvider === "external" ? event.meetingUrl || "" : "";
+    if (meetingUrl !== previousUrl) patch.meetingUrl = meetingUrl || null;
+  }
 
   if (values.allDay !== event.allDay) patch.allDay = values.allDay;
 
@@ -223,7 +272,8 @@ export function diffEngagement(
     patch.timeZone !== undefined ||
     patch.title !== undefined ||
     patch.location !== undefined ||
-    patch.meetingUrl !== undefined;
+    patch.meetingUrl !== undefined ||
+    patch.callProvider !== undefined;
 
   return {
     patch,

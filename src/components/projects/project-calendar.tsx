@@ -42,6 +42,8 @@ import {
 import { dueDateKeyOf, parseDateKey, toDateKey } from "@/lib/utils/dates";
 import { dayWindowFor, layoutCollisions, LayoutInput } from "@/lib/utils/event-layout";
 import { EngagementDialog } from "@/components/events/engagement-dialog";
+import { useCall } from "@/contexts/call-context";
+import { isOrbitCall } from "@/lib/calls/scheduled";
 import { cn } from "@/lib/utils/classnames";
 
 /* ------------------------------------------------------------------ */
@@ -215,6 +217,16 @@ export function ProjectCalendar({
   const isOwner = members.find((m) => m.id === uid)?.role === "OWNER";
   const canManageSelected =
     selectedEvent !== null && (selectedEvent.createdBy === uid || isOwner);
+
+  /* An Orbit call opens in the app rather than in a new tab. Offered only
+     to people on the list — the server refuses everyone else, and a
+     button that always says no is worse than none. */
+  const { joinScheduledCall } = useCall();
+  const canJoinSelected =
+    selectedEvent !== null &&
+    selectedEvent.status !== "cancelled" &&
+    isOrbitCall(selectedEvent) &&
+    selectedEvent.attendees.includes(uid);
 
   /* Guests are fetched rather than read off the engagement. The `guests`
      collection has no client read rule on purpose — a workspace's client
@@ -892,16 +904,29 @@ export function ProjectCalendar({
                 {selectedEvent.location}
               </span>
             )}
-            {selectedEvent.meetingUrl && (
-              <a
-                href={selectedEvent.meetingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 font-mono text-[10px] text-orbit-blue hover:underline"
-              >
-                <Video className="h-3 w-3" aria-hidden />
-                Join
-              </a>
+            {isOrbitCall(selectedEvent) ? (
+              canJoinSelected && (
+                <button
+                  type="button"
+                  onClick={() => joinScheduledCall(selectedEvent.roomId, selectedEvent.title)}
+                  className="flex items-center gap-1.5 font-mono text-[10px] text-orbit-blue hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                >
+                  <Video className="h-3 w-3" aria-hidden />
+                  Join Orbit call
+                </button>
+              )
+            ) : (
+              selectedEvent.meetingUrl && (
+                <a
+                  href={selectedEvent.meetingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 font-mono text-[10px] text-orbit-blue hover:underline"
+                >
+                  <Video className="h-3 w-3" aria-hidden />
+                  Join
+                </a>
+              )
             )}
           </div>
 

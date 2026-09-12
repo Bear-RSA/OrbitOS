@@ -53,6 +53,20 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    /* Whether this caller has entered the Vault passcode recently enough
+       that their unlock record is still live. Mirrors `userData()` above
+       in shape: a rule reaching across documents with `get()` for its own
+       evaluation, on a path no client `allow read` ever grants — only
+       `verifyVaultPasscodeAction` (Admin SDK) ever writes one.
+
+       `exists()` guards the `get()` — a caller who has never entered the
+       passcode has no document here at all, and `get()` on a missing path
+       throws rather than returning null. */
+    function hasVaultUnlock(orgId) {
+      return exists(/databases/$(database)/documents/organizations/$(orgId)/vaultUnlocks/$(request.auth.uid))
+        && get(/databases/$(database)/documents/organizations/$(orgId)/vaultUnlocks/$(request.auth.uid)).data.unlockedUntil > request.time;
+    }
+
     match /tasks/{taskId} {
       allow read: if isMember(resource.data.orgId);
       allow create: if isMember(request.resource.data.orgId);
@@ -98,25 +112,28 @@ service cloud.firestore {
 
     /* Direct calls — one operative ringing another.
 
-       Readable by the two people on it and nobody else. Org membership
-       is deliberately not enough: a call is between two named people,
-       and a third member of the same workspace has no more business
-       reading it than a stranger does. The one exception is the org-wide
-       read used to show "on a call" in the Personnel Network, which is
-       why an ACTIVE call is visible to the workspace — that a colleague
-       is busy is exactly what that view exists to say, and the document
-       carries no content beyond who and when.
+       Readable by the people on it and nobody else — its two ends, and
+       anyone rung into it since. Org membership is deliberately not
+       enough: a call is between named people, and another member of the
+       same workspace has no more business reading it than a stranger
+       does. The one exception is the org-wide read used to show "on a
+       call" in the Personnel Network, which is why an ACTIVE call is
+       visible to the workspace — that a colleague is busy is exactly
+       what that view exists to say, and the document carries no content
+       beyond who and when.
 
-       Writes are server-only. `roomId` is a capability and `status` is
-       what the answer gate reads, so a client that could write either
-       could join a call it was never part of, or revive a ring that had
-       already timed out. */
+       Writes are server-only. `roomId` is a capability, `status` is what
+       the answer gate reads, and `participants` is who may keep adding
+       people, so a client that could write any of them could join a call
+       it was never part of, revive a ring that had already timed out, or
+       fill somebody else's room. */
     match /calls/{callId} {
       allow read: if isSignedIn()
         && isInOrg(resource.data.orgId)
         && (
           request.auth.uid == resource.data.from ||
           request.auth.uid == resource.data.to ||
+          request.auth.uid in resource.data.get('participants', []) ||
           resource.data.status == 'active'
         );
 
@@ -171,6 +188,24 @@ service cloud.firestore {
        write the uid beside a token could point its own device at a
        colleague's calls, or theirs at its own. */
     match /pushTokens/{tokenId} {
+      allow read, write: if false;
+    }
+
+
+    /* Vault passcode state — the hash, its salt, and the emailed reset
+       token. Admin-only in both directions, same as
+       `password_reset_throttle`: a 4-digit code's keyspace is small
+       enough that exposing the hash to anyone in the org would make it
+       trivial to brute force offline, which a client `allow read` here
+       would do regardless of how the hash was computed. */
+    match /vault_passcodes/{orgId} {
+      allow read, write: if false;
+    }
+
+    /* Attempt and reset-request counters for the Vault passcode. Same
+       shape as `password_reset_throttle` — admin-only so this collection
+       cannot become a readable record of who has been guessing. */
+    match /vault_passcode_throttle/{key} {
       allow read, write: if false;
     }
 
@@ -539,6 +574,7 @@ service cloud.firestore {
          leaking, which is the right direction to fail. */
       match /vault/{documentId} {
         allow read: if isMember(orgId)
+          && hasVaultUnlock(orgId)
           && (
             resource.data.clearance == 'INTERNAL'
             || isOwner(orgId)
@@ -550,6 +586,15 @@ service cloud.firestore {
            same transaction, and a client that could write here directly
            could file bytes it never accounted for. */
         allow write: if false;
+      }
+
+      /* The passcode gate's unlock record. Written only by
+         `verifyVaultPasscodeAction` on the Admin SDK, and read here only
+         through `hasVaultUnlock()` above — never directly by a client,
+         which is what keeps a member from granting themselves an unlock
+         by writing a far-future `unlockedUntil`. */
+      match /vaultUnlocks/{uid} {
+        allow read, write: if false;
       }
 
       /* You may only create an organization you own. `isWorkspaceGenesis`

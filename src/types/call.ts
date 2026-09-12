@@ -48,6 +48,37 @@ export interface OrbitCall {
   fromName: string;
   toName: string;
 
+  /**
+   * Everyone in the room right now, and what to call them.
+   *
+   * A direct call starts as two people but need not stay that way: anyone
+   * in it can ring a third person in. So the pair above is who STARTED
+   * the call — the ring, the decline, the missed-call record all belong
+   * to them — while this list is who is IN it. Somebody hanging up drops
+   * off this list; the call ends when it would leave fewer than two.
+   *
+   * Absent on calls written before adding existed; read those through
+   * `callParticipants` in `lib/calls/party`, which derives the pair.
+   */
+  participants?: string[];
+  participantNames?: Record<string, string>;
+
+  /**
+   * Set on a ring that adds someone to a call already running. This
+   * document is the RING — it carries the caller, the callee, the timer
+   * and the answer — and the call it opens onto is the one named here.
+   * Answering puts the callee on THAT call's participant list and closes
+   * this document, so a ring never turns into a second call.
+   */
+  joinsCallId?: string | null;
+  /**
+   * The same idea for a scheduled call: a ring that adds someone to an
+   * engagement's room. Answering puts them on the engagement's attendee
+   * list — they are now in that meeting, calendar and all — and opens
+   * the room for them the way the calendar's Join button would.
+   */
+  joinsEventId?: string | null;
+
   status: CallStatus;
 
   /**

@@ -6,6 +6,8 @@ import { CalendarClock, Video, MapPin, Users } from "lucide-react";
 import { OrbitEvent, RsvpStatus } from "@/types/event";
 import { Member } from "@/types/member";
 import { currentEngagement } from "@/lib/calendar/presence";
+import { isOrbitCall } from "@/lib/calls/scheduled";
+import { useCall } from "@/contexts/call-context";
 import { cn } from "@/lib/utils/classnames";
 import { DashboardCard, CardHeader, CardEyebrow, StatusChip } from "./dashboard-card";
 
@@ -54,6 +56,7 @@ export function TodayScheduleCard({
     () => Object.fromEntries(members.map((m) => [m.id, m.name || "Operative"])),
     [members]
   );
+  const { joinScheduledCall } = useCall();
 
   const visible = useMemo(() => {
     if (!events) return [];
@@ -166,17 +169,37 @@ export function TodayScheduleCard({
                   </div>
                 </div>
 
-                {event.meetingUrl && (
-                  <a
-                    href={event.meetingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-surface-control px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                  >
-                    <Video className="h-3 w-3" aria-hidden />
-                    Join
-                    <span className="sr-only">{event.title}</span>
-                  </a>
+                {/* An Orbit call opens in the app; anything else opens
+                    wherever its link goes. The in-app button is only for
+                    people on the list, since the server lets in nobody
+                    else — an owner watching the org's day is not thereby
+                    in every meeting on it. */}
+                {isOrbitCall(event) ? (
+                  event.status !== "cancelled" &&
+                  event.attendees.includes(uid) && (
+                    <button
+                      type="button"
+                      onClick={() => joinScheduledCall(event.roomId, event.title)}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-surface-control px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    >
+                      <Video className="h-3 w-3" aria-hidden />
+                      Join
+                      <span className="sr-only">{event.title}</span>
+                    </button>
+                  )
+                ) : (
+                  event.meetingUrl && (
+                    <a
+                      href={event.meetingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-surface-control px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    >
+                      <Video className="h-3 w-3" aria-hidden />
+                      Join
+                      <span className="sr-only">{event.title}</span>
+                    </a>
+                  )
                 )}
               </li>
             );

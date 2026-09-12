@@ -56,6 +56,12 @@ interface CallShellProps {
    * no transcript, which is how this stays optional.
    */
   call?: TranscriptionCall | null;
+  /**
+   * Controls a surface adds to the bar — adding somebody to a direct
+   * call, say. Rendered beside the shell's own at full size and hidden
+   * while parked, where only the microphone and the way out fit.
+   */
+  actions?: React.ReactNode;
   onHangUp: () => void;
   /** The room, or whatever stands in for it while it opens. */
   children: React.ReactNode;
@@ -66,6 +72,7 @@ export function CallShell({
   headline,
   hangUpLabel = "Hang up",
   call = null,
+  actions = null,
   onHangUp,
   children,
 }: CallShellProps) {
@@ -153,10 +160,15 @@ export function CallShell({
         </p>
 
         <div className="flex shrink-0 items-center gap-1.5">
+          {!minimized && actions}
+
           {/* Asking for a transcript, and the sign that one is being
               taken — visible to everyone in the room, including whoever
-              declined. See `transcript-control`. */}
-          <TranscriptControl state={transcription} minimized={minimized} />
+              declined. See `transcript-control`. Only once there is a
+              call to transcribe: before the room opens, and in surfaces
+              that carry no transcript, the button would sit there and
+              do nothing when pressed. */}
+          {call && <TranscriptControl state={transcription} minimized={minimized} />}
 
           {/* Only while parked. At full size the room paints its own,
               and two microphone buttons on one screen is a question

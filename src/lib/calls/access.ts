@@ -297,6 +297,67 @@ export function canJoinGroupCall(facts: JoinGroupCallFacts): JoinDecision {
   return ALLOWED;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Adding to a direct call                                            */
+/* ------------------------------------------------------------------ */
+
+export interface AddToCallFacts {
+  callStatus: CallStatus;
+  callOrgId: string;
+  /** Everyone in the call right now. */
+  participants: string[];
+  /** People already rung into this call who have not yet answered. */
+  pending: string[];
+  callerUid: string;
+  callerOrgId: string;
+  targetUid: string;
+  targetOrgId: string;
+  /** From `directCallSeats` — the plan's cap and the ceiling, resolved. */
+  seats: number;
+}
+
+/**
+ * Whether someone in a live call may ring a teammate into it.
+ *
+ * The person adding has to be IN the call, not merely one of its ends —
+ * a caller who hung up is not entitled to keep filling a room they
+ * left. The seat check counts rings still out as taken: two people
+ * each adding "the last seat" at the same moment would otherwise both
+ * be told yes, and the room would turn one of the answerers away.
+ */
+export function canAddToCall(facts: AddToCallFacts): JoinDecision {
+  if (facts.callStatus !== "active") {
+    return refuse("ended", "That call is not running.");
+  }
+  if (!facts.callerOrgId || facts.callerOrgId !== facts.callOrgId) {
+    return refuse("not-invited", "Unauthorized.");
+  }
+  if (!facts.participants.includes(facts.callerUid)) {
+    return refuse("not-invited", "You are not in this call.");
+  }
+  if (facts.targetOrgId !== facts.callerOrgId) {
+    return refuse("not-invited", "You can only add people in your workspace.");
+  }
+  if (facts.targetUid === facts.callerUid) {
+    return refuse("not-invited", "You are already in this call.");
+  }
+  if (facts.participants.includes(facts.targetUid)) {
+    return refuse("not-invited", "They are already in this call.");
+  }
+  if (facts.pending.includes(facts.targetUid)) {
+    return refuse("not-invited", "They are already being rung.");
+  }
+  if (facts.participants.length + facts.pending.length >= facts.seats) {
+    return refuse(
+      "tier",
+      facts.seats <= 2
+        ? "Your plan does not include calls with more than two people."
+        : `Your plan seats ${facts.seats} people in a call, and this one is full.`
+    );
+  }
+  return ALLOWED;
+}
+
 /**
  * Whether a ringing call may still be answered.
  *

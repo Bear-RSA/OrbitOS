@@ -5,7 +5,18 @@ import { adminDb } from "@/lib/firebase/admin";
 import { logActivity } from "@/lib/telemetry";
 import { verifyRsvpToken, type RsvpIdentity } from "@/lib/calendar/rsvp-token";
 import { notifyOrganizerOfRsvp } from "@/lib/calendar/notify-organizer";
-import type { RsvpStatus } from "@/types/event";
+import { resolveCallLimits } from "@/lib/auth/permissions";
+import { canJoinScheduledCall } from "@/lib/calls/access";
+import { grantFor } from "@/lib/calls/grant";
+import { sanitizeDisplayName } from "@/lib/calls/display-name";
+import {
+  effectiveCallProvider,
+  scheduledCallMinutes,
+  scheduledCallSeats,
+} from "@/lib/calls/scheduled";
+import { guestJoinSchema } from "@/lib/validations/call";
+import type { CallGrant } from "@/types/call";
+import type { EngagementCallProvider, RsvpStatus } from "@/types/event";
 
 /* ------------------------------------------------------------------ */
 /*  Token RSVP                                                         */
@@ -39,6 +50,8 @@ export interface RsvpContext {
   timeZone: string;
   location: string | null;
   meetingUrl: string | null;
+  /** "orbit" means the page can offer a way in, not just a link out. */
+  callProvider: EngagementCallProvider;
   organizerName: string;
   orgName: string | null;
   /** Who the link says you are. */
@@ -155,6 +168,10 @@ export async function getRsvpContextAction(token: string): Promise<ContextResult
         timeZone: (event.timeZone as string) || "UTC",
         location: (event.location as string) || null,
         meetingUrl: (event.meetingUrl as string) || null,
+        callProvider: effectiveCallProvider({
+          callProvider: event.callProvider,
+          meetingUrl: event.meetingUrl,
+        }),
         organizerName: organizerSnap.exists
           ? (organizerSnap.data()!.name as string) || "The organizer"
           : "The organizer",
@@ -245,5 +262,111 @@ export async function submitTokenRsvpAction(
   } catch (err: any) {
     console.error("[Rsvp] Failed to record response:", err);
     return { success: false, error: "Could not record your response." };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Joining the call                                                   */
+/*                                                                     */
+/*  An invited guest's way into an Orbit call. The signed link they    */
+/*  already hold is the credential — the same four gates as an RSVP,   */
+/*  then the call's own window check — rather than a second guest      */
+/*  token system that would have to be revoked separately.             */
+/*                                                                     */
+/*  Guests only. A member holding their RSVP link is sent into the app */
+/*  instead: their pass carries room-management rights, and a link     */
+/*  that can be forwarded is the wrong thing to hand those out on.     */
+/* ------------------------------------------------------------------ */
+
+type GuestJoinResult =
+  | { success: true; grant: CallGrant; title: string }
+  | { success: false; error: string };
+
+export async function joinScheduledCallAsGuestAction(
+  input: unknown
+): Promise<GuestJoinResult> {
+  try {
+    const parsed = guestJoinSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid request." };
+    }
+    const { token, fullName } = parsed.data;
+
+    let identity: RsvpIdentity | null;
+    try {
+      identity = verifyRsvpToken(token);
+    } catch (err) {
+      console.error("[Rsvp] Token verification unavailable:", err);
+      return { success: false, error: "Calling is not configured on this deployment." };
+    }
+    if (!identity) return { success: false, error: DEAD_LINK };
+    if (identity.kind !== "guest") {
+      return { success: false, error: "Open OrbitOS to join this call." };
+    }
+
+    const subject = await resolveSubject(identity);
+    if (!subject) return { success: false, error: DEAD_LINK };
+
+    const ref = adminDb.collection("events").doc(identity.eventId);
+    const snap = await ref.get();
+    if (!snap.exists) return { success: false, error: DEAD_LINK };
+
+    const event = snap.data()!;
+    if (event.orgId !== subject.orgId) return { success: false, error: DEAD_LINK };
+    if (!isOnEngagement(event, subject)) return { success: false, error: DEAD_LINK };
+
+    const now = Date.now();
+    const decision = canJoinScheduledCall(
+      {
+        callProvider: effectiveCallProvider({
+          callProvider: event.callProvider,
+          meetingUrl: event.meetingUrl,
+        }),
+        roomId: (event.roomId as string) ?? null,
+        cancelled: event.status === "cancelled",
+        startAtMs: (event.startAt as FirebaseFirestore.Timestamp).toMillis(),
+        endAtMs: (event.endAt as FirebaseFirestore.Timestamp).toMillis(),
+        onTheList: true, // gate 3, above
+      },
+      now
+    );
+    if (!decision.allowed) return { success: false, error: decision.message };
+
+    const limits = await resolveCallLimits(subject.orgId);
+    if (limits.maxGuests === 0) {
+      return {
+        success: false,
+        error: "This workspace's plan does not allow outside guests in calls.",
+      };
+    }
+
+    /* The name they typed is the name the room sees, and it is kept: a
+       guest correcting "Sarah Klien" is telling us something worth
+       remembering for the next invitation. Only the engagement's copy
+       is touched — the registry's record is the organizer's. */
+    const name = sanitizeDisplayName(fullName);
+    if (name && name !== event.guestNames?.[subject.id]) {
+      await ref.update({ [`guestNames.${subject.id}`]: name });
+    }
+
+    const attendees = (event.attendees as string[]) ?? [];
+    const guests = (event.guests as string[]) ?? [];
+
+    const grant = await grantFor({
+      roomId: event.roomId as string,
+      identity: subject.id,
+      displayName: name || subject.name,
+      isMember: false,
+      minutes: scheduledCallMinutes(
+        (event.endAt as FirebaseFirestore.Timestamp).toMillis(),
+        now
+      ),
+      maxParticipants: scheduledCallSeats(limits),
+    });
+
+    return { success: true, grant, title: (event.title as string) || "Engagement" };
+  } catch (err: any) {
+    console.error("[Rsvp] Guest join failed:", err);
+    return { success: false, error: err?.message || "Could not join the call." };
   }
 }

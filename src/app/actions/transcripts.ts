@@ -6,6 +6,12 @@ import { requireCaller, type Caller } from "@/lib/auth/caller";
 import { resolveTranscriptLimit } from "@/lib/auth/permissions";
 import { logActivity } from "@/lib/telemetry";
 import {
+  callParticipantNames,
+  callParticipants,
+  isOnCall,
+  type PartyShapedCall,
+} from "@/lib/calls/party";
+import {
   canRequestTranscript,
   resolveConsentOutcome,
   type ConsentRecord,
@@ -106,17 +112,21 @@ async function membershipFor(caller: ActiveCaller, spec: CallSpec): Promise<Memb
     const data = snap.data()!;
     if (data.orgId !== caller.orgId) return { ok: false, error: "Unauthorized." };
     if (data.roomId !== spec.roomId) return { ok: false, error: "Unauthorized." };
-    if (data.from !== caller.uid && data.to !== caller.uid) {
+    if (!isOnCall(data as PartyShapedCall, caller.uid)) {
       return { ok: false, error: "Unauthorized." };
     }
 
+    /* Whoever is in the call now — a direct call can have grown past
+       its pair — read the one way every consumer reads it. */
+    const party = callParticipants(data as PartyShapedCall);
+    const names = callParticipantNames(data as PartyShapedCall);
+    const participants: Record<string, string> = {};
+    for (const id of party) participants[id] = names[id] || "Operative";
+
     return {
       ok: true,
-      participants: {
-        [data.from as string]: (data.fromName as string) || "Operative",
-        [data.to as string]: (data.toName as string) || "Operative",
-      },
-      headcount: 2,
+      participants,
+      headcount: Math.max(party.length, 2),
     };
   }
 

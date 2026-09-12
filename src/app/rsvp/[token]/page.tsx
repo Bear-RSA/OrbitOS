@@ -5,12 +5,16 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { Loader } from "@/components/ui/loader";
-import { AlertCircle, Calendar, Check, Clock, Link2, MapPin, X } from "lucide-react";
+import { CallRoom } from "@/components/calls/call-room";
+import { AlertCircle, Calendar, Check, Clock, Link2, MapPin, Video, X } from "lucide-react";
 import {
   getRsvpContextAction,
+  joinScheduledCallAsGuestAction,
   submitTokenRsvpAction,
   type RsvpContext,
 } from "@/app/actions/rsvp";
+import { vetDisplayName } from "@/lib/calls/display-name";
+import type { CallGrant } from "@/types/call";
 import type { RsvpStatus } from "@/types/event";
 
 /* ------------------------------------------------------------------ */
@@ -80,6 +84,33 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
   const [answered, setAnswered] = useState<RsvpStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  /* Joining the call, for a guest whose engagement is hosted here. The
+     name starts as the one the organizer typed and is theirs to correct
+     — it is what the room will see. */
+  const [joinName, setJoinName] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [grant, setGrant] = useState<CallGrant | null>(null);
+
+  const joinCall = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    const checked = vetDisplayName(joinName);
+    if (checked.error) {
+      setJoinError(checked.error);
+      return;
+    }
+
+    setJoining(true);
+    setJoinError(null);
+
+    const result = await joinScheduledCallAsGuestAction({ token, fullName: checked.name! });
+    if (result.success) setGrant(result.grant);
+    else setJoinError(result.error);
+
+    setJoining(false);
+  };
+
   const submit = useCallback(
     async (status: RsvpStatus) => {
       setSubmitting(status);
@@ -107,6 +138,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
       }
 
       setContext(result.data);
+      setJoinName(result.data.subjectName);
       if (result.data.current !== "pending") setAnswered(result.data.current);
       setLoading(false);
 
@@ -155,6 +187,30 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
     );
   }
 
+  /* In the room. The invitation card gives way to the call itself; leaving
+     brings the card back, answer and all. */
+  if (grant) {
+    return (
+      <div className="flex min-h-screen flex-col bg-base p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="truncate font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+            {context.title} · {grant.displayName}
+          </p>
+          <button
+            type="button"
+            onClick={() => setGrant(null)}
+            className="rounded-lg border border-line/[0.06] bg-surface-control px-3 py-1.5 text-[11px] tracking-wide text-ink transition-colors hover:bg-surface-raised"
+          >
+            Leave
+          </button>
+        </div>
+        <CallRoom grant={grant} onLeave={() => setGrant(null)} className="min-h-0 flex-1" />
+      </div>
+    );
+  }
+
+  const orbitCall = context.callProvider === "orbit" && !context.cancelled;
+
   return (
     <div className="min-h-screen bg-base flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-fade-in">
@@ -193,22 +249,90 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
               </div>
             )}
 
-            {context.meetingUrl && !context.cancelled && (
+            {orbitCall ? (
               <div className="flex gap-3 items-start">
-                <Link2 className="w-4 h-4 text-ink-dim mt-0.5 shrink-0" />
-                <dd className="text-[13px] font-light leading-relaxed">
-                  <a
-                    href={context.meetingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-orbit-blue hover:underline underline-offset-4 break-all"
-                  >
-                    {context.meetingUrl}
-                  </a>
+                <Video className="w-4 h-4 text-ink-dim mt-0.5 shrink-0" />
+                <dd className="text-[13px] text-ink font-light leading-relaxed">
+                  Hosted in OrbitOS
+                  <span className="block text-[11px] text-ink-dim mt-0.5">
+                    {context.subjectKind === "guest"
+                      ? "Join from this page when it starts — no account needed."
+                      : "Open OrbitOS and join from your calendar."}
+                  </span>
                 </dd>
               </div>
+            ) : (
+              context.meetingUrl &&
+              !context.cancelled && (
+                <div className="flex gap-3 items-start">
+                  <Link2 className="w-4 h-4 text-ink-dim mt-0.5 shrink-0" />
+                  <dd className="text-[13px] font-light leading-relaxed">
+                    <a
+                      href={context.meetingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-orbit-blue hover:underline underline-offset-4 break-all"
+                    >
+                      {context.meetingUrl}
+                    </a>
+                  </dd>
+                </div>
+              )
             )}
           </dl>
+
+          {/* The way in. A guest joins by name from here — the signed link
+              is their credential, the same one that lets them reply. A
+              member is sent into the app, where their pass carries room
+              rights that have no business riding on a forwardable link. */}
+          {orbitCall && (
+            <div className="mb-8 rounded-2xl bg-surface-control/60 p-5 ring-1 ring-inset ring-line/[0.05]">
+              {context.subjectKind === "guest" ? (
+                <form onSubmit={joinCall}>
+                  <label
+                    htmlFor="join-name"
+                    className="mb-2 block text-[12px] font-light text-ink-muted"
+                  >
+                    Your name in the call
+                  </label>
+                  <input
+                    id="join-name"
+                    value={joinName}
+                    onChange={(e) => {
+                      setJoinName(e.target.value);
+                      if (joinError) setJoinError(null);
+                    }}
+                    autoComplete="name"
+                    className="mb-3 w-full rounded-xl border border-line/[0.06] bg-surface-sunken px-4 py-3 text-[13px] font-light text-ink outline-none transition-colors focus:border-line/20"
+                  />
+                  <button
+                    type="submit"
+                    disabled={joining}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3 text-[13px] font-medium tracking-wide text-on-ink transition-opacity disabled:opacity-40"
+                  >
+                    <Video className="h-4 w-4" aria-hidden />
+                    {joining ? "Connecting…" : "Join the call"}
+                  </button>
+                  {joinError && (
+                    <p className="mt-3 text-[12px] font-light text-orbit-red">{joinError}</p>
+                  )}
+                  <p className="mt-3 text-[11px] font-light leading-relaxed text-ink-dim">
+                    Opens ten minutes before the start.
+                  </p>
+                </form>
+              ) : (
+                context.meetingUrl && (
+                  <a
+                    href={context.meetingUrl}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3 text-[13px] font-medium tracking-wide text-on-ink transition-opacity hover:opacity-90"
+                  >
+                    <Video className="h-4 w-4" aria-hidden />
+                    Open in OrbitOS
+                  </a>
+                )
+              )}
+            </div>
+          )}
 
           {context.description && (
             <p className="text-[13px] text-ink-muted font-light leading-relaxed border-l border-line/[0.08] pl-4 mb-8 whitespace-pre-wrap">

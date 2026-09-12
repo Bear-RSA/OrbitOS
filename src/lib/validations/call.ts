@@ -25,6 +25,20 @@ export const startCallSchema = z.object({
 export const callIdSchema = z.string().trim().min(1).max(128);
 
 /**
+ * Ringing a teammate into a call already running — a direct call by its
+ * id, or a scheduled call by its engagement. Exactly one of the two.
+ */
+export const addToCallSchema = z
+  .object({
+    callId: callIdSchema.optional(),
+    eventId: z.string().trim().min(1).max(128).optional(),
+    targetUid: uid,
+  })
+  .refine((v) => Boolean(v.callId) !== Boolean(v.eventId), {
+    message: "Name the call to add them to.",
+  });
+
+/**
  * Every group-call action takes the thread and nothing else.
  *
  * Not the room id, deliberately. The room a group call runs in is read
@@ -44,15 +58,28 @@ export const groupCallSchema = z.object({
  * one chance, so this rejects only what is obviously not a name and
  * leaves the sanitizing to the module that owns it.
  */
+const fullName = z
+  .string()
+  .trim()
+  .min(2, "Enter your full name.")
+  .max(MAX_DISPLAY_NAME, "That name is too long.");
+
 export const walkInSchema = z.object({
   roomId: roomIdSchema,
-  fullName: z
-    .string()
-    .trim()
-    .min(2, "Enter your full name.")
-    .max(MAX_DISPLAY_NAME, "That name is too long."),
+  fullName,
+});
+
+/**
+ * An invited guest entering off their RSVP link. The token is opaque
+ * here — `rsvp-token` verifies it — so only its rough size is asserted.
+ */
+export const guestJoinSchema = z.object({
+  token: z.string().trim().min(1, "Required").max(2_048),
+  fullName,
 });
 
 export type StartCallSchema = z.infer<typeof startCallSchema>;
+export type AddToCallSchema = z.infer<typeof addToCallSchema>;
 export type GroupCallSchema = z.infer<typeof groupCallSchema>;
 export type WalkInSchema = z.infer<typeof walkInSchema>;
+export type GuestJoinSchema = z.infer<typeof guestJoinSchema>;

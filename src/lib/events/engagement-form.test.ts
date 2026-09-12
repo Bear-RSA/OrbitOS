@@ -78,6 +78,28 @@ describe("valuesFor", () => {
     expect(fresh.durationMins).toBe(30);
     expect(fresh.attendees).toEqual([]);
   });
+
+  it("hosts a new engagement here by default", () => {
+    expect(valuesFor(null, null).callProvider).toBe("orbit");
+    expect(valuesFor(null, null).meetingUrl).toBe("");
+  });
+
+  it("reads an engagement older than calling as in person or elsewhere", () => {
+    expect(base.callProvider).toBe("none");
+    expect(
+      valuesFor({ ...EVENT, meetingUrl: "https://meet.example/x" }, null).callProvider
+    ).toBe("external");
+  });
+
+  it("does not load an Orbit call's link into the editable field", () => {
+    const orbit = valuesFor(
+      { ...EVENT, callProvider: "orbit", roomId: "r_1", meetingUrl: "https://orbit/call/r_1" },
+      null
+    );
+
+    expect(orbit.callProvider).toBe("orbit");
+    expect(orbit.meetingUrl).toBe("");
+  });
 });
 
 describe("nothing changed", () => {
@@ -135,7 +157,8 @@ describe("changes that must re-invite everyone", () => {
   it.each([
     ["title", { title: "Client review v2" }],
     ["location", { location: "Studio C" }],
-    ["meeting link", { meetingUrl: "https://meet.example/x" }],
+    ["meeting link", { callProvider: "external", meetingUrl: "https://meet.example/x" }],
+    ["where it is hosted", { callProvider: "orbit" }],
     ["all-day", { allDay: true }],
   ])("is material when the %s changes", (_label, override) => {
     expect(diff(override as Partial<FormShape>).materially).toBe(true);
@@ -160,6 +183,63 @@ describe("clearing a field", () => {
     // location instead of removing it.
     expect(diff({ location: "" }).patch.location).toBeNull();
     expect(diff({ location: "   " }).patch.location).toBeNull();
+  });
+});
+
+describe("where the meeting is", () => {
+  const ORBIT = {
+    ...EVENT,
+    callProvider: "orbit",
+    roomId: "r_1",
+    meetingUrl: "https://orbit/call/r_1",
+  } as OrbitEvent;
+
+  it("sends the provider and the link when moving elsewhere", () => {
+    const result = diff({ callProvider: "external", meetingUrl: "https://meet.example/x" });
+
+    expect(result.patch.callProvider).toBe("external");
+    expect(result.patch.meetingUrl).toBe("https://meet.example/x");
+  });
+
+  it("sends only the provider when moving to an Orbit call", () => {
+    // The link is the server's to issue.
+    const result = diff({ callProvider: "orbit" });
+
+    expect(result.patch.callProvider).toBe("orbit");
+    expect(result.patch.meetingUrl).toBeUndefined();
+  });
+
+  it("does not carry a stale link along when the meeting is not elsewhere", () => {
+    /* The field is hidden for these, but a value can still be sitting in
+       it from before the switch. Sending it would let a typed URL ride
+       along under a provider that ignores it. */
+    expect(diff({ callProvider: "none", meetingUrl: "https://left.over" }).patch.meetingUrl)
+      .toBeUndefined();
+    expect(diff({ callProvider: "orbit", meetingUrl: "https://left.over" }).patch.meetingUrl)
+      .toBeUndefined();
+  });
+
+  it("is a no-op when an Orbit call is reopened and saved untouched", () => {
+    const values: FormShape = { ...valuesFor(ORBIT, null), guests: STORED_GUESTS };
+    const result = diffEngagement(ORBIT, values, STORED_GUESTS, true);
+
+    expect(result.hasChanges).toBe(false);
+  });
+
+  it("only diffs the link against a link the organizer typed", () => {
+    /* Moving an Orbit call elsewhere: the stored link is the room's, so
+       the typed one is new even if — by coincidence — it were the same. */
+    const values: FormShape = {
+      ...valuesFor(ORBIT, null),
+      guests: STORED_GUESTS,
+      callProvider: "external",
+      meetingUrl: "https://meet.example/x",
+    };
+    const result = diffEngagement(ORBIT, values, STORED_GUESTS, true);
+
+    expect(result.patch.callProvider).toBe("external");
+    expect(result.patch.meetingUrl).toBe("https://meet.example/x");
+    expect(result.materially).toBe(true);
   });
 });
 

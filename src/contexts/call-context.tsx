@@ -43,6 +43,17 @@ export interface GroupRoom {
 }
 
 /**
+ * A scheduled call, named by its room rather than its engagement: the
+ * room id is what the link carries and what the server looks the
+ * engagement up by, so it is the one thing every entry point has.
+ */
+export interface ScheduledRoom {
+  roomId: string;
+  /** Best known name for the bar. The join result supplies the real one. */
+  title: string;
+}
+
+/**
  * A transcript that outlived the call it came from.
  *
  * Held here rather than inside the call surfaces because the point of it
@@ -59,6 +70,8 @@ interface CallContextValue {
   outgoing: CallTarget | null;
   /** The group room this person is sitting in, if any. */
   group: GroupRoom | null;
+  /** The scheduled call this person is sitting in, if any. */
+  scheduled: ScheduledRoom | null;
   /**
    * The live provider handle, published by `CallRoom` while a room is
    * open. The shell needs it for the controls it paints itself, and the
@@ -74,8 +87,10 @@ interface CallContextValue {
 
   callPerson: (target: CallTarget) => void;
   joinGroupCall: (conversationId: string, title: string) => void;
+  joinScheduledCall: (roomId: string, title: string) => void;
   endOutgoing: () => void;
   endGroup: () => void;
+  endScheduled: () => void;
   minimize: () => void;
   expand: () => void;
   registerFrame: (frame: DailyCall | null) => void;
@@ -90,14 +105,17 @@ const noop = () => {};
 const CallContext = createContext<CallContextValue>({
   outgoing: null,
   group: null,
+  scheduled: null,
   frame: null,
   engaged: false,
   minimized: false,
   lastTranscript: null,
   callPerson: noop,
   joinGroupCall: noop,
+  joinScheduledCall: noop,
   endOutgoing: noop,
   endGroup: noop,
+  endScheduled: noop,
   minimize: noop,
   expand: noop,
   registerFrame: noop,
@@ -107,26 +125,27 @@ const CallContext = createContext<CallContextValue>({
 export function CallProvider({ children }: { children: React.ReactNode }) {
   const [outgoing, setOutgoing] = useState<CallTarget | null>(null);
   const [group, setGroup] = useState<GroupRoom | null>(null);
+  const [scheduled, setScheduled] = useState<ScheduledRoom | null>(null);
   const [frame, setFrame] = useState<DailyCall | null>(null);
   const [minimized, setMinimized] = useState(false);
   const [lastTranscript, setLastTranscript] = useState<FinishedTranscript | null>(null);
 
   /* An answered incoming call has no entry above — `IncomingCall` owns
      its own ring and grant — but it does publish a frame, so a room is
-     open whenever any of the three is true. */
-  const engaged = Boolean(outgoing || group || frame);
+     open whenever any of the four is true. */
+  const engaged = Boolean(outgoing || group || scheduled || frame);
 
   const callPerson = useCallback(
     (target: CallTarget) => {
       /* Placing a second call over a live one has no meaning, and the
          provider refuses a second frame anyway. Better to ignore the
          click than to tear down the conversation it interrupts. */
-      if (outgoing || group || frame) return;
+      if (engaged) return;
       setMinimized(false);
       setLastTranscript(null);
       setOutgoing(target);
     },
-    [outgoing, group, frame]
+    [engaged]
   );
 
   const joinGroupCall = useCallback(
@@ -138,12 +157,27 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         setMinimized(false);
         return;
       }
-      if (outgoing || group || frame) return;
+      if (engaged) return;
       setMinimized(false);
       setLastTranscript(null);
       setGroup({ conversationId, title });
     },
-    [outgoing, group, frame]
+    [engaged, group]
+  );
+
+  const joinScheduledCall = useCallback(
+    (roomId: string, title: string) => {
+      // Same bargain as the group room: already in it means bring it back.
+      if (scheduled?.roomId === roomId) {
+        setMinimized(false);
+        return;
+      }
+      if (engaged) return;
+      setMinimized(false);
+      setLastTranscript(null);
+      setScheduled({ roomId, title });
+    },
+    [engaged, scheduled]
   );
 
   const endOutgoing = useCallback(() => {
@@ -153,6 +187,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   const endGroup = useCallback(() => {
     setGroup(null);
+    setMinimized(false);
+  }, []);
+
+  const endScheduled = useCallback(() => {
+    setScheduled(null);
     setMinimized(false);
   }, []);
 
@@ -178,14 +217,17 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     () => ({
       outgoing,
       group,
+      scheduled,
       frame,
       engaged,
       minimized,
       lastTranscript,
       callPerson,
       joinGroupCall,
+      joinScheduledCall,
       endOutgoing,
       endGroup,
+      endScheduled,
       minimize,
       expand,
       registerFrame,
@@ -194,14 +236,17 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     [
       outgoing,
       group,
+      scheduled,
       frame,
       engaged,
       minimized,
       lastTranscript,
       callPerson,
       joinGroupCall,
+      joinScheduledCall,
       endOutgoing,
       endGroup,
+      endScheduled,
       minimize,
       expand,
       registerFrame,

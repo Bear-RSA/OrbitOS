@@ -12,10 +12,13 @@ import {
   markCallMissedAction,
   startCallAction,
 } from "@/app/actions/calls";
+import { AddToCall } from "@/components/calls/add-to-call";
 import { CallRoom } from "@/components/calls/call-room";
 import { CallShell } from "@/components/calls/call-shell";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import type { CallGrant, CallStatus } from "@/types/call";
+import { useAuth } from "@/contexts/auth-context";
+import { listNames, othersInCall } from "@/lib/calls/party";
+import type { CallGrant, CallStatus, OrbitCall } from "@/types/call";
 
 /* ------------------------------------------------------------------ */
 /*  Outgoing call                                                      */
@@ -45,8 +48,12 @@ const ENDED: Record<string, string> = {
 
 export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
   const { preferences } = usePreferences();
+  const { user } = useAuth();
   const [callId, setCallId] = useState<string | null>(null);
   const [status, setStatus] = useState<CallStatus | "placing">("placing");
+  /* Who is in the room, live — the bar names them, and a direct call
+     can grow past the person who was rung. */
+  const [party, setParty] = useState<string[]>([target.name]);
   const [grant, setGrant] = useState<CallGrant | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,11 +88,15 @@ export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
   useEffect(() => {
     if (!callId) return;
 
-    return subscribeToCall(callId, (call) => {
+    return subscribeToCall(callId, (call: OrbitCall | null) => {
       if (!call) return;
       setStatus(call.status);
+      if (call.status === "active" && user?.id) {
+        const others = othersInCall(call, user.id);
+        setParty(others.length > 0 ? others : [target.name]);
+      }
     });
-  }, [callId]);
+  }, [callId, user?.id, target.name]);
 
   /* Picked up — get into the room. Runs off the status transition rather
      than off the answer itself, because the caller learns about it from
@@ -138,20 +149,22 @@ export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
   }, [onClose]);
 
   if (grant) {
+    const withNames = listNames(party);
     return (
       <CallShell
-        title={target.name}
-        headline={`In a call with ${target.name}`}
+        title={withNames}
+        headline={`In a call with ${withNames}`}
         call={
           callId
             ? {
                 roomId: grant.roomId,
                 callKind: "direct",
                 callId,
-                title: `Call with ${target.name}`,
+                title: `Call with ${withNames}`,
               }
             : null
         }
+        actions={callId ? <AddToCall target={{ callId }} /> : null}
         onHangUp={hangUp}
       >
         <CallRoom grant={grant} onLeave={hangUp} className="h-full w-full" />

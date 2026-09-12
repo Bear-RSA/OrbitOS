@@ -4,6 +4,7 @@ import { useCall } from "@/contexts/call-context";
 import { GroupCall } from "@/components/calls/group-call";
 import { IncomingCall } from "@/components/calls/incoming-call";
 import { OutgoingCall } from "@/components/calls/outgoing-call";
+import { ScheduledCall } from "@/components/calls/scheduled-call";
 import { TranscriptOutcome } from "@/components/calls/transcript-outcome";
 
 /* ------------------------------------------------------------------ */
@@ -24,8 +25,16 @@ import { TranscriptOutcome } from "@/components/calls/transcript-outcome";
 /* ------------------------------------------------------------------ */
 
 export function CallHost() {
-  const { outgoing, group, endOutgoing, endGroup, lastTranscript, noteTranscript } =
-    useCall();
+  const {
+    outgoing,
+    group,
+    scheduled,
+    endOutgoing,
+    endGroup,
+    endScheduled,
+    lastTranscript,
+    noteTranscript,
+  } = useCall();
 
   return (
     <>
@@ -40,6 +49,14 @@ export function CallHost() {
           conversationId={group.conversationId}
           title={group.title}
           onClose={endGroup}
+        />
+      )}
+
+      {scheduled && (
+        <ScheduledCall
+          roomId={scheduled.roomId}
+          title={scheduled.title}
+          onClose={endScheduled}
         />
       )}
 

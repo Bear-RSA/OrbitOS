@@ -27,6 +27,8 @@ import {
   ShieldAlert,
   FileLock2,
   Captions,
+  Lock,
+  MailQuestion,
   type LucideIcon,
 } from "lucide-react";
 import type { ActivityEventType } from "@/types/activity";
@@ -415,6 +417,20 @@ export const EVENT_REGISTRY: Record<ActivityEventType, EventDescriptor> = {
         <Detail val={m.to === "RESTRICTED" ? "restricted" : "internal"} />
       </>
     ),
+  },
+  VAULT_PASSCODE_SET: {
+    label: "PIN",
+    icon: Lock,
+    tone: "warning",
+    describe: () => <>set a new Vault passcode</>,
+  },
+  /* Only reachable through the emailed owner-reset loop, so it is worth
+     distinguishing from an in-app change in the feed. */
+  VAULT_PASSCODE_RESET: {
+    label: "PIN",
+    icon: MailQuestion,
+    tone: "warning",
+    describe: () => <>reset the Vault passcode by email</>,
   },
 
   /* ---- People ---- */

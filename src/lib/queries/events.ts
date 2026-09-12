@@ -112,6 +112,24 @@ export async function getEventsInRange(
   return sortEvents(events);
 }
 
+/**
+ * One engagement, live. Backs the surfaces that act on a call while it
+ * runs — who is in it changes under them as people are rung in.
+ */
+export function subscribeToEvent(
+  eventId: string,
+  callback: (event: OrbitEvent | null) => void
+) {
+  return onSnapshot(
+    doc(db, EVENTS_COLLECTION, eventId),
+    (snap) => callback(snap.exists() ? ({ id: snap.id, ...snap.data() } as OrbitEvent) : null),
+    (err) => {
+      console.error("[Event Subscription Error]:", err);
+      callback(null);
+    }
+  );
+}
+
 export async function getEventById(eventId: string): Promise<OrbitEvent | null> {
   const snap = await getDoc(doc(db, EVENTS_COLLECTION, eventId));
   if (!snap.exists()) return null;

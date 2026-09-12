@@ -15,6 +15,7 @@ import { signOut as appSignOut } from "@/lib/firebase/auth";
 import { requestPasswordResetAction } from "@/app/actions/password-reset";
 import { revokeAllSessionsAction } from "@/app/actions/security";
 import { useAuth } from "@/contexts/auth-context";
+import { VaultPasscodeCard } from "@/components/vault/vault-passcode-setup";
 import { cn } from "@/lib/utils/classnames";
 import {
   DashboardCard,
@@ -293,6 +294,11 @@ export function SecuritySection() {
           </p>
         )}
       </DashboardCard>
+
+      {/* ── Vault Passcode ────────────────────────────────────────── */}
+      {/* Owner-only: a member never sees this card, the same way they
+          never see the code — it reaches them by word of mouth alone. */}
+      {user?.role === "OWNER" && <VaultPasscodeCard />}
 
       {/* ── Sessions ──────────────────────────────────────────────── */}
       <DashboardCard interactive={false}>

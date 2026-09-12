@@ -53,7 +53,13 @@ export type ActivityEventType =
      the payroll register would be a second copy of the same secret. */
   | "VAULT_DOCUMENT_FILED"
   | "VAULT_DOCUMENT_PURGED"
-  | "VAULT_CLEARANCE_CHANGED";
+  | "VAULT_CLEARANCE_CHANGED"
+  /* The passcode gate sits in front of the whole shelf rather than one
+     document, so setting or resetting it is logged the same way a
+     clearance change is — it is the one action that can widen or narrow
+     who is currently able to get in at all. */
+  | "VAULT_PASSCODE_SET"
+  | "VAULT_PASSCODE_RESET";
 
 /* ------------------------------------------------------------------ */
 /*  Activity Document                                                  */

@@ -10,8 +10,10 @@ import { toDateKeyInZone } from "@/lib/utils/dates";
 import { loadGuests, resolveGuestInvites } from "@/lib/guests/registry";
 import { dispatchEngagementInvites, type DispatchReport } from "@/lib/calendar/invite-dispatch";
 import { notifyOrganizerOfRsvp } from "@/lib/calendar/notify-organizer";
-import { resolveGuestInviteLimit } from "@/lib/auth/permissions";
+import { resolveCallLimits, resolveGuestInviteLimit } from "@/lib/auth/permissions";
 import { requireCaller } from "@/lib/auth/caller";
+import { newRoomId } from "@/lib/calls/room-id";
+import { effectiveCallProvider, scheduledCallUrl } from "@/lib/calls/scheduled";
 
 /* ------------------------------------------------------------------ */
 /*  Engagement Server Actions                                          */
@@ -124,6 +126,21 @@ async function checkGuestAllowance(
   return `Your plan allows ${limit} guest${limit === 1 ? "" : "s"} per engagement.`;
 }
 
+/**
+ * Tier gate for hosting the call here.
+ *
+ * Checked when the engagement is scheduled rather than when the room is
+ * entered, because a refusal at the door — after the invitations have
+ * gone out with a link in them — is a refusal delivered to the wrong
+ * person. The same reading as `canStartDirectCall`: a plan that seats
+ * fewer than two seats nobody.
+ */
+async function checkCallAllowance(orgId: string): Promise<string | null> {
+  const limits = await resolveCallLimits(orgId);
+  if (limits.maxParticipants === -1 || limits.maxParticipants >= 2) return null;
+  return "Your plan does not include calling.";
+}
+
 /* ------------------------------------------------------------------ */
 /*  Create                                                             */
 /* ------------------------------------------------------------------ */
@@ -164,6 +181,27 @@ export async function createEventAction(
     const guestGate = await checkGuestAllowance(caller.orgId, value.guests.length);
     if (guestGate) return { success: false, error: guestGate };
 
+    /* Where the meeting happens. An Orbit call is issued its room here —
+       the id, not the room itself, which the provider only materializes
+       when the first person joins — and its link is derived from that
+       id so the invitation can carry it. A pasted link is kept only when
+       the organizer said the meeting is elsewhere; an in-person
+       engagement stores none. */
+    const callProvider =
+      value.callProvider ?? (value.meetingUrl ? "external" : "none");
+
+    let roomId: string | null = null;
+    let meetingUrl: string | null = null;
+
+    if (callProvider === "orbit") {
+      const callGate = await checkCallAllowance(caller.orgId);
+      if (callGate) return { success: false, error: callGate };
+      roomId = newRoomId();
+      meetingUrl = scheduledCallUrl(roomId);
+    } else if (callProvider === "external") {
+      meetingUrl = value.meetingUrl || null;
+    }
+
     /* Invited addresses are resolved BEFORE the attendee list is built.
        Anyone who turns out to hold an account in this workspace joins as
        a member rather than as a guest, so they get their real profile,
@@ -199,7 +237,11 @@ export async function createEventAction(
       startDateKey: toDateKeyInZone(startAt, timeZone),
       timeZone,
       location: value.location || null,
-      meetingUrl: value.meetingUrl || null,
+      meetingUrl,
+      callProvider,
+      roomId,
+      callActive: false,
+      callStartedAt: null,
       attendees: attendeeList,
       rsvp,
       guests: guestIds,
@@ -298,7 +340,64 @@ export async function updateEventAction(
     if (value.allDay !== undefined) patch.allDay = value.allDay;
     if (value.timeZone !== undefined) patch.timeZone = value.timeZone;
     if (value.location !== undefined) patch.location = value.location || null;
-    if (value.meetingUrl !== undefined) patch.meetingUrl = value.meetingUrl || null;
+
+    /* Where the meeting happens, after this edit. The link is a
+       consequence of the choice rather than a field of its own: an Orbit
+       call's link is derived from its room, an in-person engagement has
+       none, and only an external meeting takes what was typed. Reading
+       it this way means a stray `meetingUrl` in the patch cannot point
+       an Orbit call somewhere else. */
+    const previousProvider = effectiveCallProvider({
+      callProvider: found.data.callProvider,
+      meetingUrl: found.data.meetingUrl,
+    });
+    const nextProvider = value.callProvider ?? previousProvider;
+    const providerChanged = nextProvider !== previousProvider;
+    const rescheduled = value.startAt !== undefined || value.endAt !== undefined;
+
+    if (nextProvider === "orbit") {
+      if (providerChanged) {
+        const callGate = await checkCallAllowance(caller.orgId);
+        if (callGate) return { success: false, error: callGate };
+      }
+
+      /* The room the engagement already has is kept across an edit —
+         it is the link sitting in everyone's calendar. The one exception
+         is a reschedule after somebody has been inside: the provider
+         holds that room with the OLD deadline, and `createRoom` is
+         get-or-create, so the next joiner would find a room that ejects
+         everyone at the original end. A fresh id is a fresh room, and
+         the reschedule mails the new link anyway. */
+      let roomId = (found.data.roomId as string | null) ?? null;
+      if (!roomId || (rescheduled && found.data.callActive)) {
+        roomId = newRoomId();
+        patch.roomId = roomId;
+        patch.callActive = false;
+        patch.callStartedAt = null;
+      }
+
+      if (providerChanged) patch.callProvider = "orbit";
+      const url = scheduledCallUrl(roomId);
+      if (url !== (found.data.meetingUrl ?? null)) patch.meetingUrl = url;
+    } else if (nextProvider === "external") {
+      /* An external meeting IS its link. Switching to external needs one
+         to switch to — the stored link belongs to the Orbit room being
+         left behind, or is nothing — and an existing one cannot be
+         cleared without choosing somewhere else for the meeting to be. */
+      const url =
+        value.meetingUrl !== undefined
+          ? value.meetingUrl || null
+          : providerChanged
+            ? null
+            : ((found.data.meetingUrl as string | null) ?? null);
+      if (!url) return { success: false, error: "Add the link for the meeting." };
+
+      if (providerChanged) patch.callProvider = "external";
+      if (url !== (found.data.meetingUrl ?? null)) patch.meetingUrl = url;
+    } else if (providerChanged) {
+      patch.callProvider = "none";
+      patch.meetingUrl = null;
+    }
 
     if (value.startAt !== undefined) {
       patch.startAt = AdminTimestamp.fromDate(nextStart);
@@ -330,8 +429,11 @@ export async function updateEventAction(
       value.timeZone !== undefined ||
       (value.title !== undefined && value.title !== found.data.title) ||
       (value.location !== undefined && (value.location || null) !== (found.data.location ?? null)) ||
-      (value.meetingUrl !== undefined &&
-        (value.meetingUrl || null) !== (found.data.meetingUrl ?? null));
+      /* Read off the patch rather than the input: the link is decided
+         above from where the meeting is, and a new Orbit room after a
+         reschedule changes it without anyone having typed a URL. */
+      patch.meetingUrl !== undefined ||
+      patch.callProvider !== undefined;
 
     /* Re-syncing the RSVP map keeps it aligned with the attendee list:
        people added start at pending, people removed drop out, and

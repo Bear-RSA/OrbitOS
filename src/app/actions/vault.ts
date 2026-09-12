@@ -3,7 +3,7 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { cloudinary } from "@/lib/cloudinary";
 import { logActivity } from "@/lib/telemetry";
-import { requireCaller } from "@/lib/auth/caller";
+import { requireCaller, requireVaultUnlock } from "@/lib/auth/caller";
 import { resolveVaultLimits } from "@/lib/auth/permissions";
 import {
   canManageVaultDocument,
@@ -108,6 +108,10 @@ export async function registerVaultDocumentAction(
     const caller = await requireCaller();
     if (!caller.ok) return { success: false, error: caller.error };
     const { uid, orgId, name: callerName } = caller;
+
+    if (!(await requireVaultUnlock(orgId, uid))) {
+      return { success: false, error: "Vault is locked." };
+    }
 
     const name = (payload.name || "").trim();
     if (!name || !payload.url || !payload.publicId) {
@@ -215,6 +219,10 @@ export async function getVaultDownloadUrlAction(payload: {
     if (!caller.ok) return { success: false, error: caller.error };
     const { uid, orgId, role } = caller;
 
+    if (!(await requireVaultUnlock(orgId, uid))) {
+      return { success: false, error: "Vault is locked." };
+    }
+
     const snap = await vaultCollection(orgId).doc(payload.documentId).get();
     if (!snap.exists) {
       return { success: false, error: "Document not found." };
@@ -270,6 +278,10 @@ export async function updateVaultDocumentAction(payload: {
     const caller = await requireCaller();
     if (!caller.ok) return { success: false, error: caller.error };
     const { uid, orgId, role, name: callerName } = caller;
+
+    if (!(await requireVaultUnlock(orgId, uid))) {
+      return { success: false, error: "Vault is locked." };
+    }
 
     const ref = vaultCollection(orgId).doc(payload.documentId);
     const snap = await ref.get();
@@ -336,6 +348,10 @@ export async function deleteVaultDocumentAction(payload: {
     const caller = await requireCaller();
     if (!caller.ok) return { success: false, error: caller.error };
     const { uid, orgId, role, name: callerName } = caller;
+
+    if (!(await requireVaultUnlock(orgId, uid))) {
+      return { success: false, error: "Vault is locked." };
+    }
 
     const orgRef = adminDb.collection("organizations").doc(orgId);
     const ref = vaultCollection(orgId).doc(payload.documentId);

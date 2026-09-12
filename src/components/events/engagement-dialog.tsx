@@ -11,6 +11,7 @@ import {
 import { Member } from "@/types/member";
 import type { OrbitEvent } from "@/types/event";
 import {
+  CALL_PROVIDER_OPTIONS,
   DURATIONS,
   EMAIL_SHAPE,
   combine,
@@ -20,6 +21,7 @@ import {
   vetGuest,
   type FormShape,
 } from "@/lib/events/engagement-form";
+import { isOrbitCall } from "@/lib/calls/scheduled";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SuccessModal } from "@/components/ui/success-modal";
 import { Label } from "@/components/ui/label";
-import { X, ChevronDown, Wand2, AlertTriangle, Mail, Check } from "lucide-react";
+import { X, ChevronDown, Wand2, AlertTriangle, Mail, Check, Copy } from "lucide-react";
 import { toDateKey } from "@/lib/utils/dates";
 import {
   getAvailabilityAction,
@@ -136,6 +138,7 @@ export function EngagementDialog({
     handleSubmit,
     reset,
     setValue,
+    getValues,
     watch,
     formState: { errors },
   } = useForm<FormShape>({ defaultValues: valuesFor(event, defaultDateKey) });
@@ -146,6 +149,25 @@ export function EngagementDialog({
   const date = watch("date");
   const startTime = watch("startTime");
   const durationMins = Number(watch("durationMins")) || 30;
+  const callProvider = watch("callProvider");
+
+  /* The link an existing Orbit call already carries, for copying. Shown
+     rather than editable — it is the room's, and the way to change it is
+     to choose somewhere else for the meeting to be. */
+  const existingOrbitLink =
+    event && isOrbitCall(event) && callProvider === "orbit" ? event.meetingUrl : null;
+  const [copied, setCopied] = useState(false);
+
+  const copyLink = async () => {
+    if (!existingOrbitLink) return;
+    try {
+      await navigator.clipboard.writeText(existingOrbitLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1_500);
+    } catch {
+      /* Clipboard refused — the link is on screen to select by hand. */
+    }
+  };
 
   /* An engagement that already exists need not be one of the offered
      lengths. Its real length joins the list rather than being silently
@@ -436,7 +458,9 @@ export function EngagementDialog({
       allDay: data.allDay,
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       location: data.location || null,
-      meetingUrl: data.meetingUrl || null,
+      callProvider: data.callProvider,
+      // Only an external meeting has a link to send; the rest is the server's.
+      meetingUrl: data.callProvider === "external" ? data.meetingUrl || null : null,
       attendees: data.attendees,
       guests: data.guests.map((email) => ({ email })),
     });
@@ -724,15 +748,86 @@ export function EngagementDialog({
               </div>
             )}
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
-              <div className="space-y-2.5">
-                <Label htmlFor="event-location">Location</Label>
-                <Input id="event-location" placeholder="Studio, room, city…" {...register("location")} />
+            {/* Where — hosted here, somewhere else, or nowhere. The app can
+                run the meeting itself, so a link is asked for only when the
+                organizer says it lives elsewhere. */}
+            <div className="space-y-2.5">
+              <Label id="event-where-label">Where</Label>
+              <div
+                role="radiogroup"
+                aria-labelledby="event-where-label"
+                className="grid grid-cols-3 gap-1.5"
+              >
+                {CALL_PROVIDER_OPTIONS.map((option) => {
+                  const active = callProvider === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() =>
+                        setValue("callProvider", option.value, { shouldDirty: true })
+                      }
+                      className={`h-9 rounded-md border px-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
+                        active
+                          ? "border-line/[0.2] bg-surface-control text-ink"
+                          : "border-line/[0.1] bg-surface-sunken text-ink-dim hover:border-line/[0.16] hover:text-ink-muted"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
               </div>
-              <div className="space-y-2.5">
-                <Label htmlFor="event-link">Meeting Link</Label>
-                <Input id="event-link" placeholder="https://…" {...register("meetingUrl")} />
-              </div>
+              <p className="font-mono text-[10px] leading-relaxed text-ink-faint">
+                {CALL_PROVIDER_OPTIONS.find((o) => o.value === callProvider)?.hint}
+              </p>
+
+              {callProvider === "external" && (
+                <div className="space-y-1.5 pt-1">
+                  <Input
+                    id="event-link"
+                    placeholder="https://…"
+                    aria-label="Meeting link"
+                    {...register("meetingUrl", {
+                      validate: (value) =>
+                        getValues("callProvider") !== "external" ||
+                        Boolean(value?.trim()) ||
+                        "Add the link for the meeting",
+                    })}
+                  />
+                  {errors.meetingUrl && (
+                    <p className="text-[12px] text-orbit-red">{errors.meetingUrl.message}</p>
+                  )}
+                </div>
+              )}
+
+              {existingOrbitLink && (
+                <div className="flex items-center gap-2 pt-1">
+                  <code className="min-w-0 flex-1 truncate rounded-md bg-surface-raised/60 px-2.5 py-1.5 font-mono text-[11px] text-ink-muted ring-1 ring-inset ring-line/[0.05]">
+                    {existingOrbitLink}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={copyLink}
+                    aria-label="Copy the call link"
+                    className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-surface-control px-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                  >
+                    {copied ? (
+                      <Check className="h-3 w-3 text-orbit-green" aria-hidden />
+                    ) : (
+                      <Copy className="h-3 w-3" aria-hidden />
+                    )}
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2.5">
+              <Label htmlFor="event-location">Location</Label>
+              <Input id="event-location" placeholder="Studio, room, city…" {...register("location")} />
             </div>
             </div>
 

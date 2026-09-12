@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   JOIN_WINDOW_AFTER_MS,
   JOIN_WINDOW_BEFORE_MS,
+  canAddToCall,
   canAnswerCall,
   canJoinGroupCall,
   canJoinScheduledCall,
@@ -9,6 +10,7 @@ import {
   canStartGroupCall,
   canWalkIn,
   groupCallLive,
+  type AddToCallFacts,
   type JoinGroupCallFacts,
   type ScheduledCallFacts,
   type StartGroupCallFacts,
@@ -363,5 +365,80 @@ describe("joining a group call", () => {
     expect(
       canJoinGroupCall(joinGroup({ occupants: 3, seats: 3, alreadyIn: true })).allowed
     ).toBe(true);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Adding to a direct call                                            */
+/* ------------------------------------------------------------------ */
+
+const addTo = (over: Partial<AddToCallFacts> = {}): AddToCallFacts => ({
+  callStatus: "active",
+  callOrgId: "org_1",
+  participants: ["u_a", "u_b"],
+  pending: [],
+  callerUid: "u_a",
+  callerOrgId: "org_1",
+  targetUid: "u_c",
+  targetOrgId: "org_1",
+  seats: 4,
+  ...over,
+});
+
+describe("adding somebody to a call", () => {
+  it("lets a participant ring a teammate into a live call", () => {
+    expect(canAddToCall(addTo()).allowed).toBe(true);
+  });
+
+  it("refuses a call that is not running", () => {
+    expect(canAddToCall(addTo({ callStatus: "ringing" }))).toMatchObject({
+      allowed: false,
+      reason: "ended",
+    });
+    expect(canAddToCall(addTo({ callStatus: "ended" }))).toMatchObject({
+      allowed: false,
+      reason: "ended",
+    });
+  });
+
+  /* A caller who hung up is one of the call's ends but not in it, and
+     is not entitled to keep filling a room they left. */
+  it("refuses somebody who is not in the call", () => {
+    expect(canAddToCall(addTo({ callerUid: "u_z" }))).toMatchObject({
+      allowed: false,
+      reason: "not-invited",
+    });
+  });
+
+  it("refuses a target outside the workspace", () => {
+    expect(canAddToCall(addTo({ targetOrgId: "org_2" }))).toMatchObject({
+      allowed: false,
+      reason: "not-invited",
+    });
+  });
+
+  it("refuses adding yourself, or somebody already in", () => {
+    expect(canAddToCall(addTo({ targetUid: "u_a" })).allowed).toBe(false);
+    expect(canAddToCall(addTo({ targetUid: "u_b" })).allowed).toBe(false);
+  });
+
+  it("refuses ringing somebody who is already being rung", () => {
+    expect(canAddToCall(addTo({ pending: ["u_c"] })).allowed).toBe(false);
+  });
+
+  it("counts rings still out against the seats", () => {
+    // Two in, one ringing, four seats: room for exactly one more.
+    expect(canAddToCall(addTo({ pending: ["u_d"] })).allowed).toBe(true);
+    expect(canAddToCall(addTo({ pending: ["u_d", "u_e"] }))).toMatchObject({
+      allowed: false,
+      reason: "tier",
+    });
+  });
+
+  it("refuses on a plan that seats only a pair", () => {
+    expect(canAddToCall(addTo({ seats: 2 }))).toMatchObject({
+      allowed: false,
+      reason: "tier",
+    });
   });
 });

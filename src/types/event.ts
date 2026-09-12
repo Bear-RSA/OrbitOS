@@ -22,6 +22,20 @@ export type RsvpStatus = "pending" | "accepted" | "declined" | "tentative";
  */
 export type EventStatus = "confirmed" | "cancelled";
 
+/**
+ * Where the meeting actually happens.
+ *
+ *   "orbit"    — OrbitOS hosts it. The engagement owns a room, and the
+ *                link in every invitation points back into the app.
+ *   "external" — somewhere else; the organizer pasted a link.
+ *   "none"     — in person, or nowhere in particular.
+ *
+ * Engagements written before this field existed have no value. Read them
+ * through `effectiveCallProvider` in `lib/calls/scheduled`, which infers
+ * "external" from a stored link and "none" otherwise.
+ */
+export type EngagementCallProvider = "none" | "orbit" | "external";
+
 export interface OrbitEvent {
   id: string;
   orgId: string;
@@ -50,7 +64,28 @@ export interface OrbitEvent {
   timeZone: string;
 
   location: string | null;
+  /**
+   * The link people click to get in. For an Orbit call this is derived —
+   * `/call/{roomId}` on the app's own host — and kept here anyway so the
+   * invitation mail, the .ics feed and the RSVP page carry one link
+   * without each having to know what kind of call it is.
+   */
   meetingUrl: string | null;
+
+  /** Absent on engagements older than calling — see the type's note. */
+  callProvider?: EngagementCallProvider;
+  /**
+   * The room, when `callProvider` is "orbit". Random and server-issued —
+   * see `lib/calls/room-id` — never derived from the engagement id.
+   */
+  roomId?: string | null;
+  /**
+   * A member has entered the room. This is the gate the walk-in path
+   * checks: a forwarded link is inert until somebody who belongs in the
+   * meeting has opened it, and inert again once the window closes.
+   */
+  callActive?: boolean;
+  callStartedAt?: Timestamp | null;
 
   /** Attendee uids. Unlike a task's operatives, this is not capped at two. */
   attendees: string[];
@@ -107,7 +142,13 @@ export interface CreateEventInput {
   allDay?: boolean;
   timeZone?: string;
   location?: string | null;
+  /**
+   * Read only when `callProvider` is "external". An Orbit call's link is
+   * issued by the server, and an in-person engagement has none.
+   */
   meetingUrl?: string | null;
+  /** Omitted means "external" when a link was given, "none" otherwise. */
+  callProvider?: EngagementCallProvider;
   attendees?: string[];
   /** Off-platform invitees by address; resolved to guest records server-side. */
   guests?: GuestInviteInput[];
@@ -122,6 +163,7 @@ export interface UpdateEventInput {
   timeZone?: string;
   location?: string | null;
   meetingUrl?: string | null;
+  callProvider?: EngagementCallProvider;
   attendees?: string[];
   guests?: GuestInviteInput[];
 }

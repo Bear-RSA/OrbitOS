@@ -69,3 +69,34 @@ export async function requireOwner(): Promise<Caller> {
   }
   return caller;
 }
+
+/**
+ * Whether this caller has entered the Vault passcode recently enough that
+ * `organizations/{orgId}/vaultUnlocks/{uid}` is still within its expiry.
+ *
+ * Firestore rules already gate every direct client read of the Vault on
+ * this same document (via `get()`, mirroring how `userData()` above reads
+ * across documents for a rule check). This is the matching check for the
+ * server actions, which run on the Admin SDK and are not subject to rules
+ * at all — without it, a member locked out of the UI could still call
+ * `getVaultDownloadUrlAction` or the other vault actions directly.
+ */
+export async function requireVaultUnlock(orgId: string, uid: string): Promise<boolean> {
+  try {
+    const snap = await adminDb
+      .collection("organizations")
+      .doc(orgId)
+      .collection("vaultUnlocks")
+      .doc(uid)
+      .get();
+    if (!snap.exists) return false;
+
+    const unlockedUntil = snap.data()?.unlockedUntil;
+    if (!unlockedUntil?.toDate) return false;
+
+    return unlockedUntil.toDate().getTime() > Date.now();
+  } catch (err) {
+    console.error("[Vault] Could not check unlock state:", err);
+    return false;
+  }
+}

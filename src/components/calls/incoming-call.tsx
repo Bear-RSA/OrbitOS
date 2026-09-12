@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Phone, PhoneOff } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useCall } from "@/contexts/call-context";
 import { usePreferences } from "@/hooks/use-preferences";
 import { installAudioPrimer } from "@/lib/audio/context";
 import { startIncomingRing } from "@/lib/calls/ringtone";
@@ -11,12 +12,14 @@ import {
   shouldNotify,
   showDesktopNotification,
 } from "@/lib/notifications/desktop";
-import { subscribeToIncomingCalls } from "@/lib/queries/calls";
+import { subscribeToCall, subscribeToIncomingCalls } from "@/lib/queries/calls";
+import { listNames, othersInCall } from "@/lib/calls/party";
 import {
   answerCallAction,
   declineCallAction,
   endCallAction,
 } from "@/app/actions/calls";
+import { AddToCall } from "@/components/calls/add-to-call";
 import { CallRoom } from "@/components/calls/call-room";
 import { CallShell } from "@/components/calls/call-shell";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -47,12 +50,14 @@ import type { CallGrant, OrbitCall } from "@/types/call";
 export function IncomingCall() {
   const { user } = useAuth();
   const { preferences } = usePreferences();
+  const { joinScheduledCall } = useCall();
   const [ringing, setRinging] = useState<OrbitCall | null>(null);
   const [grant, setGrant] = useState<CallGrant | null>(null);
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
   /* Kept because the ring it came from is cleared on answer, and a
-     parked call in the corner has to say whose voice it is. */
-  const [activeWith, setActiveWith] = useState<string | null>(null);
+     parked call in the corner has to say whose voice it is. Everyone
+     else in the room, as names — updated as people are added or leave. */
+  const [activeWith, setActiveWith] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +82,17 @@ export function IncomingCall() {
       setRinging(calls[0] ?? null);
     });
   }, [uid, orgId]);
+
+  /* Follow the call once in it, so the bar keeps naming who is actually
+     there as people are rung in and hang up. */
+  useEffect(() => {
+    if (!activeCallId || !uid) return;
+    return subscribeToCall(activeCallId, (call) => {
+      if (!call || call.status !== "active") return;
+      const others = othersInCall(call, uid);
+      if (others.length > 0) setActiveWith(others);
+    });
+  }, [activeCallId, uid]);
 
   /* Stop showing a card the server would refuse anyway. */
   useEffect(() => {
@@ -136,7 +152,9 @@ export function IncomingCall() {
     }
 
     return showDesktopNotification({
-      title: `${ringing.fromName} is calling`,
+      title: ringing.joinsCallId || ringing.joinsEventId
+        ? `${ringing.fromName} is adding you to a call`
+        : `${ringing.fromName} is calling`,
       body: "Answer in OrbitOS.",
       /* Shared with the push payload in `lib/notifications/push-sender`,
          so a device that receives both shows one card rather than two. */
@@ -151,17 +169,31 @@ export function IncomingCall() {
     setError(null);
 
     const result = await answerCallAction(ringing.id);
-    if (result.success) {
-      setActiveCallId(ringing.id);
-      setActiveWith(ringing.fromName);
-      setGrant(result.grant);
-      setRinging(null);
-    } else {
+    if (!result.success) {
       setError(result.error);
+      setBusy(false);
+      return;
     }
 
+    if (result.kind === "scheduled") {
+      /* Added to a scheduled call. The room belongs to the scheduled-call
+         surface, which knows how that kind of call ends; this phone only
+         had to ring. */
+      setRinging(null);
+      joinScheduledCall(result.roomId, result.title);
+      setBusy(false);
+      return;
+    }
+
+    /* The call to watch and hang up from is the one the server names:
+       for a ring that added them to a running call, that is the call,
+       not the ring. */
+    setActiveCallId(result.callId);
+    setActiveWith(result.withNames.length > 0 ? result.withNames : [ringing.fromName]);
+    setGrant(result.grant);
+    setRinging(null);
     setBusy(false);
-  }, [ringing]);
+  }, [ringing, joinScheduledCall]);
 
   const decline = useCallback(async () => {
     if (!ringing) return;
@@ -177,25 +209,27 @@ export function IncomingCall() {
     const id = activeCallId;
     setGrant(null);
     setActiveCallId(null);
-    setActiveWith(null);
+    setActiveWith([]);
     if (id) await endCallAction(id);
   }, [activeCallId]);
 
   if (grant) {
+    const withNames = listNames(activeWith);
     return (
       <CallShell
-        title={activeWith ?? "Call"}
-        headline={activeWith ? `In a call with ${activeWith}` : "In a call"}
+        title={withNames || "Call"}
+        headline={withNames ? `In a call with ${withNames}` : "In a call"}
         call={
           activeCallId
             ? {
                 roomId: grant.roomId,
                 callKind: "direct",
                 callId: activeCallId,
-                title: activeWith ? `Call with ${activeWith}` : "Call",
+                title: withNames ? `Call with ${withNames}` : "Call",
               }
             : null
         }
+        actions={activeCallId ? <AddToCall target={{ callId: activeCallId }} /> : null}
         onHangUp={hangUp}
       >
         <CallRoom grant={grant} onLeave={hangUp} className="h-full w-full" />
@@ -205,11 +239,21 @@ export function IncomingCall() {
 
   if (!ringing) return null;
 
+  /* A ring that adds them to a call already running says so: "Ada is
+     calling" and "Ada is adding you to a call" are different requests,
+     and the second is the one people want to know about before they
+     pick up. */
+  const addingIn = Boolean(ringing.joinsCallId || ringing.joinsEventId);
+
   return (
     <div
       role="alertdialog"
       aria-live="assertive"
-      aria-label={`Incoming call from ${ringing.fromName}`}
+      aria-label={
+        addingIn
+          ? `${ringing.fromName} is adding you to a call`
+          : `Incoming call from ${ringing.fromName}`
+      }
       className="fixed bottom-6 right-6 z-[60] w-[300px] animate-fade-in rounded-2xl border border-line/[0.08] bg-surface-container/95 p-5 shadow-overlay backdrop-blur-2xl"
     >
       <div className="mb-4 flex items-center gap-3">
@@ -218,15 +262,22 @@ export function IncomingCall() {
           <span className="relative inline-flex h-2 w-2 rounded-full bg-orbit-green" />
         </span>
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
-          Incoming call
+          {addingIn ? "Join a call" : "Incoming call"}
         </p>
       </div>
 
       <div className="mb-5 flex items-center gap-3">
         <UserAvatar name={ringing.fromName} size="sm" />
-        <span className="text-[14px] font-medium tracking-tight text-ink">
-          {ringing.fromName}
-        </span>
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-[14px] font-medium tracking-tight text-ink">
+            {ringing.fromName}
+          </span>
+          {addingIn && (
+            <span className="text-[11px] font-light text-ink-dim">
+              is adding you to a call in progress
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-2">

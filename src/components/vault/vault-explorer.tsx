@@ -73,9 +73,13 @@ interface VaultExplorerProps {
   orgId: string;
   uid: string;
   isOwner: boolean;
+  /** Fired when the live subscription is refused — the passcode unlock
+   *  behind it expired mid-session. Re-shows the passcode gate rather
+   *  than leaving the shelf looking merely empty. */
+  onPermissionDenied?: () => void;
 }
 
-export function VaultExplorer({ orgId, uid, isOwner }: VaultExplorerProps) {
+export function VaultExplorer({ orgId, uid, isOwner, onPermissionDenied }: VaultExplorerProps) {
   const [documents, setDocuments] = useState<VaultDocument[]>([]);
   const [usage, setUsage] = useState<VaultUsage>(EMPTY_VAULT_USAGE);
   const [loading, setLoading] = useState(true);
@@ -99,14 +103,21 @@ export function VaultExplorer({ orgId, uid, isOwner }: VaultExplorerProps) {
         setDocuments(next);
         setLoading(false);
       },
-      () => setLoading(false)
+      (error) => {
+        setLoading(false);
+        // The passcode unlock behind this subscription expired — the
+        // rules check the same record `verifyVaultPasscodeAction` writes.
+        if (error.name === "FirebaseError" && (error as { code?: string }).code === "permission-denied") {
+          onPermissionDenied?.();
+        }
+      }
     );
     const unsubUsage = subscribeToVaultUsage(orgId, setUsage);
     return () => {
       unsubDocuments();
       unsubUsage();
     };
-  }, [orgId, uid, isOwner]);
+  }, [orgId, uid, isOwner, onPermissionDenied]);
 
   /* ── Shelf counts drive the rail, so an empty shelf can say so ── */
   const counts = useMemo(() => {
