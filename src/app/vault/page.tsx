@@ -11,16 +11,6 @@ import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { VaultExplorer } from "@/components/vault/vault-explorer";
 import { VaultPasscodeGate } from "@/components/vault/vault-passcode-gate";
 
-/** Purely a UX cache — real enforcement is the server-side unlock record
- *  `verifyVaultPasscodeAction` writes and Firestore rules + every vault
- *  server action check. Sessionstorage means it never survives a closed
- *  tab, and a stale "unlocked" flag here does nothing once that record
- *  expires: the explorer's subscription starts failing with
- *  permission-denied and `onPermissionDenied` below clears it. */
-function unlockCacheKey(orgId: string): string {
-  return `orbitos:vault-unlocked:${orgId}`;
-}
-
 /* ------------------------------------------------------------------ */
 /*  /vault                                                             */
 /*                                                                     */
@@ -35,46 +25,23 @@ export default function VaultPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  /* No cache across loads — by design. Every fresh visit to /vault (a
+     hard reload, a new tab, navigating away and back) starts locked and
+     asks for the passcode again, even though the server-side unlock
+     record `verifyVaultPasscodeAction` writes is still good for a while
+     longer. That record is what keeps a single page instance's Firestore
+     subscription alive without re-checking on every read — it is not a
+     "stay logged in" mechanism, and nothing here tries to remember the
+     unlock past this component's own lifetime. */
   const [unlocked, setUnlocked] = useState(false);
-  const [cacheChecked, setCacheChecked] = useState(false);
 
   useEffect(() => {
     if (loading) return;
     if (!user) router.push("/login");
   }, [loading, user, router]);
 
-  useEffect(() => {
-    if (!user?.orgId) return;
-    try {
-      setUnlocked(sessionStorage.getItem(unlockCacheKey(user.orgId)) === "1");
-    } catch {
-      // Storage unavailable — fall back to the gate rather than assume unlocked.
-    } finally {
-      setCacheChecked(true);
-    }
-  }, [user?.orgId]);
-
-  const handleUnlocked = useCallback(() => {
-    setUnlocked(true);
-    if (user?.orgId) {
-      try {
-        sessionStorage.setItem(unlockCacheKey(user.orgId), "1");
-      } catch {
-        // Non-fatal — the server-side unlock still holds either way.
-      }
-    }
-  }, [user?.orgId]);
-
-  const handleRelock = useCallback(() => {
-    setUnlocked(false);
-    if (user?.orgId) {
-      try {
-        sessionStorage.removeItem(unlockCacheKey(user.orgId));
-      } catch {
-        // Non-fatal.
-      }
-    }
-  }, [user?.orgId]);
+  const handleUnlocked = useCallback(() => setUnlocked(true), []);
+  const handleRelock = useCallback(() => setUnlocked(false), []);
 
   if (loading) {
     return (
@@ -132,11 +99,7 @@ export default function VaultPage() {
       </ScrollReveal>
 
       <ScrollReveal>
-        {!cacheChecked ? (
-          <div className="flex items-center justify-center py-24">
-            <Loader size={22} />
-          </div>
-        ) : unlocked ? (
+        {unlocked ? (
           <VaultExplorer
             orgId={user.orgId}
             uid={user.id}
