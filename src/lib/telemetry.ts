@@ -1,12 +1,14 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
 import type { ActivityEventType } from "@/types/activity";
+import { formatTelemetryLine } from "@/lib/telemetry/console-line";
 
 /* ------------------------------------------------------------------ */
 /*  Telemetry — Activity Logger                                        */
 /*                                                                     */
 /*  Writes structured events to the `activity` collection.             */
 /*  All calls are non-blocking (fire-and-forget with error logging).   */
+/*  The console line format lives in ./telemetry/console-line.ts.      */
 /* ------------------------------------------------------------------ */
 
 const ACTIVITY_COLLECTION = "activity";
@@ -20,7 +22,8 @@ interface LogActivityParams {
 }
 
 /**
- * Logs a system-level activity event to Firestore and standardizes console output.
+ * Logs a system-level activity event to Firestore and prints one
+ * human-readable console line per event.
  */
 export async function logActivity({
   eventType,
@@ -30,24 +33,6 @@ export async function logActivity({
   metadata = {},
 }: LogActivityParams): Promise<void> {
   try {
-    // Standardized console telemetry output
-    const timestamp = new Date();
-    const timeStr = timestamp.toLocaleTimeString('en-GB', { 
-      hour12: false, 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
-    });
-    
-    // Details construction for console log
-    const detailsArr = [];
-    if (metadata.fileName) detailsArr.push(`file:${metadata.fileName}`);
-    if (metadata.taskTitle) detailsArr.push(`task:${metadata.taskTitle}`);
-    if (metadata.email) detailsArr.push(`email:${metadata.email}`);
-    const details = detailsArr.length > 0 ? ` - ${detailsArr.join(', ')}` : "";
-
-    console.log(`[Telemetry] Broadcast Initiated: ${eventType} | Project: ${projectId}`);
-    
     // Update user heartbeat
     try {
       await adminDb.collection("users").doc(actor.uid).update({
@@ -70,8 +55,13 @@ export async function logActivity({
       timestamp: FieldValue.serverTimestamp(),
     });
 
-    console.log(`[Telemetry] Signal Locked: ${docRef.id}`);
+    console.log(
+      `[Telemetry] ${formatTelemetryLine({ eventType, actor, projectId, metadata, docId: docRef.id })}`,
+    );
   } catch (err) {
-    console.error(`[Telemetry] SIGNAL_LOST during ${eventType}:`, err);
+    console.error(
+      `[Telemetry] WRITE FAILED ${formatTelemetryLine({ eventType, actor, projectId, metadata })}`,
+      err,
+    );
   }
 }
