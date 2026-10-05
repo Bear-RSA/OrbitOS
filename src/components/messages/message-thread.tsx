@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   CircleSlash,
   ClipboardList,
+  ImagePlus,
   Lock,
   Megaphone,
   MessagesSquare,
@@ -15,9 +16,17 @@ import {
   Smile,
   Users,
   Video,
+  X,
 } from "lucide-react";
 import { MediaPicker } from "@/components/messages/media-picker";
 import { emojiOnlyCount } from "@/lib/messages/emoji";
+import {
+  ImageSendError,
+  imageRefusal,
+  pastedImage,
+  sendImageMessage,
+} from "@/lib/messages/image-upload";
+import { CHAT_IMAGE_TYPES } from "@/lib/messages/image-ceiling";
 import {
   MESSAGE_PAGE_SIZE,
   loadOlderMessages,
@@ -124,8 +133,16 @@ export function MessageThread({
   const [error, setError] = useState<string | null>(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
 
+  /* A picture waiting in the composer, and the object URL that draws
+     it. Staged rather than sent on paste: a screenshot usually wants a
+     sentence with it, and a paste that fires an upload gives nobody a
+     chance to notice they grabbed the wrong window. */
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const conversationId = conversation?.id ?? null;
 
   /* Presence goes stale on its own; without a clock the dot would only
@@ -148,6 +165,22 @@ export function MessageThread({
 
     return subscribeToMessages(conversationId, setLive);
   }, [conversationId]);
+
+  /* A staged picture belongs to the thread it was pasted into. Switching
+     threads drops it rather than carrying a screenshot of one
+     conversation into another. */
+  useEffect(() => {
+    setPendingImage(null);
+    setPendingPreview(null);
+  }, [conversationId]);
+
+  /* Object URLs are held by the document until released; a session of
+     pasting and clearing would otherwise keep every abandoned
+     screenshot in memory. */
+  useEffect(() => {
+    if (!pendingPreview) return;
+    return () => URL.revokeObjectURL(pendingPreview);
+  }, [pendingPreview]);
 
   /* Anything said before this reader cleared the thread is theirs to
      not see again — the messages are untouched and every other
@@ -257,28 +290,59 @@ export function MessageThread({
     });
   }, []);
 
+  /* Puts a picture in the composer, from the clipboard or the picker.
+     Refused here with a sentence, so a 40MB photo is turned away at
+     paste time rather than after it has been pushed to Cloudinary. */
+  const stageImage = useCallback((file: File) => {
+    const refusal = imageRefusal(file);
+    if (refusal) {
+      setError(refusal);
+      return;
+    }
+    setError(null);
+    setPendingImage(file);
+    setPendingPreview(URL.createObjectURL(file));
+    composerRef.current?.focus();
+  }, []);
+
+  const clearImage = useCallback(() => {
+    setPendingImage(null);
+    setPendingPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
   /* A picture may travel with whatever is already in the box, or on its
      own — picking a GIF mid-sentence sends the sentence with it rather
-     than throwing the draft away. */
+     than throwing the draft away. A staged upload takes the words as
+     its caption the same way; a GIF picked while one is staged sends
+     the GIF and leaves the picture where it is. */
   const send = useCallback(
     async (attachment: MessageAttachment | null = null) => {
       const text = draft.trim();
       if (!conversationId || sending || !mayPost) return;
-      if (!text && !attachment) return;
+      const image = attachment ? null : pendingImage;
+      if (!text && !attachment && !image) return;
 
       setSending(true);
       setError(null);
       try {
-        await sendMessage(conversationId, viewer.id, text, attachment);
+        if (image) {
+          await sendImageMessage(conversationId, image, text);
+          clearImage();
+        } else {
+          await sendMessage(conversationId, viewer.id, text, attachment);
+        }
         setDraft("");
       } catch (err) {
         console.error("[MessageThread] Send failed:", err);
-        setError("That message did not send. Try again.");
+        setError(
+          err instanceof ImageSendError ? err.message : "That message did not send. Try again."
+        );
       } finally {
         setSending(false);
       }
     },
-    [conversationId, draft, sending, mayPost, viewer.id]
+    [conversationId, draft, sending, mayPost, viewer.id, pendingImage, clearImage]
   );
 
   const title = conversation
@@ -739,7 +803,7 @@ export function MessageThread({
               e.preventDefault();
               void send();
             }}
-            className="relative flex items-end gap-2 rounded-xl border border-line/[0.06] bg-surface-control p-1.5 shadow-card transition-colors focus-within:border-line/[0.12]"
+            className="relative flex flex-col rounded-xl border border-line/[0.06] bg-surface-control p-1.5 shadow-card transition-colors focus-within:border-line/[0.12]"
           >
             {emojiOpen && (
               <MediaPicker
@@ -752,55 +816,125 @@ export function MessageThread({
               />
             )}
 
-            <button
-              type="button"
-              onClick={() => setEmojiOpen((open) => !open)}
-              aria-label="Emoji, GIFs and stickers"
-              aria-expanded={emojiOpen}
-              title="Emoji, GIFs and stickers"
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
-                emojiOpen
-                  ? "bg-surface-hover text-ink"
-                  : "text-ink-faint hover:bg-surface-hover hover:text-ink"
-              )}
-            >
-              <Smile className="h-4 w-4" aria-hidden />
-            </button>
+            {/* The staged picture, above the words it will travel with.
+                A thumbnail rather than the full image: what needs
+                confirming is which screenshot, not what is in it. */}
+            {pendingImage && pendingPreview && (
+              <div className="mb-1.5 flex items-center gap-3 rounded-lg bg-surface-card/70 p-1.5 pr-2 ring-1 ring-line/[0.06]">
+                {/* A blob URL from this browser, not a remote asset —
+                    next/image has nothing to optimize here. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={pendingPreview}
+                  alt=""
+                  className="h-16 w-16 shrink-0 rounded-md bg-surface-control object-cover ring-1 ring-line/[0.06]"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[12px] font-medium text-ink">
+                    {pendingImage.name || "Pasted picture"}
+                  </p>
+                  <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim">
+                    {sending ? "Uploading…" : `${(pendingImage.size / 1024).toFixed(0)} KB · sends with your message`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearImage}
+                  disabled={sending}
+                  aria-label="Remove picture"
+                  title="Remove picture"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-hover hover:text-ink disabled:opacity-40"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              </div>
+            )}
 
-            <textarea
-              ref={composerRef}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+            <div className="flex items-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEmojiOpen((open) => !open)}
+                aria-label="Emoji, GIFs and stickers"
+                aria-expanded={emojiOpen}
+                title="Emoji, GIFs and stickers"
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                  emojiOpen
+                    ? "bg-surface-hover text-ink"
+                    : "text-ink-faint hover:bg-surface-hover hover:text-ink"
+                )}
+              >
+                <Smile className="h-4 w-4" aria-hidden />
+              </button>
+
+              {/* Paste is the main road for a screenshot; this is the way
+                  in for a file already on disk, and the only one on a
+                  phone. */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending}
+                aria-label="Attach a picture"
+                title="Attach a picture — or paste one"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-faint transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40"
+              >
+                <ImagePlus className="h-4 w-4" aria-hidden />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={Array.from(CHAT_IMAGE_TYPES).join(",")}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) stageImage(file);
+                }}
+                className="hidden"
+              />
+
+              <textarea
+                ref={composerRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void send();
+                  }
+                }}
+                /* A picture on the clipboard is staged; anything else
+                   falls through to the textarea as text. Only the
+                   picture branch prevents default, so pasting a sentence
+                   still works as it always did. */
+                onPaste={(e) => {
+                  const file = pastedImage(e.clipboardData);
+                  if (!file) return;
                   e.preventDefault();
-                  void send();
-                }
-              }}
-              rows={1}
-              maxLength={MAX_MESSAGE_LENGTH}
-              placeholder={placeholder}
-              aria-label="Message"
-              disabled={sending || !conversation}
-              className="custom-scrollbar max-h-40 flex-1 resize-none bg-transparent px-2.5 py-1.5 text-[13px] leading-relaxed text-ink placeholder:text-ink-dim focus-visible:outline-none disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={sending || !draft.trim() || !conversation}
-              aria-label="Send message"
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-300",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
-                draft.trim() && !sending
-                  ? "bg-ink text-on-ink hover:-translate-y-px"
-                  : "bg-surface-raised text-ink-faint",
-                "disabled:cursor-not-allowed"
-              )}
-            >
-              <SendHorizonal className="h-3.5 w-3.5" aria-hidden />
-            </button>
+                  stageImage(file);
+                }}
+                rows={1}
+                maxLength={MAX_MESSAGE_LENGTH}
+                placeholder={pendingImage ? "Add a caption…" : placeholder}
+                aria-label="Message"
+                disabled={sending || !conversation}
+                className="custom-scrollbar max-h-40 flex-1 resize-none bg-transparent px-2.5 py-1.5 text-[13px] leading-relaxed text-ink placeholder:text-ink-dim focus-visible:outline-none disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={sending || (!draft.trim() && !pendingImage) || !conversation}
+                aria-label="Send message"
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-300",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                  (draft.trim() || pendingImage) && !sending
+                    ? "bg-ink text-on-ink hover:-translate-y-px"
+                    : "bg-surface-raised text-ink-faint",
+                  "disabled:cursor-not-allowed"
+                )}
+              >
+                <SendHorizonal className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            </div>
           </form>
         ) : (
           <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-line/[0.08] bg-surface-control/60 px-3.5 py-3">
@@ -827,15 +961,20 @@ export function MessageThread({
 /* ------------------------------------------------------------------ */
 
 /**
- * A GIF or sticker in the transcript.
+ * A GIF, sticker or uploaded picture in the transcript.
  *
  * The box is reserved from the stored dimensions before the image
- * loads. Without that, every arriving GIF reflows the thread out from
- * under whoever is reading it — the one thing a chat window must never
- * do while somebody is mid-sentence.
+ * loads. Without that, every arriving picture reflows the thread out
+ * from under whoever is reading it — the one thing a chat window must
+ * never do while somebody is mid-sentence.
  *
  * A sticker gets no bubble: transparency is the point of a sticker, and
  * a panel behind it defeats it.
+ *
+ * An uploaded picture shows its width-limited rendition and opens the
+ * original in a new tab. A screenshot is usually text, and text at 320
+ * pixels wide is a shape rather than a sentence — the click is how it
+ * gets read.
  */
 function MessageMedia({
   attachment,
@@ -847,8 +986,24 @@ function MessageMedia({
   mine: boolean;
 }) {
   const isSticker = attachment.kind === "sticker";
+  const isImage = attachment.kind === "image";
   const width = Math.min(attachment.width, isSticker ? 180 : 320);
   const ratio = attachment.height / Math.max(attachment.width, 1);
+
+  const picture = (
+    /* Deliberately not next/image: the optimizer re-encodes, and a
+       re-encoded GIF is a still picture. */
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={isImage ? attachment.previewUrl : attachment.url}
+      alt={attachment.alt}
+      width={attachment.width}
+      height={attachment.height}
+      loading="lazy"
+      className="h-full w-full object-cover"
+      style={{ maxHeight: width * ratio }}
+    />
+  );
 
   return (
     <figure className={cn("flex flex-col gap-1.5", mine ? "items-end" : "items-start")}>
@@ -859,18 +1014,19 @@ function MessageMedia({
         )}
         style={{ width, aspectRatio: `${attachment.width} / ${attachment.height}` }}
       >
-        {/* Deliberately not next/image: the optimizer re-encodes, and a
-            re-encoded GIF is a still picture. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={attachment.url}
-          alt={attachment.alt}
-          width={attachment.width}
-          height={attachment.height}
-          loading="lazy"
-          className="h-full w-full object-cover"
-          style={{ maxHeight: width * ratio }}
-        />
+        {isImage ? (
+          <a
+            href={attachment.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open full size"
+            className="block h-full w-full transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            {picture}
+          </a>
+        ) : (
+          picture
+        )}
       </div>
 
       {caption && (

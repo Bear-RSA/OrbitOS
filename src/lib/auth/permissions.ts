@@ -277,6 +277,24 @@ export async function resolveTranscriptLimit(orgId: string): Promise<number> {
 }
 
 /**
+ * Pictures this organization's plan may paste or attach into chat in a
+ * month.
+ *
+ * Same contract as the resolvers above: -1 means "the tier does not
+ * narrow it", and the ceiling in `lib/messages/image-ceiling` governs
+ * regardless. A pasted screenshot is a Cloudinary upload that bills
+ * every month it is kept, so the ceiling is live now even while the
+ * paywall stays dark.
+ */
+export async function resolveChatImageLimit(orgId: string): Promise<number> {
+  if (!GUARDRAILS_ENABLED) return -1;
+  if (!orgId) return -1;
+
+  const tier = await resolveOrgTier(orgId);
+  return TIER_DEFINITIONS[tier].limits.maxChatImagesPerMonth;
+}
+
+/**
  * Validates whether an organization's current resource usage allows
  * one more of the requested resource type under its active subscription tier.
  *

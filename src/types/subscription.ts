@@ -130,6 +130,28 @@ export interface TierLimits {
    * never widened by this value: -1 means "the tier does not narrow it".
    */
   maxTranscriptsPerMonth: number;
+
+  /**
+   * Pictures one organization may paste or attach into chat in a
+   * calendar month.
+   *
+   * A screenshot in a thread is a Cloudinary upload, and unlike a GIF
+   * from the catalogue the bytes are ours: stored every month after
+   * the message scrolls away, and served every time somebody opens
+   * the thread. Counted per picture rather than per byte because the
+   * per-file ceiling in `lib/messages/image-ceiling` already bounds
+   * what one picture can weigh, so pictures × ceiling is the bill.
+   *
+   * Not a paid-plan gate: showing a colleague what you are looking at
+   * is basic chat, and a free workspace that cannot paste a screenshot
+   * reads as broken rather than as a tier. The free allowance is small
+   * because the storage is forever.
+   *
+   * The hard ceiling in `lib/messages/image-ceiling` applies on top and
+   * is never widened by this value: -1 means "the tier does not narrow
+   * it".
+   */
+  maxChatImagesPerMonth: number;
 }
 
 /**
@@ -169,28 +191,28 @@ export const TIER_DEFINITIONS: Record<SubscriptionTier, TierDefinition> = {
     id: "exploration",
     name: "Exploration",
     description: "Free — for solo operators testing the waters.",
-    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10, maxGuestsPerEngagement: 0, maxCallParticipants: 2, maxCallGuests: 0, maxVaultStorageMb: 100, maxVaultDocuments: 25, maxTranscriptsPerMonth: 0 },
+    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10, maxGuestsPerEngagement: 0, maxCallParticipants: 2, maxCallGuests: 0, maxVaultStorageMb: 100, maxVaultDocuments: 25, maxTranscriptsPerMonth: 0, maxChatImagesPerMonth: 100 },
     priceZAR: 0,
   },
   foundational: {
     id: "foundational",
     name: "Foundational",
     description: "Starter — for small teams building momentum.",
-    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30, maxGuestsPerEngagement: 3, maxCallParticipants: 4, maxCallGuests: 0, maxVaultStorageMb: 1024, maxVaultDocuments: 200, maxTranscriptsPerMonth: 20 },
+    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30, maxGuestsPerEngagement: 3, maxCallParticipants: 4, maxCallGuests: 0, maxVaultStorageMb: 1024, maxVaultDocuments: 200, maxTranscriptsPerMonth: 20, maxChatImagesPerMonth: 1000 },
     priceZAR: 299,
   },
   studio_core: {
     id: "studio_core",
     name: "Studio Core",
     description: "Team — for growing studios scaling operations.",
-    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4, maxTaskRemindersPerDay: 75, maxGuestsPerEngagement: 10, maxCallParticipants: 10, maxCallGuests: 5, maxVaultStorageMb: 5120, maxVaultDocuments: 1000, maxTranscriptsPerMonth: 100 },
+    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4, maxTaskRemindersPerDay: 75, maxGuestsPerEngagement: 10, maxCallParticipants: 10, maxCallGuests: 5, maxVaultStorageMb: 5120, maxVaultDocuments: 1000, maxTranscriptsPerMonth: 100, maxChatImagesPerMonth: 5000 },
     priceZAR: 699,
   },
   total_visibility: {
     id: "total_visibility",
     name: "Total Visibility",
     description: "Growth — full operational command. No limits.",
-    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1, maxGuestsPerEngagement: -1, maxCallParticipants: -1, maxCallGuests: -1, maxVaultStorageMb: -1, maxVaultDocuments: -1, maxTranscriptsPerMonth: -1 },
+    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1, maxGuestsPerEngagement: -1, maxCallParticipants: -1, maxCallGuests: -1, maxVaultStorageMb: -1, maxVaultDocuments: -1, maxTranscriptsPerMonth: -1, maxChatImagesPerMonth: -1 },
     priceZAR: 1499,
   },
 };

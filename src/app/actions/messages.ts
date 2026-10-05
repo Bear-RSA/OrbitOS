@@ -2,18 +2,31 @@
 
 import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
+import { cloudinary } from "@/lib/cloudinary";
 import { requireServerUid } from "@/lib/auth/session";
+import { resolveChatImageLimit } from "@/lib/auth/permissions";
 import { dmConversationId, townHallConversationId } from "@/lib/messages/conversation-id";
 import { canCreateGroup, canOpenDm, canPostToConversation } from "@/lib/messages/access";
+import { attachmentPreview } from "@/lib/messages/attachment";
+import {
+  PREVIEW_WIDTH_PX,
+  admitChatImage,
+  applyChatImageDelta,
+  chatImageAllowance,
+  isChatImagePublicId,
+  readChatImageUsage,
+} from "@/lib/messages/image-ceiling";
 import { taskForwardPreview, taskRefFromTask } from "@/lib/messages/task-ref";
 import { dueDateKeyOf } from "@/lib/utils/dates";
 import {
   MAX_GROUP_PARTICIPANTS,
   createGroupSchema,
   forwardTaskSchema,
+  messagePreview,
   openDmSchema,
+  sendImageMessageSchema,
 } from "@/lib/validations/messages";
-import { TOWN_HALL_NAME } from "@/types/message";
+import { TOWN_HALL_NAME, type ImageAttachment } from "@/types/message";
 
 /* ------------------------------------------------------------------ */
 /*  Message Server Actions                                             */
@@ -450,5 +463,145 @@ export async function forwardTaskAction(input: unknown): Promise<ConversationRes
   } catch (err: any) {
     console.error("[MessageAction] Failed to forward task:", err);
     return { success: false, error: "Could not forward that task." };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Sending a picture                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Records a picture the browser has already uploaded as a message.
+ *
+ * Server-written for the same reason a task card is, arrived at from
+ * the URL rather than the content. A client-written attachment is
+ * pinned by `firestore.rules` to GIPHY's CDN, because an arbitrary
+ * `<img src>` in a colleague's browser is a tracking pixel. Our own
+ * Cloudinary account cannot be named in the rules — the cloud name is
+ * deployment config — so the URL is built here, from a `public_id` the
+ * signing route chose, and the browser never gets to write one.
+ *
+ * The `public_id` the client sends is an echo of the one it was given,
+ * checked against the folder this server would have signed for this
+ * conversation in the caller's org. An id outside that prefix was never
+ * signed, so Cloudinary refused the upload and there is nothing to
+ * point at; an id inside it that was never uploaded gives the sender a
+ * broken picture in their own thread and nothing more.
+ *
+ * Admission runs inside the transaction that records the message, so
+ * the monthly counter and the message are one fact: two pastes that
+ * race for the last slot cannot both take it.
+ */
+export async function sendImageMessageAction(input: unknown): Promise<ConversationResult> {
+  try {
+    const parsed = sendImageMessageSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.issues[0]?.message ?? "Invalid picture.",
+      };
+    }
+    const { conversationId, publicId, width, height, bytes, text } = parsed.data;
+
+    const caller = await requireCaller();
+    if (!caller.ok) return { success: false, error: caller.error };
+
+    if (!isChatImagePublicId(publicId, caller.orgId, conversationId)) {
+      return { success: false, error: "That picture was not uploaded for this conversation." };
+    }
+
+    const conversationRef = adminDb.collection(CONVERSATIONS).doc(conversationId);
+    const conversationSnap = await conversationRef.get();
+    if (!conversationSnap.exists) {
+      return { success: false, error: "That conversation no longer exists." };
+    }
+    const conversation = conversationSnap.data()!;
+
+    const decision = canPostToConversation({
+      type: conversation.type,
+      conversationOrgId: (conversation.orgId as string) ?? "",
+      participantIds: (conversation.participantIds as string[]) ?? [],
+      viewerUid: caller.uid,
+      viewerOrgId: caller.orgId,
+      viewerRole: caller.role,
+    });
+    if (!decision.allowed) return { success: false, error: decision.message };
+
+    /* Two renditions off one stored asset. The transcript pulls a
+       width-limited, auto-format copy — a 2400px PNG screenshot served
+       as an 800px WebP is a tenth of the bytes for every reader — and
+       the full-size original is what opens on click. Both are unsigned
+       delivery URLs on the public `upload` type, which is what makes
+       them storable on the message rather than minted per read. The
+       id is random, so the URL is unguessable, and that is the whole of
+       the access control on it: the same footing profile pictures and
+       project assets already stand on. */
+    const attachment: ImageAttachment = {
+      kind: "image",
+      url: cloudinary.url(publicId, {
+        secure: true,
+        resource_type: "image",
+        fetch_format: "auto",
+        quality: "auto",
+      }),
+      previewUrl: cloudinary.url(publicId, {
+        secure: true,
+        resource_type: "image",
+        fetch_format: "auto",
+        quality: "auto",
+        width: PREVIEW_WIDTH_PX,
+        crop: "limit",
+      }),
+      width,
+      height,
+      alt: "Picture",
+      provider: "cloudinary",
+      providerId: publicId,
+    };
+
+    const maxImages = chatImageAllowance(await resolveChatImageLimit(caller.orgId));
+    const orgRef = adminDb.collection("organizations").doc(caller.orgId);
+    const messageRef = conversationRef.collection(MESSAGES).doc();
+
+    const refused = await adminDb.runTransaction(async (tx) => {
+      const orgSnap = await tx.get(orgRef);
+      const usage = readChatImageUsage(orgSnap.data());
+
+      /* The format was settled at signing. The bytes are the client's
+         account and are checked again here because the file cap is the
+         ceiling, and a ceiling checked only at the courtesy step is a
+         suggestion. */
+      const admission = admitChatImage({
+        size: bytes,
+        usedImages: usage.images,
+        maxImages,
+      });
+      if (!admission.allowed) return admission.error ?? "That picture cannot be sent.";
+
+      tx.set(messageRef, {
+        senderId: caller.uid,
+        text,
+        attachment,
+        createdAt: AdminTimestamp.now(),
+        editedAt: null,
+        deletedAt: null,
+      });
+
+      tx.update(conversationRef, {
+        lastMessageAt: AdminTimestamp.now(),
+        lastMessagePreview: text ? messagePreview(text) : attachmentPreview("image"),
+        lastMessageBy: caller.uid,
+      });
+
+      tx.set(orgRef, { chatImageUsage: applyChatImageDelta(usage, bytes) }, { merge: true });
+      return null;
+    });
+
+    if (refused) return { success: false, error: refused };
+
+    return { success: true, conversationId };
+  } catch (err: any) {
+    console.error("[MessageAction] Failed to send picture:", err);
+    return { success: false, error: "Could not send that picture." };
   }
 }

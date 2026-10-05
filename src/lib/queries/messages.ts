@@ -16,7 +16,7 @@ import {
 import { db } from "@/lib/firebase/client";
 import type { Conversation, Message, MessageAttachment } from "@/types/message";
 import { messagePreview, messageTextSchema } from "@/lib/validations/messages";
-import { hasContent, isValidAttachment } from "@/lib/messages/attachment";
+import { attachmentPreview, hasContent, isValidAttachment } from "@/lib/messages/attachment";
 
 /* ------------------------------------------------------------------ */
 /*  Message subscriptions and writes                                   */
@@ -246,9 +246,7 @@ export async function sendMessage(
        when there are any — a caption is more use than "Sent a GIF". */
     lastMessagePreview: text
       ? messagePreview(text)
-      : attachment?.kind === "sticker"
-        ? "Sent a sticker"
-        : "Sent a GIF",
+      : attachmentPreview(attachment?.kind ?? "gif"),
     lastMessageBy: senderId,
   });
 

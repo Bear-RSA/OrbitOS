@@ -4,7 +4,7 @@ import {
   isAllowedMediaUrl,
   isValidAttachment,
 } from "@/lib/messages/attachment";
-import type { MessageAttachment } from "@/types/message";
+import type { GiphyAttachment, MessageAttachment } from "@/types/message";
 
 /* ------------------------------------------------------------------ */
 /*  Attachment validation                                              */
@@ -15,7 +15,7 @@ import type { MessageAttachment } from "@/types/message";
 /*  reporting who read the thread and when.                            */
 /* ------------------------------------------------------------------ */
 
-const attachment = (over: Partial<MessageAttachment> = {}): MessageAttachment => ({
+const attachment = (over: Partial<GiphyAttachment> = {}): MessageAttachment => ({
   kind: "gif",
   url: "https://media.giphy.com/abc123/reaction.gif",
   previewUrl: "https://media1.giphy.com/abc123/reaction-tiny.gif",

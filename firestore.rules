@@ -388,7 +388,14 @@ service cloud.firestore {
            `https://evil.test/media.giphy.com/x.gif`, which is the usual
            way an allowlist turns out to allow everything. Mirrored in
            `lib/messages/attachment` so the client refuses first and the
-           sender sees an error instead of a rejected write. */
+           sender sees an error instead of a rejected write.
+
+           A pasted or attached picture (`kind: 'image'`) is NOT in the
+           kinds below, and that is the control rather than a gap. It
+           lives on our own Cloudinary account, whose cloud name is
+           deployment config this file cannot know, so the URL is built
+           by `sendImageMessageAction` on the Admin SDK from a public_id
+           the server signed — the same footing `taskRef` stands on. */
         function attachedMedia() {
           return request.resource.data.attachment;
         }
@@ -606,12 +613,15 @@ service cloud.firestore {
          write `subscription` from the client would let them grant
          themselves any tier for free; PayFast's webhook and the billing
          server actions use the Admin SDK and are unaffected by this. */
-      /* `vaultUsage` and `transcriptUsage` join the server-owned fields.
-         Each one IS a quota — an owner who could edit them from the
-         client would grant themselves unlimited Cloudinary storage, or
-         an unlimited monthly transcript allowance, by writing a zero. */
+      /* `vaultUsage`, `transcriptUsage` and `chatImageUsage` join the
+         server-owned fields. Each one IS a quota — an owner who could
+         edit them from the client would grant themselves unlimited
+         Cloudinary storage, an unlimited monthly transcript allowance,
+         or an unlimited month of pasted screenshots, by writing a zero. */
       allow update: if isOwner(orgId)
-        && !editedKeys().hasAny(['subscription', 'ownerId', 'vaultUsage', 'transcriptUsage']);
+        && !editedKeys().hasAny([
+             'subscription', 'ownerId', 'vaultUsage', 'transcriptUsage', 'chatImageUsage'
+           ]);
     }
 
     match /{document=**} {

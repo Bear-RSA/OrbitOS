@@ -95,10 +95,33 @@ export const sendMessageSchema = z.object({
   text: messageTextSchema,
 });
 
+/**
+ * What the browser reports back after uploading a picture to Cloudinary.
+ *
+ * Shape only. Whether `publicId` is one the server signed for this
+ * conversation is decided in `sendImageMessageAction` against the
+ * caller's org — a schema cannot know that, and it is the check that
+ * matters.
+ */
+export const sendImageMessageSchema = z.object({
+  conversationId: conversationIdSchema,
+  publicId: z.string().trim().min(1).max(300),
+  /* The client's account of the stored dimensions. Trusted only as far
+     as reserving a box in the transcript — a lie here mis-sizes the
+     sender's own message and nothing else. */
+  width: z.number().int().min(1).max(4_000),
+  height: z.number().int().min(1).max(4_000),
+  /* Bytes as Cloudinary reported them, for the usage record. */
+  bytes: z.number().int().min(1),
+  /** A caption is optional — a screenshot usually speaks for itself. */
+  text: z.string().trim().max(MAX_MESSAGE_LENGTH, "That message is too long.").optional().default(""),
+});
+
 export type OpenDmInput = z.infer<typeof openDmSchema>;
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
 export type ForwardTaskInput = z.infer<typeof forwardTaskSchema>;
+export type SendImageMessageInput = z.infer<typeof sendImageMessageSchema>;
 
 /** Trims a message down to what the left rail shows. */
 export function messagePreview(text: string): string {

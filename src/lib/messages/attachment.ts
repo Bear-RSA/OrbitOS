@@ -48,8 +48,14 @@ export function isAllowedMediaUrl(value: unknown): value is string {
 }
 
 /**
- * Whether this is an attachment the client may send and the rules will
+ * Whether this is an attachment the CLIENT may send and the rules will
  * accept. Structural only — that the GIF exists is the CDN's problem.
+ *
+ * GIPHY only, on purpose. An uploaded image (`kind: "image"`) is also
+ * a `MessageAttachment`, but it is never written from the browser: the
+ * server mints it in `sendImageMessageAction` from a `public_id` it
+ * signed for, so the client has no URL to validate. See the note on
+ * `ImageAttachment` in `types/message`.
  */
 export function isValidAttachment(value: unknown): value is MessageAttachment {
   if (!value || typeof value !== "object") return false;
@@ -93,4 +99,22 @@ export function isValidAttachment(value: unknown): value is MessageAttachment {
  */
 export function hasContent(text: string, attachment: unknown): boolean {
   return text.trim().length > 0 || isValidAttachment(attachment);
+}
+
+/**
+ * What the left rail says arrived when there were no words to show.
+ *
+ * The rail cannot draw a picture, so it names the kind. Shared by the
+ * client send and the server image action so the two never disagree
+ * about what a sticker is called.
+ */
+export function attachmentPreview(kind: MessageAttachment["kind"]): string {
+  switch (kind) {
+    case "sticker":
+      return "Sent a sticker";
+    case "image":
+      return "Sent a picture";
+    default:
+      return "Sent a GIF";
+  }
 }

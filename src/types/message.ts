@@ -184,18 +184,27 @@ export interface Conversation {
 }
 
 /**
- * A picture carried by a message — a GIF or a sticker.
+ * A picture carried by a message — a GIF, a sticker, or an image
+ * somebody pasted or attached.
  *
- * Stored by REFERENCE, not by value: the bytes stay on the providers
+ * Stored by REFERENCE, not by value: the bytes stay on the provider's
  * CDN and the message holds a URL. That is what keeps a 3MB reaction
- * out of Firestore, where every participants listener would pay to
+ * out of Firestore, where every participant's listener would pay to
  * download it.
  *
  * The dimensions travel with it so the thread can reserve the right box
- * before the image loads. Without them every incoming GIF reflows the
- * transcript out from under whoever is reading it.
+ * before the image loads. Without them every incoming picture reflows
+ * the transcript out from under whoever is reading it.
+ *
+ * The two shapes share one key set on purpose. A message renders an
+ * attachment without caring where it came from, and one field list
+ * means one `hasOnly` in the rules and one structural check in
+ * `lib/messages/attachment`.
  */
-export interface MessageAttachment {
+export type MessageAttachment = GiphyAttachment | ImageAttachment;
+
+/** A GIF or sticker picked from the catalogue. Written by the client. */
+export interface GiphyAttachment {
   kind: "gif" | "sticker";
   /** The animated file. */
   url: string;
@@ -206,9 +215,59 @@ export interface MessageAttachment {
   /** What it shows, for anyone who cannot see it. */
   alt: string;
   provider: "giphy";
-  /** The providers own id, so a duplicate send is recognisable. */
+  /** The provider's own id, so a duplicate send is recognisable. */
   providerId: string;
 }
+
+/**
+ * A screenshot or photo the sender uploaded — pasted into the composer
+ * or attached from disk.
+ *
+ * Written ONLY by `sendImageMessageAction` on the Admin SDK, for the
+ * reason `taskRef` is. The URL becomes an `<img src>` in every
+ * participant's browser, and `firestore.rules` pins client-written
+ * attachments to GIPHY's CDN because a free-form URL is a tracking
+ * pixel. Our own Cloudinary account is not something the rules can
+ * name — the cloud name is deployment config — so the server builds
+ * the URL from a `public_id` it signed for, and the client never gets
+ * to write one.
+ *
+ * `previewUrl` is a width-limited, auto-format rendition for the
+ * transcript; `url` is the full-size original for anyone who clicks.
+ */
+export interface ImageAttachment {
+  kind: "image";
+  url: string;
+  previewUrl: string;
+  width: number;
+  height: number;
+  alt: string;
+  provider: "cloudinary";
+  /** Cloudinary's `public_id`, under `chat/{orgId}/{conversationId}/`. */
+  providerId: string;
+}
+
+/**
+ * How many pictures a workspace has uploaded into chat this month.
+ *
+ * Lives on `organizations/{orgId}.chatImageUsage`, server-owned, the
+ * same bargain `transcriptUsage` makes: the counter IS the quota, so a
+ * client that could write it could reset it. A record from a previous
+ * month reads as zero — see `readChatImageUsage`.
+ */
+export interface ChatImageUsage {
+  /** "YYYY-MM", UTC — `periodKeyFor` in `types/transcript`. */
+  periodKey: string;
+  images: number;
+  /** Bytes as reported at upload, for the bill rather than for a limit. */
+  bytes: number;
+}
+
+export const EMPTY_CHAT_IMAGE_USAGE: ChatImageUsage = {
+  periodKey: "",
+  images: 0,
+  bytes: 0,
+};
 
 /**
  * A task carried into a conversation, so the thread can be about it.
