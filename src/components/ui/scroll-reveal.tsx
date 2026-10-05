@@ -105,7 +105,7 @@ export function ScrollReveal({
     <div
       ref={ref}
       className={cn(
-        "transition-[opacity,transform] ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "transition-[opacity,transform] ease-spring",
         !settled && "will-change-[opacity,transform]",
         settled ? "opacity-100" : "opacity-0",
         className

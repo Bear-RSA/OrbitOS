@@ -6,7 +6,8 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     <div
       ref={ref}
       className={cn(
-        "group focus-item relative overflow-hidden rounded-[32px] bg-surface-lowest transition-all duration-300",
+        "group focus-item relative overflow-hidden rounded-[32px] bg-surface-lowest",
+        "transition-[background-color,box-shadow] duration-spring ease-spring",
         "hover:bg-surface-low hover:shadow-overlay",
         className
       )}
@@ -14,7 +15,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     >
       {/* Performance-Optimized Cursor Aware Glow */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-settle ease-spring group-hover:opacity-100"
         style={{
           background: `radial-gradient(400px circle at var(--mouse-x) var(--mouse-y), hsla(257,100%,87%,0.04), transparent 85%)`,
         }}
@@ -40,7 +41,7 @@ const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HT
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn("text-2xl font-light tracking-tight text-on-surface", className)}
+      className={cn("text-title text-on-surface", className)}
       {...props}
     />
   )
@@ -51,7 +52,7 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttribu
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={cn("text-[14px] font-light text-on-surface-variant/80 leading-relaxed", className)}
+      className={cn("text-body font-light text-on-surface-variant/80", className)}
       {...props}
     />
   )

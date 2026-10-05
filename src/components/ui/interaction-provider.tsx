@@ -1,23 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useSearchParams } from "next/navigation";
 
-function TransitionHandler() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  // Route Transition Continuity
-  React.useEffect(() => {
-    document.documentElement.style.setProperty("--page-transition-opacity", "0");
-    const timer = setTimeout(() => {
-      document.documentElement.style.setProperty("--page-transition-opacity", "1");
-    }, 50); // Soft crossfade trigger
-    return () => clearTimeout(timer);
-  }, [pathname, searchParams]);
-
-  return null;
-}
+/* ------------------------------------------------------------------ */
+/*  Interaction provider                                               */
+/*                                                                     */
+/*  Owns the viewport-level cursor variables and the idle dimming.     */
+/*  It used to also blank the page for 50ms on every route change as a */
+/*  "crossfade"; that was a timer on the input path, and the new page  */
+/*  is the feedback. Navigation now paints as soon as it is ready.     */
+/* ------------------------------------------------------------------ */
 
 export function InteractionProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = React.useState(false);
@@ -87,9 +79,6 @@ export function InteractionProvider({ children }: { children: React.ReactNode })
 
   return (
     <>
-      <React.Suspense fallback={null}>
-        <TransitionHandler />
-      </React.Suspense>
       <style dangerouslySetInnerHTML={{ __html: `
         [data-interaction-id="${lastInteractedId}"] {
           animation: interaction-memory-fade 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;

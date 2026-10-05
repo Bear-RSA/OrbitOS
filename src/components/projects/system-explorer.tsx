@@ -16,6 +16,7 @@ import {
   FileCode,
   FileSpreadsheet,
   File,
+  Upload,
 } from "lucide-react";
 import { deleteProjectFileAction, getSignedDownloadUrlAction } from "@/app/actions/files";
 import { SIGNAL } from "@/lib/utils/signal-colors";
@@ -89,6 +90,9 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
+  const dragDepth = useRef(0);
 
   /* ── Firestore realtime subscription ── */
   useEffect(() => {
@@ -100,72 +104,150 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
     return () => unsub();
   }, [projectId]);
 
+  /* ── A drop that misses the panel would otherwise navigate the tab to the file ── */
+  useEffect(() => {
+    const block = (e: DragEvent) => {
+      if (e.dataTransfer?.types.includes("Files")) e.preventDefault();
+    };
+    window.addEventListener("dragover", block);
+    window.addEventListener("drop", block);
+    return () => {
+      window.removeEventListener("dragover", block);
+      window.removeEventListener("drop", block);
+    };
+  }, []);
+
   /* ── Derived telemetry ── */
   const totalStorage = useMemo(
     () => files.reduce((sum, f) => sum + (f.size || 0), 0),
     [files]
   );
 
-  /* ── Upload handler (unchanged backend) ── */
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  /* ── Upload: one file, sign → Cloudinary → Firestore (unchanged backend) ── */
+  const uploadFile = async (file: File) => {
+    const auth = await import("@/lib/firebase/auth");
+    const idToken = await auth.getIdToken();
+
+    const sigResponse = await fetch("/api/cloudinary/sign-upload", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${idToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ projectId, name: file.name, type: file.type }),
+    });
+
+    if (!sigResponse.ok) throw new Error("Failed to get sign-upload payload");
+    const { timestamp, signature, apiKey, cloudName, folder, resource_type = "auto" } = await sigResponse.json();
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("api_key", apiKey);
+    formData.append("timestamp", timestamp.toString());
+    formData.append("signature", signature);
+    formData.append("folder", folder);
+
+    const uploadResponse = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/${resource_type}/upload`,
+      { method: "POST", body: formData }
+    );
+
+    const uploadData = await uploadResponse.json();
+    if (!uploadResponse.ok || !uploadData.secure_url) {
+      throw new Error(uploadData?.error?.message || `Upload failed for ${file.name}.`);
+    }
+
+    // Register the asset in Firestore
+    const { registerProjectFileAction } = await import("@/app/actions/files");
+    const regResult = await registerProjectFileAction({
+      projectId,
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      url: uploadData.secure_url,
+      publicId: uploadData.public_id,
+      uid,
+    });
+
+    if (!regResult.success) {
+      throw new Error(regResult.error || "Failed to register asset index.");
+    }
+  };
+
+  /* ── Upload a batch (button picker or drag-and-drop), one at a time ── */
+  const handleFiles = async (incoming: FileList | File[] | null | undefined) => {
+    const list = Array.from(incoming ?? []);
+    if (list.length === 0 || isUploading) return;
 
     setIsUploading(true);
-    try {
-      const auth = await import("@/lib/firebase/auth");
-      const idToken = await auth.getIdToken();
+    setUploadProgress({ done: 0, total: list.length });
+    const failed: string[] = [];
 
-      const sigResponse = await fetch("/api/cloudinary/sign-upload", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${idToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ projectId, name: file.name, type: file.type }),
-      });
-
-      if (!sigResponse.ok) throw new Error("Failed to get sign-upload payload");
-      const { timestamp, signature, apiKey, cloudName, folder, resource_type = "auto" } = await sigResponse.json();
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("api_key", apiKey);
-      formData.append("timestamp", timestamp.toString());
-      formData.append("signature", signature);
-      formData.append("folder", folder);
-
-      const uploadResponse = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/${resource_type}/upload`,
-        { method: "POST", body: formData }
-      );
-
-      const uploadData = await uploadResponse.json();
-      
-      // 3. Register the asset in Firestore
-      const { registerProjectFileAction } = await import("@/app/actions/files");
-      const regResult = await registerProjectFileAction({
-        projectId,
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        url: uploadData.secure_url,
-        publicId: uploadData.public_id,
-        uid,
-      });
-
-      if (!regResult.success) {
-        throw new Error(regResult.error || "Failed to register asset index.");
+    for (let i = 0; i < list.length; i++) {
+      try {
+        await uploadFile(list[i]);
+      } catch (err: any) {
+        console.error("Upload error:", err);
+        failed.push(`${list[i].name}: ${err?.message || "upload failed"}`);
       }
-      
-      setShowSuccess(true);
-    } catch (err: any) {
-      console.error("Upload error:", err);
-      alert(err.message || "Failed to upload file.");
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setUploadProgress({ done: i + 1, total: list.length });
     }
+
+    setIsUploading(false);
+    setUploadProgress(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    if (failed.length === list.length) {
+      alert(failed.join("\n"));
+      return;
+    }
+    if (failed.length > 0) {
+      alert(`Some files failed:\n${failed.join("\n")}`);
+    }
+    setShowSuccess(true);
+  };
+
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    void handleFiles(e.target.files);
+  };
+
+  /* ── Drag-and-drop ──
+     dragenter/dragleave fire for every child element as the cursor crosses
+     them, so a depth counter is the only reliable way to know when the
+     pointer has actually left the drop zone. */
+  const hasDraggedFiles = (e: React.DragEvent) =>
+    Array.from(e.dataTransfer?.types ?? []).includes("Files");
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (!hasDraggedFiles(e)) return;
+    e.preventDefault();
+    dragDepth.current += 1;
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!hasDraggedFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = isUploading ? "none" : "copy";
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!hasDraggedFiles(e)) return;
+    e.preventDefault();
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!hasDraggedFiles(e)) return;
+    e.preventDefault();
+    dragDepth.current = 0;
+    setIsDragging(false);
+    // Folders arrive as zero-byte entries with no type; skip them.
+    const dropped = Array.from(e.dataTransfer.files).filter(
+      (f) => f.size > 0 || f.type !== ""
+    );
+    void handleFiles(dropped);
   };
 
   /* ── Member resolution ── */
@@ -310,7 +392,11 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
             ) : (
               <Plus className="w-3.5 h-3.5 text-ink-dim group-hover:text-ink-muted transition-colors" />
             )}
-            Import Asset
+            {uploadProgress && uploadProgress.total > 1
+              ? `Importing ${Math.min(uploadProgress.done + 1, uploadProgress.total)}/${uploadProgress.total}`
+              : isUploading
+                ? "Importing…"
+                : "Import Asset"}
           </button>
         </div>
       </div>
@@ -321,14 +407,95 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
         onChange={handleUpload}
         className="hidden"
         accept="*/*"
+        multiple
       />
 
-      {/* ────────── CONTENT AREA ────────── */}
-      <div className="rounded-2xl border border-line/[0.06] bg-surface-card overflow-hidden">
+      {/* ────────── DROP BOX ────────── */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Import assets: drop files here or press Enter to browse"
+        aria-busy={isUploading}
+        onClick={() => !isUploading && fileInputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (!isUploading) fileInputRef.current?.click();
+          }
+        }}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={cn(
+          "group/drop relative mb-6 rounded-2xl border-2 border-dashed px-6 py-10 flex flex-col items-center justify-center text-center transition-all duration-300 outline-none",
+          "focus-visible:ring-2 focus-visible:ring-ink/30",
+          isUploading
+            ? "border-line/[0.12] bg-surface-card cursor-wait"
+            : isDragging
+              ? "border-ink/50 bg-surface-control cursor-copy scale-[1.005]"
+              : "border-line/[0.12] bg-surface-card hover:border-ink/30 hover:bg-surface-sunken cursor-pointer"
+        )}
+      >
+        <div
+          className={cn(
+            "w-12 h-12 rounded-2xl flex items-center justify-center ring-1 ring-line/[0.06] mb-4 transition-all duration-300",
+            isDragging ? "bg-surface-card scale-110" : "bg-surface-control group-hover/drop:scale-105"
+          )}
+        >
+          {isUploading ? (
+            <Loader2 className="w-5 h-5 text-ink-dim animate-spin" />
+          ) : (
+            <Upload
+              className={cn(
+                "w-5 h-5 transition-colors duration-300",
+                isDragging ? "text-ink" : "text-ink-dim group-hover/drop:text-ink"
+              )}
+            />
+          )}
+        </div>
+
+        <p className="text-[13px] font-mono text-ink mb-1.5">
+          {isUploading && uploadProgress
+            ? `Importing ${Math.min(uploadProgress.done + 1, uploadProgress.total)} of ${uploadProgress.total}…`
+            : isDragging
+              ? "Release to import"
+              : "Drop files here"}
+        </p>
+        <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-ink-dim">
+          {isUploading
+            ? "Indexing into the repository"
+            : isDragging
+              ? "Files will be indexed into this project"
+              : "or click to browse · multiple files supported"}
+        </p>
+
+        {/* Batch progress rail */}
+        {isUploading && uploadProgress && uploadProgress.total > 1 && (
+          <div className="absolute inset-x-6 bottom-4 h-[2px] rounded-full bg-surface-control overflow-hidden">
+            <div
+              className="h-full bg-ink transition-all duration-500"
+              style={{ width: `${(uploadProgress.done / uploadProgress.total) * 100}%` }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ────────── CONTENT AREA (also accepts drops) ────────── */}
+      <div
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={cn(
+          "relative rounded-2xl border bg-surface-card overflow-hidden transition-colors duration-300",
+          isDragging ? "border-ink/30" : "border-line/[0.06]"
+        )}
+      >
         {loading ? (
           <LoadingSkeleton viewMode={viewMode} />
         ) : files.length === 0 ? (
-          <EmptyState />
+          <EmptyState onBrowse={() => fileInputRef.current?.click()} />
         ) : viewMode === "list" ? (
           /* ── LIST VIEW ── */
           <div className="overflow-x-auto">
@@ -673,7 +840,7 @@ function LoadingSkeleton({ viewMode }: { viewMode: ViewMode }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ onBrowse }: { onBrowse: () => void }) {
   return (
     <div className="py-24 flex flex-col items-center justify-center">
       <div className="w-14 h-14 bg-surface-card rounded-2xl flex items-center justify-center ring-1 ring-line/[0.06] mb-6">
@@ -683,7 +850,15 @@ function EmptyState() {
         No indexed nodes.
       </p>
       <p className="text-[12px] font-mono text-ink-dim max-w-xs text-center leading-relaxed">
-        Assets imported into this project thread will surface here as searchable system nodes.
+        Drop files into the box above, or{" "}
+        <button
+          type="button"
+          onClick={onBrowse}
+          className="text-ink underline underline-offset-4 decoration-line hover:decoration-ink transition-colors"
+        >
+          browse
+        </button>{" "}
+        to import your first asset.
       </p>
     </div>
   );

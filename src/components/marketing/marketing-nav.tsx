@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useRef } from "react";
 import { Logo } from "@/components/brand/logo";
+import { useScrolledPast } from "@/hooks/use-scrolled-past";
 import { cn } from "@/lib/utils/classnames";
 
 /**
@@ -9,6 +13,10 @@ import { cn } from "@/lib/utils/classnames";
  * the landing page used <Logo> while the other six hand-rolled a
  * `div + next/image` block, and the wordmark linked home on some pages but
  * not others. One component, one active-state treatment.
+ *
+ * It is a translucent material the page scrolls under. The hairline rule
+ * it used to carry is gone; a short fade appears at its lower edge once
+ * content is actually passing beneath it.
  */
 
 type NavKey = "features" | "methodology" | "pricing" | "changelog";
@@ -20,51 +28,67 @@ const LINKS: { key: NavKey; label: string; href: string }[] = [
   { key: "changelog", label: "Changelog", href: "/changelog" },
 ];
 
-export function MarketingNav({ active }: { active?: NavKey }) {
-  return (
-    <nav className="fixed top-0 w-full z-50 bg-[#050505]/70 backdrop-blur-xl border-b border-white/[0.04]">
-      <div className="flex justify-between items-center max-w-7xl mx-auto px-6 md:px-8 h-16">
-        <Link
-          href="/"
-          className="font-mono text-lg tracking-tighter text-[#ededed] flex items-center gap-3"
-        >
-          <Logo size="sm" className="rounded-md" />
-          OrbitOS
-        </Link>
+const PRESS =
+  "transition-[transform,color,background-color,box-shadow] duration-quick ease-spring active:scale-[0.96] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent]";
 
-        <div className="hidden md:flex items-center gap-8">
-          {LINKS.map(({ key, label, href }) => (
+export function MarketingNav({ active }: { active?: NavKey }) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const scrolled = useScrolledPast(sentinelRef);
+
+  return (
+    <>
+      <div ref={sentinelRef} aria-hidden className="absolute left-0 top-0 h-px w-px" />
+      <nav
+        data-scrolled={scrolled ? "true" : undefined}
+        className="material-chrome scroll-edge fixed top-0 z-50 w-full"
+      >
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 md:px-8">
+          <Link
+            href="/"
+            className={cn("flex items-center gap-3 rounded-lg font-mono text-lg tracking-tighter text-[#ededed]", PRESS)}
+          >
+            <Logo size="sm" className="rounded-md" />
+            OrbitOS
+          </Link>
+
+          <div className="hidden items-center gap-8 md:flex">
+            {LINKS.map(({ key, label, href }) => (
+              <Link
+                key={key}
+                href={href}
+                aria-current={active === key ? "page" : undefined}
+                className={cn(
+                  "relative font-sans tracking-tight transition-colors duration-quick ease-spring",
+                  "after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-left after:bg-[#ededed] after:transition-transform after:duration-quick after:ease-spring",
+                  active === key
+                    ? "vibrant after:scale-x-100"
+                    : "font-light text-[#888888] hover:text-[#ededed] after:scale-x-0"
+                )}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-4 sm:gap-6">
             <Link
-              key={key}
-              href={href}
-              aria-current={active === key ? "page" : undefined}
+              href="/login"
+              className={cn("rounded-lg font-sans text-sm font-medium text-[#888888] hover:text-[#ededed]", PRESS)}
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/signup"
               className={cn(
-                "font-sans tracking-tight transition-colors duration-300",
-                active === key
-                  ? "font-medium text-[#ededed] border-b border-[#ededed] pb-1 hover:text-white"
-                  : "font-light text-[#888888] hover:text-[#ededed]"
+                "rounded-lg bg-[#ededed] px-5 py-2 text-sm font-medium text-[#050505] hover:bg-white hover:shadow-[0_0_24px_rgba(255,255,255,0.12)]",
+                PRESS
               )}
             >
-              {label}
+              Get Started
             </Link>
-          ))}
+          </div>
         </div>
-
-        <div className="flex items-center gap-4 sm:gap-6">
-          <Link
-            href="/login"
-            className="text-[#888888] font-sans font-medium text-sm hover:text-[#ededed] transition-colors"
-          >
-            Sign In
-          </Link>
-          <Link
-            href="/signup"
-            className="bg-[#ededed] text-[#050505] px-5 py-2 rounded-lg font-medium text-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:bg-white active:scale-95"
-          >
-            Get Started
-          </Link>
-        </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 }

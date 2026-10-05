@@ -168,7 +168,38 @@
   :root {
     --radius: 0.5rem;
     --idle-opacity: 1;
-    --page-transition-opacity: 1;
+  }
+
+  /* ══ Motion ═══════════════════════════════════════════════════════════
+     Springs, expressed as CSS `linear()` curves so a plain transition can
+     trace one. Generated from src/lib/motion/spring.ts — the same maths
+     the runtime spring integrates — with Apple's two parameters:
+
+       --ease-spring         response 0.4s, damping 1.0   (no overshoot)
+       --ease-spring-bounce  response 0.35s, damping 0.8  (slight overshoot)
+
+     Each curve lands exactly on the target at its settle time, which is
+     the paired duration. Use the bounce only for something that arrived
+     with momentum — a card that was flicked, a sheet that was thrown.
+     A menu that faded in did not, and should not bounce.               */
+  :root {
+    --ease-spring: linear(0, 0.0123, 0.0443, 0.0896, 0.1433, 0.202, 0.2627, 0.3235, 0.3829, 0.44, 0.4941, 0.5447, 0.5917, 0.6349, 0.6745, 0.7105, 0.7431, 0.7725, 0.7989, 0.8226, 0.8437, 0.8625, 0.8792, 0.8941, 0.9072, 0.9187, 0.929, 0.9379, 0.9458, 0.9528, 0.9589, 0.9642, 0.9688, 0.9729, 0.9765, 0.9796, 0.9823, 0.9846, 0.9867, 0.9885, 1);
+    --ease-spring-bounce: linear(0, 0.0117, 0.0431, 0.0888, 0.1448, 0.2074, 0.2737, 0.3413, 0.4086, 0.4739, 0.5364, 0.5952, 0.6498, 0.7, 0.7456, 0.7866, 0.8232, 0.8555, 0.8838, 0.9083, 0.9293, 0.9472, 0.9622, 0.9747, 0.9849, 0.9932, 0.9998, 1.0048, 1.0087, 1.0114, 1.0133, 1.0145, 1.015, 1.0152, 1.0149, 1.0144, 1.0136, 1.0127, 1.0118, 1.0108, 1);
+    /* Press-down. Nearly instant and decelerating: feedback is on the
+       finger, not after it. */
+    --ease-press: cubic-bezier(0.2, 0, 0, 1);
+
+    --t-press: 90ms;     /* pointer-down feedback */
+    --t-quick: 320ms;    /* response 0.3 settle — menus, hover, exits */
+    --t-spring: 420ms;   /* response 0.4 settle — reveals, reposition */
+    --t-settle: 560ms;   /* large surfaces easing into place */
+
+    /* Material. Chrome is a translucent layer content scrolls under; the
+       sheet is heavier because it is bigger. Both go frosty or solid when
+       the operator asks for less transparency — see the media rules. */
+    --material-blur: 20px;
+    --material-chrome-alpha: 0.72;
+    --material-sheet-alpha: 0.86;
   }
 }
 
@@ -176,9 +207,11 @@
 @layer base {
   * {
     box-sizing: border-box;
-    /* Standardized Motion System */
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 200ms;
+    /* Anything that transitions without saying how follows the house
+       spring. Tailwind's `transition-*` classes set their own timing and
+       override this per element. */
+    transition-timing-function: var(--ease-spring);
+    transition-duration: var(--t-quick);
   }
 
   html {
@@ -190,6 +223,9 @@
     --mouse-x: 50%;
     --mouse-y: 50%;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    /* Inter ships an optical-size axis; let the browser pick the cut for
+       the size instead of drawing 72px display text with 14px letterforms. */
+    font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     scroll-behavior: smooth;
@@ -199,8 +235,15 @@
     @apply bg-background text-foreground;
     font-family: var(--font-sans), system-ui, sans-serif;
     position: relative;
-    opacity: var(--page-transition-opacity);
-    transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Body copy sits at zero tracking; the type scale tightens headings
+       and loosens captions from here. */
+    letter-spacing: 0;
+  }
+
+  /* A heading that breaks into a four-word line and a one-word orphan reads
+     as careless; balancing costs nothing at these lengths. */
+  h1, h2, h3 {
+    text-wrap: balance;
   }
 
   /* Micro-Noise Texture Layer */
@@ -239,10 +282,6 @@
     background-color: rgb(var(--surface-control));
   }
 
-  /* Intent-based Hover Delay (Global Class) */
-  .intent-hover {
-    transition-delay: 50ms;
-  }
 }
 
 @layer utilities {
@@ -383,6 +422,154 @@
     animation: pkt-flash 600ms ease-out forwards;
   }
 
+  /* ── Enter / exit ──
+     Backing keyframes for the `animate-in` / `animate-out` utilities in
+     tailwind.config.ts. `from` is omitted on exit and `to` on enter, so the
+     resting state is whatever the element's own transform is — a centred
+     dialog keeps its -50% offset and animates the rest. */
+  @keyframes enter {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0)
+        scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), 1);
+      filter: blur(var(--tw-enter-blur, 0));
+    }
+  }
+
+  @keyframes exit {
+    to {
+      opacity: var(--tw-exit-opacity, 1);
+      transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0)
+        scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), 1);
+      filter: blur(var(--tw-exit-blur, 0));
+    }
+  }
+
+  /* Reduced-motion stand-ins: a cross-fade, never a slide or a zoom. */
+  @keyframes enter-fade {
+    from { opacity: 0; }
+  }
+  @keyframes exit-fade {
+    to { opacity: 0; }
+  }
+
+  /* The phone-sized dialog is a sheet. It arrives under JavaScript (so a
+     finger can catch it) and leaves along the same path it came in on —
+     `from` is omitted so a sheet dismissed mid-drag continues from where
+     the finger left it rather than jumping back to the top first. */
+  @keyframes sheet-out {
+    to { transform: translate3d(0, 100%, 0); }
+  }
+  [data-sheet][data-state="closed"] {
+    animation: sheet-out var(--t-quick) var(--ease-spring) both;
+  }
+  /* The gesture already carried it off-screen; do not replay the exit. */
+  [data-sheet][data-dismissed] {
+    animation-duration: 1ms;
+  }
+
+  /* ── Materials ──
+     Translucent layers that content scrolls under. Weight encodes
+     hierarchy: chrome is light, a sheet is heavier because it is larger.
+     Never stack one on another — legibility collapses. The `-webkit-`
+     prefix is still needed on Safari. */
+  .material-chrome {
+    background-color: rgb(var(--base) / var(--material-chrome-alpha));
+    -webkit-backdrop-filter: blur(var(--material-blur)) saturate(180%);
+    backdrop-filter: blur(var(--material-blur)) saturate(180%);
+  }
+
+  .material-sheet {
+    background-color: rgb(var(--surface-raised) / var(--material-sheet-alpha));
+    -webkit-backdrop-filter: blur(calc(var(--material-blur) * 1.6)) saturate(160%);
+    backdrop-filter: blur(calc(var(--material-blur) * 1.6)) saturate(160%);
+  }
+
+  /* Scroll edge: where content meets floating chrome, a short fade instead
+     of a 1px rule. Present only once something has scrolled under. */
+  .scroll-edge::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 100%;
+    height: 24px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgb(var(--base) / 0.55), rgb(var(--base) / 0));
+    opacity: 0;
+    transition: opacity var(--t-quick) var(--ease-spring);
+  }
+  .scroll-edge[data-scrolled="true"]::after {
+    opacity: 1;
+  }
+
+  /* Text over glass: flat grey drops out against whatever scrolls under.
+     Slightly heavier, slightly more tracked, one tier brighter. */
+  .vibrant {
+    color: rgb(var(--ink));
+    font-weight: 500;
+    letter-spacing: 0.005em;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .material-chrome,
+    .material-sheet {
+      background-color: rgb(var(--surface-raised));
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    .material-chrome,
+    .material-sheet {
+      background-color: rgb(var(--surface-card));
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      outline: 1px solid rgb(var(--line) / 0.4);
+    }
+    .scroll-edge::after {
+      display: none;
+    }
+  }
+
+  /* ── Theme change ──
+     Stamped on <html> by PreferenceEffects for one beat when the operator
+     switches theme. Every colour eases instead of jumping. `!important`
+     because it has to win over each element's own transition list for the
+     duration; it is gone again 320ms later. Reduced motion keeps a shorter
+     fade rather than none — the jump is the thing being avoided. */
+  html[data-theme-transition],
+  html[data-theme-transition] *,
+  html[data-theme-transition] *::before,
+  html[data-theme-transition] *::after {
+    transition-property: background-color, color, border-color, outline-color, fill, stroke, box-shadow !important;
+    transition-duration: var(--t-quick) !important;
+    transition-timing-function: var(--ease-spring) !important;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html[data-theme-transition],
+    html[data-theme-transition] * {
+      transition-duration: 120ms !important;
+    }
+  }
+  html[data-reduced-motion="true"][data-theme-transition],
+  html[data-reduced-motion="true"][data-theme-transition] * {
+    transition-duration: 120ms !important;
+  }
+
+  /* ── Success check ──
+     The one place overshoot is earned: a rare, high-emotion moment. The
+     badge pops on the bounce curve and the tick draws itself after a beat. */
+  @keyframes check-draw {
+    from { stroke-dashoffset: var(--check-length, 40); }
+    to { stroke-dashoffset: 0; }
+  }
+  .check-draw {
+    stroke-dasharray: var(--check-length, 40);
+    stroke-dashoffset: var(--check-length, 40);
+    animation: check-draw 360ms cubic-bezier(0.2, 0, 0, 1) 120ms both;
+  }
+
   /* Accessibility: Reduced Motion.
 
      Two triggers, one rule set: the OS-level media query, and the in-app
@@ -403,6 +590,20 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* Reduced motion is not no feedback. A surface still needs to arrive;
+     it just cross-fades instead of sliding, and nothing overshoots. The
+     class outranks the `*` collapse above, so these keep a short fade. */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-in { animation: enter-fade 160ms ease-out both !important; }
+    .animate-out { animation: exit-fade 120ms ease-in both !important; }
+  }
+  html[data-reduced-motion="true"] .animate-in {
+    animation: enter-fade 160ms ease-out both !important;
+  }
+  html[data-reduced-motion="true"] .animate-out {
+    animation: exit-fade 120ms ease-in both !important;
   }
 }
 

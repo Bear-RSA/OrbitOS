@@ -25,7 +25,7 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
       action: (
         <button 
           onClick={onCreateProject} 
-          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-[transform,background-color,box-shadow] duration-quick ease-spring hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.97] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
           <Plus className="h-4 w-4 text-ink-muted transition-colors group-hover:text-ink" aria-hidden />
           Create Project
@@ -38,7 +38,7 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
       icon: SignalLow,
       action: (
         <button 
-          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-[transform,background-color,box-shadow] duration-quick ease-spring hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.97] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
           <Plus className="h-4 w-4 text-ink-muted transition-colors group-hover:text-ink" aria-hidden />
           Add First Task
@@ -58,7 +58,7 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
       action: isOwner ? (
         <button 
           onClick={onInviteMember}
-          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-[transform,background-color,box-shadow] duration-quick ease-spring hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.97] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
           <UserPlus className="h-4 w-4 text-ink-muted transition-colors group-hover:text-ink" aria-hidden />
           Invite Team

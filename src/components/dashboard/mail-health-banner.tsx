@@ -160,18 +160,29 @@ export function MailHealthBanner() {
                     {expanded ? "Hide" : "Show"} what the mail service said
                   </button>
 
-                  {expanded && (
-                    <ul className="mt-2 space-y-1">
+                  {/* Grid-row collapse: the log stays in the DOM and its
+                      height animates for real, rather than snapping in and
+                      out with a conditional render. Plain text only, so
+                      aria-hidden is enough to keep it out of the way. */}
+                  <div
+                    aria-hidden={!expanded}
+                    className={cn(
+                      "grid transition-[grid-template-rows,opacity] duration-quick ease-spring",
+                      expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                    )}
+                  >
+                    <ul className="min-h-0 overflow-hidden">
+                      <li aria-hidden className="h-2" />
                       {allErrors.map((error, index) => (
                         <li
                           key={index}
-                          className="break-words font-mono text-[11px] text-ink-muted"
+                          className="mt-1 break-words font-mono text-[11px] text-ink-muted first:mt-0"
                         >
                           {error}
                         </li>
                       ))}
                     </ul>
-                  )}
+                  </div>
                 </>
               )}
             </div>

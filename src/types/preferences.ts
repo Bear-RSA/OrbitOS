@@ -54,7 +54,8 @@ export interface UserPreferences {
   callSounds: boolean;
   /**
    * A desktop notification when a colleague calls and OrbitOS is not
-   * the window you are looking at.
+   * the window you are looking at — and, while you are in a call,
+   * when somebody joins or leaves the room or writes in its chat.
    *
    * Separate from `callSounds` because they fail in different
    * directions. A ring is useless in a muted tab and a notification is

@@ -16,6 +16,9 @@ const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
+  // Inter's optical-size axis: the browser picks a cut for the size, so
+  // display text gets tighter, finer letterforms than 14px body copy.
+  axes: ["opsz"],
 });
 
 const jetbrainsMono = JetBrains_Mono({

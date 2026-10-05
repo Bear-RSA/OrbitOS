@@ -30,7 +30,7 @@ export function DashboardCard({
         "p-6 sm:p-8",
         "ring-1 ring-inset ring-line/[0.06]",
         "shadow-card",
-        "transition-[background-color,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "transition-[background-color,box-shadow,border-color] duration-spring ease-spring",
         tone === "quiet" ? "bg-surface-sunken" : "bg-surface-card",
         interactive && "hover:bg-surface-raised hover:ring-line/[0.09]",
         className

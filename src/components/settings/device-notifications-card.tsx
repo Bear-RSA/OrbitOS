@@ -174,7 +174,7 @@ export function DeviceNotificationsCard() {
         <ToggleRow
           id="pref-desktop-notifications"
           title="Desktop notifications"
-          description="A notification when a colleague calls and OrbitOS is open but not the window you are looking at. Nothing appears while you are already on this tab — the call is on screen there."
+          description="A notification when a colleague calls, or when someone joins, leaves or writes in the chat of a call you are on, while OrbitOS is open but not the window you are looking at. Nothing appears while you are already on this tab — it is on screen there."
           checked={preferences.desktopNotifications && access === "granted"}
           busy={pending === "desktopNotifications"}
           disabled={access === "denied" || access === "unsupported"}

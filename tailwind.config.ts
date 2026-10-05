@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 const config: Config = {
   darkMode: ["class", '[data-theme="dark"]'],
@@ -124,9 +125,48 @@ const config: Config = {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
+      /* ── Type scale ──
+         Tracking and leading are size-specific, never one value for all
+         sizes: display text tightens as it grows and sits on a tight line,
+         body stays near zero tracking on a comfortable line. Each entry is
+         a set — size, leading, tracking, weight — so hierarchy comes from
+         the whole, not from size alone. */
       fontSize: {
+        display: [
+          "clamp(2.75rem, 2rem + 4vw, 5.5rem)",
+          { lineHeight: "0.96", letterSpacing: "-0.035em", fontWeight: "300" },
+        ],
+        "display-sm": [
+          "clamp(2.25rem, 1.6rem + 2.6vw, 4rem)",
+          { lineHeight: "1.02", letterSpacing: "-0.03em", fontWeight: "300" },
+        ],
+        "title-lg": ["2rem", { lineHeight: "1.12", letterSpacing: "-0.022em", fontWeight: "300" }],
+        title: ["1.5rem", { lineHeight: "1.2", letterSpacing: "-0.018em", fontWeight: "300" }],
+        "title-sm": ["1.25rem", { lineHeight: "1.3", letterSpacing: "-0.012em", fontWeight: "400" }],
+        lead: ["1.25rem", { lineHeight: "1.5", letterSpacing: "-0.006em", fontWeight: "300" }],
+        body: ["0.9375rem", { lineHeight: "1.6", letterSpacing: "0" }],
+        "body-sm": ["0.8125rem", { lineHeight: "1.5", letterSpacing: "0.002em" }],
+        caption: ["0.6875rem", { lineHeight: "1.4", letterSpacing: "0.01em" }],
+        /* Legacy names, kept for existing call sites. */
         "display-lg": ["3.5rem", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "300" }],
         "body-md": ["1rem", { lineHeight: "1.6" }],
+      },
+      /* ── Motion ──
+         Springs, not curves. `spring` is critically damped and is the house
+         default; `spring-bounce` overshoots slightly and is reserved for
+         things that arrive with momentum. Durations are settle times of
+         those springs, so the curve lands exactly at the end. See
+         src/lib/motion/spring.ts, which generated them. */
+      transitionTimingFunction: {
+        spring: "var(--ease-spring)",
+        "spring-bounce": "var(--ease-spring-bounce)",
+        press: "var(--ease-press)",
+      },
+      transitionDuration: {
+        press: "var(--t-press)",
+        quick: "var(--t-quick)",
+        spring: "var(--t-spring)",
+        settle: "var(--t-settle)",
       },
       spacing: {
         '16': '4rem',
@@ -158,7 +198,95 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    /* Enter / exit utilities.
+       `animate-in`, `fade-in-0`, `zoom-in-95`, `slide-in-from-*` had been
+       in the markup since the shadcn primitives landed, but the plugin that
+       defines them was never installed, so every dialog, select and auth
+       page mounted with no motion at all. This implements the subset the
+       codebase uses, on the spring easing, plus `blur-in-*` so a glass
+       surface can materialise rather than fade. Keyframes are in
+       globals.css. */
+    plugin(({ addUtilities, matchUtilities, theme }) => {
+      addUtilities({
+        ".animate-in": {
+          animationName: "enter",
+          animationDuration: "var(--t-spring)",
+          animationTimingFunction: "var(--ease-spring)",
+          animationFillMode: "both",
+          "--tw-enter-opacity": "initial",
+          "--tw-enter-scale": "initial",
+          "--tw-enter-blur": "initial",
+          "--tw-enter-translate-x": "initial",
+          "--tw-enter-translate-y": "initial",
+        },
+        ".animate-out": {
+          animationName: "exit",
+          animationDuration: "var(--t-quick)",
+          animationTimingFunction: "var(--ease-spring)",
+          animationFillMode: "both",
+          "--tw-exit-opacity": "initial",
+          "--tw-exit-scale": "initial",
+          "--tw-exit-blur": "initial",
+          "--tw-exit-translate-x": "initial",
+          "--tw-exit-translate-y": "initial",
+        },
+        ".fill-mode-both": { animationFillMode: "both" },
+        ".fill-mode-forwards": { animationFillMode: "forwards" },
+      });
+
+      const opacity = { DEFAULT: "0", 0: "0", 5: "0.05", 10: "0.1", 25: "0.25", 50: "0.5", 75: "0.75", 90: "0.9" };
+      const scale = { DEFAULT: "0", 0: "0", 50: "0.5", 75: "0.75", 90: "0.9", 95: "0.95", 100: "1", 105: "1.05", 110: "1.1" };
+      const blur = { DEFAULT: "8px", sm: "4px", md: "8px", lg: "16px", none: "0px" };
+      type Values = Record<string, string>;
+      const distance = theme("spacing") as Values;
+
+      matchUtilities(
+        {
+          "fade-in": (v) => ({ "--tw-enter-opacity": v }),
+          "fade-out": (v) => ({ "--tw-exit-opacity": v }),
+        },
+        { values: opacity }
+      );
+      matchUtilities(
+        {
+          "zoom-in": (v) => ({ "--tw-enter-scale": v }),
+          "zoom-out": (v) => ({ "--tw-exit-scale": v }),
+        },
+        { values: scale }
+      );
+      matchUtilities(
+        {
+          "blur-in": (v) => ({ "--tw-enter-blur": v }),
+          "blur-out": (v) => ({ "--tw-exit-blur": v }),
+        },
+        { values: blur }
+      );
+      matchUtilities(
+        {
+          "slide-in-from-top": (v) => ({ "--tw-enter-translate-y": `calc(-1 * ${v})` }),
+          "slide-in-from-bottom": (v) => ({ "--tw-enter-translate-y": v }),
+          "slide-in-from-left": (v) => ({ "--tw-enter-translate-x": `calc(-1 * ${v})` }),
+          "slide-in-from-right": (v) => ({ "--tw-enter-translate-x": v }),
+          "slide-out-to-top": (v) => ({ "--tw-exit-translate-y": `calc(-1 * ${v})` }),
+          "slide-out-to-bottom": (v) => ({ "--tw-exit-translate-y": v }),
+          "slide-out-to-left": (v) => ({ "--tw-exit-translate-x": `calc(-1 * ${v})` }),
+          "slide-out-to-right": (v) => ({ "--tw-exit-translate-x": v }),
+        },
+        { values: { ...distance, full: "100%", "1/2": "50%", "1/3": "33.333%", "2/3": "66.667%" } }
+      );
+      /* Core `duration-*` / `delay-*` only touch transitions; make the same
+         class time an animation too, so `animate-in duration-1000` works. */
+      matchUtilities(
+        { duration: (v) => ({ animationDuration: v }) },
+        { values: theme("transitionDuration") as Values }
+      );
+      matchUtilities(
+        { delay: (v) => ({ animationDelay: v }) },
+        { values: theme("transitionDelay") as Values }
+      );
+    }),
+  ],
 };
 
 export default config;
