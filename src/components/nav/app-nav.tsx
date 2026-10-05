@@ -128,7 +128,9 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "group/nav inline-flex h-9 items-center gap-2 rounded-lg px-2.5 sm:px-3",
+                  "group/nav inline-flex h-9 items-center justify-center gap-2 rounded-lg",
+                  // The current page collapses to its icon: a square the pill hugs.
+                  active ? "w-9" : "px-2.5 sm:px-3",
                   "transition-[color,background-color,transform] duration-quick ease-spring",
                   "active:scale-[0.96] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base",
@@ -142,8 +144,14 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
                   )}
                 </span>
                 {/* The label is the accessible name on every viewport; it
-                    is only visually hidden on small screens. */}
-                <span className="sr-only whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.16em] sm:not-sr-only">
+                    is visually hidden on small screens and on the current
+                    page, where the icon alone marks where you are. */}
+                <span
+                  className={cn(
+                    "sr-only whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.16em]",
+                    !active && "sm:not-sr-only"
+                  )}
+                >
                   {item.label}
                 </span>
                 {showBadge && <span className="sr-only">Unread messages</span>}
