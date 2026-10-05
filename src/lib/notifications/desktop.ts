@@ -96,6 +96,16 @@ export interface DesktopNotice {
    * landing, a name resolving — stays one notification.
    */
   tag: string;
+  /**
+   * Lets the OS dismiss it on its own schedule.
+   *
+   * Off by default, because the first thing this was built for is a
+   * ring, and a ring is worth holding the screen for. Somebody joining
+   * a room or typing a line into its chat is not: a card for each that
+   * waited to be clicked away would stack up over a meeting until the
+   * one that mattered was buried.
+   */
+  transient?: boolean;
   onClick?: () => void;
 }
 
@@ -119,9 +129,10 @@ export function showDesktopNotification(notice: DesktopNotice): () => void {
       body: notice.body,
       tag: notice.tag,
       icon: "/logo.png",
-      /* Survives until it is acted on or withdrawn. A call is the one
-         thing in this product worth holding the screen for. */
-      requireInteraction: true,
+      /* A ring survives until it is acted on or withdrawn — a call is
+         the one thing in this product worth holding the screen for.
+         Everything else is allowed to fade. */
+      requireInteraction: !notice.transient,
     });
   } catch {
     /* Some browsers throw here when the API exists but is only usable

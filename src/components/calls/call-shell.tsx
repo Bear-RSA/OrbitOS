@@ -10,7 +10,9 @@ import {
 } from "lucide-react";
 import { useCall } from "@/contexts/call-context";
 import { useCallContinuity } from "@/hooks/use-call-continuity";
+import { useRoomNotices } from "@/hooks/use-room-notices";
 import { useTranscription, type TranscriptionCall } from "@/hooks/use-transcription";
+import { RoomNotices } from "@/components/calls/room-notices";
 import { TranscriptConsentDialog } from "@/components/calls/transcript-consent-dialog";
 import { TranscriptControl, TranscriptNotice } from "@/components/calls/transcript-control";
 import { cn } from "@/lib/utils/classnames";
@@ -97,6 +99,12 @@ export function CallShell({
      re-run on every keystroke elsewhere in the app. */
   const roomId = call?.roomId ?? null;
   const callTitle = call?.title ?? "";
+
+  /* Who came in, who left, what was said in the chat — for the corner
+     and for a tab in the background, where the provider's own panels
+     cannot be seen. Lives here for the same reason the transcript does:
+     every surface wraps itself in this shell. */
+  const notices = useRoomNotices({ frame, roomId, title });
 
   useEffect(() => {
     if (transcription.status !== "recording" || !roomId) return;
@@ -233,6 +241,10 @@ export function CallShell({
       <div className={cn("min-h-0 flex-1", minimized && "px-2 pb-2")}>
         {children}
       </div>
+
+      {/* After the slot, and absolutely positioned — a sibling that came
+          and went above it would move the room. See `room-notices`. */}
+      <RoomNotices notices={notices} minimized={minimized} />
 
       <TranscriptConsentDialog state={transcription} />
     </div>
