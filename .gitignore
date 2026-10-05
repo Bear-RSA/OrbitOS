@@ -16,3 +16,6 @@ build-output.txt
 tsc-errors*.txt
 tsc-test*.txt
 .env*
+
+# Launch video project from /brag; rendered media, kept out of the repo.
+brag-output/
