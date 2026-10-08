@@ -217,6 +217,12 @@
        on a dark modal (or a black one on paper). */
     --mouse-x: 50%;
     --mouse-y: 50%;
+    /* The grey flash mobile browsers paint over a tapped control. Every
+       control here has its own :active state, so the flash only fights it. */
+    -webkit-tap-highlight-color: transparent;
+    /* No font inflation when a phone turns to landscape. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     /* Inter ships an optical-size axis; let the browser pick the cut for
        the size instead of drawing 72px display text with 14px letterforms. */
@@ -517,6 +523,21 @@
      (`.absolute`) stay solid: they sit over other fields and must read. */
   .material-fog-modal :is(.bg-surface-lowest, .bg-surface-sunken):not(.absolute) {
     background-color: rgb(var(--surface-sunken) / 0.5);
+  }
+
+  /* Phones: the fog keeps its tint and drops the blur. A blurred panel is
+     re-rendered whenever anything behind it moves, and a dashboard stacks
+     thirty of them over the orbit backdrop — on a phone that is dozens of
+     full-panel blurs per scroll frame. A thicker wash stands in for it.
+     Gated on the input, not the width: a narrow desktop window keeps it. */
+  @media (pointer: coarse) {
+    .material-fog,
+    .material-fog-modal {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+    .material-fog { --fog-alpha: 0.72; }
+    .material-fog-modal { --fog-alpha: 0.9; }
   }
 
   /* Scroll edge: where content meets floating chrome, a short fade instead
@@ -823,6 +844,16 @@
 }
 .orbit-stars[data-layer="twinkle"] {
   animation: orbit-twinkle 5.5s ease-in-out infinite alternate;
+}
+/* InteractiveCard's lean runs on mouse pointers only; a touch screen
+   would hold a GPU layer per card for a move that never happens. */
+@media (pointer: fine) {
+  .card-lean { will-change: transform; }
+}
+/* An endless animation under translucent panels keeps the phone's GPU
+   redrawing the whole screen even when nothing is being touched. */
+@media (pointer: coarse) {
+  .orbit-stars[data-layer="twinkle"] { animation: none; }
 }
 @keyframes orbit-twinkle {
   from { opacity: 1; }

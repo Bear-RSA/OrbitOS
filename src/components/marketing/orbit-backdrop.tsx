@@ -157,6 +157,12 @@ export function OrbitBackdrop() {
     const sat = satDriftRef.current;
     if (!lift || !skyEl || !sat) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    /* Touch screens keep the backdrop still. Following the scroll on a phone
+       moved three full-screen layers every frame — and every translucent
+       panel above them with it — and `innerHeight` changes as the URL bar
+       collapses, so the planet also jumped mid-scroll. The route-to-route
+       camera move is CSS and still runs. */
+    if (window.matchMedia("(pointer: coarse)").matches) return;
 
     const liftVh = mode === "app" ? 10 : 24;
     const TAU = 140; // ms

@@ -120,7 +120,9 @@ export function InteractiveCard({ children, className, surface = "solid" }: Inte
       className={cn(
         "focus-item group relative overflow-hidden rounded-[32px]",
         // Colour and shadow ease; transform is owned by the springs above.
-        "transition-[background-color,box-shadow] duration-settle ease-spring will-change-transform",
+        "transition-[background-color,box-shadow] duration-settle ease-spring",
+        // The lean is mouse-only, so only a fine pointer pays for a layer.
+        "card-lean",
         "hover:shadow-[0_24px_80px_rgb(var(--scrim)_/_0.5)]",
         /* Fog lives in the same CSS layer as the bg utilities, so the two
            are never combined — whichever is emitted later would win. */

@@ -3,6 +3,12 @@ import plugin from "tailwindcss/plugin";
 
 const config: Config = {
   darkMode: ["class", '[data-theme="dark"]'],
+  /* `hover:` compiles to `@media (hover: hover)`. Touch fakes a hover on
+     tap and leaves it stuck until the next tap elsewhere — a frosted card
+     stayed half-lit after you tapped it. Press feedback is `active:`. */
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
