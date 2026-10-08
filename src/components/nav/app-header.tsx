@@ -81,7 +81,12 @@ export function AppHeader({ user, hide = DEFAULT_HIDE, actions, variant = "shell
             href="/dashboard"
             aria-label="OrbitOS home"
             className={cn(
-              "group flex min-w-0 items-center gap-3.5 justify-self-start rounded-lg",
+              /* No `min-w-0`: it let this grid track collapse to nothing on
+                 a phone, and the nav — which grows to fill whatever it is
+                 given — then started under the logo. Holding the logo's
+                 width makes the nav the track that gives way, and it
+                 scrolls. */
+              "group flex shrink-0 items-center gap-3.5 justify-self-start rounded-lg",
               "transition-transform duration-quick ease-spring active:scale-[0.97] active:duration-press active:ease-press",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
             )}
