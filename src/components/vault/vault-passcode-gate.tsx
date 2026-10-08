@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { ClipboardEvent } from "react";
 import { Lock, Mail, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
@@ -68,9 +68,9 @@ export function VaultPasscodeGate({ isOwner, onUnlocked }: VaultPasscodeGateProp
 
   if (phase === "no-passcode-member") {
     return (
-      <GateShell icon={Lock} title="The Vault Is Locked">
+      <GateShell icon={Lock} title="The vault is locked">
         <p className="text-[13px] leading-relaxed text-ink-dim">
-          This workspace has not set up a Vault passcode yet. Ask your
+          This workspace hasn&apos;t set a vault passcode yet. Ask your
           workspace owner to set one and share it with you.
         </p>
       </GateShell>
@@ -79,9 +79,9 @@ export function VaultPasscodeGate({ isOwner, onUnlocked }: VaultPasscodeGateProp
 
   if (phase === "reset-sent") {
     return (
-      <GateShell icon={Mail} title="Check Your Email">
-        <p className="text-[13px] leading-relaxed text-ink-dim">
-          If a reset is available, a link to set a new Vault passcode has
+      <GateShell icon={Mail} title="Check your email">
+        <p role="status" className="text-[14px] leading-relaxed text-ink-muted">
+          If a reset is available, a link to set a new vault passcode has
           been sent to your account email. It expires in 15 minutes.
         </p>
       </GateShell>
@@ -130,7 +130,7 @@ function EntryScreen({
     try {
       const result = await verifyVaultPasscodeAction(candidate);
       if (!result.success) {
-        setError(result.error || "Incorrect passcode.");
+        setError(result.error || "That passcode isn't right.");
         setDigits(Array(DIGIT_COUNT).fill(""));
         inputsRef.current[0]?.focus();
         return;
@@ -195,8 +195,8 @@ function EntryScreen({
   };
 
   return (
-    <GateShell icon={Lock} title="Enter Vault Passcode">
-      <div className="flex items-center justify-center gap-3">
+    <GateShell icon={Lock} title="Enter the vault passcode">
+      <div role="group" aria-label="Vault passcode" aria-describedby={error ? "vault-passcode-error" : undefined} className="flex items-center justify-center gap-3">
         {digits.map((digit, index) => (
           <input
             key={index}
@@ -207,34 +207,49 @@ function EntryScreen({
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={handlePaste}
+            type="password"
             inputMode="numeric"
+            pattern="[0-9]*"
             autoComplete="off"
             maxLength={1}
             disabled={verifying}
-            aria-label={`Passcode digit ${index + 1}`}
+            aria-invalid={error ? true : undefined}
+            aria-label={`Passcode digit ${index + 1} of ${DIGIT_COUNT}`}
             className={cn(
               "h-14 w-12 rounded-xl bg-surface-raised text-center text-xl text-ink",
               "ring-1 ring-inset ring-line/[0.08] transition-all duration-200",
-              "focus:outline-none focus:ring-focus disabled:opacity-50",
+              "focus:outline-none focus:ring-2 focus:ring-focus disabled:opacity-50",
               error && "ring-orbit-red/40"
             )}
           />
         ))}
       </div>
 
-      {error && (
-        <p className="mt-5 text-center text-[12px] font-mono text-orbit-red">{error}</p>
-      )}
+      {/* One live region for both outcomes, so a screen reader hears the
+          check start and then the verdict rather than nothing at all. */}
+      <div aria-live="polite" className="mt-5 min-h-[20px] text-center text-[13px]">
+        {verifying ? (
+          <span className="inline-flex items-center gap-2 text-ink-muted">
+            <Loader size={12} stroke={2.5} /> Unlocking…
+          </span>
+        ) : error ? (
+          <p id="vault-passcode-error" role="alert" className="text-orbit-red">{error}</p>
+        ) : null}
+      </div>
 
-      {isOwner && (
+      {isOwner ? (
         <button
           type="button"
           onClick={handleForgot}
           disabled={resetSending}
-          className="mt-6 w-full text-center font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim transition-colors hover:text-ink-muted disabled:opacity-50"
+          className="mt-4 w-full rounded-lg py-1 text-center text-[13px] text-ink-muted transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50"
         >
-          {resetSending ? "Sending…" : "Forgot passcode?"}
+          {resetSending ? "Sending reset link…" : "Forgot the passcode?"}
         </button>
+      ) : (
+        <p className="mt-4 text-center text-[13px] text-ink-muted">
+          Forgot it? Ask your workspace owner.
+        </p>
       )}
     </GateShell>
   );
@@ -282,11 +297,11 @@ function SetupScreen({
   };
 
   return (
-    <GateShell icon={ShieldAlert} title="Set A Vault Passcode">
+    <GateShell icon={ShieldAlert} title="Set a vault passcode">
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <p className="text-[13px] leading-relaxed text-ink-dim">
-          Choose a 4-digit passcode for the Vault. Share it with your team by
-          word of mouth — it is never emailed or shown in the app once set.
+        <p className="text-[14px] leading-relaxed text-ink-muted">
+          Choose a 4-digit passcode for the vault. Share it with your team in
+          person. It&apos;s never emailed or shown in the app once set.
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -294,14 +309,17 @@ function SetupScreen({
           <PasscodeField label="Confirm passcode" value={confirm} onChange={setConfirm} />
         </div>
 
-        {error && <p className="font-mono text-[12px] text-orbit-red">{error}</p>}
+        {code.length === 4 && confirm.length === 4 && code !== confirm && (
+          <p role="alert" className="text-[13px] text-orbit-red">The two passcodes don&apos;t match.</p>
+        )}
+        {error && <p role="alert" className="text-[13px] text-orbit-red">{error}</p>}
 
         <button
           type="submit"
           disabled={!ready || busy}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-ink text-on-ink font-mono text-[11px] uppercase tracking-[0.18em] transition-colors hover:bg-ink-strong disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-ink text-on-ink text-[14px] font-medium transition-colors hover:bg-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {busy ? <Loader size={14} stroke={2.5} /> : "Set Passcode"}
+          {busy ? <><Loader size={14} stroke={2.5} /> Saving…</> : "Set passcode"}
         </button>
       </form>
     </GateShell>
@@ -317,18 +335,22 @@ function PasscodeField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const id = useId();
   return (
     <div>
-      <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+      <label htmlFor={id} className="mb-2 block text-[13px] text-ink-muted">
         {label}
       </label>
       <input
+        id={id}
+        type="password"
         value={value}
         onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
         inputMode="numeric"
         autoComplete="off"
+        pattern="[0-9]*"
         maxLength={4}
-        className="h-12 w-full rounded-xl bg-surface-raised px-4 text-center text-lg tracking-[0.4em] text-ink ring-1 ring-inset ring-line/[0.08] transition-colors focus:outline-none focus:ring-focus"
+        className="h-12 w-full rounded-xl bg-surface-raised px-4 text-center text-lg tracking-[0.4em] text-ink ring-1 ring-inset ring-line/[0.08] transition-colors focus:outline-none focus:ring-2 focus:ring-focus"
       />
     </div>
   );
@@ -346,9 +368,9 @@ function GateShell({
   return (
     <div className="mx-auto flex max-w-md flex-col items-center py-16 text-center">
       <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border border-line/[0.06] bg-surface-sunken">
-        <Icon className="h-5 w-5 text-ink-dim" />
+        <Icon className="h-5 w-5 text-ink-dim" aria-hidden />
       </div>
-      <h3 className="mb-8 text-xl font-light tracking-tight text-ink">{title}</h3>
+      <h2 className="mb-8 text-xl font-light tracking-tight text-ink">{title}</h2>
       <div className="w-full rounded-[32px] bg-surface-sunken/80 p-10 text-left ring-1 ring-inset ring-line/[0.05] shadow-overlay backdrop-blur-3xl">
         {children}
       </div>

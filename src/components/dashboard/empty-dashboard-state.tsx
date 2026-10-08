@@ -18,50 +18,50 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
        and tell a member to sit and wait, even though creating a project
        is member-permitted in firestore.rules and in createProjectAction. */
     no_projects: {
-      title: "System Awaiting Signal",
+      title: "Start with your first project",
       description:
-        "OrbitOS is currently inactive. To begin surfacing telemetry on project health, team workload variance, and task clarity, initialize your first workspace module.",
+        "Create a project and OrbitOS starts showing what's due, who's stretched, and what's blocked.",
       icon: FolderPlus,
       action: (
         <button 
           onClick={onCreateProject} 
-          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-[transform,background-color,box-shadow] duration-quick ease-spring hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.97] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 text-[12px] text-ink ring-1 ring-inset ring-line/[0.1] transition-[transform,background-color,box-shadow] duration-quick ease-spring hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.97] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
           <Plus className="h-4 w-4 text-ink-muted transition-colors group-hover:text-ink" aria-hidden />
-          Create Project
+          Create project
         </button>
       )
     },
     no_tasks: {
-      title: "Clean Slate Output",
-      description: "Project infrastructure is online, but no operational tasks have been mapped. Define your first delivery nodes to start tracking performance.",
+      title: "No tasks yet",
+      description: "Add the first task to start tracking deadlines and workload.",
       icon: SignalLow,
       action: (
         <button 
-          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-[transform,background-color,box-shadow] duration-quick ease-spring hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.97] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 text-[12px] text-ink ring-1 ring-inset ring-line/[0.1] transition-[transform,background-color,box-shadow] duration-quick ease-spring hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.97] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
           <Plus className="h-4 w-4 text-ink-muted transition-colors group-hover:text-ink" aria-hidden />
-          Add First Task
+          Add first task
         </button>
       )
     },
     no_assigned_work: {
-      title: "All Clear",
+      title: "All clear",
       description: "You have no active tasks right now. When your team assigns work to you, it will appear here with full context and priority.",
       icon: CheckCircle2Icon,
       action: null
     },
     no_team: {
-      title: "Solo Protocol",
-      description: "You are the only active operator in this workspace. Invite collaborators to start mapping team workload and capacity.",
+      title: "It's just you so far",
+      description: "Invite your team to see who's working on what and who has room for more.",
       icon: UserPlus,
       action: isOwner ? (
         <button 
           onClick={onInviteMember}
-          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 font-mono text-[11px] uppercase tracking-[0.2em] text-ink ring-1 ring-inset ring-line/[0.1] transition-[transform,background-color,box-shadow] duration-quick ease-spring hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.97] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 text-[12px] text-ink ring-1 ring-inset ring-line/[0.1] transition-[transform,background-color,box-shadow] duration-quick ease-spring hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.97] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
           <UserPlus className="h-4 w-4 text-ink-muted transition-colors group-hover:text-ink" aria-hidden />
-          Invite Team
+          Invite team
         </button>
       ) : null
     }

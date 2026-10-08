@@ -103,7 +103,7 @@ export default function DashboardPage() {
       <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6">
         <Loader />
         <div className="flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-dim">
+          <span className="text-[12px] text-ink-dim">
             Resolving Network
           </span>
           <div className="h-px w-24 bg-gradient-to-r from-transparent via-line/15 to-transparent"></div>
@@ -161,7 +161,7 @@ export default function DashboardPage() {
           <div className="flex flex-col items-start gap-5 rounded-3xl bg-surface-sunken p-8 shadow-card ring-1 ring-inset ring-line/[0.06]">
             <div className="flex items-center gap-2.5">
               <AlertTriangle className="h-4 w-4 text-orbit-amber" aria-hidden />
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+              <span className="text-[12px] text-ink-dim">
                 Telemetry unreachable
               </span>
             </div>

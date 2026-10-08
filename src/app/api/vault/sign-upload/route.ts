@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     if (!["OWNER", "MEMBER"].includes(role.toUpperCase())) {
       return NextResponse.json(
-        { error: "Access denied. Valid operational role required." },
+        { error: "Only workspace members can upload to the vault." },
         { status: 403 }
       );
     }

@@ -163,7 +163,7 @@ export function CallShell({
           minimized ? "px-3 pb-2 pt-2.5" : "mb-3"
         )}
       >
-        <p className="truncate font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+        <p className="truncate text-[12px] text-ink-dim">
           {minimized ? title : (headline ?? `In a call — ${title}`)}
         </p>
 

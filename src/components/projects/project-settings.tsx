@@ -276,7 +276,7 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
             
             {isOwner && (
               <div className="px-3 py-2 bg-surface-card border-t border-line/[0.02]">
-                <p className="text-[10px] text-ink-dim font-mono leading-tight tracking-[0.05em] flex items-start gap-1.5">
+                <p className="text-[11px] text-ink-dim font-mono leading-tight tracking-[0.05em] flex items-start gap-1.5">
                   <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5 text-orbit-red/50" />
                   Deletion performs a cascade cleanup removing all tasks.
                 </p>
@@ -299,7 +299,7 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
           </div>
           <button
             onClick={() => setErrorMsg(null)}
-            className="mt-2 w-full text-[10px] font-mono uppercase tracking-[0.12em] text-ink-dim hover:text-ink transition-colors"
+            className="mt-2 w-full text-[12px] text-ink-dim hover:text-ink transition-colors"
           >
             Dismiss
           </button>
@@ -312,6 +312,9 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={confirmDestruction}
         entityName={projectName}
+        title="Delete this project?"
+        warningMessage="Its tasks are deleted with it, for everyone. This can't be undone. Archive it instead if you might need it later."
+        actionLabel="Delete project"
       />
 
       {/* Archive Success Modal */}
@@ -330,7 +333,7 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
             <Button
               type="button"
               onClick={dismissArchiveSuccess}
-              className="bg-ink text-black hover:bg-ink-strong transition-colors w-full sm:w-auto px-8"
+              className="bg-ink text-black hover:bg-ink-strong transition-colors w-full sm:w-auto px-8"
             >
               OK
             </Button>
@@ -361,7 +364,7 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
                   if (e.key === "Enter" && !renameLoading) handleRename();
                   if (e.key === "Escape" && !renameLoading) setShowRenameModal(false);
                 }}
-                className="w-full bg-surface-sunken border border-line/[0.1] rounded-lg h-10 px-3 text-[13px] font-mono text-ink placeholder:text-ink-faint transition-colors focus:outline-none focus:border-line/[0.2] disabled:opacity-50"
+                className="w-full bg-surface-sunken border border-line/[0.1] rounded-lg h-10 px-3 text-[13px] font-mono text-ink placeholder:text-ink-dim transition-colors focus:outline-none focus:border-line/[0.2] disabled:opacity-50"
                 placeholder="Project name"
               />
 
@@ -385,7 +388,7 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
                   type="button"
                   disabled={renameLoading || !newName.trim()}
                   onClick={handleRename}
-                  className="h-8 px-4 rounded-lg text-[12px] font-mono text-on-ink bg-ink hover:bg-ink-strong transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-8 px-4 rounded-lg text-[12px] font-mono text-on-ink bg-ink hover:bg-ink-strong transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {renameLoading ? "Saving..." : "Save"}
                 </button>
@@ -418,10 +421,10 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
                 onKeyDown={(e) => {
                   if (e.key === "Escape" && !descriptionLoading) setShowDescriptionModal(false);
                 }}
-                className="w-full bg-surface-sunken border border-line/[0.1] rounded-lg px-3 py-2.5 text-[13px] font-mono text-ink placeholder:text-ink-faint transition-colors focus:outline-none focus:border-line/[0.2] disabled:opacity-50 resize-none"
+                className="w-full bg-surface-sunken border border-line/[0.1] rounded-lg px-3 py-2.5 text-[13px] font-mono text-ink placeholder:text-ink-dim transition-colors focus:outline-none focus:border-line/[0.2] disabled:opacity-50 resize-none"
                 placeholder="Brief overview of the project scope..."
               />
-              <p className="text-[10px] font-mono text-ink-faint text-right mt-1">{descriptionText.length}/500</p>
+              <p className="text-[11px] font-mono text-ink-dim text-right mt-1">{descriptionText.length}/500</p>
 
               {descriptionError && (
                 <div className="mt-3 text-[11px] font-mono text-orbit-red flex items-center gap-2">
@@ -443,7 +446,7 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
                   type="button"
                   disabled={descriptionLoading}
                   onClick={handleDescriptionSave}
-                  className="h-8 px-4 rounded-lg text-[12px] font-mono text-on-ink bg-ink hover:bg-ink-strong transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-8 px-4 rounded-lg text-[12px] font-mono text-on-ink bg-ink hover:bg-ink-strong transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {descriptionLoading ? "Saving..." : "Save"}
                 </button>

@@ -16,11 +16,11 @@ export function PersonalMetricsCard({ metrics }: PersonalMetricsCardProps) {
     <DashboardCard>
       <div className="flex flex-col justify-between gap-8 md:flex-row md:items-center md:gap-12">
         <div className="flex min-w-0 flex-col gap-2">
-          <CardEyebrow>Personnel Telemetry</CardEyebrow>
-          <p className="mt-1 text-xl font-light tracking-tight text-ink sm:text-2xl">Active Deployment Phase</p>
+          <CardEyebrow>Your work</CardEyebrow>
+          <p className="mt-1 text-xl font-light tracking-tight text-ink sm:text-2xl">Your week at a glance</p>
           <div className="mt-3 flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-orbit-green" aria-hidden />
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">System Operational</span>
+            <span className="text-[12px] text-ink-muted">Live</span>
           </div>
         </div>
 
@@ -29,18 +29,18 @@ export function PersonalMetricsCard({ metrics }: PersonalMetricsCardProps) {
           <StatBlock
             size="md"
             value={myActiveTasks.toString().padStart(2, '0')}
-            label="Active Nodes"
+            label="Open tasks"
           />
           <StatBlock
             size="md"
             value={myOverdueTasks.toString().padStart(2, '0')}
-            label="Overdue Drift"
+            label="Overdue"
             tone={myOverdueTasks > 0 ? "critical" : "idle"}
           />
           <StatBlock
             size="md"
             value={myCompletedThisWeek.toString().padStart(2, '0')}
-            label="Weekly Wins"
+            label="Done this week"
             tone={myCompletedThisWeek > 0 ? "positive" : "idle"}
           />
         </div>

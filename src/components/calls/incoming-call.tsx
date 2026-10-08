@@ -261,7 +261,7 @@ export function IncomingCall() {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orbit-green opacity-75" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-orbit-green" />
         </span>
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+        <p className="text-[12px] text-ink-dim">
           {addingIn ? "Join a call" : "Incoming call"}
         </p>
       </div>

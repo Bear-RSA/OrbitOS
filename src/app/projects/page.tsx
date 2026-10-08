@@ -43,7 +43,7 @@ export default function ProjectsPage() {
       <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6">
         <Loader />
         <div className="flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-ink-dim">
+          <span className="text-[12px] text-ink-dim">
             Resolving Network
           </span>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-surface-control to-transparent"></div>
@@ -53,11 +53,11 @@ export default function ProjectsPage() {
   }
 
   return (
-    <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
+    <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
       <AppHeader user={user ?? {}} />
 
       <div className="mb-20">
-        <h1 className="text-sm font-mono tracking-[0.2em] text-ink-dim uppercase">Workspace</h1>
+        <h1 className="text-sm text-ink-dim">Workspace</h1>
         <div className="text-xl font-medium tracking-tight mt-1">Operational Projects</div>
       </div>
 

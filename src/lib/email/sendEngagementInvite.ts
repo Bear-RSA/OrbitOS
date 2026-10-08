@@ -141,7 +141,7 @@ function buildIcs(params: SendInviteParams): string {
         organizer,
         attendees: attendeeList,
         status: kind === "cancel" ? "CANCELLED" : "CONFIRMED",
-        categories: ["Engagement"],
+        categories: ["Event"],
         lastModified: new Date(),
         timing: engagement.allDay
           ? {
@@ -166,9 +166,9 @@ function buildText(params: SendInviteParams): string {
 
   const heading =
     kind === "cancel"
-      ? "This engagement has been cancelled"
+      ? "This event has been cancelled"
       : kind === "update"
-        ? "An engagement has been updated"
+        ? "An event has been updated"
         : `${organizer.name} invited you to an engagement`;
 
   const lines: string[] = [heading, "", engagement.title, "", `When: ${whenLine(engagement)}`];
@@ -213,9 +213,9 @@ function buildHtml(params: SendInviteParams): string {
 
   const heading =
     kind === "cancel"
-      ? "This engagement has been cancelled"
+      ? "This event has been cancelled"
       : kind === "update"
-        ? "An engagement has been updated"
+        ? "An event has been updated"
         : `${esc(organizer.name)} invited you to an engagement`;
 
   const rows: string[] = [`<tr><td class="k">When</td><td class="v">${esc(whenLine(engagement))}</td></tr>`];

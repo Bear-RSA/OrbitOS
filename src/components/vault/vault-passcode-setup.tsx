@@ -124,7 +124,7 @@ export function VaultPasscodeCard() {
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <label className="mb-2.5 block font-mono text-[10px] uppercase leading-none tracking-[0.18em] text-ink-dim">
+            <label className="mb-2.5 block text-[12px] leading-none text-ink-dim">
               {configured ? "New passcode" : "Passcode"}
             </label>
             <input
@@ -138,7 +138,7 @@ export function VaultPasscodeCard() {
             />
           </div>
           <div>
-            <label className="mb-2.5 block font-mono text-[10px] uppercase leading-none tracking-[0.18em] text-ink-dim">
+            <label className="mb-2.5 block text-[12px] leading-none text-ink-dim">
               Confirm passcode
             </label>
             <input

@@ -98,8 +98,14 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
             "ring-1 ring-inset ring-line/[0.08]",
             "focus:outline-none",
 
-            /* ── Centred panel (sm and up) ── */
+            /* ── Centred panel (sm and up) ──
+               Capped to the viewport and scrolling inside: a panel centred
+               with translate grows off both edges when its content is
+               taller than the window, taking the footer's buttons with it. */
             "sm:left-1/2 sm:top-1/2 sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[32px]",
+            "sm:max-h-[calc(100dvh-3rem)] sm:overflow-y-auto sm:overscroll-contain",
+            /* Slim house scrollbar, inset so it clears the rounded corners. */
+            "custom-scrollbar [&::-webkit-scrollbar-track]:my-8",
             "sm:data-[state=open]:animate-in sm:data-[state=open]:fade-in-0 sm:data-[state=open]:zoom-in-95 sm:data-[state=open]:blur-in sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]",
             "sm:data-[state=closed]:animate-out sm:data-[state=closed]:fade-out-0 sm:data-[state=closed]:zoom-out-95 sm:data-[state=closed]:blur-out sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%]",
 

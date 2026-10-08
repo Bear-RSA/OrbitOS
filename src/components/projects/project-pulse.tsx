@@ -81,9 +81,9 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
     return (
       <div className={cn(shell, "flex h-28 items-center justify-center")}>
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-line/[0.07] to-transparent" />
-        <span className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+        <span className="flex items-center gap-2.5 text-[12px] text-ink-dim">
           <Activity className="h-3.5 w-3.5 animate-pulse text-ink-faint" aria-hidden />
-          <ScrambleText text="Initializing System Pulse..." />
+          Loading project pulse…
         </span>
       </div>
     );
@@ -116,13 +116,13 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
 
       {/* SYSTEM HEALTH */}
       <div className="flex flex-1 flex-col justify-between border-b border-line/[0.06] p-6 transition-colors duration-500 hover:bg-surface-sunken md:border-b-0 md:border-r">
-        <CellLabel icon={Activity}>System Health</CellLabel>
+        <CellLabel icon={Activity}>Health</CellLabel>
         <div>
           <div className="mb-4 flex items-end gap-3">
             <span className="text-[clamp(2rem,3.5vw,2.5rem)] font-extralight leading-none tracking-tight tabular-nums text-ink">
               {pulse.healthScore}%
             </span>
-            <span className={cn("mb-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em]", verdict.text)}>
+            <span className={cn("mb-1 flex items-center gap-2 text-[12px]", verdict.text)}>
               <span className="relative flex h-1.5 w-1.5">
                 <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-75", verdict.fill)} />
                 <span className={cn("relative inline-flex h-1.5 w-1.5 rounded-full", verdict.fill)} />
@@ -159,8 +159,8 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
           <div>
             <span className="flex items-center gap-2.5 font-mono text-[13px] tracking-[0.08em] text-ink">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ink-strong opacity-60" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-ink-strong" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ink-strong opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-ink-strong" />
               </span>
               {pulse.activeUsers.length} online
             </span>
@@ -169,10 +169,10 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
           {/* Hover roster */}
           <div className="pointer-events-none absolute left-6 top-full z-50 mt-2 w-56 translate-y-2 rounded-xl border border-line/10 bg-surface-raised/95 p-4 opacity-0 shadow-raised backdrop-blur-xl transition-all duration-300 group-hover/nodes:translate-y-0 group-hover/nodes:opacity-100">
             <span className="mb-3 block border-b border-line/[0.06] pb-2">
-              <CardEyebrow>Active Personnel</CardEyebrow>
+              <CardEyebrow>Active people</CardEyebrow>
             </span>
             {pulse.activeUsers.length === 0 ? (
-              <span className="flex items-center gap-2 font-mono text-[10px] text-ink-dim">
+              <span className="flex items-center gap-2 font-mono text-[11px] text-ink-dim">
                 <span className="h-1.5 w-1.5 rounded-full bg-orbit-red/50" />
                 No signal
               </span>
@@ -198,7 +198,7 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
                       </div>
                       <span
                         className={cn(
-                          "shrink-0 text-[9px] uppercase tracking-[0.14em]",
+                          "shrink-0 text-[11px] uppercase tracking-[0.14em]",
                           isOwner ? "text-ink-muted" : "text-ink-dim"
                         )}
                       >
@@ -233,12 +233,12 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <HardDrive className="h-3.5 w-3.5 shrink-0 text-ink-faint" aria-hidden />
-            <CardEyebrow>Memory Velocity</CardEyebrow>
+            <CardEyebrow>Storage</CardEyebrow>
           </div>
 
           <span
             className={cn(
-              "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-mono text-[10px] tabular-nums ring-1 ring-inset",
+              "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-mono text-[11px] tabular-nums ring-1 ring-inset",
               isVelocityPositive
                 ? "bg-orbit-green/[0.08] text-orbit-green ring-orbit-green/20"
                 : isVelocityNegative
@@ -254,16 +254,16 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
 
         <div>
           <span className="mb-2.5 block">
-            <CardEyebrow>Sector Hotspots · 24h</CardEyebrow>
+            <CardEyebrow>Busiest areas · 24h</CardEyebrow>
           </span>
           {pulse.activityHotspots.length === 0 ? (
-            <span className="font-mono text-[10px] text-ink-dim">No activity traces</span>
+            <span className="font-mono text-[11px] text-ink-dim">No activity traces</span>
           ) : (
             <div className="flex flex-wrap gap-2">
               {pulse.activityHotspots.map((hs, idx) => (
                 <span
                   key={idx}
-                  className="max-w-full truncate rounded-md bg-surface-raised px-2 py-1 font-mono text-[10px] tracking-wide text-ink-muted ring-1 ring-inset ring-line/[0.06]"
+                  className="max-w-full truncate rounded-md bg-surface-raised px-2 py-1 font-mono text-[11px] tracking-wide text-ink-muted ring-1 ring-inset ring-line/[0.06]"
                 >
                   {hs}
                 </span>

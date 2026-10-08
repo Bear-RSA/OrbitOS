@@ -150,13 +150,13 @@ function FieldLabel({
     <div className="mb-2.5 flex items-center justify-between gap-4">
       <label
         htmlFor={htmlFor}
-        className="font-mono text-[10px] uppercase leading-none tracking-[0.18em] text-ink-dim"
+        className="text-[12px] leading-none text-ink-dim"
       >
         {label}
       </label>
-      <span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-dim">
+      <span className="inline-flex items-center gap-1.5 text-[12px] text-ink-dim">
         {locked && <Lock className="h-2.5 w-2.5 text-ink-faint" aria-hidden />}
-        {locked ? "System" : "Editable"}
+        {locked ? "Locked" : "Editable"}
       </span>
     </div>
   );
@@ -263,7 +263,7 @@ export default function ProfilePage() {
       <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-base">
         <Loader />
         <div className="flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-dim">
+          <span className="text-[12px] text-ink-dim">
             Resolving Profile
           </span>
           <div className="h-px w-24 bg-gradient-to-r from-transparent via-line/15 to-transparent" />
@@ -326,14 +326,14 @@ export default function ProfilePage() {
   const displayBio = bio.trim();
 
   return (
-    <DashboardShell className="min-h-[100dvh] bg-base text-ink selection:bg-surface-hover selection:text-ink-strong">
+    <DashboardShell className="min-h-[100dvh] bg-base text-ink selection:bg-surface-hover selection:text-ink-strong">
       {/* ── Chrome ─────────────────────────────────────────────────────── */}
       <AppHeader
         user={{ ...user, name: displayName }}
         actions={
           <>
             {hasChanges && (
-              <span className="mr-1 hidden items-center gap-2 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-dim sm:inline-flex">
+              <span className="mr-1 hidden items-center gap-2 text-[12px] text-ink-dim sm:inline-flex">
                 <span className="urgency-breath h-1.5 w-1.5 rounded-full bg-orbit-amber" />
                 Unsaved
               </span>
@@ -380,7 +380,7 @@ export default function ProfilePage() {
                   <HardDriveUpload className="h-3.5 w-3.5" aria-hidden />
                 )}
               </span>
-              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em]">
+              <span className="text-[12px] font-medium">
                 {isSaving ? "Saving" : saveSuccess ? "Saved" : "Save"}
               </span>
             </button>
@@ -406,7 +406,7 @@ export default function ProfilePage() {
                   <div className="flex flex-wrap items-center gap-3">
                     <StatusChip label={user.role} icon={RoleIcon} tone="neutral" />
                     {displayDescriptor && (
-                      <span className="min-w-0 truncate font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+                      <span className="min-w-0 truncate text-[12px] text-ink-dim">
                         {displayDescriptor}
                       </span>
                     )}
@@ -445,7 +445,7 @@ export default function ProfilePage() {
         <ScrollReveal delay={80}>
           <DashboardCard interactive={false}>
             <CardHeader
-              title={isOwner ? "Workspace Overview" : "Operational Overview"}
+              title={isOwner ? "Workspace Overview" : "Your overview"}
               icon={Activity}
               meta={
                 <StatusChip
@@ -550,7 +550,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <FieldLabel label="Authentication Email" locked />
+                  <FieldLabel label="Sign-in email" locked />
                   <div className="flex h-12 cursor-not-allowed items-center gap-3 rounded-xl bg-surface-sunken px-4 ring-1 ring-inset ring-line/[0.04]">
                     <Mail className="h-3.5 w-3.5 shrink-0 text-ink-faint" aria-hidden />
                     <span className="truncate font-mono text-[12px] text-ink-dim">
@@ -581,7 +581,7 @@ export default function ProfilePage() {
                     <RoleIcon className="h-5 w-5 text-ink" aria-hidden />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-mono text-[9px] uppercase leading-none tracking-[0.18em] text-ink-dim">
+                    <p className="text-[12px] leading-none text-ink-dim">
                       Assigned Role
                     </p>
                     <h2 className="mt-2 text-[20px] font-light capitalize leading-none tracking-tight text-ink">
@@ -590,7 +590,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <CardEyebrow className="mb-4 block">Access Matrix</CardEyebrow>
+                <CardEyebrow className="mb-4 block">Access</CardEyebrow>
 
                 <ul className="flex flex-1 flex-col gap-2">
                   {capabilities.map((cap) => (
@@ -644,7 +644,7 @@ export default function ProfilePage() {
                 <FolderKanban className="h-3.5 w-3.5 shrink-0 text-ink-faint" aria-hidden />
                 <CardEyebrow>{isOwner ? "All Projects" : "My Projects"}</CardEyebrow>
               </div>
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-dim">
+              <span className="text-[12px] text-ink-dim">
                 {String(involvedProjects.length).padStart(2, "0")} Active
               </span>
             </div>
@@ -692,7 +692,7 @@ export default function ProfilePage() {
 
                         <div className="mt-auto pt-6">
                           <div className="mb-2.5 flex items-center justify-between">
-                            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-ink-dim">
+                            <span className="text-[12px] text-ink-dim">
                               Progress
                             </span>
                             <span className="font-mono text-[11px] tabular-nums text-ink-muted">
@@ -754,7 +754,7 @@ export default function ProfilePage() {
                   ) : (
                     <LogOut className="h-3.5 w-3.5" aria-hidden />
                   )}
-                  <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em]">
+                  <span className="text-[12px] font-medium">
                     {isSigningOut ? "Signing Out" : "Sign Out"}
                   </span>
                 </button>

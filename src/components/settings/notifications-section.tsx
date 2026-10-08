@@ -69,7 +69,7 @@ export function NotificationsSection({ user }: { user: User }) {
           <ToggleRow
             id="pref-rsvp-notifications"
             title="RSVP responses"
-            description="An email when someone accepts, declines, or tentatively responds to an engagement you organize."
+            description="An email when someone accepts, declines, or tentatively responds to an event you organize."
             checked={preferences.rsvpNotifications}
             busy={pending === "rsvpNotifications"}
             onChange={(next) => update({ rsvpNotifications: next })}
@@ -126,14 +126,14 @@ export function NotificationsSection({ user }: { user: User }) {
           <button
             type="button"
             onClick={playMessageChime}
-            className="self-start rounded-lg border border-line/[0.06] bg-surface-control px-3 py-2 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
+            className="self-start rounded-lg border border-line/[0.06] bg-surface-control px-3 py-2 text-[12px] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
           >
             Play test sound
           </button>
           <button
             type="button"
             onClick={testRing}
-            className="self-start rounded-lg border border-line/[0.06] bg-surface-control px-3 py-2 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
+            className="self-start rounded-lg border border-line/[0.06] bg-surface-control px-3 py-2 text-[12px] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
           >
             Play test ring
           </button>

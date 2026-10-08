@@ -308,19 +308,19 @@ export default function ChangelogPage() {
   ];
 
   return (
-    <main className="theme-dark min-h-screen bg-[#050505] text-[#ededed] font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark min-h-screen bg-base text-ink font-sans selection:bg-white/[0.1]">
       <MarketingNav active="changelog" />
 
       {/* Hero Section */}
       <section className="pt-48 pb-20 px-8 max-w-7xl mx-auto">
         <ScrollReveal className="flex flex-col items-center text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] mb-8">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-[#ededed] uppercase">The Record</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-raised shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] mb-8">
+            <span className="text-[12px] text-ink">The Record</span>
           </div>
-          <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 text-[#ededed]">
+          <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 text-ink">
             Changelog
           </h1>
-          <p className="text-xl md:text-2xl text-[#888888] mx-auto max-w-2xl leading-relaxed font-light">
+          <p className="text-xl md:text-2xl text-ink-muted mx-auto max-w-2xl leading-relaxed font-light">
             A record of how OrbitOS is evolving — one release at a time.
           </p>
           <div className="mt-20 w-px h-24 bg-gradient-to-b from-white/[0.1] to-transparent mx-auto"></div>
@@ -332,7 +332,7 @@ export default function ChangelogPage() {
         {releases.map((release) => (
           <ScrollReveal key={release.month}>
             <div className="mb-32">
-              <h2 className="font-mono text-[11px] tracking-[0.3em] text-[#555555] uppercase mb-12 flex items-center gap-4">
+              <h2 className="text-[12px] text-ink-dim mb-12 flex items-center gap-4">
                 {release.month}
                 <span className="flex-grow h-px bg-white/[0.04]"></span>
               </h2>
@@ -340,10 +340,10 @@ export default function ChangelogPage() {
               <div className="space-y-24">
                 {release.entries.map((item, i) => (
                   <div key={i} className="group relative">
-                    <h3 className="text-2xl font-light text-[#ededed] mb-4 tracking-tight group-hover:text-white transition-colors">
+                    <h3 className="text-2xl font-light text-ink mb-4 tracking-tight group-hover:text-white transition-colors">
                       {item.title}
                     </h3>
-                    <p className="text-[#888888] leading-relaxed font-light text-[16px] md:text-lg">
+                    <p className="text-ink-muted leading-relaxed font-light text-[16px] md:text-lg">
                       {item.desc}
                     </p>
                   </div>
@@ -354,12 +354,12 @@ export default function ChangelogPage() {
         ))}
 
         <ScrollReveal delay={200}>
-          <div className="mt-40 p-12 rounded-[24px] bg-[#0A0A0A] border border-white/[0.04] text-center">
-            <h4 className="text-lg font-light text-[#ededed] mb-4">Stay Synchronized</h4>
-            <p className="text-[#888888] text-sm font-light mb-8 max-w-md mx-auto">
+          <div className="mt-40 p-12 rounded-[24px] bg-surface-card border border-white/[0.04] text-center">
+            <h4 className="text-lg font-light text-ink mb-4">Stay Synchronized</h4>
+            <p className="text-ink-muted text-sm font-light mb-8 max-w-md mx-auto">
               Follow our progress as we refine the architectural operating system for digital studios.
             </p>
-            <Link href="/signup" className="text-[#ededed] text-sm font-medium border-b border-white/[0.1] pb-1 hover:border-white transition-all">
+            <Link href="/signup" className="text-ink text-sm font-medium border-b border-white/[0.1] pb-1 hover:border-white transition-all">
               Join the evolution
             </Link>
           </div>

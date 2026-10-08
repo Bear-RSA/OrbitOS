@@ -79,8 +79,8 @@ export function BriefingRoom({ projectId, uid, isOpen, onClose }: BriefingRoomPr
                <Command className="w-4 h-4 text-ink-muted" />
              </div>
              <div className="flex flex-col">
-               <span className="text-[10px] font-mono text-ink-dim uppercase tracking-widest">Comm Link</span>
-               <h3 className="text-[13px] font-medium text-ink">Briefing Room</h3>
+               <span className="text-[12px] text-ink-dim">Comm Link</span>
+               <h3 className="text-[13px] font-medium text-ink">Updates</h3>
              </div>
           </div>
           <button 
@@ -95,7 +95,7 @@ export function BriefingRoom({ projectId, uid, isOpen, onClose }: BriefingRoomPr
           {briefings.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-3 opacity-50">
               <Command className="w-6 h-6 text-ink-faint" />
-              <p className="text-[11px] font-mono text-ink-dim uppercase tracking-widest">No Active Briefings</p>
+              <p className="text-[12px] text-ink-dim">No Active Briefings</p>
             </div>
           ) : (
             briefings.map((briefing, i) => {
@@ -105,7 +105,7 @@ export function BriefingRoom({ projectId, uid, isOpen, onClose }: BriefingRoomPr
                   <div className="flex items-center gap-2">
                     <UserAvatar name={briefing.author.name} photoURL={briefing.author.photoURL} size="sm" />
                     <span className="text-[12px] font-mono text-ink-muted">{briefing.author.name}</span>
-                    <span className="text-[10px] font-mono text-ink-faint">
+                    <span className="text-[11px] font-mono text-ink-dim">
                        {briefing.timestamp ? format(briefing.timestamp.toDate(), "HH:mm:ss") : "..."}
                     </span>
                   </div>
@@ -132,8 +132,8 @@ export function BriefingRoom({ projectId, uid, isOpen, onClose }: BriefingRoomPr
                value={content}
                onChange={(e) => setContent(e.target.value)}
                onKeyDown={handleKeyDown}
-               placeholder="Transmit system briefing..."
-               className="w-full bg-surface-sunken border border-line/[0.1] rounded-lg pl-12 pr-12 py-3 text-[13px] font-mono text-ink placeholder:text-ink-faint focus:outline-none focus:border-line/[0.2] transition-colors"
+               placeholder="Post an update for the team…"
+               className="w-full bg-surface-sunken border border-line/[0.1] rounded-lg pl-12 pr-12 py-3 text-[13px] font-mono text-ink placeholder:text-ink-dim focus:outline-none focus:border-line/[0.2] transition-colors"
                autoComplete="off"
                disabled={isSending}
              />

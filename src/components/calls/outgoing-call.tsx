@@ -180,7 +180,7 @@ export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
       aria-live="polite"
       className="fixed bottom-6 right-6 z-[60] w-[300px] animate-fade-in rounded-2xl border border-line/[0.08] bg-surface-container/95 p-5 shadow-overlay backdrop-blur-2xl"
     >
-      <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+      <p className="mb-4 text-[12px] text-ink-dim">
         {status === "placing" && "Connecting"}
         {status === "ringing" && "Ringing"}
         {status === "active" && "Joining"}

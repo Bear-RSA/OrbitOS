@@ -98,7 +98,7 @@ function canManageEngagement(
 async function requireEventInOrg(eventId: string, orgId: string): Promise<FoundEvent> {
   const ref = adminDb.collection(EVENTS).doc(eventId);
   const snap = await ref.get();
-  if (!snap.exists) return { ok: false, error: "Engagement not found." };
+  if (!snap.exists) return { ok: false, error: "Event not found." };
   if (snap.data()!.orgId !== orgId) return { ok: false, error: "Unauthorized." };
   return { ok: true, ref, data: snap.data()! };
 }
@@ -151,7 +151,7 @@ export async function createEventAction(
   try {
     const parsed = createEventSchema.safeParse(input);
     if (!parsed.success) {
-      return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid engagement." };
+      return { success: false, error: parsed.error.issues[0]?.message ?? "Check the event details and try again." };
     }
     const value = parsed.data;
 
@@ -287,7 +287,7 @@ export async function createEventAction(
     };
   } catch (err: any) {
     console.error("[EventAction] Failed to create engagement:", err);
-    return { success: false, error: err.message || "Failed to create engagement." };
+    return { success: false, error: err.message || "Couldn't create the event. Try again." };
   }
 }
 
@@ -302,7 +302,7 @@ export async function updateEventAction(
   try {
     const parsed = updateEventSchema.safeParse(updates);
     if (!parsed.success) {
-      return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid engagement." };
+      return { success: false, error: parsed.error.issues[0]?.message ?? "Check the event details and try again." };
     }
     const value = parsed.data;
 
@@ -316,7 +316,7 @@ export async function updateEventAction(
     if (!canManageEngagement(caller, found.data)) {
       return {
         success: false,
-        error: "Only the organizer can change this engagement.",
+        error: "Only the organizer can change this event.",
       };
     }
 
@@ -567,7 +567,7 @@ export async function updateEventAction(
     };
   } catch (err: any) {
     console.error("[EventAction] Failed to update engagement:", err);
-    return { success: false, error: err.message || "Failed to update engagement." };
+    return { success: false, error: err.message || "Couldn't save the event. Try again." };
   }
 }
 
@@ -589,10 +589,10 @@ export async function setRsvpAction(
 
     const attendeeList = (found.data.attendees ?? []) as string[];
     if (!attendeeList.includes(uid)) {
-      return { success: false, error: "You are not on this engagement." };
+      return { success: false, error: "You're not invited to this event." };
     }
     if (found.data.status === "cancelled") {
-      return { success: false, error: "This engagement was cancelled." };
+      return { success: false, error: "This event was cancelled." };
     }
 
     await found.ref.update({
@@ -650,7 +650,7 @@ export async function cancelEventAction(
     if (!canManageEngagement(caller, found.data)) {
       return {
         success: false,
-        error: "Only the organizer can cancel this engagement.",
+        error: "Only the organizer can cancel this event.",
       };
     }
 
@@ -688,7 +688,7 @@ export async function cancelEventAction(
     return { success: true };
   } catch (err: any) {
     console.error("[EventAction] Failed to cancel engagement:", err);
-    return { success: false, error: err.message || "Failed to cancel engagement." };
+    return { success: false, error: err.message || "Couldn't cancel the event. Try again." };
   }
 }
 

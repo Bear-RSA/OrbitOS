@@ -45,7 +45,7 @@ export function MarketingNav({ active }: { active?: NavKey }) {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 md:px-8">
           <Link
             href="/"
-            className={cn("flex items-center gap-3 rounded-lg font-mono text-lg tracking-tighter text-[#ededed]", PRESS)}
+            className={cn("flex items-center gap-3 rounded-lg font-mono text-lg tracking-tighter text-ink", PRESS)}
           >
             <Logo size="sm" className="rounded-md" />
             OrbitOS
@@ -59,10 +59,10 @@ export function MarketingNav({ active }: { active?: NavKey }) {
                 aria-current={active === key ? "page" : undefined}
                 className={cn(
                   "relative font-sans tracking-tight transition-colors duration-quick ease-spring",
-                  "after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-left after:bg-[#ededed] after:transition-transform after:duration-quick after:ease-spring",
+                  "after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-left after:bg-ink after:transition-transform after:duration-quick after:ease-spring",
                   active === key
                     ? "vibrant after:scale-x-100"
-                    : "font-light text-[#888888] hover:text-[#ededed] after:scale-x-0"
+                    : "font-light text-ink-muted hover:text-ink after:scale-x-0"
                 )}
               >
                 {label}
@@ -73,14 +73,14 @@ export function MarketingNav({ active }: { active?: NavKey }) {
           <div className="flex items-center gap-4 sm:gap-6">
             <Link
               href="/login"
-              className={cn("rounded-lg font-sans text-sm font-medium text-[#888888] hover:text-[#ededed]", PRESS)}
+              className={cn("rounded-lg font-sans text-sm font-medium text-ink-muted hover:text-ink", PRESS)}
             >
               Sign In
             </Link>
             <Link
               href="/signup"
               className={cn(
-                "rounded-lg bg-[#ededed] px-5 py-2 text-sm font-medium text-[#050505] hover:bg-white hover:shadow-[0_0_24px_rgba(255,255,255,0.12)]",
+                "rounded-lg bg-ink px-5 py-2 text-sm font-medium text-on-ink hover:bg-white hover:shadow-[0_0_24px_rgba(255,255,255,0.12)]",
                 PRESS
               )}
             >

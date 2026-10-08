@@ -16,7 +16,7 @@ export function WorkspaceAttentionCard({ metrics, hasProject }: WorkspaceAttenti
   return (
     <DashboardCard className="h-full">
       <CardHeader
-        title="Workspace Attention"
+        title="At a glance"
         meta={
           <CardEyebrow className="flex items-center gap-2">
             <span
@@ -45,13 +45,13 @@ export function WorkspaceAttentionCard({ metrics, hasProject }: WorkspaceAttenti
             <StatBlock
               size="md"
               value={activeProjects}
-              label="Active Projects"
+              label="Active projects"
               tone={activeProjects > 0 ? "default" : "idle"}
             />
             <StatBlock
               size="md"
               value={activeWorkload}
-              label="Active Workload"
+              label="Open tasks"
               tone={activeWorkload > 0 ? "default" : "idle"}
             />
             {/* Computed by the service since day one and rendered nowhere —
@@ -59,7 +59,7 @@ export function WorkspaceAttentionCard({ metrics, hasProject }: WorkspaceAttenti
             <StatBlock
               size="md"
               value={completedThisWeek}
-              label="Done This Week"
+              label="Done this week"
               tone={completedThisWeek > 0 ? "positive" : "idle"}
             />
           </div>

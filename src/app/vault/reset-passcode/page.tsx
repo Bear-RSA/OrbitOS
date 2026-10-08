@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ShieldAlert } from "lucide-react";
@@ -63,7 +63,7 @@ function ResetPasscodeForm() {
         </Notice>
         <Link
           href={`/login?redirect=${encodeURIComponent(`/vault/reset-passcode?orgId=${orgId}&token=${token}`)}`}
-          className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-ink text-on-ink font-mono text-[11px] uppercase tracking-[0.18em] transition-colors hover:bg-ink-strong"
+          className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-ink text-on-ink text-[12px] transition-colors hover:bg-ink-strong"
         >
           Sign In
         </Link>
@@ -92,7 +92,7 @@ function ResetPasscodeForm() {
         <button
           type="button"
           onClick={() => router.push("/vault")}
-          className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-ink text-on-ink font-mono text-[11px] uppercase tracking-[0.18em] transition-colors hover:bg-ink-strong"
+          className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-ink text-on-ink text-[12px] transition-colors hover:bg-ink-strong"
         >
           Go To The Vault
         </button>
@@ -135,7 +135,7 @@ function ResetPasscodeForm() {
         <button
           type="submit"
           disabled={!ready || submitting}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-ink text-on-ink font-mono text-[11px] uppercase tracking-[0.18em] transition-colors hover:bg-ink-strong disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-ink text-on-ink text-[12px] transition-colors hover:bg-ink-strong disabled:cursor-not-allowed disabled:opacity-40"
         >
           {submitting ? <Loader size={14} stroke={2.5} /> : "Set New Passcode"}
         </button>
@@ -153,18 +153,22 @@ function CodeField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const id = useId();
   return (
     <div>
-      <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+      <label htmlFor={id} className="mb-2 block text-[13px] text-ink-muted">
         {label}
       </label>
       <input
+        id={id}
+        type="password"
         value={value}
         onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
         inputMode="numeric"
         autoComplete="off"
+        pattern="[0-9]*"
         maxLength={4}
-        className="h-12 w-full rounded-xl bg-surface-raised px-4 text-center text-lg tracking-[0.4em] text-ink ring-1 ring-inset ring-line/[0.08] transition-colors focus:outline-none focus:ring-focus"
+        className="h-12 w-full rounded-xl bg-surface-raised px-4 text-center text-lg tracking-[0.4em] text-ink ring-1 ring-inset ring-line/[0.08] transition-colors focus:outline-none focus:ring-2 focus:ring-focus"
       />
     </div>
   );
@@ -173,6 +177,7 @@ function CodeField({
 function Notice({ tone, children }: { tone: "error" | "success"; children: React.ReactNode }) {
   return (
     <div
+      role={tone === "error" ? "alert" : "status"}
       className={
         tone === "error"
           ? "rounded-xl bg-destructive/5 p-5 ring-1 ring-destructive/20"
@@ -182,15 +187,15 @@ function Notice({ tone, children }: { tone: "error" | "success"; children: React
       <p
         className={
           tone === "error"
-            ? "flex items-start gap-2 font-mono text-[12px] font-medium leading-relaxed text-destructive"
-            : "flex items-start gap-2 font-mono text-[12px] font-medium leading-relaxed text-orbit-green"
+            ? "flex items-start gap-2 text-[13px] font-medium leading-relaxed text-destructive"
+            : "flex items-start gap-2 text-[13px] font-medium leading-relaxed text-orbit-green"
         }
       >
         <span
           className={
             tone === "error"
-              ? "mt-1.5 h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-destructive"
-              : "mt-1.5 h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-orbit-green"
+              ? "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-destructive"
+              : "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orbit-green"
           }
         />
         <span>{children}</span>
@@ -215,7 +220,7 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
         <div className="mt-10 flex justify-center">
           <Link
             href="/vault"
-            className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-dim transition-colors hover:text-ink-muted"
+            className="text-[12px] text-ink-dim transition-colors hover:text-ink-muted"
           >
             Back to the Vault
           </Link>

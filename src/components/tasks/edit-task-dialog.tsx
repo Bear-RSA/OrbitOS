@@ -181,7 +181,7 @@ export function EditTaskDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-2">
           <div className="space-y-2.5">
-            <Label htmlFor="edit-task-title">Directive Title</Label>
+            <Label htmlFor="edit-task-title">Task title</Label>
             <Input
               id="edit-task-title"
               placeholder="What needs to be done?"
@@ -204,7 +204,7 @@ export function EditTaskDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2.5">
-              <Label>Operators <span className="text-[9px] text-ink-dim ml-1 font-mono">(MAX 2)</span></Label>
+              <Label>Assignees <span className="ml-1 text-[12px] font-normal text-ink-muted">(up to 2)</span></Label>
               <div ref={dropdownRef} className="relative">
                 {/* Selected chips + trigger */}
                 <button
@@ -221,7 +221,7 @@ export function EditTaskDialog({
                       return (
                         <span
                           key={uid}
-                          className="inline-flex items-center gap-1 bg-surface-control border border-line/[0.08] rounded px-2 py-0.5 text-[11px] text-ink font-mono uppercase tracking-wider"
+                          className="inline-flex items-center gap-1 bg-surface-control border border-line/[0.08] rounded px-2 py-0.5 text-[12px] text-ink"
                         >
                           {member?.name?.split(" ")[0] || "?"}
                           <button
@@ -259,9 +259,9 @@ export function EditTaskDialog({
                           }`}
                         >
                           <span className="flex items-center gap-2">
-                            {isSelected && <span className="text-orbit-green text-[10px]">●</span>}
+                            {isSelected && <span className="text-orbit-green text-[11px]">●</span>}
                             {member.name}
-                            {isDisabled && <span className="text-[9px] text-ink-faint ml-auto uppercase tracking-widest">[MAX]</span>}
+                            {isDisabled && <span className="text-[11px] text-ink-dim ml-auto uppercase tracking-widest">[MAX]</span>}
                           </span>
                         </button>
                       );
@@ -301,7 +301,7 @@ export function EditTaskDialog({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="h-9 px-5 rounded-lg text-[12px] text-ink-faint hover:text-ink-muted hover:bg-transparent"
+              className="h-9 px-5 rounded-lg text-[12px] text-ink-dim hover:text-ink-muted hover:bg-transparent"
             >
               Cancel
             </Button>

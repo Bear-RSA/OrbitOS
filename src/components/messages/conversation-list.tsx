@@ -162,7 +162,7 @@ export function ConversationList({
             aria-selected={tab === name}
             onClick={() => onTabChange(name)}
             className={cn(
-              "flex-1 rounded-lg py-2 font-mono text-[10px] uppercase tracking-[0.2em] transition-all duration-200",
+              "flex-1 rounded-lg py-2 text-[12px] transition-all duration-200",
               tab === name
                 ? "bg-surface-control text-ink shadow-card ring-1 ring-line/[0.06]"
                 : "text-ink-dim hover:bg-surface-card hover:text-ink-muted"
@@ -182,7 +182,7 @@ export function ConversationList({
             onChange={(e) => setSearch(e.target.value)}
             placeholder={tab === "chats" ? "Search chats" : "Search people"}
             aria-label={tab === "chats" ? "Search chats" : "Search people"}
-            className="min-w-0 flex-1 bg-transparent text-[12px] text-ink placeholder:text-ink-faint focus-visible:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-[12px] text-ink placeholder:text-ink-dim focus-visible:outline-none"
           />
           {search && (
             <button
@@ -313,7 +313,7 @@ export function ConversationList({
           <button
             type="button"
             onClick={onCreateGroup}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-surface-control py-2.5 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-hover hover:text-ink"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-surface-control py-2.5 text-[12px] text-ink-muted ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-hover hover:text-ink"
           >
             <Plus className="h-3 w-3" aria-hidden />
             New group
@@ -329,7 +329,7 @@ export function ConversationList({
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <section className="mb-1 mt-2 first:mt-0">
-      <h3 className="px-2.5 pb-1.5 font-mono text-[9px] uppercase tracking-[0.22em] text-ink-faint">
+      <h3 className="px-2.5 pb-1.5 text-[12px] text-ink-dim">
         {label}
       </h3>
       <ul className="flex flex-col gap-0.5">{children}</ul>
@@ -454,7 +454,7 @@ function ConversationRow({
           className={cn(
             "mt-0.5 block truncate",
             previewStyle === "label" || busy
-              ? "font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim"
+              ? "text-[12px] text-ink-dim"
               : "text-[11px] leading-snug",
             previewStyle === "text" && !busy && (unread ? "text-ink-muted" : "text-ink-dim")
           )}
@@ -468,7 +468,7 @@ function ConversationRow({
       {live && (
         <span
           aria-label="Call in progress"
-          className="flex shrink-0 items-center gap-1.5 rounded-md bg-orbit-green/15 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.15em] text-orbit-green ring-1 ring-inset ring-orbit-green/25"
+          className="flex shrink-0 items-center gap-1.5 rounded-md bg-orbit-green/15 px-1.5 py-0.5 text-[12px] text-orbit-green ring-1 ring-inset ring-orbit-green/25"
         >
           <span className="relative flex h-1.5 w-1.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orbit-green opacity-75" />

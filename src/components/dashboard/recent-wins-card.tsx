@@ -16,7 +16,7 @@ export function RecentWinsCard({ wins }: RecentWinsCardProps) {
   return (
     <DashboardCard className="h-full" tone="quiet" interactive={false}>
       <CardHeader
-        title="Recent Wins"
+        title="Recent wins"
         icon={Trophy}
         meta={<CardEyebrow>{wins.length > 0 ? `Last ${wins.length}` : "None yet"}</CardEyebrow>}
       />
@@ -45,7 +45,7 @@ export function RecentWinsCard({ wins }: RecentWinsCardProps) {
                   <span className="block truncate text-[13px] font-medium leading-tight text-ink-muted transition-colors group-hover/win:text-ink-strong">
                     {win.task.title}
                   </span>
-                  <span className="mt-1.5 block truncate font-mono text-[9px] uppercase tracking-[0.12em] text-ink-dim">
+                  <span className="mt-1.5 block truncate text-[12px] text-ink-dim">
                     {win.assigneeName} · {formatRelativeTime(win.completedAt)}
                   </span>
                 </span>

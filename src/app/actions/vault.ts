@@ -363,7 +363,7 @@ export async function deleteVaultDocumentAction(payload: {
     if (!canManageVaultDocument(subjectOf(doc), { uid, role })) {
       return {
         success: false,
-        error: "Only an owner or the person who filed this can purge it.",
+        error: "Only an owner or the person who filed this can delete it.",
       };
     }
 
@@ -410,6 +410,6 @@ export async function deleteVaultDocumentAction(payload: {
     return { success: true };
   } catch (err) {
     console.error("[Vault] Failed to purge document:", err);
-    return { success: false, error: "Could not purge this document." };
+    return { success: false, error: "Couldn't delete this document. Try again." };
   }
 }

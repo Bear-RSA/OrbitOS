@@ -11,24 +11,24 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <main className="theme-dark min-h-screen bg-[#050505] text-[#ededed] font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark min-h-screen bg-base text-ink font-sans selection:bg-white/[0.1]">
       <MarketingNav />
 
       {/* Hero Section */}
       <section className="pt-48 pb-20 px-8 max-w-7xl mx-auto">
         <ScrollReveal className="flex flex-col items-center text-center">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-[#555555] uppercase mb-8 block">Legal Protocol</span>
-          <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 text-[#ededed]">
+          <span className="text-[12px] text-ink-dim mb-8 block">Legal Protocol</span>
+          <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 text-ink">
             Privacy Policy
           </h1>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.2] to-transparent"></div>
-          <p className="mt-8 font-mono text-[10px] tracking-widest text-[#555555] uppercase">Last Updated: April 2026</p>
+          <p className="mt-8 text-[12px] text-ink-dim">Last Updated: April 2026</p>
         </ScrollReveal>
       </section>
 
       {/* Content Section */}
       <section className="pb-40 px-8 max-w-4xl mx-auto">
-        <ScrollReveal delay={100} className="prose prose-invert prose-p:text-[#888888] prose-p:font-light prose-p:leading-relaxed prose-headings:font-light prose-headings:tracking-tight prose-headings:text-[#ededed] prose-strong:text-[#ededed] prose-strong:font-medium max-w-none">
+        <ScrollReveal delay={100} className="prose prose-invert prose-p:text-ink-muted prose-p:font-light prose-p:leading-relaxed prose-headings:font-light prose-headings:tracking-tight prose-headings:text-ink prose-strong:text-ink prose-strong:font-medium max-w-none">
 
           <div className="space-y-16">
             <section>
@@ -45,20 +45,20 @@ export default function PrivacyPage() {
               <h2 className="text-2xl mb-6">2. Definitions</h2>
               <ul className="space-y-4 list-none p-0">
                 <li className="flex gap-4">
-                  <span className="text-[#ededed] font-medium min-w-[120px]">POPIA:</span>
-                  <span className="text-[#888888] font-light leading-relaxed">The Protection of Personal Information Act 4 of 2013.</span>
+                  <span className="text-ink font-medium min-w-[120px]">POPIA:</span>
+                  <span className="text-ink-muted font-light leading-relaxed">The Protection of Personal Information Act 4 of 2013.</span>
                 </li>
                 <li className="flex gap-4">
-                  <span className="text-[#ededed] font-medium min-w-[120px]">Data Subject:</span>
-                  <span className="text-[#888888] font-light leading-relaxed">An individual who accesses or uses the Service.</span>
+                  <span className="text-ink font-medium min-w-[120px]">Data Subject:</span>
+                  <span className="text-ink-muted font-light leading-relaxed">An individual who accesses or uses the Service.</span>
                 </li>
                 <li className="flex gap-4">
-                  <span className="text-[#ededed] font-medium min-w-[120px]">Workspace:</span>
-                  <span className="text-[#888888] font-light leading-relaxed">The organizational environment created within OrbitOS.</span>
+                  <span className="text-ink font-medium min-w-[120px]">Workspace:</span>
+                  <span className="text-ink-muted font-light leading-relaxed">The organizational environment created within OrbitOS.</span>
                 </li>
                 <li className="flex gap-4">
-                  <span className="text-[#ededed] font-medium min-w-[120px]">Processing:</span>
-                  <span className="text-[#888888] font-light leading-relaxed">Any operation or activity concerning Personal Information, as defined in POPIA.</span>
+                  <span className="text-ink font-medium min-w-[120px]">Processing:</span>
+                  <span className="text-ink-muted font-light leading-relaxed">Any operation or activity concerning Personal Information, as defined in POPIA.</span>
                 </li>
               </ul>
             </section>
@@ -69,15 +69,15 @@ export default function PrivacyPage() {
 
               <div className="mt-8 space-y-8">
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">3.1 Account Information</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">3.1 Account Information</h3>
                   <p className="text-sm">Full name, email address, role designation (Owner or Member), and workspace association.</p>
                 </div>
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">3.2 Usage Data</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">3.2 Usage Data</h3>
                   <p className="text-sm">Tasks and projects created, modified, or assigned; activity timestamps and audit logs; workspace interactions and collaborations; user-generated content within the platform.</p>
                 </div>
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">3.3 Technical Information</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">3.3 Technical Information</h3>
                   <p className="text-sm">IP address (collected for security and abuse prevention), browser type, device information, operating system, and access times.</p>
                 </div>
               </div>
@@ -89,11 +89,11 @@ export default function PrivacyPage() {
 
               <div className="mt-8 space-y-8">
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">4.1 Purposes of Processing</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">4.1 Purposes of Processing</h3>
                   <p className="text-sm">To provide and maintain the Service; to authenticate users and secure accounts; to facilitate workspace collaboration; to send transactional communications; to improve platform functionality; and to comply with legal obligations.</p>
                 </div>
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">4.2 Lawful Basis</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">4.2 Lawful Basis</h3>
                   <p className="text-sm">Our processing is based on Consent, Contractual Necessity, Legitimate Interest (for security and improvement), and Legal Obligation.</p>
                 </div>
               </div>
@@ -103,21 +103,21 @@ export default function PrivacyPage() {
               <h2 className="text-2xl mb-6">5. How We Share Information</h2>
               <div className="mt-8 space-y-8">
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">5.1 Within Your Organization</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">5.1 Within Your Organization</h3>
                   <p className="text-sm">Workspace Owners and Members can see your name, email, associated tasks, and activity within the shared Workspace.</p>
                 </div>
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">5.2 Third-Party Service Providers</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">5.2 Third-Party Service Providers</h3>
                   <div className="overflow-x-auto mt-6">
                     <table className="w-full text-left text-sm font-light border-collapse">
                       <thead>
                         <tr className="border-b border-white/[0.04]">
-                          <th className="py-4 text-[#ededed]/60 font-medium">Provider</th>
-                          <th className="py-4 text-[#ededed]/60 font-medium">Purpose</th>
-                          <th className="py-4 text-[#ededed]/60 font-medium">Location</th>
+                          <th className="py-4 text-ink/60 font-medium">Provider</th>
+                          <th className="py-4 text-ink/60 font-medium">Purpose</th>
+                          <th className="py-4 text-ink/60 font-medium">Location</th>
                         </tr>
                       </thead>
-                      <tbody className="text-[#888888]">
+                      <tbody className="text-ink-muted">
                         <tr className="border-b border-white/[0.04]">
                           <td className="py-4">Firebase (Google)</td>
                           <td className="py-4">Auth & Database</td>
@@ -148,7 +148,7 @@ export default function PrivacyPage() {
             <section>
               <h2 className="text-2xl mb-6">6. Data Security</h2>
               <p>We implement appropriate technical and organizational measures to safeguard Personal Information against loss, unauthorized access, or disclosure:</p>
-              <ul className="mt-4 space-y-2 list-disc list-inside text-[#888888] font-light">
+              <ul className="mt-4 space-y-2 list-disc list-inside text-ink-muted font-light">
                 <li>Encryption in transit (TLS/SSL) and at rest</li>
                 <li>Role-based access controls (RBAC)</li>
                 <li>Secure authentication via Firebase</li>
@@ -167,15 +167,15 @@ export default function PrivacyPage() {
               <h2 className="text-2xl mb-6">8. Your Rights Under POPIA</h2>
               <p>As a Data Subject, you have the right to access, correct, delete, or object to the processing of your Personal Information. You also have the right to withdraw consent and to lodge a complaint with the Information Regulator of South Africa.</p>
               <p className="mt-4">
-                To exercise these rights, email <span className="text-[#ededed]">feedback@miraistack.co.za</span>.
+                To exercise these rights, email <span className="text-ink">feedback@miraistack.co.za</span>.
               </p>
             </section>
 
             <section className="pt-20 border-t border-white/[0.04]">
-              <div className="bg-[#0A0A0A] p-10 rounded-2xl ring-1 ring-white/[0.04]">
+              <div className="bg-surface-card p-10 rounded-2xl ring-1 ring-white/[0.04]">
                 <h2 className="text-xl mb-4">Contact Information</h2>
                 <p className="text-sm mb-6">For questions regarding this policy, please contact our Information Officer: Mirai Stack (Pty) Ltd</p>
-                <Link href="mailto:feedback@miraistack.co.za" className="text-[#ededed] font-medium hover:underline">feedback@miraistack.co.za</Link>
+                <Link href="mailto:feedback@miraistack.co.za" className="text-ink font-medium hover:underline">feedback@miraistack.co.za</Link>
               </div>
             </section>
           </div>

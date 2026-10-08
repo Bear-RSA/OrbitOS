@@ -38,7 +38,7 @@ export function BlockedWorkCard({ items, max = 5 }: BlockedWorkCardProps) {
   return (
     <DashboardCard tone="quiet" interactive={false}>
       <CardHeader
-        title="Blocked Work"
+        title="Blocked"
         icon={Ban}
         meta={
           items.length > 0 ? (
@@ -53,7 +53,7 @@ export function BlockedWorkCard({ items, max = 5 }: BlockedWorkCardProps) {
 
       {visible.length === 0 ? (
         <div className="space-y-2">
-          <p className="text-[14px] font-medium text-ink">No blocked directives.</p>
+          <p className="text-[14px] font-medium text-ink">Nothing is blocked.</p>
           <p className="text-[13px] font-light leading-relaxed text-ink-muted">
             Work flagged as blocked from a project board is listed here with its reason.
           </p>
@@ -78,11 +78,11 @@ export function BlockedWorkCard({ items, max = 5 }: BlockedWorkCardProps) {
                     </p>
                   )}
 
-                  <p className="mt-1.5 flex items-center gap-1.5 truncate font-mono text-[9px] uppercase tracking-[0.12em] text-ink-dim">
+                  <p className="mt-1.5 flex items-center gap-1.5 truncate text-[12px] text-ink-dim">
                     <span className="truncate">{projectName}</span>
                     {assigneeNames.length > 0 && (
                       <>
-                        <span className="text-ink-faint" aria-hidden>
+                        <span className="text-ink-dim" aria-hidden>
                           •
                         </span>
                         <span className="truncate">{assigneeNames.join(", ")}</span>
@@ -101,7 +101,7 @@ export function BlockedWorkCard({ items, max = 5 }: BlockedWorkCardProps) {
           ))}
 
           {items.length > visible.length && (
-            <li className="pt-2 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim">
+            <li className="pt-2 text-[12px] text-ink-dim">
               +{items.length - visible.length} more blocked
             </li>
           )}

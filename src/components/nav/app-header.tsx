@@ -24,11 +24,11 @@ import { cn } from "@/lib/utils/classnames";
 /* ------------------------------------------------------------------ */
 
 /**
- * The logo already goes home and the gear on /profile already goes to
- * settings, so neither earns a slot in the nav. Every page currently
- * agrees; pass `hide` explicitly (or `[]`) to opt out.
+ * Settings is reachable from the avatar, so it does not earn a nav slot.
+ * Dashboard stays: the logo also goes there, but nobody should have to
+ * know that to find home. Pass `hide` explicitly (or `[]`) to opt out.
  */
-const DEFAULT_HIDE = ["/dashboard", "/settings"];
+const DEFAULT_HIDE = ["/settings"];
 
 interface AppHeaderUser {
   id?: string;

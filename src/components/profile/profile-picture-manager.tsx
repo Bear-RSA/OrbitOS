@@ -156,7 +156,7 @@ export function ProfilePictureManager({ user }: ProfilePictureManagerProps) {
           className="absolute inset-2 z-20 flex flex-col items-center justify-center gap-2 rounded-[20px] bg-base/65 opacity-0 backdrop-blur-sm transition-opacity duration-300 focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100 disabled:cursor-not-allowed"
         >
           <Camera className="h-5 w-5 text-ink" aria-hidden />
-          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-ink">
+          <span className="text-[12px] text-ink">
             Change
           </span>
         </button>
@@ -192,7 +192,7 @@ export function ProfilePictureManager({ user }: ProfilePictureManagerProps) {
       <button
         onClick={() => fileInputRef.current?.click()}
         disabled={busy}
-        className="font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim transition-colors hover:text-ink focus-visible:outline-none focus-visible:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+        className="text-[12px] text-ink-dim transition-colors hover:text-ink focus-visible:outline-none focus-visible:text-ink disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isUploading ? "Uploading…" : isDeleting ? "Removing…" : "Profile Image"}
       </button>

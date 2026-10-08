@@ -210,7 +210,7 @@ export function SecuritySection() {
             <div>
               <label
                 htmlFor="security-current"
-                className="mb-2.5 block font-mono text-[10px] uppercase leading-none tracking-[0.18em] text-ink-dim"
+                className="mb-2.5 block text-[12px] leading-none text-ink-dim"
               >
                 Current password
               </label>
@@ -228,7 +228,7 @@ export function SecuritySection() {
               <div>
                 <label
                   htmlFor="security-new"
-                  className="mb-2.5 block font-mono text-[10px] uppercase leading-none tracking-[0.18em] text-ink-dim"
+                  className="mb-2.5 block text-[12px] leading-none text-ink-dim"
                 >
                   New password
                 </label>
@@ -244,7 +244,7 @@ export function SecuritySection() {
               <div>
                 <label
                   htmlFor="security-confirm"
-                  className="mb-2.5 block font-mono text-[10px] uppercase leading-none tracking-[0.18em] text-ink-dim"
+                  className="mb-2.5 block text-[12px] leading-none text-ink-dim"
                 >
                   Confirm new password
                 </label>

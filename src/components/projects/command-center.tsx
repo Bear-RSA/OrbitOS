@@ -103,7 +103,7 @@ function LogRow({ event, isNew }: { event: SSEActivityEvent; isNew: boolean }) {
           {descriptor.describe(event.metadata ?? {})}
         </div>
 
-        <div className="mt-1 flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-ink-dim">
+        <div className="mt-1 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-ink-dim">
           <span
             className="font-semibold tabular-nums"
             style={{ color }}
@@ -290,16 +290,16 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
   const filtered = tone !== "all" || query.trim().length > 0;
 
   return (
-    <section className="animate-fade-in mt-20" aria-label="Command Center telemetry log">
+    <section className="animate-fade-in mt-20" aria-label="Project activity">
       {/* ────────── HEADER ────────── */}
       <div className="mb-8 flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div>
-          <h2 className="mb-3 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.3em] text-ink-dim">
+          <h2 className="mb-3 flex items-center gap-3 text-[12px] text-ink-dim">
             <span className="h-1.5 w-1.5 rounded-full bg-surface-raised ring-1 ring-line/[0.08]" />
             System Diagnostics
           </h2>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <h3 className="text-2xl font-light tracking-tight text-ink">Command Center</h3>
+            <h3 className="text-2xl font-light tracking-tight text-ink">Activity</h3>
             <span className="hidden h-4 w-px bg-surface-control sm:block" />
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
@@ -315,7 +315,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
                 />
               </span>
               <span
-                className="font-mono text-[10px] uppercase tracking-[0.2em] transition-colors"
+                className="text-[12px] transition-colors"
                 style={{ color: status.color }}
               >
                 {status.text}
@@ -326,7 +326,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
 
         <div className="flex items-center gap-2 pt-1">
           <Terminal className="h-3.5 w-3.5 text-ink-faint" />
-          <span className="font-mono text-[10px] uppercase tracking-wider text-ink-dim">
+          <span className="text-[12px] text-ink-dim">
             SSE Bridge
           </span>
         </div>
@@ -338,7 +338,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
         <div className="flex items-center justify-between border-b border-line/[0.06] bg-surface-card px-6 py-4">
           <div className="flex items-center gap-3">
             <Terminal className="h-3.5 w-3.5 text-ink-faint" />
-            <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-ink">
+            <span className="text-[12px] text-ink">
               Telemetry_Log
             </span>
           </div>
@@ -346,7 +346,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
               is what makes the flash fire for the life of the project. */}
           <span
             key={total}
-            className="pkt-flash font-mono text-[10px] tabular-nums text-ink-dim"
+            className="pkt-flash font-mono text-[11px] tabular-nums text-ink-dim"
             title="Total events recorded for this project"
           >
             {total.toLocaleString()} PKTS_RECEIVED
@@ -382,8 +382,8 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Filter by name, file, actor…"
-              aria-label="Filter telemetry log"
-              className="w-44 bg-transparent font-mono text-[10px] text-ink placeholder:text-ink-faint focus:outline-none sm:w-56"
+              aria-label="Filter activity"
+              className="w-44 bg-transparent font-mono text-[11px] text-ink placeholder:text-ink-dim focus:outline-none sm:w-56"
             />
             {query && (
               <button
@@ -406,8 +406,8 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
             className="stream-in absolute left-1/2 top-[112px] z-30 -translate-x-1/2 rounded-full border border-line/[0.06] bg-surface-lowest/95 px-4 py-1.5 shadow-[0_0_20px_rgb(var(--scrim)_/_0.8)] backdrop-blur-md transition-colors hover:border-line/[0.12]"
           >
             <span className="flex items-center gap-2">
-              <ArrowUp className="h-3 w-3 animate-bounce text-orbit-amber" aria-hidden />
-              <span className="font-mono text-[10px] uppercase tracking-wider tabular-nums text-ink">
+              <ArrowUp className="h-3 w-3 text-orbit-amber" aria-hidden />
+              <span className="font-mono text-[11px] uppercase tracking-wider tabular-nums text-ink">
                 {pending} new update{pending !== 1 ? "s" : ""}
               </span>
             </span>
@@ -460,7 +460,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
                       setTone("all");
                       setQuery("");
                     }}
-                    className="mt-4 rounded-lg border border-line/[0.08] px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-ink-muted transition-colors hover:border-line/20 hover:text-ink"
+                    className="mt-4 rounded-lg border border-line/[0.08] px-3 py-1.5 text-[12px] text-ink-muted transition-colors hover:border-line/20 hover:text-ink"
                   >
                     Clear filters
                   </button>
@@ -471,11 +471,11 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
                 {groups.map((group) => (
                   <div key={group.key}>
                     <div className="sticky top-0 z-10 -mx-5 flex items-center gap-3 bg-surface-lowest/95 px-5 py-2 backdrop-blur-sm">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-ink-dim">
+                      <span className="text-[12px] text-ink-dim">
                         {group.label}
                       </span>
                       <span className="h-px flex-1 bg-surface-control" />
-                      <span className="font-mono text-[9px] tabular-nums text-ink-faint">
+                      <span className="font-mono text-[11px] tabular-nums text-ink-dim">
                         {group.rows.length}
                       </span>
                     </div>
@@ -507,7 +507,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
                 style={{ backgroundColor: status.color }}
               />
             </span>
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-dim">
+            <span className="text-[12px] text-ink-dim">
               System Status:{" "}
               <span style={{ color: status.color }} className="transition-colors duration-300">
                 {status.label}
@@ -515,7 +515,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
             </span>
           </div>
 
-          <span className="font-mono text-[9px] uppercase tracking-widest tabular-nums text-ink-dim">
+          <span className="font-mono text-[11px] uppercase tracking-widest tabular-nums text-ink-dim">
             {filtered ? (
               <>
                 Showing {visible.length} of {events.length}
@@ -553,7 +553,7 @@ function ToneChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.15em] transition-colors",
+        "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] transition-colors",
         active
           ? "border-line/[0.14] bg-surface-control text-ink"
           : "border-line/[0.06] text-ink-dim hover:border-line/[0.1] hover:text-ink-muted"
@@ -567,7 +567,7 @@ function ToneChip({
         />
       )}
       {label}
-      <span className="tabular-nums text-ink-faint">{count}</span>
+      <span className="tabular-nums text-ink-dim">{count}</span>
     </button>
   );
 }
@@ -594,8 +594,8 @@ function EmptyState({
       <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-card ring-1 ring-line/[0.06]">
         <Icon className="h-5 w-5 text-ink-faint" style={tone ? { color: tone } : undefined} />
       </div>
-      <p className="mb-1.5 font-mono text-[12px] uppercase tracking-widest text-ink">{title}</p>
-      <p className="max-w-xs font-mono text-[10px] leading-relaxed text-ink-dim">{detail}</p>
+      <p className="mb-1.5 text-[12px] text-ink">{title}</p>
+      <p className="max-w-xs font-mono text-[11px] leading-relaxed text-ink-dim">{detail}</p>
       {action}
     </div>
   );

@@ -55,7 +55,7 @@ function OpeningChannels() {
   return (
     <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-base">
       <Loader />
-      <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-dim">
+      <span className="text-[12px] text-ink-dim">
         Opening Channels
       </span>
     </div>
@@ -229,7 +229,7 @@ function MessagesScreen() {
      which is the part that changes what gets said. */
   const participantSummary = (conversation: Conversation): string => {
     const names = (conversation.participantIds ?? []).map(
-      (id) => liveNames[id] || conversation.participantNames?.[id] || "Unknown operative"
+      (id) => liveNames[id] || conversation.participantNames?.[id] || "Unknown member"
     );
     if (names.length === 0) return "No participants";
     if (names.length <= 3) return names.join(", ");

@@ -92,7 +92,7 @@ export function TeamPresenceCard({ members, events, viewerId, clock24h }: TeamPr
 
       {rows.length === 0 ? (
         <div className="flex flex-1 flex-col justify-end space-y-2">
-          <p className="text-[14px] font-medium text-ink">No operators yet.</p>
+          <p className="text-[14px] font-medium text-ink">No teammates yet.</p>
           <p className="text-[13px] font-light leading-relaxed text-ink-muted">
             Invited members appear here once they have signed in at least once.
           </p>
@@ -119,19 +119,19 @@ export function TeamPresenceCard({ members, events, viewerId, clock24h }: TeamPr
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-medium leading-tight text-ink-muted">
-                  {member.name || "Unnamed operative"}
+                  {member.name || "Unnamed member"}
                   {member.id === viewerId && (
-                    <span className="ml-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-faint">
+                    <span className="ml-1.5 text-[12px] text-ink-dim">
                       You
                     </span>
                   )}
                 </p>
-                <p className="mt-1 truncate font-mono text-[9px] uppercase tracking-[0.12em] text-ink-dim">
+                <p className="mt-1 truncate text-[12px] text-ink-dim">
                   {meeting
                     ? `In a meeting until ${format(meeting.endsAt, timeFormat)}`
                     : PRESENCE_LABEL[presence]}
                   {member.roleDescriptor && !meeting && (
-                    <span className="text-ink-faint"> · {member.roleDescriptor}</span>
+                    <span className="text-ink-dim"> · {member.roleDescriptor}</span>
                   )}
                 </p>
               </div>

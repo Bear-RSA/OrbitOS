@@ -82,7 +82,7 @@ const STATE_STYLE: Record<RoadmapState, { bar: string; text: string; dot: string
     bar: "bg-orbit-green/[0.14] border-orbit-green/30 hover:border-orbit-green/50",
     text: "text-orbit-green",
     dot: "bg-orbit-green",
-    label: "Executed",
+    label: "Done",
   },
   blocked: {
     bar: "bg-orbit-amber/[0.12] border-orbit-amber/40 hover:border-orbit-amber/60",
@@ -303,7 +303,7 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
   };
 
   const nameOf = useCallback(
-    (uid: string) => members.find((m) => m.id === uid)?.name ?? "Unknown operative",
+    (uid: string) => members.find((m) => m.id === uid)?.name ?? "Unknown member",
     [members]
   );
 
@@ -330,11 +330,11 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/[0.04] p-4">
         <div className="flex items-center gap-2.5">
           <Map className="h-3.5 w-3.5 text-ink-dim" aria-hidden />
-          <h2 className="select-none font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+          <h2 className="select-none text-[12px] text-ink-dim">
             Deployment Roadmap
           </h2>
           {!isEmpty && (
-            <span className="font-mono text-[10px] tabular-nums text-ink-faint">
+            <span className="font-mono text-[11px] tabular-nums text-ink-dim">
               {model.lanes.length} milestone{model.lanes.length === 1 ? "" : "s"} · {drawnCount} plotted
             </span>
           )}
@@ -347,7 +347,7 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
               onClick={() => setShowCompleted((visible) => !visible)}
               aria-pressed={showCompleted}
               className={cn(
-                "rounded-lg px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] transition-colors",
+                "rounded-lg px-2.5 py-1 text-[12px] transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                 showCompleted
                   ? "bg-surface-hover text-ink-muted ring-1 ring-inset ring-line/[0.08]"
@@ -369,7 +369,7 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
                   onClick={() => changeZoom(option.id)}
                   aria-pressed={zoom === option.id}
                   className={cn(
-                    "rounded-md px-2 py-1 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors",
+                    "rounded-md px-2 py-1 text-[12px] transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                     zoom === option.id
                       ? "bg-surface-hover text-ink ring-1 ring-inset ring-line/[0.09]"
@@ -384,7 +384,7 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
             <button
               type="button"
               onClick={() => centreOnToday(true)}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-dim transition-colors hover:bg-surface-raised hover:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] text-ink-dim transition-colors hover:bg-surface-raised hover:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               <Crosshair className="h-3 w-3" aria-hidden />
               Today
@@ -430,7 +430,7 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
                       className="absolute inset-y-0 border-l border-line/[0.08] pl-2 pt-2"
                       style={{ left: xOf(toDateKey(month)) }}
                     >
-                      <span className="whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.16em] text-ink-muted">
+                      <span className="whitespace-nowrap text-[12px] text-ink-muted">
                         {format(month, pxPerDay >= 8 ? "MMM yyyy" : "MMM")}
                       </span>
                     </div>
@@ -438,7 +438,7 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
                   {weeks.map((week) => (
                     <div
                       key={week.getTime()}
-                      className="absolute bottom-1.5 font-mono text-[8px] tabular-nums text-ink-faint"
+                      className="absolute bottom-1.5 font-mono text-[11px] tabular-nums text-ink-dim"
                       style={{ left: xOf(toDateKey(week)) + 3 }}
                     >
                       {format(week, "d")}
@@ -507,7 +507,7 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
                           <span className="truncate text-[11px] font-medium text-ink">
                             {lane.milestone}
                           </span>
-                          <span className="ml-auto shrink-0 font-mono text-[9px] tabular-nums text-ink-dim">
+                          <span className="ml-auto shrink-0 font-mono text-[11px] tabular-nums text-ink-dim">
                             {lane.doneCount}/{lane.totalCount}
                           </span>
                         </button>
@@ -551,7 +551,7 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
             {(Object.keys(STATE_STYLE) as RoadmapState[]).map((state) => (
               <span key={state} className="flex items-center gap-1.5">
                 <span className={cn("h-1.5 w-1.5 rounded-full", STATE_STYLE[state].dot)} />
-                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-dim">
+                <span className="text-[12px] text-ink-dim">
                   {STATE_STYLE[state].label}
                 </span>
               </span>
@@ -560,7 +560,7 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
 
           {model.unscheduled.length > 0 && (
             <div className="border-t border-line/[0.04] px-4 py-3">
-              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-dim">
+              <p className="mb-2 text-[12px] text-ink-dim">
                 No horizon set — {model.unscheduled.length} directive
                 {model.unscheduled.length === 1 ? "" : "s"} off the timeline
               </p>
@@ -656,7 +656,7 @@ function BarRow({
           {inlineLabel && (
             <span
               className={cn(
-                "truncate whitespace-nowrap text-[10px] font-medium tracking-tight",
+                "truncate whitespace-nowrap text-[11px] font-medium tracking-tight",
                 style.text
               )}
             >
@@ -687,7 +687,7 @@ function BarRow({
         {!inlineLabel && (
           <span
             className={cn(
-              "pointer-events-none absolute top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-[10px] tracking-tight",
+              "pointer-events-none absolute top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-[11px] tracking-tight",
               style.text
             )}
             style={{ left: left + width + 6 }}

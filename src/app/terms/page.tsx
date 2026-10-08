@@ -11,24 +11,24 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <main className="theme-dark min-h-screen bg-[#050505] text-[#ededed] font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark min-h-screen bg-base text-ink font-sans selection:bg-white/[0.1]">
       <MarketingNav />
 
       {/* Hero Section */}
       <section className="pt-48 pb-20 px-8 max-w-7xl mx-auto">
         <ScrollReveal className="flex flex-col items-center text-center">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-[#555555] uppercase mb-8 block">Operational Contract</span>
-          <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 text-[#ededed]">
+          <span className="text-[12px] text-ink-dim mb-8 block">Operational Contract</span>
+          <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 text-ink">
             Terms of Service
           </h1>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.2] to-transparent"></div>
-          <p className="mt-8 font-mono text-[10px] tracking-widest text-[#555555] uppercase">Last Updated: July 2026</p>
+          <p className="mt-8 text-[12px] text-ink-dim">Last Updated: July 2026</p>
         </ScrollReveal>
       </section>
 
       {/* Content Section */}
       <section className="pb-40 px-8 max-w-4xl mx-auto">
-        <ScrollReveal delay={100} className="prose prose-invert prose-p:text-[#888888] prose-p:font-light prose-p:leading-relaxed prose-headings:font-light prose-headings:tracking-tight prose-headings:text-[#ededed] prose-strong:text-[#ededed] prose-strong:font-medium max-w-none">
+        <ScrollReveal delay={100} className="prose prose-invert prose-p:text-ink-muted prose-p:font-light prose-p:leading-relaxed prose-headings:font-light prose-headings:tracking-tight prose-headings:text-ink prose-strong:text-ink prose-strong:font-medium max-w-none">
           
           <div className="space-y-16">
             <section>
@@ -136,10 +136,10 @@ export default function TermsPage() {
                 These Terms shall be governed by and construed in accordance with the laws of the Republic of South Africa. You submit to the exclusive jurisdiction of the courts in Johannesburg, Gauteng.
               </p>
               <div className="pt-20 border-t border-white/[0.04]">
-                <div className="bg-[#0A0A0A] p-10 rounded-2xl ring-1 ring-white/[0.04]">
+                <div className="bg-surface-card p-10 rounded-2xl ring-1 ring-white/[0.04]">
                   <h2 className="text-xl mb-4">Contact Information</h2>
                   <p className="text-sm mb-6">For questions, please contact us at:</p>
-                  <Link href="mailto:feedback@miraistack.co.za" className="text-[#ededed] font-medium hover:underline">feedback@miraistack.co.za</Link>
+                  <Link href="mailto:feedback@miraistack.co.za" className="text-ink font-medium hover:underline">feedback@miraistack.co.za</Link>
                 </div>
               </div>
             </section>

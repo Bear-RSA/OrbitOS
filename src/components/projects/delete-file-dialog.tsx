@@ -34,14 +34,14 @@ export function DeleteFileDialog({
       onClose={() => onOpenChange(false)}
       onConfirm={handleDelete}
       entityName={file.name}
-      title="Execute Deletion Protocol"
+      title="Delete this file?"
       description={
         <>
-          System alert: You are about to purge asset <span className="text-destructive font-bold">#{file.id.slice(0, 4).toUpperCase()}</span> from the operational grid.
+          You&apos;re about to delete <span className="font-semibold text-ink-strong">{file.name}</span> from this project.
         </>
       }
-      warningMessage="Both the index record and the physical cloud storage asset will be permanently destroyed. This action cannot be reversed."
-      actionLabel="Confirm Deletion"
+      warningMessage="The file and its stored copy are both deleted. This can't be undone."
+      actionLabel="Delete file"
     />
   );
 }

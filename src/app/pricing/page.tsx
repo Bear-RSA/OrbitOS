@@ -13,17 +13,17 @@ export const metadata: Metadata = {
 
 export default function PricingPage() {
   return (
-    <main className="theme-dark min-h-screen bg-[#050505] text-[#ededed] font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark min-h-screen bg-base text-ink font-sans selection:bg-white/[0.1]">
       <MarketingNav active="pricing" />
 
       {/* Hero Section */}
       <section className="pt-48 pb-32 px-8 max-w-7xl mx-auto">
         <ScrollReveal className="flex flex-col items-center text-center">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-[#555555] uppercase mb-8 block">Operational Scale</span>
-          <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 max-w-4xl text-[#ededed]">
+          <span className="text-[12px] text-ink-dim mb-8 block">Operational Scale</span>
+          <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 max-w-4xl text-ink">
             Pricing
           </h1>
-          <p className="text-xl md:text-2xl text-[#888888] mx-auto max-w-2xl leading-relaxed font-light mb-12">
+          <p className="text-xl md:text-2xl text-ink-muted mx-auto max-w-2xl leading-relaxed font-light mb-12">
             OrbitOS is an operating system for disciplined teams. Choose the tier that matches your studio&apos;s output and operational complexity.
           </p>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.2] to-transparent"></div>
@@ -31,19 +31,19 @@ export default function PricingPage() {
       </section>
 
       {/* Pricing Tiers */}
-      <section className="py-20 px-8 max-w-[95rem] mx-auto">
+      <section className="py-20 px-6 md:px-8 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Free */}
           <ScrollReveal delay={100}>
-            <InteractiveCard className="p-10 h-full flex flex-col border border-white/[0.02]">
+            <InteractiveCard className="p-8 xl:p-10 h-full flex flex-col border border-white/[0.02]">
               <div className="mb-8">
-                <span className="font-mono text-[11px] tracking-widest text-[#555555] uppercase">Exploration</span>
-                <h3 className="text-2xl font-light text-[#ededed] mt-2 mb-4 tracking-tight">Free</h3>
+                <span className="text-[12px] text-ink-dim">Exploration</span>
+                <h3 className="text-2xl font-light text-ink mt-2 mb-4 tracking-tight">Free</h3>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-light text-[#ededed]">R0</span>
-                  <span className="text-[#555555] font-light text-sm">/mo</span>
+                  <span className="text-4xl font-light text-ink">R0</span>
+                  <span className="text-ink-dim font-light text-sm">/mo</span>
                 </div>
-                <p className="text-[#888888] text-sm mt-4 font-light leading-relaxed">For testing OrbitOS with a very small team.</p>
+                <p className="text-ink-muted text-sm mt-4 font-light leading-relaxed">For testing OrbitOS with a very small team.</p>
               </div>
               <ul className="space-y-4 mb-12 flex-grow">
                 {[
@@ -54,13 +54,13 @@ export default function PricingPage() {
                   'Basic Visibility',
                   '3 Active Projects'
                 ].map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm text-[#ededed]/50 font-light">
-                    <CheckCircle2 className="w-4 h-4 text-[#ededed]/20" />
+                  <li key={i} className="flex items-center gap-3 text-sm text-ink/50 font-light">
+                    <CheckCircle2 className="w-4 h-4 text-ink/20" />
                     {feature}
                   </li>
                 ))}
               </ul>
-              <Link href="/login" className="block w-full py-4 rounded-xl border border-white/[0.04] bg-[#111111] text-[#ededed] text-center text-sm font-medium hover:bg-[#1a1a1a] transition-all duration-300">
+              <Link href="/login" className="block w-full py-4 rounded-xl border border-white/[0.04] bg-surface-raised text-ink text-center text-sm font-medium hover:bg-surface-control transition-all duration-300">
                 Get Started
               </Link>
             </InteractiveCard>
@@ -68,15 +68,15 @@ export default function PricingPage() {
 
           {/* Starter */}
           <ScrollReveal delay={200}>
-            <InteractiveCard className="p-10 h-full flex flex-col border border-white/[0.02]">
+            <InteractiveCard className="p-8 xl:p-10 h-full flex flex-col border border-white/[0.02]">
               <div className="mb-8">
-                <span className="font-mono text-[11px] tracking-widest text-[#555555] uppercase">Foundational</span>
-                <h3 className="text-2xl font-light text-[#ededed] mt-2 mb-4 tracking-tight">Starter</h3>
+                <span className="text-[12px] text-ink-dim">Foundational</span>
+                <h3 className="text-2xl font-light text-ink mt-2 mb-4 tracking-tight">Starter</h3>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-light text-[#ededed]">R299</span>
-                  <span className="text-[#555555] font-light text-sm">/mo</span>
+                  <span className="text-4xl font-light text-ink">R299</span>
+                  <span className="text-ink-dim font-light text-sm">/mo</span>
                 </div>
-                <p className="text-[#888888] text-sm mt-4 font-light leading-relaxed">For small teams building structure and discipline.</p>
+                <p className="text-ink-muted text-sm mt-4 font-light leading-relaxed">For small teams building structure and discipline.</p>
               </div>
               <ul className="space-y-4 mb-12 flex-grow">
                 {[
@@ -87,13 +87,13 @@ export default function PricingPage() {
                   'Email notifications',
                   'Standard support'
                 ].map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm text-[#ededed]/70 font-light">
-                    <CheckCircle2 className="w-4 h-4 text-[#ededed]/30" />
+                  <li key={i} className="flex items-center gap-3 text-sm text-ink/70 font-light">
+                    <CheckCircle2 className="w-4 h-4 text-ink/30" />
                     {feature}
                   </li>
                 ))}
               </ul>
-              <Link href="/signup" className="block w-full py-4 rounded-xl border border-white/[0.04] bg-[#111111] text-[#ededed] text-center text-sm font-medium hover:bg-[#1a1a1a] transition-all duration-300">
+              <Link href="/signup" className="block w-full py-4 rounded-xl border border-white/[0.04] bg-surface-raised text-ink text-center text-sm font-medium hover:bg-surface-control transition-all duration-300">
                 Get Started
               </Link>
             </InteractiveCard>
@@ -101,18 +101,21 @@ export default function PricingPage() {
 
           {/* Team - Primary Plan */}
           <ScrollReveal delay={300}>
-            <InteractiveCard className="p-10 h-full flex flex-col ring-1 ring-white/[0.1] bg-[#0A0A0A] relative border border-white/[0.05]">
-              <div className="absolute top-0 right-10 -translate-y-1/2">
-                <div className="bg-[#ededed] text-[#050505] text-[10px] font-mono px-3 py-1 rounded-full uppercase tracking-widest font-bold">Recommended</div>
-              </div>
+            <InteractiveCard className="p-8 xl:p-10 h-full flex flex-col ring-1 ring-white/[0.1] bg-surface-card relative border border-white/[0.05]">
               <div className="mb-8">
-                <span className="font-mono text-[11px] tracking-widest text-[#ededed] uppercase">Studio Core</span>
-                <h3 className="text-2xl font-light text-[#ededed] mt-2 mb-4 tracking-tight">Team</h3>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-light text-[#ededed]">R699</span>
-                  <span className="text-[#555555] font-light text-sm">/mo</span>
+                {/* Inline with the tier label rather than pinned to the card
+                    edge: the card clips its own corners, so a pinned badge
+                    landed on top of the label instead of above the card. */}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[12px] text-ink">Studio Core</span>
+                  <span className="bg-ink text-on-ink text-[12px] px-3 py-1 rounded-full font-semibold">Recommended</span>
                 </div>
-                <p className="text-[#888888] text-sm mt-4 font-light leading-relaxed">For active agencies running delivery with clarity.</p>
+                <h3 className="text-2xl font-light text-ink mt-2 mb-4 tracking-tight">Team</h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-light text-ink">R699</span>
+                  <span className="text-ink-dim font-light text-sm">/mo</span>
+                </div>
+                <p className="text-ink-muted text-sm mt-4 font-light leading-relaxed">For active agencies running delivery with clarity.</p>
               </div>
               <ul className="space-y-4 mb-12 flex-grow">
                 {[
@@ -123,13 +126,13 @@ export default function PricingPage() {
                   'Execution insights',
                   'Priority support'
                 ].map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm text-[#ededed] font-light">
-                    <CheckCircle2 className="w-4 h-4 text-[#ededed]/60" />
+                  <li key={i} className="flex items-center gap-3 text-sm text-ink font-light">
+                    <CheckCircle2 className="w-4 h-4 text-ink/60" />
                     {feature}
                   </li>
                 ))}
               </ul>
-              <Link href="/signup" className="block w-full py-4 rounded-xl bg-[#ededed] text-[#050505] text-center text-sm font-medium hover:bg-white hover:-translate-y-[2px] transition-all duration-300 shadow-[0_0_40px_rgba(255,255,255,0.05)]">
+              <Link href="/signup" className="block w-full py-4 rounded-xl bg-ink text-on-ink text-center text-sm font-medium hover:bg-white hover:-translate-y-[2px] transition-all duration-300 shadow-[0_0_40px_rgba(255,255,255,0.05)]">
                 Get Started
               </Link>
             </InteractiveCard>
@@ -137,15 +140,15 @@ export default function PricingPage() {
 
           {/* Growth */}
           <ScrollReveal delay={400}>
-            <InteractiveCard className="p-10 h-full flex flex-col border border-white/[0.02]">
+            <InteractiveCard className="p-8 xl:p-10 h-full flex flex-col border border-white/[0.02]">
               <div className="mb-8">
-                <span className="font-mono text-[11px] tracking-widest text-[#555555] uppercase">Total Visibility</span>
-                <h3 className="text-2xl font-light text-[#ededed] mt-2 mb-4 tracking-tight">Growth</h3>
+                <span className="text-[12px] text-ink-dim">Total Visibility</span>
+                <h3 className="text-2xl font-light text-ink mt-2 mb-4 tracking-tight">Growth</h3>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-light text-[#ededed]">R1,499</span>
-                  <span className="text-[#555555] font-light text-sm">/mo</span>
+                  <span className="text-4xl font-light text-ink">R1,499</span>
+                  <span className="text-ink-dim font-light text-sm">/mo</span>
                 </div>
-                <p className="text-[#888888] text-sm mt-4 font-light leading-relaxed">For scaling teams that need deeper control.</p>
+                <p className="text-ink-muted text-sm mt-4 font-light leading-relaxed">For scaling teams that need deeper control.</p>
               </div>
               <ul className="space-y-4 mb-12 flex-grow">
                 {[
@@ -156,13 +159,13 @@ export default function PricingPage() {
                   'Advanced permissions',
                   'Premium support'
                 ].map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm text-[#ededed]/70 font-light">
-                    <CheckCircle2 className="w-4 h-4 text-[#ededed]/30" />
+                  <li key={i} className="flex items-center gap-3 text-sm text-ink/70 font-light">
+                    <CheckCircle2 className="w-4 h-4 text-ink/30" />
                     {feature}
                   </li>
                 ))}
               </ul>
-              <Link href="/contact-sales" className="block w-full py-4 rounded-xl border border-white/[0.04] bg-[#111111] text-[#ededed] text-center text-sm font-medium hover:bg-[#1a1a1a] transition-all duration-300">
+              <Link href="/contact-sales" className="block w-full py-4 rounded-xl border border-white/[0.04] bg-surface-raised text-ink text-center text-sm font-medium hover:bg-surface-control transition-all duration-300">
                 Contact Sales
               </Link>
             </InteractiveCard>
@@ -171,12 +174,12 @@ export default function PricingPage() {
       </section>
 
       {/* Included Capabilities Section */}
-      <section className="py-40 px-8 bg-[#0A0A0A]/30 border-y border-white/[0.04]">
+      <section className="py-40 px-8 bg-surface-card/30 border-y border-white/[0.04]">
         <div className="max-w-7xl mx-auto">
           <ScrollReveal>
             <div className="mb-20 text-center">
-              <span className="font-mono text-[11px] tracking-widest text-[#555555] uppercase">Operational Unlock</span>
-              <h2 className="text-4xl md:text-5xl font-light tracking-tight mt-4 text-[#ededed]">What OrbitOS pricing unlocks</h2>
+              <span className="text-[12px] text-ink-dim">Operational Unlock</span>
+              <h2 className="text-4xl md:text-5xl font-light tracking-tight mt-4 text-ink">What OrbitOS pricing unlocks</h2>
             </div>
           </ScrollReveal>
           
@@ -192,11 +195,11 @@ export default function PricingPage() {
               <ScrollReveal key={i} delay={i * 50}>
                 <div className="flex gap-6">
                   <div className="flex-none pt-1">
-                    <item.icon className="w-6 h-6 text-[#ededed]/40" />
+                    <item.icon className="w-6 h-6 text-ink/40" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-light text-[#ededed] mb-2">{item.title}</h4>
-                    <p className="text-[#888888] text-sm leading-relaxed font-light">{item.desc}</p>
+                    <h4 className="text-lg font-light text-ink mb-2">{item.title}</h4>
+                    <p className="text-ink-muted text-sm leading-relaxed font-light">{item.desc}</p>
                   </div>
                 </div>
               </ScrollReveal>
@@ -209,7 +212,7 @@ export default function PricingPage() {
       <section className="py-40 px-8 max-w-7xl mx-auto">
         <ScrollReveal>
           <div className="mb-16">
-            <h2 className="text-4xl font-light tracking-tight text-[#ededed]">Tier Comparison</h2>
+            <h2 className="text-4xl font-light tracking-tight text-ink">Tier Comparison</h2>
           </div>
         </ScrollReveal>
         <ScrollReveal delay={100}>
@@ -217,14 +220,14 @@ export default function PricingPage() {
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b border-white/[0.04]">
-                  <th className="py-6 font-mono text-[10px] tracking-widest text-[#555555] uppercase">Capabilities</th>
-                  <th className="py-6 font-mono text-[10px] tracking-widest text-[#555555] uppercase w-1/5">Free</th>
-                  <th className="py-6 font-mono text-[10px] tracking-widest text-[#555555] uppercase w-1/5">Starter</th>
-                  <th className="py-6 font-mono text-[10px] tracking-widest text-[#555555] uppercase w-1/5 text-[#ededed]">Team</th>
-                  <th className="py-6 font-mono text-[10px] tracking-widest text-[#555555] uppercase w-1/5">Growth</th>
+                  <th className="py-6 text-[12px] text-ink-dim">Capabilities</th>
+                  <th className="py-6 text-[12px] text-ink-dim w-1/5">Free</th>
+                  <th className="py-6 text-[12px] text-ink-dim w-1/5">Starter</th>
+                  <th className="py-6 text-[12px] text-ink-dim w-1/5 text-ink">Team</th>
+                  <th className="py-6 text-[12px] text-ink-dim w-1/5">Growth</th>
                 </tr>
               </thead>
-              <tbody className="text-sm font-light text-[#888888]">
+              <tbody className="text-sm font-light text-ink-muted">
                 {[
                   { label: "Owners Included", values: ["1", "1", "3", "5"] },
                   { label: "Members Included", values: ["2", "5", "10", "Unlimited"] },
@@ -233,9 +236,9 @@ export default function PricingPage() {
                   { label: "Support Level", values: ["Community", "Standard", "Priority", "Premium"] }
                 ].map((row, i) => (
                   <tr key={i} className="border-b border-white/[0.04] group hover:bg-white/[0.01] transition-colors">
-                    <td className="py-6 text-[#ededed]/70">{row.label}</td>
+                    <td className="py-6 text-ink/70">{row.label}</td>
                     {row.values.map((val, j) => (
-                      <td key={j} className={cn("py-6", j === 2 && "text-[#ededed] font-medium")}>{val}</td>
+                      <td key={j} className={cn("py-6", j === 2 && "text-ink font-medium")}>{val}</td>
                     ))}
                   </tr>
                 ))}
@@ -246,10 +249,10 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-32 px-8 bg-[#0A0A0A]/50 border-y border-white/[0.04]">
+      <section className="py-32 px-8 bg-surface-card/50 border-y border-white/[0.04]">
         <div className="max-w-3xl mx-auto">
           <ScrollReveal>
-            <h2 className="text-3xl font-light tracking-tight text-[#ededed] mb-12 text-center">Frequently Asked Questions</h2>
+            <h2 className="text-3xl font-light tracking-tight text-ink mb-12 text-center">Frequently Asked Questions</h2>
           </ScrollReveal>
           <div className="space-y-12">
             {[
@@ -261,8 +264,8 @@ export default function PricingPage() {
             ].map((faq, i) => (
               <ScrollReveal key={i} delay={i * 50}>
                 <div>
-                  <h4 className="text-lg font-light text-[#ededed] mb-3">{faq.q}</h4>
-                  <p className="text-[#888888] text-sm leading-relaxed font-light">{faq.a}</p>
+                  <h4 className="text-lg font-light text-ink mb-3">{faq.q}</h4>
+                  <p className="text-ink-muted text-sm leading-relaxed font-light">{faq.a}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -273,14 +276,14 @@ export default function PricingPage() {
       {/* CTA Section */}
       <section className="py-32 px-8">
         <ScrollReveal>
-          <div className="max-w-5xl mx-auto rounded-[32px] bg-[#0A0A0A] p-16 md:p-24 text-center ring-1 ring-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] relative overflow-hidden">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-32 bg-gradient-to-b from-[#ededed]/30 to-transparent"></div>
-            <h2 className="text-4xl md:text-6xl font-light tracking-tight mb-8 text-[#ededed]">Ready to exit the chaos?</h2>
-            <p className="text-lg text-[#888888] font-light mb-12 max-w-xl mx-auto">
+          <div className="max-w-5xl mx-auto rounded-[32px] bg-surface-card p-16 md:p-24 text-center ring-1 ring-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] relative overflow-hidden">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-32 bg-gradient-to-b from-ink/30 to-transparent"></div>
+            <h2 className="text-4xl md:text-6xl font-light tracking-tight mb-8 text-ink">Ready to exit the chaos?</h2>
+            <p className="text-lg text-ink-muted font-light mb-12 max-w-xl mx-auto">
               Join over 400 world-class studios using OrbitOS to run their operations with surgical precision.
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-              <Link href="/signup" className="inline-block bg-[#ededed] text-[#050505] px-10 py-4 rounded-xl font-medium text-[15px] hover:bg-white hover:-translate-y-[2px] transition-all duration-300">
+              <Link href="/signup" className="inline-block bg-ink text-on-ink px-10 py-4 rounded-xl font-medium text-[15px] hover:bg-white hover:-translate-y-[2px] transition-all duration-300">
                 Get Started
               </Link>
             </div>

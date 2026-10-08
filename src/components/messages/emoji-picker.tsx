@@ -64,7 +64,7 @@ export function EmojiGrid({ onSelect }: { onSelect: (emoji: string) => void }) {
     <div className="flex h-full min-h-0 flex-col">
       {recent.length > 0 && (
         <div className="shrink-0 border-b border-line/[0.04] p-2">
-          <h3 className="px-1 pb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-ink-faint">
+          <h3 className="px-1 pb-1.5 text-[12px] text-ink-dim">
             Recent
           </h3>
           <div className="flex flex-wrap">

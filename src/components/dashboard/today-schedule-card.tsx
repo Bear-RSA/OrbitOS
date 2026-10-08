@@ -84,7 +84,7 @@ export function TodayScheduleCard({
         meta={
           visible.length > 0 ? (
             <CardEyebrow>
-              {visible.length} {visible.length === 1 ? "engagement" : "engagements"}
+              {visible.length} {visible.length === 1 ? "event" : "events"}
             </CardEyebrow>
           ) : (
             <CardEyebrow>Clear</CardEyebrow>
@@ -93,7 +93,7 @@ export function TodayScheduleCard({
       />
 
       {events === null ? (
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+        <p className="text-[12px] text-ink-dim">
           Resolving schedule…
         </p>
       ) : failed ? (
@@ -148,7 +148,7 @@ export function TodayScheduleCard({
                     {isLive && <StatusChip label="Now" tone="warning" />}
                   </div>
 
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-dim">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-dim">
                     {attendeeCount > 0 && (
                       <span className="inline-flex items-center gap-1">
                         <Users className="h-2.5 w-2.5" aria-hidden />
@@ -180,7 +180,7 @@ export function TodayScheduleCard({
                     <button
                       type="button"
                       onClick={() => joinScheduledCall(event.roomId, event.title)}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-surface-control px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-surface-control px-2.5 py-1.5 text-[12px] text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     >
                       <Video className="h-3 w-3" aria-hidden />
                       Join
@@ -193,7 +193,7 @@ export function TodayScheduleCard({
                       href={event.meetingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-surface-control px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-surface-control px-2.5 py-1.5 text-[12px] text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     >
                       <Video className="h-3 w-3" aria-hidden />
                       Join

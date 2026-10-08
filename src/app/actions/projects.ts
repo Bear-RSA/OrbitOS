@@ -215,7 +215,7 @@ export async function archiveProjectAction(
     const authStatus = await validateOwner(uid);
     if (!authStatus.isOwner) {
       console.error("[ArchiveProject] Unauthorized archive attempt:", uid);
-      return { success: false, error: authStatus.error || "Unauthorized. Requires OWNER operations clearance." };
+      return { success: false, error: authStatus.error || "Only the workspace owner can do this." };
     }
     const userOrgId = authStatus.orgId;
 
@@ -292,7 +292,7 @@ export async function unarchiveProjectAction(
     const authStatus = await validateOwner(uid, undefined, projectId);
     if (!authStatus.isOwner) {
       console.error("[UnarchiveProject] Unauthorized restore attempt:", uid);
-      return { success: false, error: authStatus.error || "Unauthorized. Requires OWNER operations clearance." };
+      return { success: false, error: authStatus.error || "Only the workspace owner can do this." };
     }
     const userOrgId = authStatus.orgId;
 
@@ -358,7 +358,7 @@ export async function updateProjectPriorityAction(
     const authStatus = await validateOwner(uid);
     if (!authStatus.isOwner) {
       console.error("[UpdateProjectPriority] Unauthorized priority update:", uid);
-      return { success: false, error: authStatus.error || "Unauthorized. Requires OWNER operations clearance." };
+      return { success: false, error: authStatus.error || "Only the workspace owner can do this." };
     }
     const userOrgId = authStatus.orgId;
 

@@ -215,7 +215,7 @@ export function VaultExplorer({ orgId, uid, isOwner, onPermissionDenied }: Vault
       {/* ────────── HEADER ────────── */}
       <div className="mb-8 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
         <div>
-          <h2 className="mb-3 font-mono text-[10px] uppercase tracking-[0.3em] text-ink-dim">
+          <h2 className="mb-3 text-[12px] text-ink-dim">
             Company Records
           </h2>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -281,7 +281,7 @@ export function VaultExplorer({ orgId, uid, isOwner, onPermissionDenied }: Vault
           <p className="text-[12px] text-ink-muted">{notice}</p>
           <button
             onClick={() => setNotice(null)}
-            className="ml-auto font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim transition-colors hover:text-ink-muted"
+            className="ml-auto text-[12px] text-ink-dim transition-colors hover:text-ink-muted"
           >
             Dismiss
           </button>
@@ -356,7 +356,7 @@ export function VaultExplorer({ orgId, uid, isOwner, onPermissionDenied }: Vault
                           onSelect={() => setRefiling(document)}
                         />
                         <RowAction
-                          label={`Purge ${document.name}`}
+                          label={`Delete ${document.name}`}
                           icon={Trash2}
                           destructive
                           onSelect={() => setPurging(document)}
@@ -392,16 +392,16 @@ export function VaultExplorer({ orgId, uid, isOwner, onPermissionDenied }: Vault
           onClose={() => setPurging(null)}
           onConfirm={purge}
           entityName={purging.name}
-          title="Purge from the Vault"
+          title="Delete from the vault?"
           description={
             <>
-              You are about to permanently remove{" "}
-              <span className="font-bold text-destructive">{purging.name}</span> from
+              You&apos;re about to permanently delete{" "}
+              <span className="font-semibold text-ink-strong">{purging.name}</span> from
               the company vault.
             </>
           }
-          warningMessage="The record and the stored file are both destroyed. If this is the only copy the company holds, it is gone."
-          actionLabel="Purge Document"
+          warningMessage="The record and the stored file are both deleted. If this is the only copy the company holds, it's gone for good."
+          actionLabel="Delete document"
         />
       )}
     </div>
@@ -429,7 +429,7 @@ function Chip({
       aria-pressed={active}
       className={cn(
         "inline-flex h-8 items-center gap-2 rounded-lg px-3 transition-all duration-300",
-        "font-mono text-[10px] uppercase tracking-[0.16em]",
+        "text-[12px]",
         active
           ? "bg-surface-control text-ink ring-1 ring-inset ring-line/[0.08]"
           : "text-ink-dim hover:bg-surface-control/60 hover:text-ink-muted"
@@ -447,7 +447,7 @@ function ClearanceTag({ restricted }: { restricted: boolean }) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded px-1.5 py-0.5",
-        "font-mono text-[9px] uppercase tracking-[0.16em]",
+        "text-[12px]",
         restricted
           ? "bg-orbit-amber/[0.08] text-orbit-amber ring-1 ring-inset ring-orbit-amber/20"
           : "bg-surface-control text-ink-dim ring-1 ring-inset ring-line/[0.06]"

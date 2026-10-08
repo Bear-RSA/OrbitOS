@@ -58,7 +58,7 @@ function buildText(params: RsvpNotificationParams): string {
     "",
     `${subjectName}${subjectKind === "guest" ? " (guest)" : ""} — ${status}`,
     "",
-    `View the engagement: ${engagementUrl(event.projectId)}`,
+    `View the event: ${engagementUrl(event.projectId)}`,
   ];
 
   return lines.join("\n");
@@ -88,7 +88,7 @@ function buildHtml(params: RsvpNotificationParams): string {
     <p class="sub">${esc(headline)}</p>
     <h1>${esc(event.title)}</h1>
     <p class="who">${esc(subjectName)}${subjectKind === "guest" ? " <span style=\"color:#6b7280\">(guest)</span>" : ""} — ${esc(status)}</p>
-    <a class="btn" href="${esc(url)}">View the engagement</a>
+    <a class="btn" href="${esc(url)}">View the event</a>
     <div class="footer">Sent by OrbitOS.</div>
   </div>
 </body>

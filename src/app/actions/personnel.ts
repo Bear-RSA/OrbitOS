@@ -109,7 +109,7 @@ export async function syncOperationalStatusAction(userId: string | null, _orgId?
     return { success: true, status: newStatus };
   } catch (error) {
     console.error("[Status Engine] Sync failed:", error);
-    return { success: false, error: "Operational status sync failed" };
+    return { success: false, error: "Couldn't update your status. Try again." };
   }
 }
 
@@ -165,7 +165,7 @@ export async function getWorkloadTelemetryAction(projectId: string, _orgId?: str
       const activeCount = workloadMap.get(member.id) || 0;
       return {
         id: member.id,
-        name: member.name || "Operator",
+        name: member.name || "Unnamed member",
         role: member.role || "MEMBER",
         photoURL: member.photoURL || null,
         activeTasks: activeCount,
@@ -177,6 +177,6 @@ export async function getWorkloadTelemetryAction(projectId: string, _orgId?: str
     return { success: true, data: telemetry };
   } catch (error) {
     console.error("[Personnel Engine] Telemetry fetch failed:", error);
-    return { success: false, error: "System failure during workload calculation" };
+    return { success: false, error: "Couldn't load team workload. Try again." };
   }
 }

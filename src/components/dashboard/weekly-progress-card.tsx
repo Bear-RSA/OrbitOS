@@ -26,7 +26,7 @@ export function WeeklyProgressCard({ weeklyProgress, completedThisWeek }: Weekly
   return (
     <DashboardCard className="h-full" tone="quiet" interactive={false}>
       <CardHeader
-        title="This Week"
+        title="This week"
         icon={TrendingUp}
         meta={<CardEyebrow>{completedThisWeek > 0 ? "In motion" : "Idle"}</CardEyebrow>}
       />
@@ -35,7 +35,7 @@ export function WeeklyProgressCard({ weeklyProgress, completedThisWeek }: Weekly
         <StatBlock
           size="md"
           value={completedThisWeek}
-          label="Completed This Week"
+          label="Completed this week"
           tone={completedThisWeek > 0 ? "positive" : "idle"}
         />
 
@@ -48,7 +48,7 @@ export function WeeklyProgressCard({ weeklyProgress, completedThisWeek }: Weekly
             return (
               <div key={day.day} className="group/day relative flex flex-1 flex-col items-center gap-2.5">
                 {day.count > 0 && !isFuture && (
-                  <span className="absolute -top-5 font-mono text-[10px] tabular-nums text-ink opacity-0 transition-opacity group-hover/day:opacity-100">
+                  <span className="absolute -top-5 font-mono text-[11px] tabular-nums text-ink opacity-0 transition-opacity group-hover/day:opacity-100">
                     {day.count}
                   </span>
                 )}
@@ -71,7 +71,7 @@ export function WeeklyProgressCard({ weeklyProgress, completedThisWeek }: Weekly
 
                 <span
                   className={cn(
-                    "font-mono text-[9px] uppercase tracking-[0.12em] transition-colors",
+                    "text-[12px] transition-colors",
                     isToday ? "text-ink" : "text-ink-dim"
                   )}
                 >

@@ -109,11 +109,11 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
   return (
     <div className="bg-surface-card/40 backdrop-blur-sm border border-line/[0.06] rounded-xl overflow-hidden shadow-raised ring-1 ring-line/5">
        <div className="p-4 border-b border-line/[0.04] bg-transparent flex justify-between items-center">
-          <h2 className="text-[10px] font-mono text-ink-dim uppercase tracking-[0.2em]">Personnel Network</h2>
+          <h2 className="text-[12px] text-ink-dim">Team</h2>
           {selectedAssignee && (
             <button 
               onClick={() => onAssigneeSelect(null)} 
-              className="text-[9px] font-mono text-orbit-red border border-orbit-red/30 bg-orbit-red/10 px-2 py-0.5 rounded tracking-widest hover:bg-orbit-red/20 transition-colors"
+              className="text-[11px] font-mono text-orbit-red border border-orbit-red/30 bg-orbit-red/10 px-2 py-0.5 rounded tracking-widest hover:bg-orbit-red/20 transition-colors"
             >
               Clear Filter
             </button>
@@ -168,19 +168,19 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
                       <span className={cn("absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-scrim/60", statusColor)} />
                     </button>
                     <div className="flex flex-col">
-                       <span className="text-[13px] font-medium text-ink tracking-tight group-hover:text-ink-strong transition-colors">
+                       <span className="text-[13px] font-medium text-ink tracking-tight group-hover:text-ink-strong transition-colors">
                          {t.name}
                        </span>
                        {t.presence ? (
                          <span
-                           className="text-[9px] font-mono tracking-widest uppercase mt-0.5 text-orbit-amber truncate max-w-[220px]"
+                           className="text-[12px] mt-0.5 text-orbit-amber truncate max-w-[220px]"
                            title={`${t.name} is ${t.presence.label} — ${t.presence.title}`}
                          >
                            {t.presence.label}
                            {t.presence.hasGuests && " ·  guest"}
                          </span>
                        ) : (
-                         <span className={cn("text-[9px] font-mono tracking-widest uppercase mt-0.5", roleColor)}>
+                         <span className={cn("text-[12px] mt-0.5", roleColor)}>
                            {displayDescriptor}
                          </span>
                        )}
@@ -212,13 +212,13 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
                                : `Call ${t.name}`
                          }
                          aria-label={`Call ${t.name}`}
-                         className="mb-1 flex items-center gap-1.5 rounded-lg border border-line/[0.06] bg-surface-control px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-ink-muted transition-colors hover:bg-surface-raised hover:text-ink"
+                         className="mb-1 flex items-center gap-1.5 rounded-lg border border-line/[0.06] bg-surface-control px-2.5 py-1 text-[12px] text-ink-muted transition-colors hover:bg-surface-raised hover:text-ink"
                        >
                          <Phone className="h-2.5 w-2.5" aria-hidden />
                          Call
                        </button>
                      )}
-                     <div className="flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.1em]">
+                     <div className="flex items-center gap-3 text-[12px]">
                         <span className={cn(t.presence ? "text-orbit-amber" : "text-ink-dim")}>
                           {statusWord}
                         </span>
@@ -235,7 +235,7 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
                   <div className="overflow-hidden">
                     <div className="mt-4 bg-surface-card border border-line/[0.06] rounded-lg p-3 flex flex-col gap-1.5">
                       {t.descriptor && (
-                        <span className="text-[10px] text-ink-muted font-mono uppercase tracking-widest">
+                        <span className="text-[12px] text-ink-muted">
                           {t.descriptor}
                         </span>
                       )}

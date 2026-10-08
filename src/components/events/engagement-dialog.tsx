@@ -433,7 +433,7 @@ export function EngagementDialog({
       console.error("Failed to save engagement:", err);
       setFormError(
         err?.message ||
-          (isEdit ? "Could not save the changes." : "Could not schedule the engagement.")
+          (isEdit ? "Could not save the changes." : "Couldn't schedule the event.")
       );
     } finally {
       setLoading(false);
@@ -493,12 +493,12 @@ export function EngagementDialog({
               {report
                 ? "Saved, with a problem"
                 : isEdit
-                  ? "Revise Engagement"
-                  : "Schedule Engagement"}
+                  ? "Edit event"
+                  : "Schedule event"}
             </DialogTitle>
             <DialogDescription className="text-[13px] leading-relaxed text-ink-dim font-light max-w-[380px] md:max-w-none">
               {report
-                ? "The engagement is saved. Some invitations did not reach the people they were meant for."
+                ? "The event is saved, but some invitations didn't reach the people they were meant for."
                 : isEdit
                   ? "Change the time, the place, or who is in it. Everyone already holding this gets an updated copy."
                   : "Reserve a block of time and put people in it. Everyone invited answers for themselves."}
@@ -597,7 +597,7 @@ export function EngagementDialog({
                 flex child refuses to shrink below its content height. */}
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-2 pt-1 sm:px-8 md:px-10">
             <div className="space-y-2.5">
-              <Label htmlFor="event-title">Engagement Title</Label>
+              <Label htmlFor="event-title">Event title</Label>
               <Input
                 id="event-title"
                 placeholder="What is this time for?"
@@ -687,7 +687,7 @@ export function EngagementDialog({
                     type="button"
                     onClick={findTimes}
                     disabled={searching}
-                    className="inline-flex h-8 shrink-0 items-center gap-2 rounded-lg bg-surface-control px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40"
+                    className="inline-flex h-8 shrink-0 items-center gap-2 rounded-lg bg-surface-control px-3 text-[12px] text-ink ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40"
                   >
                     <Wand2 className="h-3 w-3" aria-hidden />
                     {searching ? "Searching…" : "Suggest"}
@@ -721,7 +721,7 @@ export function EngagementDialog({
                               key={slot.start}
                               type="button"
                               onClick={() => applySlot(slot)}
-                              className="rounded-lg bg-surface-control px-2.5 py-1.5 font-mono text-[10px] tabular-nums text-ink-muted ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                              className="rounded-lg bg-surface-control px-2.5 py-1.5 font-mono text-[11px] tabular-nums text-ink-muted ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                             >
                               {start.toLocaleDateString(undefined, {
                                 weekday: "short",
@@ -769,7 +769,7 @@ export function EngagementDialog({
                       onClick={() =>
                         setValue("callProvider", option.value, { shouldDirty: true })
                       }
-                      className={`h-9 rounded-md border px-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
+                      className={`h-9 rounded-md border px-2 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
                         active
                           ? "border-line/[0.2] bg-surface-control text-ink"
                           : "border-line/[0.1] bg-surface-sunken text-ink-dim hover:border-line/[0.16] hover:text-ink-muted"
@@ -780,7 +780,7 @@ export function EngagementDialog({
                   );
                 })}
               </div>
-              <p className="font-mono text-[10px] leading-relaxed text-ink-faint">
+              <p className="font-mono text-[11px] leading-relaxed text-ink-dim">
                 {CALL_PROVIDER_OPTIONS.find((o) => o.value === callProvider)?.hint}
               </p>
 
@@ -812,7 +812,7 @@ export function EngagementDialog({
                     type="button"
                     onClick={copyLink}
                     aria-label="Copy the call link"
-                    className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-surface-control px-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-surface-control px-2.5 text-[12px] text-ink ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                   >
                     {copied ? (
                       <Check className="h-3 w-3 text-orbit-green" aria-hidden />
@@ -849,7 +849,7 @@ export function EngagementDialog({
                       return (
                         <span
                           key={uid}
-                          className="inline-flex items-center gap-1 rounded border border-line/[0.08] bg-surface-control px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider text-ink"
+                          className="inline-flex items-center gap-1 rounded border border-line/[0.08] bg-surface-control px-2 py-0.5 text-[12px] text-ink"
                         >
                           {member?.name?.split(" ")[0] || "?"}
                           <button
@@ -888,7 +888,7 @@ export function EngagementDialog({
                             }`}
                           >
                             <span className="flex items-center gap-2">
-                              {isSelected && <span className="text-[10px] text-orbit-green">●</span>}
+                              {isSelected && <span className="text-[11px] text-orbit-green">●</span>}
                               {member.name}
                             </span>
                           </button>
@@ -897,7 +897,7 @@ export function EngagementDialog({
                   </div>
                 )}
               </div>
-              <p className="font-mono text-[10px] text-ink-faint">
+              <p className="font-mono text-[11px] text-ink-dim">
                 {organizerUid === currentUserId
                   ? "You are always included as the organizer."
                   : `${
@@ -992,7 +992,7 @@ export function EngagementDialog({
               {guestError ? (
                 <p className="text-[12px] text-orbit-red">{guestError}</p>
               ) : (
-                <p className="font-mono text-[10px] leading-relaxed text-ink-faint">
+                <p className="font-mono text-[11px] leading-relaxed text-ink-dim">
                   Enter or comma to add. They get an invitation they can accept
                   from their inbox — no account needed. An address that already
                   belongs to someone here joins as an attendee instead.
@@ -1014,7 +1014,7 @@ export function EngagementDialog({
                   {!pendingEdit.hasChanges
                     ? "Nothing has changed yet, so nothing would go out."
                     : pendingEdit.materially
-                      ? "The time, title, or place moved. Everyone on this engagement gets an updated invitation that replaces the copy sitting in their calendar."
+                      ? "The time, title, or place moved. Everyone invited gets an updated invitation that replaces the copy sitting in their calendar."
                       : pendingEdit.added > 0
                         ? "Only the people just added get an invitation. Nobody else is contacted."
                         : "No invitations — this changes nothing that anyone is holding a copy of."}
@@ -1049,7 +1049,7 @@ export function EngagementDialog({
                 type="button"
                 variant="ghost"
                 onClick={() => onOpenChange(false)}
-                className="h-9 rounded-lg px-5 text-[12px] text-ink-faint hover:bg-transparent hover:text-ink-muted"
+                className="h-9 rounded-lg px-5 text-[12px] text-ink-dim hover:bg-transparent hover:text-ink-muted"
               >
                 Cancel
               </Button>
@@ -1068,7 +1068,7 @@ export function EngagementDialog({
             ? `Invitations sent to ${lastOutcome.invitesSent} ${
                 lastOutcome.invitesSent === 1 ? "person" : "people"
               }. It will appear on their calendar once they accept.`
-            : "The engagement is on the calendar and attendees can now respond."
+            : "The event is on the calendar and attendees can now respond."
         }
       />
     </>

@@ -57,7 +57,7 @@ export async function validateOwner(userId: string, targetUserId?: string, proje
     }
     
     if (userData.role !== "OWNER") {
-      return { isOwner: false, error: "Unauthorized. Requires OWNER operations clearance." };
+      return { isOwner: false, error: "Only the workspace owner can do this." };
     }
 
     const callerOrgId = userData.orgId;

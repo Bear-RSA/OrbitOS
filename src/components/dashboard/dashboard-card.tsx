@@ -44,8 +44,9 @@ export function DashboardCard({
 }
 
 /**
- * One eyebrow treatment for every panel title. Previously the same semantic
- * element shipped as three different tracking values across two font families.
+ * One treatment for every panel title. It used to be 10px tracked mono
+ * capitals, which flattened every title into the same quiet register as
+ * timestamps and counts. Titles are words, so they are set as words.
  */
 export function CardEyebrow({
   children,
@@ -57,7 +58,7 @@ export function CardEyebrow({
   return (
     <span
       className={cn(
-        "font-mono text-[10px] uppercase leading-none tracking-[0.18em] text-ink-dim",
+        "text-[13px] font-medium leading-tight tracking-normal text-ink-muted",
         className
       )}
     >
@@ -125,7 +126,7 @@ export function StatBlock({
       >
         {value}
       </p>
-      <p className="mt-3 font-mono text-[10px] uppercase leading-none tracking-[0.18em] text-ink-dim">
+      <p className="mt-3 text-[12px] leading-tight text-ink-muted">
         {label}
       </p>
     </div>
@@ -202,7 +203,7 @@ export function ActionButton({
       {badge && badgeLabel && <span className="sr-only">{badgeLabel}</span>}
       <span
         className={cn(
-          "whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.18em]",
+          "whitespace-nowrap text-[13px] font-medium",
           collapsed &&
             "max-w-0 opacity-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-focus-visible/btn:max-w-[12rem] group-focus-visible/btn:pr-3.5 group-focus-visible/btn:opacity-100 group-hover/btn:max-w-[12rem] group-hover/btn:pr-3.5 group-hover/btn:opacity-100"
         )}
@@ -237,7 +238,7 @@ export function StatusChip({
       )}
     >
       {Icon && <Icon className="h-3 w-3" aria-hidden />}
-      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em]">{label}</span>
+      <span className="text-[12px] font-medium">{label}</span>
     </span>
   );
 }

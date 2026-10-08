@@ -183,7 +183,7 @@ export async function getOrCreateDmAction(input: unknown): Promise<ConversationR
 
     const targetSnap = await adminDb.collection("users").doc(targetUid).get();
     if (!targetSnap.exists) {
-      return { success: false, error: "That operative was not found." };
+      return { success: false, error: "That person wasn't found." };
     }
     const target = targetSnap.data()!;
 
@@ -283,7 +283,7 @@ export async function createGroupAction(input: unknown): Promise<ConversationRes
       ...targetUids.map((id) => adminDb.collection("users").doc(id))
     );
     if (snaps.some((snap) => !snap.exists)) {
-      return { success: false, error: "One of those operatives was not found." };
+      return { success: false, error: "One of those people wasn't found." };
     }
 
     const targets = snaps.map((snap) => ({

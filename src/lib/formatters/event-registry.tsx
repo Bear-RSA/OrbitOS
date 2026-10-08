@@ -336,7 +336,7 @@ export const EVENT_REGISTRY: Record<ActivityEventType, EventDescriptor> = {
     tone: "info",
     describe: (m) => (
       <>
-        called <Target val={(m.toName as string) || "an operative"} />
+        called <Target val={(m.toName as string) || "a teammate"} />
       </>
     ),
   },

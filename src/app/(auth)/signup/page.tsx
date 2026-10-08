@@ -17,8 +17,6 @@ import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
 import { AuthTransition } from "@/components/ui/auth-transition";
 
-import { ScrambleText } from "@/components/ui/scramble-text";
-
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -71,7 +69,7 @@ function SignupForm() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to create account.";
       if (msg.includes("email-already-in-use")) {
-        setError("An account with this email already exists.");
+        setError("An account with this email already exists. Sign in instead, or reset your password.");
       } else {
         setError(msg);
       }
@@ -81,12 +79,12 @@ function SignupForm() {
   return (
     <div className="animate-in fade-in duration-1000 slide-in-from-bottom-4">
       <div className="mb-8 text-center flex flex-col items-center">
-        <h1 className="text-[10px] font-mono uppercase tracking-[0.5em] text-ink-dim mb-3">
-          <ScrambleText text="Network Genesis" />
+        <h1 className="text-3xl font-light text-ink tracking-tight">
+          {isInvite ? "Create your account" : "Create your workspace"}
         </h1>
-        <div className="text-3xl font-light text-ink tracking-tight">
-          Initialize Workspace
-        </div>
+        <p className="mt-3 text-[14px] text-ink-muted">
+          {isInvite ? "You'll join your team's workspace next." : "Free for teams of three. No card needed."}
+        </p>
       </div>
 
       <div className="rounded-[32px] bg-surface-sunken/80 backdrop-blur-3xl ring-1 ring-line/[0.05] shadow-overlay p-12 flex flex-col gap-8 relative overflow-hidden">
@@ -96,53 +94,59 @@ function SignupForm() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 relative z-10">
           <div className="space-y-3">
-            <Label htmlFor="signup-name" className="text-ink-muted">Operator Identity</Label>
+            <Label htmlFor="signup-name" className="text-ink-muted">Your name</Label>
             <Input
               id="signup-name"
-              placeholder="Designate identifier"
+              placeholder="Lerato Mokoena"
               autoComplete="name"
+              aria-invalid={errors.name ? true : undefined}
+              aria-describedby={errors.name ? "signup-name-error" : undefined}
               className="bg-surface-sunken border-line/[0.03] focus:border-line/20 transition-all duration-500 h-14"
               {...register("name")}
             />
             {errors.name && (
-              <p className="text-[11px] font-mono text-destructive mt-2 ml-1">{errors.name.message}</p>
+              <p id="signup-name-error" role="alert" className="text-[13px] text-destructive mt-2 ml-1">{errors.name.message}</p>
             )}
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="signup-email" className="text-ink-muted">Operational Endpoint</Label>
+            <Label htmlFor="signup-email" className="text-ink-muted">Work email</Label>
             <Input
               id="signup-email"
               type="email"
-              placeholder="bear@orbit.sys"
+              placeholder="you@studio.co.za"
               autoComplete="email"
+              aria-invalid={errors.email ? true : undefined}
+              aria-describedby={errors.email ? "signup-email-error" : undefined}
               className="bg-surface-sunken border-line/[0.03] focus:border-line/20 transition-all duration-500 h-14"
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-[11px] font-mono text-destructive mt-2 ml-1">{errors.email.message}</p>
+              <p id="signup-email-error" role="alert" className="text-[13px] text-destructive mt-2 ml-1">{errors.email.message}</p>
             )}
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="signup-password" className="text-ink-muted">Security Protocol</Label>
+            <Label htmlFor="signup-password" className="text-ink-muted">Password</Label>
             <Input
               id="signup-password"
               type="password"
-              placeholder="Min. 8 characters"
+              placeholder="At least 8 characters"
               autoComplete="new-password"
+              aria-invalid={errors.password ? true : undefined}
+              aria-describedby={errors.password ? "signup-password-error" : undefined}
               className="bg-surface-sunken border-line/[0.03] focus:border-line/20 transition-all duration-500 h-14"
               {...register("password")}
             />
             {errors.password && (
-              <p className="text-[11px] font-mono text-destructive mt-2 ml-1">{errors.password.message}</p>
+              <p id="signup-password-error" role="alert" className="text-[13px] text-destructive mt-2 ml-1">{errors.password.message}</p>
             )}
           </div>
 
           {error && (
-            <div className="rounded-xl bg-destructive/5 ring-1 ring-destructive/20 p-5 mt-4">
-              <p className="text-[12px] text-destructive font-medium leading-relaxed font-mono flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+            <div role="alert" className="rounded-xl bg-destructive/5 ring-1 ring-destructive/20 p-5 mt-4">
+              <p className="text-[13px] text-destructive font-medium leading-relaxed flex items-center gap-2">
+                <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-destructive" />
                 {error}
               </p>
             </div>
@@ -151,30 +155,30 @@ function SignupForm() {
           <Button
             type="submit"
             size="lg"
-            className="w-full text-[12px] font-mono uppercase tracking-[0.2em] bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 shadow-[0_0_20px_rgb(var(--ink-strong)_/_0.05)] hover:shadow-[0_0_30px_rgb(var(--ink-strong)_/_0.1)] border-0 h-14 rounded-2xl"
+            className="w-full text-[14px] font-medium bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 shadow-[0_0_20px_rgb(var(--ink-strong)_/_0.05)] hover:shadow-[0_0_30px_rgb(var(--ink-strong)_/_0.1)] border-0 h-14 rounded-2xl"
             disabled={isSubmitting}
             id="signup-submit"
           >
             {isSubmitting ? (
               <div className="flex items-center gap-3">
                 <Loader size={14} color="currentColor" />
-                <ScrambleText text="GENERATING NETWORK..." />
+                Creating your account…
               </div>
-            ) : "Deploy Workspace"}
+            ) : isInvite ? "Create account" : "Create workspace"}
           </Button>
         </form>
       </div>
 
       <div className="mt-12 flex flex-col items-center gap-4">
         <div className="h-px w-8 bg-surface-control" />
-        <p className="text-center text-[12px] text-ink-dim font-mono uppercase tracking-widest">
-          Already have clearance?{" "}
+        <p className="text-center text-[14px] text-ink-muted">
+          Already have an account?{" "}
           <Link
             href={searchParams.get("redirect") ? `/login?redirect=${encodeURIComponent(searchParams.get("redirect") as string)}` : "/login"}
-            className="text-ink hover:text-ink-strong transition-all duration-300 ml-2"
+            className="text-ink underline-offset-4 hover:text-ink-strong hover:underline transition-all duration-300 ml-1"
             id="go-to-login"
           >
-            Authenticate Session
+            Sign in
           </Link>
         </p>
       </div>

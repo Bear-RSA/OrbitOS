@@ -11,24 +11,24 @@ export const metadata: Metadata = {
 
 export default function SecurityPage() {
   return (
-    <main className="theme-dark min-h-screen bg-[#050505] text-[#ededed] font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark min-h-screen bg-base text-ink font-sans selection:bg-white/[0.1]">
       <MarketingNav />
 
       {/* Hero Section */}
       <section className="pt-48 pb-20 px-8 max-w-7xl mx-auto">
         <ScrollReveal className="flex flex-col items-center text-center">
-          <span className="font-mono text-[10px] tracking-[0.3em] text-[#555555] uppercase mb-8 block">Operational Integrity</span>
-          <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 text-[#ededed]">
+          <span className="text-[12px] text-ink-dim mb-8 block">Operational Integrity</span>
+          <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 text-ink">
             Security
           </h1>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.2] to-transparent"></div>
-          <p className="mt-8 font-mono text-[10px] tracking-widest text-[#555555] uppercase">Last Updated: April 2026</p>
+          <p className="mt-8 text-[12px] text-ink-dim">Last Updated: April 2026</p>
         </ScrollReveal>
       </section>
 
       {/* Content Section */}
       <section className="pb-40 px-8 max-w-4xl mx-auto">
-        <ScrollReveal delay={100} className="prose prose-invert prose-p:text-[#888888] prose-p:font-light prose-p:leading-relaxed prose-headings:font-light prose-headings:tracking-tight prose-headings:text-[#ededed] prose-strong:text-[#ededed] prose-strong:font-medium max-w-none">
+        <ScrollReveal delay={100} className="prose prose-invert prose-p:text-ink-muted prose-p:font-light prose-p:leading-relaxed prose-headings:font-light prose-headings:tracking-tight prose-headings:text-ink prose-strong:text-ink prose-strong:font-medium max-w-none">
           
           <div className="space-y-16">
             <section>
@@ -45,15 +45,15 @@ export default function SecurityPage() {
               <h2 className="text-2xl mb-6">Data Protection</h2>
               <div className="mt-8 space-y-8">
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">Encryption in Transit</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">Encryption in Transit</h3>
                   <p className="text-sm">All data transmitted between your device and our servers is protected using TLS 1.2 or higher. We enforce HTTPS across all endpoints.</p>
                 </div>
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">Encryption at Rest</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">Encryption at Rest</h3>
                   <p className="text-sm">Your data is stored in Firebase (Google Cloud Platform), which provides enterprise-grade encryption at rest using AES-256.</p>
                 </div>
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">Data Minimization</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">Data Minimization</h3>
                   <p className="text-sm">We collect only necessary information. We do not sell your data or use it for advertising. Deleted accounts result in permanent removal of personal data within 30 days.</p>
                 </div>
               </div>
@@ -63,15 +63,15 @@ export default function SecurityPage() {
               <h2 className="text-2xl mb-6">Authentication & Access Control</h2>
               <div className="mt-8 space-y-8">
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">Secure Authentication</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">Secure Authentication</h3>
                   <p className="text-sm">We use Firebase Authentication, implementing industry-standard password hashing (bcrypt), secure token management, and brute-force protection.</p>
                 </div>
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">Role-Based Access Control (RBAC)</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">Role-Based Access Control (RBAC)</h3>
                   <p className="text-sm">Strict permission boundaries ensure Owners have full control while Members operate within defined limits. Data isolation prevents cross-workspace access.</p>
                 </div>
                 <div>
-                  <h3 className="text-lg mb-4 text-[#ededed]/80">Session Security</h3>
+                  <h3 className="text-lg mb-4 text-ink/80">Session Security</h3>
                   <p className="text-sm">Managed via secure, HTTP-only cookies with automatic expiration and immediate session revocation capabilities.</p>
                 </div>
               </div>
@@ -85,24 +85,24 @@ export default function SecurityPage() {
                 <table className="w-full text-left text-sm font-light border-collapse">
                   <thead>
                     <tr className="border-b border-white/[0.04]">
-                      <th className="py-4 text-[#ededed]/60 font-medium">Provider</th>
-                      <th className="py-4 text-[#ededed]/60 font-medium">Service</th>
-                      <th className="py-4 text-[#ededed]/60 font-medium">Security Standards</th>
+                      <th className="py-4 text-ink/60 font-medium">Provider</th>
+                      <th className="py-4 text-ink/60 font-medium">Service</th>
+                      <th className="py-4 text-ink/60 font-medium">Security Standards</th>
                     </tr>
                   </thead>
-                  <tbody className="text-[#888888]">
+                  <tbody className="text-ink-muted">
                     <tr className="border-b border-white/[0.04]">
-                      <td className="py-4 text-[#ededed]">Firebase</td>
+                      <td className="py-4 text-ink">Firebase</td>
                       <td className="py-4">Database & Auth</td>
                       <td className="py-4">Google Cloud Infrastructure, AES-256</td>
                     </tr>
                     <tr className="border-b border-white/[0.04]">
-                      <td className="py-4 text-[#ededed]">Vercel</td>
+                      <td className="py-4 text-ink">Vercel</td>
                       <td className="py-4">Hosting & CDN</td>
                       <td className="py-4">SOC 2 Type 2, DDoS mitigation</td>
                     </tr>
                     <tr className="border-b border-white/[0.04]">
-                      <td className="py-4 text-[#ededed]">Upstash</td>
+                      <td className="py-4 text-ink">Upstash</td>
                       <td className="py-4">Rate Limiting</td>
                       <td className="py-4">Encrypted Redis protocols</td>
                     </tr>
@@ -115,16 +115,16 @@ export default function SecurityPage() {
               <h2 className="text-2xl mb-6">Application Security</h2>
               <ul className="mt-4 space-y-4 list-none p-0">
                 <li className="flex gap-4">
-                  <span className="text-[#ededed] font-medium min-w-[140px]">Validation:</span>
-                  <span className="text-[#888888] font-light leading-relaxed">Strict input sanitization to prevent XSS and injection attacks.</span>
+                  <span className="text-ink font-medium min-w-[140px]">Validation:</span>
+                  <span className="text-ink-muted font-light leading-relaxed">Strict input sanitization to prevent XSS and injection attacks.</span>
                 </li>
                 <li className="flex gap-4">
-                  <span className="text-[#ededed] font-medium min-w-[140px]">Rate Limiting:</span>
-                  <span className="text-[#888888] font-light leading-relaxed">Intelligent abuse prevention via Upstash Redis.</span>
+                  <span className="text-ink font-medium min-w-[140px]">Rate Limiting:</span>
+                  <span className="text-ink-muted font-light leading-relaxed">Intelligent abuse prevention via Upstash Redis.</span>
                 </li>
                 <li className="flex gap-4">
-                  <span className="text-[#ededed] font-medium min-w-[140px]">Headers:</span>
-                  <span className="text-[#888888] font-light leading-relaxed">Implementation of CSP, HSTS, and X-Frame-Options.</span>
+                  <span className="text-ink font-medium min-w-[140px]">Headers:</span>
+                  <span className="text-ink-muted font-light leading-relaxed">Implementation of CSP, HSTS, and X-Frame-Options.</span>
                 </li>
               </ul>
             </section>
@@ -132,12 +132,12 @@ export default function SecurityPage() {
             <section>
               <h2 className="text-2xl mb-6">Responsible Disclosure</h2>
               <p>We take security vulnerabilities seriously and welcome reporting from security researchers.</p>
-              <div className="mt-8 bg-[#0A0A0A] p-10 rounded-2xl ring-1 ring-white/[0.04]">
-                <h3 className="text-lg mb-4 text-[#ededed]">Report a Vulnerability</h3>
-                <p className="text-sm text-[#888888] mb-6 font-light">
+              <div className="mt-8 bg-surface-card p-10 rounded-2xl ring-1 ring-white/[0.04]">
+                <h3 className="text-lg mb-4 text-ink">Report a Vulnerability</h3>
+                <p className="text-sm text-ink-muted mb-6 font-light">
                   If you discover a security issue, please contact us immediately. We commit to acknowledging receipt within 48 hours.
                 </p>
-                <Link href="mailto:feedback@miraistack.co.za" className="text-[#ededed] font-medium hover:underline">feedback@miraistack.co.za</Link>
+                <Link href="mailto:feedback@miraistack.co.za" className="text-ink font-medium hover:underline">feedback@miraistack.co.za</Link>
               </div>
             </section>
           </div>

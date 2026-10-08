@@ -47,7 +47,7 @@ export async function removeMemberAction(
     // 1. Validate caller is OWNER and scope is valid
     const authStatus = await validateOwner(uid, targetUserId, projectId);
     if (!authStatus.isOwner) {
-      return { success: false, error: authStatus.error ?? "Unauthorized. Requires OWNER clearance." };
+      return { success: false, error: authStatus.error ?? "Only the workspace owner can do this." };
     }
     const callerOrgId = authStatus.orgId!;
 
@@ -67,7 +67,7 @@ export async function removeMemberAction(
       return { success: false, error: "Cannot remove an OWNER from the workspace." };
     }
 
-    const targetName = targetData.name || "Unknown Operator";
+    const targetName = targetData.name || "A former member";
 
     // 4. Atomic transaction: remove membership + unassign tasks
     await adminDb.runTransaction(async (tx) => {
@@ -99,7 +99,7 @@ export async function removeMemberAction(
 
     // 7. Log activity (after transaction succeeds)
     const callerSnap = await adminDb.collection("users").doc(uid).get();
-    const callerName = callerSnap.exists ? callerSnap.data()!.name || "Operator" : "System";
+    const callerName = callerSnap.exists ? callerSnap.data()!.name || "Unnamed member" : "System";
 
     await logActivity({
       eventType: "MEMBER_REMOVED",

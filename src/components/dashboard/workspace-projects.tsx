@@ -170,7 +170,7 @@ export function WorkspaceProjects({
           <h2 className="mb-3 text-2xl font-light tracking-tight text-ink sm:text-3xl">{title}</h2>
           <div className="inline-flex items-center gap-2 rounded-full bg-surface-control px-3 py-1 ring-1 ring-inset ring-line/[0.07]">
              <span className="h-1.5 w-1.5 rounded-full bg-orbit-green shadow-[0_0_8px_rgb(var(--orbit-green)_/_0.4)]" aria-hidden />
-             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-muted">{eyebrow}</span>
+             <span className="text-[12px] text-ink-muted">{eyebrow}</span>
           </div>
         </div>
 
@@ -211,7 +211,7 @@ export function WorkspaceProjects({
         <div className="mb-10 rounded-3xl bg-surface-card p-5 ring-1 ring-inset ring-line/[0.06] sm:p-6">
           <div className="mb-4 flex items-center gap-2.5">
             <Archive className="h-3.5 w-3.5 text-ink-dim" aria-hidden />
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+            <span className="text-[12px] text-ink-dim">
               Archived Projects
             </span>
           </div>
@@ -245,13 +245,13 @@ export function WorkspaceProjects({
                     type="button"
                     onClick={() => restoreProject(project.id)}
                     disabled={restoringId !== null}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-surface-control px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-active hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-surface-control px-3 py-2 text-[12px] text-ink-muted ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-active hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <ArchiveRestore className="h-3.5 w-3.5" aria-hidden />
                     {restoringId === project.id ? "Restoring…" : "Restore"}
                   </button>
                 ) : (
-                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-dim">
+                  <span className="shrink-0 text-[12px] text-ink-dim">
                     Owner only
                   </span>
                 )}
@@ -306,7 +306,7 @@ export function WorkspaceProjects({
                           <Minus className="h-3.5 w-3.5 shrink-0 text-orbit-amber" aria-hidden />
                         )}
                         <span className={cn(
-                          "font-mono text-[10px] uppercase tracking-[0.16em]",
+                          "text-[12px]",
                           project.status === "Healthy" ? "text-orbit-green" :
                           project.status === "At Risk" ? "text-orbit-red" : "text-orbit-amber"
                         )}>
@@ -314,10 +314,10 @@ export function WorkspaceProjects({
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5">
-                        <h3 className="truncate text-xl font-light text-ink transition-colors group-hover:text-ink-strong sm:text-2xl">{project.name}</h3>
+                        <h3 className="truncate text-xl font-light text-ink transition-colors group-hover:text-ink-strong sm:text-2xl">{project.name}</h3>
                         {/* Priority Badge */}
                         {project.priority != null && (
-                          <span className="shrink-0 rounded-md bg-surface-control px-1.5 py-1 font-mono text-[10px] leading-none text-ink-muted ring-1 ring-inset ring-line/[0.08]">
+                          <span className="shrink-0 rounded-md bg-surface-control px-1.5 py-1 font-mono text-[11px] leading-none text-ink-muted ring-1 ring-inset ring-line/[0.08]">
                             P{project.priority}
                           </span>
                         )}
@@ -336,7 +336,7 @@ export function WorkspaceProjects({
                 </div>
 
                 <div className="space-y-2.5">
-                  <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.16em]">
+                  <div className="flex items-center justify-between text-[12px]">
                      <span className="text-ink-dim">Health Indicator</span>
                      <span className={cn(
                        "tabular-nums",

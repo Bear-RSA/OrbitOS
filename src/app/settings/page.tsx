@@ -92,7 +92,7 @@ function SettingsLoader() {
     <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-base">
       <Loader />
       <div className="flex flex-col items-center gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-dim">
+        <span className="text-[12px] text-ink-dim">
           Loading Settings
         </span>
         <div className="h-px w-24 bg-gradient-to-r from-transparent via-line/15 to-transparent" />
@@ -139,7 +139,7 @@ function SettingsView() {
   const current = visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0];
 
   return (
-    <DashboardShell className="min-h-[100dvh] bg-base text-ink selection:bg-surface-hover selection:text-ink-strong">
+    <DashboardShell className="min-h-[100dvh] bg-base text-ink selection:bg-surface-hover selection:text-ink-strong">
       {/* ── Chrome ─────────────────────────────────────────────────── */}
       <AppHeader user={user ?? {}} />
 

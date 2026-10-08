@@ -15,8 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
 import { AuthTransition } from "@/components/ui/auth-transition";
 
-import { ScrambleText } from "@/components/ui/scramble-text";
-
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -71,7 +69,7 @@ function LoginForm() {
       const msg =
         err instanceof Error ? err.message : "Invalid email or password.";
       if (msg.includes("user-not-found") || msg.includes("wrong-password") || msg.includes("invalid-credential")) {
-        setError("Invalid email or password. Please try again.");
+        setError("That email and password don't match. Check both and try again.");
       } else {
         setError(msg);
       }
@@ -81,12 +79,10 @@ function LoginForm() {
   return (
     <div className="animate-in fade-in duration-1000 slide-in-from-bottom-4">
       <div className="mb-8 text-center flex flex-col items-center">
-        <h1 className="text-[10px] font-mono uppercase tracking-[0.5em] text-ink-dim mb-3">
-          <ScrambleText text="Session Terminal" />
+        <h1 className="text-3xl font-light text-ink tracking-tight">
+          Sign in to OrbitOS
         </h1>
-        <div className="text-3xl font-light text-ink tracking-tight">
-          Authenticate Node
-        </div>
+        <p className="mt-3 text-[14px] text-ink-muted">Welcome back. Your workspace is where you left it.</p>
       </div>
 
       <div className="rounded-[32px] bg-surface-sunken/80 backdrop-blur-3xl ring-1 ring-line/[0.05] shadow-overlay p-12 flex flex-col gap-8 relative overflow-hidden">
@@ -96,29 +92,31 @@ function LoginForm() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 relative z-10">
           <div className="space-y-3">
-            <Label htmlFor="login-email" className="text-ink-muted">Email Node</Label>
+            <Label htmlFor="login-email" className="text-ink-muted">Email</Label>
             <Input
               id="login-email"
               type="email"
-              placeholder="bear@orbit.sys"
+              placeholder="you@studio.co.za"
               autoComplete="email"
+              aria-invalid={errors.email ? true : undefined}
+              aria-describedby={errors.email ? "login-email-error" : undefined}
               className="bg-surface-sunken border-line/[0.03] focus:border-line/20 transition-all duration-500 h-14"
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-[11px] font-mono text-destructive mt-2 ml-1">{errors.email.message}</p>
+              <p id="login-email-error" role="alert" className="text-[13px] text-destructive mt-2 ml-1">{errors.email.message}</p>
             )}
           </div>
 
           <div className="space-y-3">
             <div className="flex items-baseline justify-between gap-4">
-              <Label htmlFor="login-password" title="System Password" className="text-ink-muted">System Password</Label>
+              <Label htmlFor="login-password" className="text-ink-muted">Password</Label>
               <Link
                 href={forgotHref}
-                className="text-[11px] font-mono text-ink-dim hover:text-ink transition-colors duration-300"
+                className="rounded text-[13px] text-ink-muted hover:text-ink transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                 id="go-to-forgot-password"
               >
-                Forgot?
+                Forgot password?
               </Link>
             </div>
             <Input
@@ -126,11 +124,13 @@ function LoginForm() {
               type="password"
               placeholder="••••••••"
               autoComplete="current-password"
+              aria-invalid={errors.password ? true : undefined}
+              aria-describedby={errors.password ? "login-password-error" : undefined}
               className="bg-surface-sunken border-line/[0.03] focus:border-line/20 transition-all duration-500 h-14"
               {...register("password")}
             />
             {errors.password && (
-              <p className="text-[11px] font-mono text-destructive mt-2 ml-1">{errors.password.message}</p>
+              <p id="login-password-error" role="alert" className="text-[13px] text-destructive mt-2 ml-1">{errors.password.message}</p>
             )}
           </div>
 
@@ -138,18 +138,18 @@ function LoginForm() {
               in, but the server session lapsed, so gated routes are unreachable
               until they re-authenticate. */}
           {sessionBroken && !error && (
-            <div className="rounded-xl bg-orbit-amber/5 ring-1 ring-orbit-amber/20 p-5 mt-4">
-              <p className="text-[12px] text-orbit-amber font-medium leading-relaxed font-mono flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-orbit-amber animate-pulse" />
-                Your secure session could not be established. Please sign in again.
+            <div role="status" className="rounded-xl bg-orbit-amber/5 ring-1 ring-orbit-amber/20 p-5 mt-4">
+              <p className="text-[13px] text-orbit-amber font-medium leading-relaxed flex items-center gap-2">
+                <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-orbit-amber" />
+                You were signed out on the server. Sign in again to continue.
               </p>
             </div>
           )}
 
           {error && (
-            <div className="rounded-xl bg-destructive/5 ring-1 ring-destructive/20 p-5 mt-4">
-              <p className="text-[12px] text-destructive font-medium leading-relaxed font-mono flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+            <div role="alert" className="rounded-xl bg-destructive/5 ring-1 ring-destructive/20 p-5 mt-4">
+              <p className="text-[13px] text-destructive font-medium leading-relaxed flex items-center gap-2">
+                <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-destructive" />
                 {error}
               </p>
             </div>
@@ -158,30 +158,30 @@ function LoginForm() {
           <Button
             type="submit"
             size="lg"
-            className="w-full text-[12px] font-mono uppercase tracking-[0.2em] bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 shadow-[0_0_20px_rgb(var(--ink-strong)_/_0.05)] hover:shadow-[0_0_30px_rgb(var(--ink-strong)_/_0.1)] border-0 h-14 rounded-2xl"
+            className="w-full text-[14px] font-medium bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 shadow-[0_0_20px_rgb(var(--ink-strong)_/_0.05)] hover:shadow-[0_0_30px_rgb(var(--ink-strong)_/_0.1)] border-0 h-14 rounded-2xl"
             disabled={isSubmitting}
             id="login-submit"
           >
             {isSubmitting ? (
               <div className="flex items-center gap-3">
                 <Loader size={14} color="currentColor" />
-                <ScrambleText text="AUTHENTICATING..." />
+                Signing in…
               </div>
-            ) : "Establish Session"}
+            ) : "Sign in"}
           </Button>
         </form>
       </div>
 
       <div className="mt-12 flex flex-col items-center gap-4">
         <div className="h-px w-8 bg-surface-control" />
-        <p className="text-center text-[12px] text-ink-dim font-mono uppercase tracking-widest">
-          No operating system yet?{" "}
+        <p className="text-center text-[14px] text-ink-muted">
+          New to OrbitOS?{" "}
           <Link
             href={searchParams.get("redirect") ? `/signup?redirect=${encodeURIComponent(searchParams.get("redirect") as string)}` : "/signup"}
-            className="text-ink hover:text-ink-strong transition-all duration-300 ml-2"
+            className="text-ink underline-offset-4 hover:text-ink-strong hover:underline transition-all duration-300 ml-1"
             id="go-to-signup"
           >
-            Initialize workspace
+            Create a workspace
           </Link>
         </p>
       </div>

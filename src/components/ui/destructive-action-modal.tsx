@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import {
   Dialog,
@@ -30,16 +30,18 @@ export function DestructiveActionModal({
   isOpen,
   onClose,
   onConfirm,
-  title = "Destructive Action Protocol",
+  title = "Delete permanently?",
   entityName,
   description,
-  warningMessage = "This execution will trigger a cascade wipe. All metadata, configuration, and integrated task vectors associated with this project will be irreversibly destroyed.",
+  warningMessage = "This can't be undone. Everything inside it is deleted with it, for everyone in the workspace.",
   confirmText,
-  actionLabel = "Confirm Destruction",
+  actionLabel = "Delete",
 }: DestructiveActionModalProps) {
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inputId = useId();
+  const errorId = `${inputId}-error`;
 
   const targetConfirmText = confirmText || entityName;
   const isMatch = inputValue.trim().toLowerCase() === targetConfirmText.trim().toLowerCase();
@@ -63,7 +65,7 @@ export function DestructiveActionModal({
 
       // If onConfirm returns a result object, inspect it for failure
       if (result && !result.success) {
-        setError(result.error || "Action failed. Please check system integrity.");
+        setError(result.error || "That didn't go through. Nothing was deleted. Try again in a moment.");
         setLoading(false);
         return;
       }
@@ -71,7 +73,7 @@ export function DestructiveActionModal({
       // Success — reset loading (modal will likely unmount via onClose from parent)
       setLoading(false);
     } catch (err: any) {
-      setError(err?.message || "Action failed. Please check system integrity.");
+      setError(err?.message || "That didn't go through. Nothing was deleted. Try again in a moment.");
       setLoading(false);
     }
   };
@@ -84,13 +86,13 @@ export function DestructiveActionModal({
       >
         <DialogHeader className="space-y-4 mb-8">
           <DialogTitle className="flex items-center gap-3 text-destructive text-2xl font-light tracking-tight">
-            <AlertTriangle className="w-6 h-6" />
+            <AlertTriangle className="w-6 h-6 shrink-0" aria-hidden />
             {title}
           </DialogTitle>
           <DialogDescription className="text-ink-muted text-[15px] font-light leading-relaxed">
             {description || (
               <>
-                You are about to permanently eradicate <span className="font-semibold text-ink-strong">&quot;{entityName}&quot;</span>.
+                You&apos;re about to delete <span className="font-semibold text-ink-strong">&quot;{entityName}&quot;</span>.
               </>
             )}
           </DialogDescription>
@@ -107,12 +109,15 @@ export function DestructiveActionModal({
 
           {/* Confirmation Input */}
           <div className="space-y-3">
-            <label className="text-[11px] font-mono text-ink-dim uppercase tracking-[0.2em] block">
-              TYPE <span className="text-ink">&quot;{targetConfirmText}&quot;</span> TO CONFIRM
+            <label htmlFor={inputId} className="text-[13px] text-ink-muted block">
+              Type <span className="font-medium text-ink">{targetConfirmText}</span> to confirm
             </label>
             <div className="relative">
               <input
+                id={inputId}
                 type="text"
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? errorId : undefined}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 disabled={loading}
@@ -124,7 +129,7 @@ export function DestructiveActionModal({
                   }
                 }}
                 className={cn(
-                  "w-full bg-surface-sunken border border-line/[0.06] rounded-xl h-12 px-5 text-[14px] font-light text-ink placeholder:text-ink-faint transition-all focus:outline-none focus:border-destructive/40 disabled:opacity-50",
+                  "w-full bg-surface-sunken border border-line/[0.06] rounded-xl h-12 px-5 text-[14px] font-light text-ink placeholder:text-ink-dim transition-all focus:outline-none focus:border-destructive/40 focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50",
                   isMatch && "border-destructive/20 bg-orbit-red/[0.06]"
                 )}
               />
@@ -132,8 +137,8 @@ export function DestructiveActionModal({
           </div>
 
           {error && (
-            <div className="text-[12px] font-mono text-destructive animate-fade-in flex items-center gap-2 px-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+            <div id={errorId} role="alert" className="text-[13px] text-destructive animate-fade-in flex items-center gap-2 px-1">
+              <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-destructive" />
               {error}
             </div>
           )}
@@ -145,16 +150,16 @@ export function DestructiveActionModal({
             variant="ghost"
             disabled={loading}
             onClick={onClose}
-            className="h-11 px-8 rounded-xl text-[13px] font-medium text-ink bg-surface-sunken border border-line/[0.05] hover:bg-surface-control hover:text-ink-strong transition-all"
+            className="h-11 px-8 rounded-xl text-[13px] font-medium text-ink bg-surface-sunken border border-line/[0.05] hover:bg-surface-control hover:text-ink-strong transition-all"
           >
-            Abort
+            Cancel
           </Button>
           <Button
             type="button"
             disabled={loading || !isMatch}
             onClick={handleConfirm}
             className={cn(
-              "h-11 px-8 rounded-xl text-[13px] font-medium text-ink-strong transition-all duration-500",
+              "h-11 px-8 rounded-xl text-[13px] font-medium text-ink-strong transition-all duration-500",
               isMatch 
                 ? "bg-destructive hover:bg-orbit-red shadow-[0_0_20px_rgb(var(--orbit-red)_/_0.4)]" 
                 : "bg-destructive/20 text-ink-strong/30 cursor-not-allowed"
@@ -163,7 +168,7 @@ export function DestructiveActionModal({
             {loading ? (
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 border-2 border-line/30 border-t-white rounded-full animate-spin" />
-                Processing...
+                Deleting…
               </div>
             ) : (
               actionLabel

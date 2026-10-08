@@ -91,7 +91,7 @@ export function TaskStatusSelect({
     <Select value={status} onValueChange={handleChange} disabled={loading}>
       <SelectTrigger
         className={cn(
-          "h-[28px] text-[10px] font-semibold tracking-wider uppercase border-0 shadow-card px-3 w-auto gap-2 focus:ring-1 focus:ring-line/[0.1] rounded-md py-0 transition-all duration-300 ring-1",
+          "h-[28px] text-[11px] font-semibold tracking-wider uppercase border-0 shadow-card px-3 w-auto gap-2 focus:ring-1 focus:ring-line/[0.1] rounded-md py-0 transition-all duration-300 ring-1",
           config.bg,
           config.className,
           config.ring,

@@ -131,7 +131,7 @@ export function CalendarSection({ user }: { user: User }) {
               <button
                 type="button"
                 onClick={() => setConfirmRotate(false)}
-                className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim transition-colors hover:text-ink"
+                className="text-[12px] text-ink-dim transition-colors hover:text-ink"
               >
                 Cancel
               </button>
@@ -144,12 +144,12 @@ export function CalendarSection({ user }: { user: User }) {
         <CardHeader title="What travels" icon={CalendarClock} />
         <ul className="flex flex-col gap-3 text-[13px] font-light leading-relaxed text-ink-muted">
           <li>
-            <span className="text-ink">Directives assigned to you</span> that have a due date and
+            <span className="text-ink">Tasks assigned to you</span> that have a due date and
             are not yet complete — as all-day entries, since a directive owns a day and nothing
             finer.
           </li>
           <li>
-            <span className="text-ink">Engagements you are on</span>, at their scheduled time,
+            <span className="text-ink">Events you're invited to</span>, at their scheduled time,
             with the location and join link attached.
           </li>
           <li>

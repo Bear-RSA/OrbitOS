@@ -52,18 +52,18 @@ export function DashboardHeader({ currentUser }: DashboardHeaderProps) {
 
         {/* Greeting */}
         <h1 className="text-[clamp(1.875rem,5vw,2.5rem)] font-light leading-[1.08] tracking-tight text-ink-muted">
-          {greeting}, <span className="text-ink-strong">{firstName}</span>.
+          {greeting}, <span className="text-ink-strong">{firstName}</span>.
         </h1>
 
         {/* Subline */}
         <p className="mt-3.5 max-w-lg text-[14px] font-light leading-relaxed text-ink-muted">
           {currentUser.role === "OWNER"
-            ? "Telemetry is active. Here is the operational state of your workspace modules."
-            : "Here is your assigned work and project activity."}
+            ? "Here's what needs attention across your workspace."
+            : "Here's your work and what's moving on your projects."}
         </p>
 
         {/* Daily Message */}
-        <div className="mt-4 flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+        <div className="mt-4 flex items-center gap-2.5 text-[12px] text-ink-dim">
           <span className="h-1 w-1 shrink-0 rounded-full bg-orbit-green/70" aria-hidden />
           {getTeamDailyMessage(currentUser.orgId)}
         </div>
@@ -83,7 +83,7 @@ export function DashboardHeader({ currentUser }: DashboardHeaderProps) {
             </span>
           )}
         </div>
-        <div className="text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+        <div className="text-[11px] uppercase tracking-[0.18em] text-ink-dim">
           {format(time, "EEEE, d MMMM yyyy")}
         </div>
       </div>

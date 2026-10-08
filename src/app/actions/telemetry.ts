@@ -60,7 +60,7 @@ export async function recordTelemetryAction({
     eventType,
     orgId: userData.orgId,
     projectId,
-    actor: { uid: session.uid, name: userData.name || "Operator" },
+    actor: { uid: session.uid, name: userData.name || "Unnamed member" },
     metadata,
   });
 

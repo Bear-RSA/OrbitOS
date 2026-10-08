@@ -97,7 +97,7 @@ export function CreateGroupDialog({
       }
     } catch (err) {
       console.error("Failed to create group:", err);
-      setErrorMsg("System error. Please try again.");
+      setErrorMsg("Something went wrong on our side. Try again.");
     } finally {
       setLoading(false);
     }
@@ -144,13 +144,13 @@ export function CreateGroupDialog({
           <div className="space-y-2.5">
             <div className="flex items-baseline justify-between">
               <Label className="text-left">Participants</Label>
-              <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim">
+              <span className="text-[12px] text-ink-dim">
                 {selected.length} selected
               </span>
             </div>
 
             {people.length === 0 ? (
-              <p className="py-6 text-center font-mono text-[10px] uppercase tracking-[0.15em] text-ink-dim">
+              <p className="py-6 text-center text-[12px] text-ink-dim">
                 Nobody else in the workspace yet
               </p>
             ) : (
@@ -183,7 +183,7 @@ export function CreateGroupDialog({
                           <span className="block truncate text-[13px] font-medium tracking-tight text-ink">
                             {member.name}
                           </span>
-                          <span className="block truncate font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim">
+                          <span className="block truncate text-[12px] text-ink-dim">
                             {member.roleDescriptor ||
                               (member.role === "OWNER" ? "Owner" : "Member")}
                           </span>

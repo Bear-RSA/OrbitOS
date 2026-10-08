@@ -550,7 +550,7 @@ export function MessageThread({
               );
             })}
             {(conversation.participantIds?.length ?? 0) > 5 && (
-              <span className="pl-3.5 font-mono text-[9px] tabular-nums text-ink-dim">
+              <span className="pl-3.5 font-mono text-[11px] tabular-nums text-ink-dim">
                 +{(conversation.participantIds?.length ?? 0) - 5}
               </span>
             )}
@@ -558,7 +558,7 @@ export function MessageThread({
         )}
 
         {conversation?.type === "townhall" && (
-          <span className="hidden shrink-0 items-center gap-1.5 rounded-md bg-surface-control px-2 py-1 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim ring-1 ring-line/[0.06] sm:flex">
+          <span className="hidden shrink-0 items-center gap-1.5 rounded-md bg-surface-control px-2 py-1 text-[12px] text-ink-dim ring-1 ring-line/[0.06] sm:flex">
             <Megaphone className="h-2.5 w-2.5" aria-hidden />
             Broadcast
           </span>
@@ -608,7 +608,7 @@ export function MessageThread({
                 type="button"
                 onClick={loadEarlier}
                 disabled={loadingOlder}
-                className="rounded-full border border-line/[0.06] bg-surface-control px-3 py-1 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink disabled:opacity-40"
+                className="rounded-full border border-line/[0.06] bg-surface-control px-3 py-1 text-[12px] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink disabled:opacity-40"
               >
                 {loadingOlder ? "Loading…" : "Load earlier"}
               </button>
@@ -646,7 +646,7 @@ export function MessageThread({
                     {newDay && sentAt && (
                       <div className="my-5 flex items-center gap-3 first:mt-0">
                         <span className="h-px flex-1 bg-line/[0.06]" />
-                        <span className="rounded-full bg-surface-control px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim ring-1 ring-line/[0.05]">
+                        <span className="rounded-full bg-surface-control px-2.5 py-0.5 text-[12px] text-ink-dim ring-1 ring-line/[0.05]">
                           {dayLabel(sentAt)}
                         </span>
                         <span className="h-px flex-1 bg-line/[0.06]" />
@@ -672,19 +672,19 @@ export function MessageThread({
                             <button
                               type="button"
                               onClick={() => onOpenProfile(message.senderId)}
-                              title={`View ${sender?.name ?? "operative"}`}
+                              title={`View ${sender?.name ?? "member"}`}
                               className="rounded-lg transition-transform duration-200 hover:-translate-y-0.5"
                             >
                               <UserAvatar
                                 size="sm"
-                                name={sender?.name ?? "Unknown operative"}
+                                name={sender?.name ?? "Unknown member"}
                                 photoURL={sender?.photoURL}
                               />
                             </button>
                           ) : (
                             <UserAvatar
                               size="sm"
-                              name={sender?.name ?? "Unknown operative"}
+                              name={sender?.name ?? "Unknown member"}
                               photoURL={sender?.photoURL}
                             />
                           ))}
@@ -701,11 +701,11 @@ export function MessageThread({
                           <div className="mb-1 flex items-baseline gap-2 px-1">
                             {showName && (
                               <span className="text-[12px] font-medium tracking-tight text-ink-strong">
-                                {sender?.name ?? "Unknown operative"}
+                                {sender?.name ?? "Unknown member"}
                               </span>
                             )}
                             {sentAt && (
-                              <span className="font-mono text-[9px] tabular-nums tracking-[0.12em] text-ink-dim">
+                              <span className="font-mono text-[11px] tabular-nums tracking-[0.12em] text-ink-dim">
                                 {format(sentAt, "HH:mm")}
                               </span>
                             )}
@@ -768,7 +768,7 @@ export function MessageThread({
                               {message.text}
                             </p>
                             {message.editedAt && (
-                              <span className="mt-1 block font-mono text-[9px] uppercase tracking-[0.15em] text-ink-faint">
+                              <span className="mt-1 block text-[12px] text-ink-dim">
                                 edited
                               </span>
                             )}
@@ -833,7 +833,7 @@ export function MessageThread({
                   <p className="truncate text-[12px] font-medium text-ink">
                     {pendingImage.name || "Pasted picture"}
                   </p>
-                  <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim">
+                  <p className="mt-0.5 text-[12px] text-ink-dim">
                     {sending ? "Uploading…" : `${(pendingImage.size / 1024).toFixed(0)} KB · sends with your message`}
                   </p>
                 </div>
@@ -939,7 +939,7 @@ export function MessageThread({
         ) : (
           <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-line/[0.08] bg-surface-control/60 px-3.5 py-3">
             <Lock className="h-3.5 w-3.5 shrink-0 text-ink-dim" aria-hidden />
-            <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-ink-dim">
+            <p className="text-[12px] text-ink-dim">
               {decision && decision.allowed === false
                 ? decision.message
                 : "Opening conversation…"}
@@ -949,7 +949,7 @@ export function MessageThread({
 
         {/* Only once it matters — an always-on hint is chrome. */}
         {mayPost && draft.length > MAX_MESSAGE_LENGTH - 200 && (
-          <p className="mt-2 text-right font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim">
+          <p className="mt-2 text-right text-[12px] text-ink-dim">
             {MAX_MESSAGE_LENGTH - draft.length} characters left
           </p>
         )}
@@ -1093,7 +1093,7 @@ function ForwardedTask({
             : "bg-surface-control ring-line/[0.06] hover:bg-surface-raised"
         )}
       >
-        <span className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.22em] text-ink-dim">
+        <span className="flex items-center gap-1.5 text-[12px] text-ink-dim">
           <ClipboardList className="h-3 w-3" aria-hidden />
           Directive
           <ArrowUpRight
@@ -1109,7 +1109,7 @@ function ForwardedTask({
         <span className="mt-2.5 flex flex-wrap items-center gap-1.5">
           <span
             className={cn(
-              "rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.15em] ring-1",
+              "rounded-full px-2 py-0.5 text-[12px] ring-1",
               TASK_STATUS_TONE[taskRef.status]
             )}
           >
@@ -1117,14 +1117,14 @@ function ForwardedTask({
           </span>
 
           {taskRef.isBlocked && (
-            <span className="flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.15em] text-orbit-red ring-1 ring-orbit-red/20">
+            <span className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] text-orbit-red ring-1 ring-orbit-red/20">
               <CircleSlash className="h-2.5 w-2.5" aria-hidden />
               Blocked
             </span>
           )}
 
           {taskRef.dueDateKey && (
-            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim tabular-nums">
+            <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-dim tabular-nums">
               {/* Through `parseDateKey`, which lands at midday — reading
                   the day off the stored instant shifts it by a timezone. */}
               Due {format(parseDateKey(taskRef.dueDateKey), "dd MMM yyyy")}
@@ -1132,7 +1132,7 @@ function ForwardedTask({
           )}
         </span>
 
-        <span className="mt-2 block truncate font-mono text-[9px] uppercase tracking-[0.15em] text-ink-faint">
+        <span className="mt-2 block truncate text-[12px] text-ink-dim">
           {taskRef.assigneeNames.length > 0
             ? taskRef.assigneeNames.join(", ")
             : "Unassigned"}
@@ -1185,10 +1185,10 @@ function EmptyThread({
         )}
       </span>
       <div className="space-y-1.5">
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+        <p className="text-[12px] text-ink-dim">
           {isTownHall ? "No notices yet" : "No messages yet"}
         </p>
-        <p className="max-w-xs text-[12px] leading-relaxed text-ink-faint">
+        <p className="max-w-xs text-[12px] leading-relaxed text-ink-dim">
           {isTownHall
             ? mayPost
               ? "Anything posted here reaches everyone in the workspace."

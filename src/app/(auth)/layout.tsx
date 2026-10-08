@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             className="bg-surface-control shadow-[inset_0_1px_0_rgb(var(--ink-strong)_/_0.06),0_4px_20px_rgb(var(--scrim)_/_0.4)] border border-line/[0.04]" 
           />
           <div className="flex flex-col items-center gap-1.5">
-            <span className="font-mono text-[10px] text-ink-dim uppercase tracking-[0.4em]">OrbitOS_Protocol</span>
+            <span className="text-[14px] font-medium text-ink-muted">OrbitOS</span>
           </div>
         </div>
         {children}

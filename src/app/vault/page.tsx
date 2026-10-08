@@ -85,8 +85,8 @@ export default function VaultPage() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2 rounded-full bg-surface-control px-3 py-1 ring-1 ring-line/[0.04]">
               <ShieldCheck className="h-3 w-3 text-ink-muted" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-ink-muted">
-                {isOwner ? "Full Clearance" : "Standard Clearance"}
+              <span className="text-[12px] text-ink-muted">
+                {isOwner ? "Full access" : "Standard access"}
               </span>
             </div>
             <span className="max-w-lg text-[13px] leading-relaxed text-ink-dim">

@@ -337,7 +337,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
       {/* ────────── HEADER ────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8 mb-8">
         <div>
-          <h2 className="text-[10px] font-mono uppercase tracking-[0.3em] text-ink-dim mb-3">
+          <h2 className="text-[12px] text-ink-dim mb-3">
             Asset Repository
           </h2>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -462,7 +462,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
               ? "Release to import"
               : "Drop files here"}
         </p>
-        <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-ink-dim">
+        <p className="text-[12px] text-ink-dim">
           {isUploading
             ? "Indexing into the repository"
             : isDragging
@@ -502,22 +502,22 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b border-line/[0.06]">
-                  <th className="py-4 px-6 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[35%]">
+                  <th className="py-4 px-6 text-[12px] text-ink-dim w-[35%]">
                     File Identifier
                   </th>
-                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[10%]">
+                  <th className="py-4 px-4 text-[12px] text-ink-dim w-[10%]">
                     Class
                   </th>
-                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[12%]">
+                  <th className="py-4 px-4 text-[12px] text-ink-dim w-[12%]">
                     Weight
                   </th>
-                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[18%]">
+                  <th className="py-4 px-4 text-[12px] text-ink-dim w-[18%]">
                     Uploader
                   </th>
-                  <th className="py-4 px-4 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[15%]">
+                  <th className="py-4 px-4 text-[12px] text-ink-dim w-[15%]">
                     Timestamp
                   </th>
-                  <th className="py-4 px-6 text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim w-[10%] text-right">
+                  <th className="py-4 px-6 text-[12px] text-ink-dim w-[10%] text-right">
                     Actions
                   </th>
                 </tr>
@@ -553,7 +553,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                             />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[13px] font-mono text-ink truncate group-hover/row:text-ink-strong transition-colors duration-300">
+                            <p className="text-[13px] font-mono text-ink truncate group-hover/row:text-ink-strong transition-colors duration-300">
                               {file.name}
                             </p>
                           </div>
@@ -563,7 +563,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                       {/* Class badge */}
                       <td className="py-5 px-4">
                         <span
-                          className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border transition-colors duration-300"
+                          className="inline-flex items-center px-2 py-0.5 rounded text-[12px] border transition-colors duration-300"
                           style={{
                             color: cat.accent,
                             borderColor: `${cat.accent}20`,
@@ -601,7 +601,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                           <span className="text-[11px] font-mono text-ink-dim group-hover/row:text-ink-muted transition-colors tabular-nums">
                             {format(file.createdAt?.toDate() || new Date(), "dd MMM yyyy")}
                           </span>
-                          <span className="text-[9px] font-mono text-ink-dim uppercase tabular-nums">
+                          <span className="text-[11px] font-mono text-ink-dim uppercase tabular-nums">
                             {format(file.createdAt?.toDate() || new Date(), "HH:mm")}
                           </span>
                         </div>
@@ -684,14 +684,14 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                   </div>
 
                   {/* Name */}
-                  <p className="text-[12px] font-mono text-ink truncate w-full mb-1.5 group-hover/card:text-ink-strong transition-colors">
+                  <p className="text-[12px] font-mono text-ink truncate w-full mb-1.5 group-hover/card:text-ink-strong transition-colors">
                     {file.name}
                   </p>
 
                   {/* Meta line */}
                   <div className="flex items-center gap-2 justify-center">
                     <span
-                      className="text-[8px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border"
+                      className="text-[12px] px-1.5 py-0.5 rounded border"
                       style={{
                         color: cat.accent,
                         borderColor: `${cat.accent}20`,
@@ -700,7 +700,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                     >
                       {cat.label}
                     </span>
-                    <span className="text-[10px] font-mono text-ink-dim tabular-nums">
+                    <span className="text-[11px] font-mono text-ink-dim tabular-nums">
                       {formatSize(file.size)}
                     </span>
                   </div>
@@ -764,22 +764,22 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orbit-green opacity-40" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-orbit-green" />
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-ink-dim">
+              <span className="text-[12px] text-ink-dim">
                 Status: <span className="text-orbit-green">Operational</span>
               </span>
             </div>
             <span className="h-3 w-px bg-surface-hover" />
-            <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-ink-dim">
+            <span className="text-[12px] text-ink-dim">
               System Telemetry
             </span>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-[10px] font-mono text-ink-dim tabular-nums">
+            <span className="text-[11px] font-mono text-ink-dim tabular-nums">
               {files.length} Active Node{files.length !== 1 ? "s" : ""}
             </span>
             <span className="h-3 w-px bg-surface-hover" />
-            <span className="text-[10px] font-mono text-ink-dim tabular-nums">
+            <span className="text-[11px] font-mono text-ink-dim tabular-nums">
               {formatSize(totalStorage)} Total Storage
             </span>
           </div>

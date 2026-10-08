@@ -51,7 +51,7 @@ export default function ProofCallPage() {
     return (
       <div className="flex min-h-screen flex-col bg-base p-4">
         <div className="mb-3 flex items-center justify-between">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+          <p className="text-[12px] text-ink-dim">
             Proof room · {grant.displayName}
           </p>
           <button
@@ -80,7 +80,7 @@ export default function ProofCallPage() {
         >
           <Logo className="mb-10" />
 
-          <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-ink-dim">
+          <p className="mb-3 text-[12px] text-ink-dim">
             Proof room
           </p>
           <h1 className="mb-8 text-[22px] font-light tracking-tight text-ink">

@@ -34,14 +34,14 @@ export function DeleteTaskDialog({
       onClose={() => onOpenChange(false)}
       onConfirm={handleDelete}
       entityName={task.title}
-      title="Terminate Directive"
+      title="Delete this task?"
       description={
         <>
-          System alert: You are about to purge directive <span className="text-destructive font-bold">#{task.id.slice(0, 4).toUpperCase()}</span> from the operational grid.
+          You&apos;re about to delete <span className="font-semibold text-ink-strong">{task.title}</span>.
         </>
       }
-      warningMessage="Action Status: Irreversible. This execution will be logged to the telemetry stream and cannot be undone."
-      actionLabel="Confirm Purge"
+      warningMessage="This can't be undone. The deletion shows in the project's activity log."
+      actionLabel="Delete task"
     />
   );
 }

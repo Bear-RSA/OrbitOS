@@ -187,7 +187,7 @@ export function MemberProfile({
                 <DialogTitle className="truncate text-[18px] font-medium tracking-tight text-ink-strong">
                   {member.name}
                 </DialogTitle>
-                <p className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+                <p className="mt-0.5 truncate text-[12px] text-ink-dim">
                   {descriptor}
                 </p>
                 <p className="mt-2 flex items-center gap-2 text-[11px] text-ink-muted">
@@ -212,7 +212,7 @@ export function MemberProfile({
                 });
                 onClose();
               }}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-surface-control px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.15em] text-ink ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-30"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-surface-control px-3 py-2.5 text-[12px] text-ink ring-1 ring-inset ring-line/[0.08] transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-30"
             >
               <Phone className="h-3.5 w-3.5" aria-hidden />
               Call
@@ -225,7 +225,7 @@ export function MemberProfile({
                   onMessage(member.id);
                   onClose();
                 }}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.15em] text-on-ink transition-transform duration-300 hover:-translate-y-px"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2.5 text-[12px] text-on-ink transition-transform duration-300 hover:-translate-y-px"
               >
                 <MessageSquare className="h-3.5 w-3.5" aria-hidden />
                 Message
@@ -252,7 +252,7 @@ export function MemberProfile({
                   style={{ width: `${workload.loadPercent}%` }}
                 />
               </div>
-              <span className="shrink-0 font-mono text-[10px] tabular-nums text-ink-muted">
+              <span className="shrink-0 font-mono text-[11px] tabular-nums text-ink-muted">
                 {workload.open} open
               </span>
             </div>
@@ -281,7 +281,7 @@ export function MemberProfile({
                       <span className="min-w-0 flex-1 truncate text-ink-muted">
                         {event.title}
                       </span>
-                      <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-dim">
+                      <span className="shrink-0 text-[12px] text-ink-dim">
                         {event.startAt?.toDate
                           ? format(event.startAt.toDate(), "d MMM")
                           : ""}
@@ -308,7 +308,7 @@ export function MemberProfile({
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <section className="mt-5 border-t border-line/[0.07] pt-4">
-      <h3 className="mb-2.5 font-mono text-[9px] uppercase tracking-[0.2em] text-ink-dim">
+      <h3 className="mb-2.5 text-[12px] text-ink-dim">
         {label}
       </h3>
       {children}

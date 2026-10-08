@@ -67,7 +67,7 @@ describe("taking the snapshot", () => {
   });
 
   it("never leaves a card with no name on it", () => {
-    expect(taskRefFromTask(facts({ title: "   " })).title).toBe("Untitled directive");
+    expect(taskRefFromTask(facts({ title: "   " })).title).toBe("Untitled task");
   });
 });
 

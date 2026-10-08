@@ -159,6 +159,6 @@ export async function getProjectPulseAction(projectId: string) {
 
   } catch (error) {
     console.error("Failed to compile project pulse:", error);
-    return { success: false, error: "System failure compiling pulse." };
+    return { success: false, error: "Couldn't load the project pulse. Try again." };
   }
 }

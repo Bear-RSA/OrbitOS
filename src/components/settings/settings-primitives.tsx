@@ -173,7 +173,7 @@ export function SegmentedRow<T extends string>({
               onClick={() => onChange(option.value)}
               className={cn(
                 "inline-flex items-center gap-2 rounded-lg px-3 py-2",
-                "font-mono text-[10px] uppercase tracking-[0.14em]",
+                "text-[12px]",
                 "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                 "disabled:cursor-not-allowed disabled:opacity-45",
@@ -276,7 +276,7 @@ export function SettingsButton({
         "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base",
         "disabled:cursor-not-allowed disabled:opacity-40",
-        variant === "default" && "bg-ink text-on-ink hover:bg-ink-strong",
+        variant === "default" && "bg-ink text-on-ink hover:bg-ink-strong",
         variant === "quiet" &&
           "bg-surface-control text-ink ring-1 ring-inset ring-line/[0.08] hover:bg-surface-hover",
         variant === "danger" &&
@@ -295,7 +295,7 @@ export function SettingsButton({
           Icon && <Icon className="h-3.5 w-3.5" aria-hidden />
         )}
       </span>
-      <span className="whitespace-nowrap font-mono text-[10px] font-medium uppercase tracking-[0.18em]">
+      <span className="whitespace-nowrap text-[12px] font-medium">
         {children}
       </span>
     </button>

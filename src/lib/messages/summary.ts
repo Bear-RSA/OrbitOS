@@ -14,7 +14,7 @@ import type { Conversation } from "@/types/message";
 /*  reader is looking at.                                              */
 /* ------------------------------------------------------------------ */
 
-const UNKNOWN = "Unknown operative";
+const UNKNOWN = "Unknown member";
 
 /** What `conversationTitle` needs, and nothing else. */
 export type TitleFacts = Pick<

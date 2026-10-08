@@ -109,7 +109,7 @@ export async function GET(
           endDate: shiftDateKey(dueDateKey, 1),
         },
         status: "CONFIRMED",
-        categories: ["Directive"],
+        categories: ["Task"],
         lastModified: task.updatedAt?.toDate?.() ?? undefined,
       });
     }
@@ -153,14 +153,14 @@ export async function GET(
               end: (event.endAt as Timestamp).toDate(),
             },
         status: "CONFIRMED",
-        categories: ["Engagement"],
+        categories: ["Event"],
         lastModified: event.updatedAt?.toDate?.() ?? undefined,
       });
     }
 
     const body = buildCalendar({
       name: "OrbitOS",
-      description: `Directives and engagements for ${user.name || "your account"}.`,
+      description: `Tasks and events for ${user.name || "your account"}.`,
       entries,
     });
 

@@ -9,7 +9,7 @@ const VIEWS = [
   { id: "execution", icon: LayoutList, label: "Checklist" },
   { id: "calendar", icon: CalendarDays, label: "Calendar" },
   { id: "strategy", icon: Map, label: "Roadmap" },
-  { id: "personnel", icon: Network, label: "Personnel" },
+  { id: "personnel", icon: Network, label: "People" },
 ] as const;
 
 /**
@@ -33,7 +33,7 @@ export function ExecutionViewTabs({
   return (
     <div
       role="tablist"
-      aria-label="Execution view"
+      aria-label="Project views"
       className={cn(
         "grid w-full grid-cols-4 gap-1 rounded-xl bg-surface-card p-1 ring-1 ring-inset ring-line/[0.06]",
         "sm:flex sm:w-auto sm:items-center",
@@ -51,8 +51,8 @@ export function ExecutionViewTabs({
             onClick={() => onChange(id)}
             className={cn(
               "flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-lg px-1 py-2",
-              "font-mono text-[9px] uppercase tracking-[0.08em]",
-              "sm:flex-row sm:gap-2 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-[0.18em]",
+              "text-[12px]",
+              "sm:flex-row sm:gap-2 sm:px-3 sm:py-1.5 sm:text-[11px] sm:tracking-[0.18em]",
               "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
               active

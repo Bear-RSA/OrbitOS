@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
-import { ScrambleText } from "@/components/ui/scramble-text";
 
 function ForgotPasswordForm() {
   const searchParams = useSearchParams();
@@ -70,12 +69,9 @@ function ForgotPasswordForm() {
   return (
     <div className="animate-in fade-in duration-1000 slide-in-from-bottom-4">
       <div className="mb-8 text-center flex flex-col items-center">
-        <h1 className="text-[10px] font-mono uppercase tracking-[0.5em] text-ink-dim mb-3">
-          <ScrambleText text="Credential Recovery" />
+        <h1 className="text-3xl font-light text-ink tracking-tight">
+          Reset your password
         </h1>
-        <div className="text-3xl font-light text-ink tracking-tight">
-          Reset Access Key
-        </div>
       </div>
 
       <div className="rounded-[32px] bg-surface-sunken/80 backdrop-blur-3xl ring-1 ring-line/[0.05] shadow-overlay p-12 flex flex-col gap-8 relative overflow-hidden">
@@ -85,8 +81,8 @@ function ForgotPasswordForm() {
         {sentTo ? (
           <div className="relative z-10 space-y-6">
             <div className="rounded-xl bg-orbit-green/5 ring-1 ring-orbit-green/20 p-5">
-              <p className="text-[12px] text-orbit-green font-medium leading-relaxed font-mono flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-orbit-green animate-pulse mt-1.5 shrink-0" />
+              <p role="status" className="text-[13px] text-orbit-green font-medium leading-relaxed flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-orbit-green mt-1.5 shrink-0" />
                 <span>
                   If an account exists for {sentTo}, a reset link is on its way.
                   It expires in one hour.
@@ -100,14 +96,14 @@ function ForgotPasswordForm() {
             <Button
               type="button"
               variant="ghost"
-              className="w-full text-[12px] font-mono uppercase tracking-[0.2em] h-14 rounded-2xl"
+              className="w-full text-[14px] font-medium h-14 rounded-2xl"
               onClick={onResend}
               disabled={resending}
             >
               {resending ? (
                 <div className="flex items-center gap-3">
                   <Loader size={14} color="currentColor" />
-                  <ScrambleText text="RESENDING..." />
+                  Sending…
                 </div>
               ) : "Send another link"}
             </Button>
@@ -120,25 +116,27 @@ function ForgotPasswordForm() {
             </p>
 
             <div className="space-y-3">
-              <Label htmlFor="forgot-email" className="text-ink-muted">Email Node</Label>
+              <Label htmlFor="forgot-email" className="text-ink-muted">Email</Label>
               <Input
                 id="forgot-email"
                 type="email"
-                placeholder="bear@orbit.sys"
+                placeholder="you@studio.co.za"
                 autoComplete="email"
                 autoFocus
+                aria-invalid={errors.email ? true : undefined}
+                aria-describedby={errors.email ? "forgot-email-error" : undefined}
                 className="bg-surface-sunken border-line/[0.03] focus:border-line/20 transition-all duration-500 h-14"
                 {...register("email")}
               />
               {errors.email && (
-                <p className="text-[11px] font-mono text-destructive mt-2 ml-1">{errors.email.message}</p>
+                <p id="forgot-email-error" role="alert" className="text-[13px] text-destructive mt-2 ml-1">{errors.email.message}</p>
               )}
             </div>
 
             {error && (
-              <div className="rounded-xl bg-destructive/5 ring-1 ring-destructive/20 p-5 mt-4">
-                <p className="text-[12px] text-destructive font-medium leading-relaxed font-mono flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+              <div role="alert" className="rounded-xl bg-destructive/5 ring-1 ring-destructive/20 p-5 mt-4">
+                <p className="text-[13px] text-destructive font-medium leading-relaxed flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-destructive" />
                   {error}
                 </p>
               </div>
@@ -147,16 +145,16 @@ function ForgotPasswordForm() {
             <Button
               type="submit"
               size="lg"
-              className="w-full text-[12px] font-mono uppercase tracking-[0.2em] bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 shadow-[0_0_20px_rgb(var(--ink-strong)_/_0.05)] hover:shadow-[0_0_30px_rgb(var(--ink-strong)_/_0.1)] border-0 h-14 rounded-2xl"
+              className="w-full text-[14px] font-medium bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 shadow-[0_0_20px_rgb(var(--ink-strong)_/_0.05)] hover:shadow-[0_0_30px_rgb(var(--ink-strong)_/_0.1)] border-0 h-14 rounded-2xl"
               disabled={isSubmitting}
               id="forgot-submit"
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-3">
                   <Loader size={14} color="currentColor" />
-                  <ScrambleText text="TRANSMITTING..." />
+                  Sending link…
                 </div>
-              ) : "Send Reset Link"}
+              ) : "Send reset link"}
             </Button>
           </form>
         )}
@@ -164,14 +162,14 @@ function ForgotPasswordForm() {
 
       <div className="mt-12 flex flex-col items-center gap-4">
         <div className="h-px w-8 bg-surface-control" />
-        <p className="text-center text-[12px] text-ink-dim font-mono uppercase tracking-widest">
+        <p className="text-center text-[14px] text-ink-muted">
           Remembered it?{" "}
           <Link
             href="/login"
-            className="text-ink hover:text-ink-strong transition-all duration-300 ml-2"
+            className="text-ink underline-offset-4 hover:text-ink-strong hover:underline transition-all duration-300 ml-1"
             id="back-to-login"
           >
-            Authenticate Session
+            Back to sign in
           </Link>
         </p>
       </div>

@@ -69,7 +69,7 @@ function JoinForm() {
     // Client-side email match check (also enforced server-side)
     if (inviteData.email.toLowerCase() !== (firebaseUser.email || "").toLowerCase().trim()) {
       setStatus("error");
-      setErrorMsg("Identity mismatch. Your authenticated email does not match this invite.");
+      setErrorMsg("This invite was sent to a different email. Sign in with that email to accept it.");
       return;
     }
 
@@ -147,7 +147,7 @@ function JoinForm() {
              <CheckCircle2 className="w-5 h-5 text-orbit-green" />
           </div>
           <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Integration Complete</h1>
-          <p className="text-[13px] text-ink-muted font-light leading-relaxed">Initializing dashboard sequence...</p>
+          <p className="text-[13px] text-ink-muted font-light leading-relaxed">Taking you to your dashboard…</p>
         </div>
       );
     }
@@ -160,7 +160,7 @@ function JoinForm() {
           <UserPlus className="w-5 h-5 text-ink" />
         </div>
         <h1 className="text-[17px] font-light tracking-tight text-ink mb-1">Workspace Request</h1>
-        <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-ink-dim mb-8">Access Token Verified</p>
+        <p className="text-[12px] text-ink-dim mb-8">Access Token Verified</p>
 
         {/* Priority 1: Authentication Required */}
         {needsAuth ? (
@@ -251,8 +251,8 @@ function JoinForm() {
           <div className="flex flex-col items-center gap-6">
              <Loader />
              <div className="flex flex-col items-center gap-2">
-               <p className="text-[12px] text-ink-dim font-mono uppercase tracking-widest">
-                 {syncTimedOut ? "Sync Interrupted" : "Synchronizing Identity"}
+               <p role="status" className="text-[14px] text-ink-muted">
+                 {syncTimedOut ? "This is taking longer than usual" : "Setting up your account…"}
                </p>
                {syncTimedOut && (
                  <button 
@@ -274,7 +274,7 @@ function JoinForm() {
       <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
         <Loader />
         <div className="flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-ink-dim">
+          <span className="text-[12px] text-ink-dim">
             Verifying Link
           </span>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-line/[0.04] to-transparent"></div>
@@ -303,8 +303,8 @@ export default function JoinPage() {
       <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
         <Loader />
         <div className="flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-ink-dim">
-            System Rendering
+          <span className="text-[12px] text-ink-dim">
+            Loading…
           </span>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-line/[0.04] to-transparent"></div>
         </div>

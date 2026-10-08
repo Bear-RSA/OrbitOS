@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
-import { ScrambleText } from "@/components/ui/scramble-text";
 
 /**
  * The Firebase email action handler.
@@ -115,20 +114,17 @@ function ResetPasswordForm() {
 
   const heading =
     phase === "done"
-      ? "Access Key Rotated"
+      ? "Password updated"
       : phase === "verified-email"
-        ? "Email Confirmed"
+        ? "Email confirmed"
         : phase === "invalid"
-          ? "Link Expired"
-          : "Set New Access Key";
+          ? "This link has expired"
+          : "Choose a new password";
 
   return (
     <div className="animate-in fade-in duration-1000 slide-in-from-bottom-4">
       <div className="mb-8 text-center flex flex-col items-center">
-        <h1 className="text-[10px] font-mono uppercase tracking-[0.5em] text-ink-dim mb-3">
-          <ScrambleText text="Credential Recovery" />
-        </h1>
-        <div className="text-3xl font-light text-ink tracking-tight">{heading}</div>
+        <h1 className="text-3xl font-light text-ink tracking-tight">{heading}</h1>
       </div>
 
       <div className="rounded-[32px] bg-surface-sunken/80 backdrop-blur-3xl ring-1 ring-line/[0.05] shadow-overlay p-12 flex flex-col gap-8 relative overflow-hidden">
@@ -138,8 +134,8 @@ function ResetPasswordForm() {
         {phase === "verifying" && (
           <div className="relative z-10 flex flex-col items-center gap-4 py-8">
             <Loader />
-            <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-ink-dim">
-              <ScrambleText text="VERIFYING LINK..." />
+            <p className="text-[13px] text-ink-muted">
+              Checking your link…
             </p>
           </div>
         )}
@@ -147,7 +143,7 @@ function ResetPasswordForm() {
         {phase === "invalid" && (
           <div className="relative z-10 space-y-6">
             <div className="rounded-xl bg-destructive/5 ring-1 ring-destructive/20 p-5">
-              <p className="text-[12px] text-destructive font-medium leading-relaxed font-mono flex items-start gap-2">
+              <p className="text-[13px] text-destructive font-medium leading-relaxed flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse mt-1.5 shrink-0" />
                 <span>{error}</span>
               </p>
@@ -155,11 +151,11 @@ function ResetPasswordForm() {
             <Button
               type="button"
               size="lg"
-              className="w-full text-[12px] font-mono uppercase tracking-[0.2em] bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 border-0 h-14 rounded-2xl"
+              className="w-full text-[14px] font-medium bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 border-0 h-14 rounded-2xl"
               onClick={() => router.push("/forgot-password")}
               id="reset-request-new"
             >
-              Request A New Link
+              Request a new link
             </Button>
           </div>
         )}
@@ -167,7 +163,7 @@ function ResetPasswordForm() {
         {phase === "verified-email" && (
           <div className="relative z-10 space-y-6">
             <div className="rounded-xl bg-orbit-green/5 ring-1 ring-orbit-green/20 p-5">
-              <p className="text-[12px] text-orbit-green font-medium leading-relaxed font-mono flex items-start gap-2">
+              <p className="text-[13px] text-orbit-green font-medium leading-relaxed flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-orbit-green animate-pulse mt-1.5 shrink-0" />
                 <span>Your email address is confirmed.</span>
               </p>
@@ -175,10 +171,10 @@ function ResetPasswordForm() {
             <Button
               type="button"
               size="lg"
-              className="w-full text-[12px] font-mono uppercase tracking-[0.2em] bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 border-0 h-14 rounded-2xl"
+              className="w-full text-[14px] font-medium bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 border-0 h-14 rounded-2xl"
               onClick={() => router.push("/login")}
             >
-              Continue To Sign In
+              Continue to sign in
             </Button>
           </div>
         )}
@@ -186,7 +182,7 @@ function ResetPasswordForm() {
         {phase === "done" && (
           <div className="relative z-10 space-y-6">
             <div className="rounded-xl bg-orbit-green/5 ring-1 ring-orbit-green/20 p-5">
-              <p className="text-[12px] text-orbit-green font-medium leading-relaxed font-mono flex items-start gap-2">
+              <p className="text-[13px] text-orbit-green font-medium leading-relaxed flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-orbit-green animate-pulse mt-1.5 shrink-0" />
                 <span>
                   Password updated{accountEmail ? ` for ${accountEmail}` : ""}.
@@ -197,7 +193,7 @@ function ResetPasswordForm() {
             <Button
               type="button"
               size="lg"
-              className="w-full text-[12px] font-mono uppercase tracking-[0.2em] bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 border-0 h-14 rounded-2xl"
+              className="w-full text-[14px] font-medium bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 border-0 h-14 rounded-2xl"
               onClick={() => router.push("/login")}
               id="reset-go-to-login"
             >
@@ -214,39 +210,43 @@ function ResetPasswordForm() {
             </p>
 
             <div className="space-y-3">
-              <Label htmlFor="reset-password" className="text-ink-muted">New Password</Label>
+              <Label htmlFor="reset-password" className="text-ink-muted">New password</Label>
               <Input
                 id="reset-password"
                 type="password"
-                placeholder="Min. 8 characters"
+                placeholder="At least 8 characters"
                 autoComplete="new-password"
                 autoFocus
+                aria-invalid={errors.password ? true : undefined}
+                aria-describedby={errors.password ? "reset-password-error" : undefined}
                 className="bg-surface-sunken border-line/[0.03] focus:border-line/20 transition-all duration-500 h-14"
                 {...register("password")}
               />
               {errors.password && (
-                <p className="text-[11px] font-mono text-destructive mt-2 ml-1">{errors.password.message}</p>
+                <p id="reset-password-error" role="alert" className="text-[13px] text-destructive mt-2 ml-1">{errors.password.message}</p>
               )}
             </div>
 
             <div className="space-y-3">
-              <Label htmlFor="reset-confirm" className="text-ink-muted">Confirm Password</Label>
+              <Label htmlFor="reset-confirm" className="text-ink-muted">Confirm new password</Label>
               <Input
                 id="reset-confirm"
                 type="password"
                 placeholder="••••••••"
                 autoComplete="new-password"
+                aria-invalid={errors.confirmPassword ? true : undefined}
+                aria-describedby={errors.confirmPassword ? "reset-confirm-error" : undefined}
                 className="bg-surface-sunken border-line/[0.03] focus:border-line/20 transition-all duration-500 h-14"
                 {...register("confirmPassword")}
               />
               {errors.confirmPassword && (
-                <p className="text-[11px] font-mono text-destructive mt-2 ml-1">{errors.confirmPassword.message}</p>
+                <p id="reset-confirm-error" role="alert" className="text-[13px] text-destructive mt-2 ml-1">{errors.confirmPassword.message}</p>
               )}
             </div>
 
             {error && (
-              <div className="rounded-xl bg-destructive/5 ring-1 ring-destructive/20 p-5 mt-4">
-                <p className="text-[12px] text-destructive font-medium leading-relaxed font-mono flex items-center gap-2">
+              <div role="alert" className="rounded-xl bg-destructive/5 ring-1 ring-destructive/20 p-5 mt-4">
+                <p className="text-[13px] text-destructive font-medium leading-relaxed flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
                   {error}
                 </p>
@@ -256,14 +256,14 @@ function ResetPasswordForm() {
             <Button
               type="submit"
               size="lg"
-              className="w-full text-[12px] font-mono uppercase tracking-[0.2em] bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 shadow-[0_0_20px_rgb(var(--ink-strong)_/_0.05)] hover:shadow-[0_0_30px_rgb(var(--ink-strong)_/_0.1)] border-0 h-14 rounded-2xl"
+              className="w-full text-[14px] font-medium bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 shadow-[0_0_20px_rgb(var(--ink-strong)_/_0.05)] hover:shadow-[0_0_30px_rgb(var(--ink-strong)_/_0.1)] border-0 h-14 rounded-2xl"
               disabled={isSubmitting}
               id="reset-submit"
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-3">
                   <Loader size={14} color="currentColor" />
-                  <ScrambleText text="ROTATING KEY..." />
+                  Saving…
                 </div>
               ) : "Set New Password"}
             </Button>
@@ -273,7 +273,7 @@ function ResetPasswordForm() {
 
       <div className="mt-12 flex flex-col items-center gap-4">
         <div className="h-px w-8 bg-surface-control" />
-        <p className="text-center text-[12px] text-ink-dim font-mono uppercase tracking-widest">
+        <p className="text-center text-[14px] text-ink-muted">
           <Link
             href="/login"
             className="text-ink hover:text-ink-strong transition-all duration-300"

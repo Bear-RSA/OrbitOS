@@ -128,7 +128,7 @@ export function AddToCall({ target }: AddToCallProps) {
         aria-label="Add somebody to this call"
         aria-expanded={open}
         className={cn(
-          "flex h-7 items-center gap-1.5 rounded-lg border border-line/[0.06] px-2.5 font-mono text-[9px] uppercase tracking-[0.2em] transition-colors",
+          "flex h-7 items-center gap-1.5 rounded-lg border border-line/[0.06] px-2.5 text-[12px] transition-colors",
           open
             ? "bg-surface-raised text-ink"
             : "bg-surface-control text-ink hover:bg-surface-raised"
@@ -149,7 +149,7 @@ export function AddToCall({ target }: AddToCallProps) {
           className="fixed inset-x-4 top-16 z-10 animate-fade-in rounded-2xl border border-line/[0.08] bg-surface-container/95 p-3 shadow-overlay backdrop-blur-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-9 sm:w-[280px]"
         >
           <div className="mb-2 flex items-center justify-between px-1">
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+            <p className="text-[12px] text-ink-dim">
               Add to call
             </p>
             <button
@@ -184,7 +184,7 @@ export function AddToCall({ target }: AddToCallProps) {
                         {member.name}
                       </span>
                       {(isRinging || isBusy) && (
-                        <span className="flex shrink-0 items-center gap-1 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-dim">
+                        <span className="flex shrink-0 items-center gap-1 text-[12px] text-ink-dim">
                           <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
                           Ringing
                         </span>

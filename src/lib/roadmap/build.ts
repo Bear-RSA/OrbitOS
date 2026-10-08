@@ -136,7 +136,7 @@ function toBar(task: Task, todayKey: string): RoadmapBar {
 
   return {
     taskId: task.id,
-    title: task.title?.trim() || "Untitled directive",
+    title: task.title?.trim() || "Untitled task",
     milestone: task.milestone?.trim() || UNGROUPED_LANE,
     assignedTo: task.assignedTo ?? [],
     state: stateOf(task, dueKey, todayKey),

@@ -65,7 +65,7 @@ export async function requireOwner(): Promise<Caller> {
   const caller = await requireCaller();
   if (!caller.ok) return caller;
   if (caller.role !== "OWNER") {
-    return { ok: false, error: "Unauthorized. Requires OWNER operations clearance." };
+    return { ok: false, error: "Only the workspace owner can do this." };
   }
   return caller;
 }

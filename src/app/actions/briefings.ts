@@ -68,6 +68,6 @@ export async function sendBriefingAction(payload: {
     return { success: true, id: newDoc.id };
   } catch (error) {
     console.error("Failed to send briefing:", error);
-    return { success: false, error: "System failure while posting briefing" };
+    return { success: false, error: "Couldn't post the update. Try again." };
   }
 }

@@ -264,7 +264,7 @@ export function ProjectCalendar({
 
     const fromMembers: ParticipantView[] = selectedEvent.attendees.map((id) => ({
       id,
-      name: members.find((m) => m.id === id)?.name || "Unknown operative",
+      name: members.find((m) => m.id === id)?.name || "Unknown member",
       email: null,
       kind: "member",
       rsvp: selectedEvent.rsvp?.[id] ?? "pending",
@@ -450,7 +450,7 @@ export function ProjectCalendar({
         {...chipProps(task)}
         title={task.title}
         className={cn(
-          "block w-full touch-none select-none truncate rounded border-l-2 px-1.5 py-1 text-left font-mono text-[9px] transition-all",
+          "block w-full touch-none select-none truncate rounded border-l-2 px-1.5 py-1 text-left font-mono text-[11px] transition-all",
           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus",
           isPending ? "cursor-wait opacity-40" : "cursor-grab active:cursor-grabbing",
           isBeingDragged && "opacity-30",
@@ -475,7 +475,7 @@ export function ProjectCalendar({
         onClick={() => setSelectedEventId(event.id)}
         title={event.title}
         className={cn(
-          "block w-full select-none truncate rounded border-l-2 px-1.5 py-1 text-left font-mono text-[9px] transition-colors",
+          "block w-full select-none truncate rounded border-l-2 px-1.5 py-1 text-left font-mono text-[11px] transition-colors",
           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus",
           cancelled
             ? "border-ink-faint bg-surface-card text-ink-faint line-through"
@@ -491,8 +491,8 @@ export function ProjectCalendar({
     <div className="mb-12 flex animate-fade-in flex-col overflow-hidden rounded-xl border border-line/[0.06] bg-surface-card/40 shadow-raised ring-1 ring-line/5 backdrop-blur-sm">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/[0.04] p-4">
-        <h2 className="select-none font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
-          Temporal Viewer // {view === "month" ? "Directive Calendar" : "Week Lane"}
+        <h2 className="select-none text-[12px] text-ink-dim">
+          Calendar · {view === "month" ? "Month" : "Week"}
         </h2>
 
         <div className="flex flex-wrap items-center gap-1">
@@ -512,7 +512,7 @@ export function ProjectCalendar({
                 aria-selected={view === id}
                 onClick={() => setView(id)}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors",
+                  "flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                   view === id
                     ? "bg-surface-hover text-ink ring-1 ring-inset ring-line/[0.09]"
@@ -536,7 +536,7 @@ export function ProjectCalendar({
             <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
           </button>
 
-          <span className="min-w-[9.5rem] select-none text-center font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted">
+          <span className="min-w-[9.5rem] select-none text-center text-[12px] text-ink-muted">
             {view === "month"
               ? format(cursor, "MMMM yyyy")
               : `${format(weekDays[0], "d MMM")} – ${format(weekDays[6], "d MMM")}`}
@@ -556,7 +556,7 @@ export function ProjectCalendar({
           <button
             type="button"
             onClick={() => setCursor(new Date())}
-            className="ml-1 rounded-lg px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            className="ml-1 rounded-lg px-2.5 py-1 text-[12px] text-ink-dim ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             Today
           </button>
@@ -567,7 +567,7 @@ export function ProjectCalendar({
               setCreateDateKey(todayKey);
               setCreateOpen(true);
             }}
-            className="ml-2 flex items-center gap-1.5 rounded-lg bg-surface-control px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.18em] text-ink ring-1 ring-inset ring-line/[0.09] transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            className="ml-2 flex items-center gap-1.5 rounded-lg bg-surface-control px-2.5 py-1 text-[12px] text-ink ring-1 ring-inset ring-line/[0.09] transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             <Plus className="h-3 w-3" aria-hidden />
             Schedule
@@ -582,7 +582,7 @@ export function ProjectCalendar({
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
               <div
                 key={d}
-                className="select-none border-l border-line/[0.04] px-2 py-2 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-dim first:border-l-0"
+                className="select-none border-l border-line/[0.04] px-2 py-2 text-[12px] text-ink-dim first:border-l-0"
               >
                 {d}
               </div>
@@ -616,7 +616,7 @@ export function ProjectCalendar({
                   <div className="mb-1.5 flex items-center justify-between px-0.5">
                     <span
                       className={cn(
-                        "select-none font-mono text-[10px] tabular-nums",
+                        "select-none font-mono text-[11px] tabular-nums",
                         isToday
                           ? "rounded bg-orbit-red/10 px-1.5 py-0.5 text-orbit-red ring-1 ring-orbit-red/20"
                           : inMonth
@@ -627,7 +627,7 @@ export function ProjectCalendar({
                       {format(day, "d")}
                     </span>
                     {dayTasks.length + dayAllDay.length + dayTimed.length > 3 && (
-                      <span className="select-none font-mono text-[9px] tabular-nums text-ink-faint">
+                      <span className="select-none font-mono text-[11px] tabular-nums text-ink-dim">
                         {dayTasks.length + dayAllDay.length + dayTimed.length}
                       </span>
                     )}
@@ -640,7 +640,7 @@ export function ProjectCalendar({
                       type="button"
                       onClick={() => setOverdueOpen((v) => !v)}
                       aria-expanded={overdueOpen}
-                      className="mb-1 flex w-full items-center gap-1.5 rounded border-l-2 border-orbit-red bg-orbit-red/10 px-1.5 py-1 text-left font-mono text-[9px] text-orbit-red transition-colors hover:bg-orbit-red/[0.16] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orbit-red/50"
+                      className="mb-1 flex w-full items-center gap-1.5 rounded border-l-2 border-orbit-red bg-orbit-red/10 px-1.5 py-1 text-left font-mono text-[11px] text-orbit-red transition-colors hover:bg-orbit-red/[0.16] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orbit-red/50"
                     >
                       <AlertCircle className="h-2.5 w-2.5 shrink-0" aria-hidden />
                       <span className="truncate">{overdue.length} overdue</span>
@@ -660,7 +660,7 @@ export function ProjectCalendar({
                         onClick={() => setSelectedEventId(event.id)}
                         title={event.title}
                         className={cn(
-                          "flex w-full select-none items-center gap-1.5 rounded px-1.5 py-1 text-left font-mono text-[9px] transition-colors",
+                          "flex w-full select-none items-center gap-1.5 rounded px-1.5 py-1 text-left font-mono text-[11px] transition-colors",
                           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus",
                           event.status === "cancelled"
                             ? "text-ink-faint line-through hover:bg-surface-card"
@@ -702,7 +702,7 @@ export function ProjectCalendar({
               return (
                 <div
                   key={key}
-                  className="select-none border-l border-line/[0.04] px-2 py-2 font-mono text-[9px] uppercase tracking-[0.16em]"
+                  className="select-none border-l border-line/[0.04] px-2 py-2 text-[12px]"
                 >
                   <span className={isToday ? "text-orbit-red" : "text-ink-dim"}>
                     {format(day, "EEE")}
@@ -720,7 +720,7 @@ export function ProjectCalendar({
             className="grid border-b border-line/[0.06] bg-surface-sunken"
             style={{ gridTemplateColumns: "56px repeat(7, 1fr)" }}
           >
-            <div className="select-none py-2 pr-2 text-right font-mono text-[8px] uppercase leading-tight tracking-[0.12em] text-ink-faint">
+            <div className="select-none py-2 pr-2 text-right text-[12px] leading-tight text-ink-dim">
               all
               <br />
               day
@@ -742,7 +742,7 @@ export function ProjectCalendar({
                       type="button"
                       onClick={() => setOverdueOpen((v) => !v)}
                       aria-expanded={overdueOpen}
-                      className="flex w-full items-center gap-1.5 rounded border-l-2 border-orbit-red bg-orbit-red/10 px-1.5 py-1 text-left font-mono text-[9px] text-orbit-red transition-colors hover:bg-orbit-red/[0.16]"
+                      className="flex w-full items-center gap-1.5 rounded border-l-2 border-orbit-red bg-orbit-red/10 px-1.5 py-1 text-left font-mono text-[11px] text-orbit-red transition-colors hover:bg-orbit-red/[0.16]"
                     >
                       <AlertCircle className="h-2.5 w-2.5 shrink-0" aria-hidden />
                       <span className="truncate">{overdue.length} overdue</span>
@@ -765,7 +765,7 @@ export function ProjectCalendar({
               {Array.from({ length: window.endHour - window.startHour }, (_, i) => (
                 <div
                   key={i}
-                  className="absolute right-2 -translate-y-1/2 font-mono text-[9px] tabular-nums text-ink-faint"
+                  className="absolute right-2 -translate-y-1/2 font-mono text-[11px] tabular-nums text-ink-dim"
                   style={{ top: i * PX_PER_HOUR }}
                 >
                   {String(window.startHour + i).padStart(2, "0")}
@@ -829,7 +829,7 @@ export function ProjectCalendar({
                         onClick={() => setSelectedEventId(event.id)}
                         title={`${format(start, "HH:mm")}–${format(end, "HH:mm")} ${event.title}`}
                         className={cn(
-                          "absolute overflow-hidden rounded border-l-2 px-1.5 py-1 text-left font-mono text-[9px] leading-tight transition-colors",
+                          "absolute overflow-hidden rounded border-l-2 px-1.5 py-1 text-left font-mono text-[11px] leading-tight transition-colors",
                           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus",
                           cancelled
                             ? "border-ink-faint bg-surface-card text-ink-faint line-through"
@@ -867,12 +867,12 @@ export function ProjectCalendar({
               <h3 className="truncate text-[15px] font-medium tracking-tight text-ink">
                 {selectedEvent.title}
                 {selectedEvent.status === "cancelled" && (
-                  <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.16em] text-orbit-red">
+                  <span className="ml-2 text-[12px] text-orbit-red">
                     Cancelled
                   </span>
                 )}
               </h3>
-              <p className="mt-1 font-mono text-[10px] tabular-nums text-ink-dim">
+              <p className="mt-1 font-mono text-[11px] tabular-nums text-ink-dim">
                 {selectedEvent.allDay
                   ? `${format(parseDateKey(selectedEvent.startDateKey), "EEE d MMM")} · all day`
                   : `${format(selectedEvent.startAt.toDate(), "EEE d MMM · HH:mm")}–${format(
@@ -884,7 +884,7 @@ export function ProjectCalendar({
             <button
               type="button"
               onClick={() => setSelectedEventId(null)}
-              aria-label="Close engagement detail"
+              aria-label="Close event details"
               className="shrink-0 rounded-lg p-1 text-ink-dim transition-colors hover:bg-surface-control hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
               <X className="h-3.5 w-3.5" aria-hidden />
@@ -899,7 +899,7 @@ export function ProjectCalendar({
 
           <div className="mb-4 flex flex-wrap items-center gap-4">
             {selectedEvent.location && (
-              <span className="flex items-center gap-1.5 font-mono text-[10px] text-ink-dim">
+              <span className="flex items-center gap-1.5 font-mono text-[11px] text-ink-dim">
                 <MapPin className="h-3 w-3" aria-hidden />
                 {selectedEvent.location}
               </span>
@@ -909,7 +909,7 @@ export function ProjectCalendar({
                 <button
                   type="button"
                   onClick={() => joinScheduledCall(selectedEvent.roomId, selectedEvent.title)}
-                  className="flex items-center gap-1.5 font-mono text-[10px] text-orbit-blue hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                  className="flex items-center gap-1.5 font-mono text-[11px] text-orbit-blue hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                 >
                   <Video className="h-3 w-3" aria-hidden />
                   Join Orbit call
@@ -921,7 +921,7 @@ export function ProjectCalendar({
                   href={selectedEvent.meetingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 font-mono text-[10px] text-orbit-blue hover:underline"
+                  className="flex items-center gap-1.5 font-mono text-[11px] text-orbit-blue hover:underline"
                 >
                   <Video className="h-3 w-3" aria-hidden />
                   Join
@@ -940,7 +940,7 @@ export function ProjectCalendar({
                 key={`${participant.kind}-${participant.id}`}
                 title={participant.email ?? undefined}
                 className={cn(
-                  "flex items-center gap-1.5 rounded border px-2 py-1 font-mono text-[9px]",
+                  "flex items-center gap-1.5 rounded border px-2 py-1 font-mono text-[11px]",
                   participant.rsvp === "accepted" &&
                     "border-orbit-green/25 bg-orbit-green/[0.07] text-orbit-green",
                   participant.rsvp === "declined" &&
@@ -962,7 +962,7 @@ export function ProjectCalendar({
                 names could not be loaded. Saying nothing would under-report
                 the room. */}
             {selectedEvent.guests?.length > 0 && guests.length === 0 && (
-              <span className="flex items-center gap-1.5 rounded border border-line/[0.08] bg-surface-card px-2 py-1 font-mono text-[9px] text-ink-dim">
+              <span className="flex items-center gap-1.5 rounded border border-line/[0.08] bg-surface-card px-2 py-1 font-mono text-[11px] text-ink-dim">
                 <Mail className="h-2.5 w-2.5 shrink-0 opacity-50" aria-hidden />
                 {selectedEvent.guests.length} guest
                 {selectedEvent.guests.length === 1 ? "" : "s"}
@@ -973,7 +973,7 @@ export function ProjectCalendar({
           {/* Your response */}
           {selectedEvent.status !== "cancelled" && selectedEvent.attendees.includes(uid) && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-dim">
+              <span className="text-[12px] text-ink-dim">
                 Your response
               </span>
               {(["accepted", "tentative", "declined"] as const).map((status) => {
@@ -985,7 +985,7 @@ export function ProjectCalendar({
                     disabled={busy}
                     onClick={() => respond(selectedEvent.id, status)}
                     className={cn(
-                      "rounded-lg px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] ring-1 ring-inset transition-colors",
+                      "rounded-lg px-2.5 py-1 text-[12px] ring-1 ring-inset transition-colors",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40",
                       active
                         ? "bg-surface-hover text-ink ring-line/[0.14]"
@@ -1008,7 +1008,7 @@ export function ProjectCalendar({
                 type="button"
                 disabled={busy}
                 onClick={() => setEditingEventId(selectedEvent.id)}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-dim ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-control hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40"
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] text-ink-dim ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-control hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-40"
               >
                 <Pencil className="h-3 w-3" aria-hidden />
                 Edit / reschedule
@@ -1018,7 +1018,7 @@ export function ProjectCalendar({
                 type="button"
                 disabled={busy}
                 onClick={() => cancelEngagement(selectedEvent.id)}
-                className="ml-auto rounded-lg px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-orbit-red ring-1 ring-inset ring-orbit-red/20 transition-colors hover:bg-orbit-red/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orbit-red/40 disabled:opacity-40"
+                className="ml-auto rounded-lg px-2.5 py-1 text-[12px] text-orbit-red ring-1 ring-inset ring-orbit-red/20 transition-colors hover:bg-orbit-red/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orbit-red/40 disabled:opacity-40"
               >
                 Cancel engagement
               </button>
@@ -1032,7 +1032,7 @@ export function ProjectCalendar({
         <div className="animate-fade-in border-t border-line/[0.04] bg-orbit-red/[0.03] p-4">
           <div className="mb-3 flex items-center gap-2">
             <AlertCircle className="h-3 w-3 text-orbit-red" aria-hidden />
-            <span className="select-none font-mono text-[10px] uppercase tracking-[0.16em] text-orbit-red">
+            <span className="select-none text-[12px] text-orbit-red">
               {overdue.length} directive{overdue.length === 1 ? "" : "s"} past horizon
             </span>
           </div>
@@ -1042,7 +1042,7 @@ export function ProjectCalendar({
                 key={task.id}
                 {...chipProps(task)}
                 className={cn(
-                  "flex max-w-full touch-none select-none items-center gap-2 rounded border border-orbit-red/20 bg-orbit-red/[0.06] px-2 py-1 font-mono text-[9px] text-orbit-red transition-colors",
+                  "flex max-w-full touch-none select-none items-center gap-2 rounded border border-orbit-red/20 bg-orbit-red/[0.06] px-2 py-1 font-mono text-[11px] text-orbit-red transition-colors",
                   "hover:bg-orbit-red/[0.12] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orbit-red/50",
                   pending.has(task.id) ? "cursor-wait opacity-40" : "cursor-grab active:cursor-grabbing",
                   drag?.moved && drag.taskId === task.id && "opacity-30"
@@ -1063,7 +1063,7 @@ export function ProjectCalendar({
         <div className="border-t border-line/[0.04] p-4">
           <div className="mb-3 flex items-center gap-2">
             <Inbox className="h-3 w-3 text-ink-dim" aria-hidden />
-            <span className="select-none font-mono text-[10px] uppercase tracking-[0.16em] text-ink-dim">
+            <span className="select-none text-[12px] text-ink-dim">
               {unscheduled.length} unscheduled — drag onto a day to set a horizon
             </span>
           </div>
@@ -1073,7 +1073,7 @@ export function ProjectCalendar({
                 key={task.id}
                 {...chipProps(task)}
                 className={cn(
-                  "max-w-full touch-none select-none truncate rounded border border-line/[0.08] bg-surface-card px-2 py-1 font-mono text-[9px] text-ink-muted transition-colors",
+                  "max-w-full touch-none select-none truncate rounded border border-line/[0.08] bg-surface-card px-2 py-1 font-mono text-[11px] text-ink-muted transition-colors",
                   "hover:bg-surface-control hover:text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus",
                   pending.has(task.id) ? "cursor-wait opacity-40" : "cursor-grab active:cursor-grabbing",
                   drag?.moved && drag.taskId === task.id && "opacity-30"
@@ -1093,7 +1093,7 @@ export function ProjectCalendar({
         drag?.moved &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[100] max-w-[240px] truncate rounded border-l-2 border-line/50 bg-surface-control px-2 py-1 font-mono text-[9px] text-ink shadow-[0_8px_28px_rgb(var(--scrim)_/_0.7)] ring-1 ring-line/10"
+            className="pointer-events-none fixed z-[100] max-w-[240px] truncate rounded border-l-2 border-line/50 bg-surface-control px-2 py-1 font-mono text-[11px] text-ink shadow-[0_8px_28px_rgb(var(--scrim)_/_0.7)] ring-1 ring-line/10"
             style={{ left: drag.x + 14, top: drag.y + 14 }}
           >
             {drag.title}

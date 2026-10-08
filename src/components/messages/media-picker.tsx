@@ -79,7 +79,7 @@ export function MediaPicker({
             aria-selected={tab === id}
             onClick={() => setTab(id)}
             className={cn(
-              "flex-1 rounded-lg py-1.5 font-mono text-[9px] uppercase tracking-[0.18em] transition-colors",
+              "flex-1 rounded-lg py-1.5 text-[12px] transition-colors",
               tab === id
                 ? "bg-surface-control text-ink"
                 : "text-ink-dim hover:bg-surface-hover hover:text-ink-muted"
@@ -164,7 +164,7 @@ function MediaGrid({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={kind === "gif" ? "Search GIFs" : "Search stickers"}
             aria-label={kind === "gif" ? "Search GIFs" : "Search stickers"}
-            className="min-w-0 flex-1 bg-transparent text-[12px] text-ink placeholder:text-ink-faint focus-visible:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-[12px] text-ink placeholder:text-ink-dim focus-visible:outline-none"
           />
           {query && (
             <button
@@ -230,7 +230,7 @@ function MediaGrid({
 
       {/* GIPHY's terms require the attribution mark, and it is honest
           anyway — these results are somebody else's catalogue. */}
-      <p className="shrink-0 border-t border-line/[0.04] px-3 py-1.5 text-center font-mono text-[8px] uppercase tracking-[0.2em] text-ink-faint">
+      <p className="shrink-0 border-t border-line/[0.04] px-3 py-1.5 text-center text-[12px] text-ink-dim">
         Powered by GIPHY
       </p>
     </div>

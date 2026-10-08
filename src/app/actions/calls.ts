@@ -210,7 +210,7 @@ export async function joinScheduledCallAction(input: unknown): Promise<Scheduled
     const found = await findEngagementByRoom(roomId);
     if (!found) return { success: false, error: "This link does not point at a call." };
     if (found.data.orgId !== caller.orgId) {
-      return { success: false, error: "This engagement is not in your workspace." };
+      return { success: false, error: "This event isn't in your workspace." };
     }
 
     const attendees = (found.data.attendees as string[]) ?? [];
@@ -256,7 +256,7 @@ export async function joinScheduledCallAction(input: unknown): Promise<Scheduled
     return {
       success: true,
       grant,
-      title: (found.data.title as string) || "Engagement",
+      title: (found.data.title as string) || "Call",
       eventId: found.id,
     };
   } catch (err: any) {
@@ -318,7 +318,7 @@ export async function walkInToScheduledCallAction(
     return {
       success: true,
       grant,
-      title: (found.data.title as string) || "Engagement",
+      title: (found.data.title as string) || "Call",
       eventId: null,
     };
   } catch (err: any) {
@@ -351,7 +351,7 @@ export async function startCallAction(input: unknown): Promise<CallActionResult>
 
     const targetSnap = await adminDb.collection("users").doc(targetUid).get();
     if (!targetSnap.exists) {
-      return { success: false, error: "That operative was not found." };
+      return { success: false, error: "That person wasn't found." };
     }
     const target = targetSnap.data()!;
 
@@ -528,7 +528,7 @@ export async function answerCallAction(callId: string): Promise<AnswerResult> {
     if (joinsEventId) {
       const eventRef = adminDb.collection(EVENTS).doc(joinsEventId);
       let refusal: string | null = null;
-      let title = "Engagement";
+      let title = "Call";
       let roomId: string | null = null;
 
       /* The answerer becomes an attendee — accepted, since they just
@@ -549,7 +549,7 @@ export async function answerCallAction(callId: string): Promise<AnswerResult> {
           return;
         }
 
-        title = (event.title as string) || "Engagement";
+        title = (event.title as string) || "Call";
         roomId = facts.roomId;
 
         const attendees = (event.attendees as string[]) ?? [];
@@ -761,7 +761,7 @@ export async function addToCallAction(input: unknown): Promise<CallActionResult>
     ]);
 
     if (!targetSnap.exists) {
-      return { success: false, error: "That operative was not found." };
+      return { success: false, error: "That person wasn't found." };
     }
     const target = targetSnap.data()!;
 

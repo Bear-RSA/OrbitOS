@@ -16,6 +16,7 @@ import {
   claimPasscodeAttempt,
   claimPasscodeResetRequest,
   clearPasscodeAttempts,
+  HARD_MAX_ATTEMPTS_PER_WINDOW,
 } from "@/lib/vault/passcode-throttle";
 import { sendVaultPasscodeResetEmail } from "@/lib/email/sendVaultPasscodeResetEmail";
 import { getAppUrl } from "@/lib/utils/getAppUrl";
@@ -173,7 +174,10 @@ export async function verifyVaultPasscodeAction(code: string): Promise<VerifyRes
     }
 
     if (!verifyPasscode(code, data.passcodeHash as string, data.salt as string)) {
-      return { success: false, error: "Incorrect passcode." };
+      return {
+        success: false,
+        error: `That passcode isn't right. You get ${HARD_MAX_ATTEMPTS_PER_WINDOW} tries every 15 minutes.`,
+      };
     }
 
     await clearPasscodeAttempts(uid, orgId);

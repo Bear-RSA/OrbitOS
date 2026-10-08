@@ -193,7 +193,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
     return (
       <div className="flex min-h-screen flex-col bg-base p-4">
         <div className="mb-3 flex items-center justify-between">
-          <p className="truncate font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+          <p className="truncate text-[12px] text-ink-dim">
             {context.title} · {grant.displayName}
           </p>
           <button
@@ -217,7 +217,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
         <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-10 sm:p-12">
           <Logo className="mb-10" />
 
-          <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-ink-dim mb-3">
+          <p className="text-[12px] text-ink-dim mb-3">
             {context.cancelled ? "Cancelled" : `${context.organizerName} invited you`}
           </p>
 

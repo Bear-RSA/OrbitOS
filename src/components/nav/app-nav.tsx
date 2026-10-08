@@ -128,13 +128,11 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "group/nav inline-flex h-9 items-center justify-center gap-2 rounded-lg",
-                  // The current page collapses to its icon: a square the pill hugs.
-                  active ? "w-9" : "px-2.5 sm:px-3",
+                  "group/nav inline-flex h-9 items-center justify-center gap-2 rounded-lg px-2.5 sm:px-3",
                   "transition-[color,background-color,transform] duration-quick ease-spring",
                   "active:scale-[0.96] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base",
-                  active ? "text-ink" : "text-ink-dim hover:bg-surface-control/50 hover:text-ink-muted"
+                  active ? "text-ink" : "text-ink-muted hover:bg-surface-control/50 hover:text-ink"
                 )}
               >
                 <span className="relative flex shrink-0 items-center justify-center">
@@ -143,13 +141,13 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
                     <span className="absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full bg-orbit-red ring-2 ring-base" />
                   )}
                 </span>
-                {/* The label is the accessible name on every viewport; it
-                    is visually hidden on small screens and on the current
-                    page, where the icon alone marks where you are. */}
+                {/* The label is the accessible name on every viewport. On
+                    small screens only the current page shows it, so the
+                    bar fits and you can still read where you are. */}
                 <span
                   className={cn(
-                    "sr-only whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.16em]",
-                    !active && "sm:not-sr-only"
+                    "whitespace-nowrap text-[13px] font-medium tracking-normal",
+                    active ? "not-sr-only" : "sr-only sm:not-sr-only"
                   )}
                 >
                   {item.label}

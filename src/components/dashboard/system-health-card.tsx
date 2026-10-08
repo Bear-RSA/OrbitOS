@@ -15,7 +15,7 @@ export function SystemHealthCard({ tasks, hasProject }: SystemHealthCardProps) {
   if (!hasProject) {
     return (
       <DashboardCard className="h-full">
-        <CardHeader title="System Health" icon={Activity} />
+        <CardHeader title="Workspace health" icon={Activity} />
         <div className="flex flex-1 flex-col justify-end space-y-2">
           <p className="text-[15px] font-medium text-ink">No tasks to assess yet.</p>
           <p className="text-[13px] font-light leading-relaxed text-ink-muted">
@@ -84,7 +84,7 @@ export function SystemHealthCard({ tasks, hasProject }: SystemHealthCardProps) {
   return (
     <DashboardCard className="h-full">
       <CardHeader
-        title="System Health"
+        title="Workspace health"
         icon={Activity}
         meta={<StatusChip label={config.label} icon={config.icon} tone={config.tone} />}
       />
@@ -94,7 +94,7 @@ export function SystemHealthCard({ tasks, hasProject }: SystemHealthCardProps) {
           <p className="text-[clamp(2.5rem,4.5vw,3.25rem)] font-extralight leading-none tracking-tight text-ink tabular-nums">
             {score}%
           </p>
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
+          <span className="text-[12px] text-ink-dim">
             Overall Health
           </span>
         </div>
@@ -104,7 +104,7 @@ export function SystemHealthCard({ tasks, hasProject }: SystemHealthCardProps) {
         <div className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-4">
           {breakdown.map((item) => (
             <div key={item.label} className="flex flex-col gap-1.5">
-              <span className="font-mono text-[9px] uppercase leading-none tracking-[0.16em] text-ink-dim">
+              <span className="text-[12px] leading-none text-ink-dim">
                 {item.label}
               </span>
               <span

@@ -106,7 +106,7 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
   if (!project) return null;
 
   return (
-    <DashboardShell className="selection:bg-surface-hover selection:text-ink-strong pb-32">
+    <DashboardShell className="selection:bg-surface-hover selection:text-ink-strong pb-32">
       {/* Navigation Map */}
       <div className="flex items-center justify-between mb-12 tracking-tight pt-4">
         <button
@@ -114,7 +114,7 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
           className="group flex items-center gap-3 rounded-lg text-ink-dim transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
         >
           <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em]">Workspace</span>
+          <span className="text-[12px]">Workspace</span>
         </button>
 
         <ActionButton
@@ -140,7 +140,7 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
                  <div className="flex min-w-0 items-center gap-3">
                    <h1 className="truncate text-3xl font-light tracking-tight text-ink">{project.name}</h1>
                    {project.archived && (
-                     <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-orbit-amber/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-orbit-amber ring-1 ring-inset ring-orbit-amber/20">
+                     <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-orbit-amber/10 px-2.5 py-1 text-[12px] text-orbit-amber ring-1 ring-inset ring-orbit-amber/20">
                        <Archive className="h-3 w-3" aria-hidden />
                        Archived
                      </span>
@@ -176,7 +176,7 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
                <span className="h-1.5 w-1.5 rounded-full bg-surface-active ring-1 ring-line/[0.08]" />
-               <CardEyebrow>Execution Scope</CardEyebrow>
+               <CardEyebrow>Scope</CardEyebrow>
             </div>
 
             {/* View Toggle */}

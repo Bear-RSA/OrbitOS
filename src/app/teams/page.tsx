@@ -241,7 +241,7 @@ export default function TeamsPage() {
 
     // Client-side OWNER gate — the server action also enforces this.
     if (!isOwner) {
-      return { success: false, error: "Unauthorized. Only the Root Owner can revoke node access." };
+      return { success: false, error: "Only the workspace owner can remove members." };
     }
 
     try {
@@ -285,7 +285,7 @@ export default function TeamsPage() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="px-3 py-1 bg-surface-control rounded-full ring-1 ring-line/[0.04] flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-ink-strong shadow-[0_0_8px_rgb(var(--ink-strong)_/_0.4)]" />
-              <span className="text-[10px] font-mono uppercase tracking-widest text-ink-muted">Active Deployment</span>
+              <span className="text-[12px] text-ink-muted">Active</span>
             </div>
             <span className="text-[13px] text-ink-dim font-mono">
               {roster.length} {roster.length === 1 ? "Active Member" : "Active Members"}
@@ -307,7 +307,7 @@ export default function TeamsPage() {
                   )}
                 >
                   <UserMinus className="w-4 h-4" />
-                  {revokeMode ? "Done" : "Revoke"}
+                  {revokeMode ? "Done" : "Remove members"}
                 </button>
               )}
 
@@ -343,7 +343,7 @@ export default function TeamsPage() {
         <div className="mb-32 flex flex-col items-start gap-5 rounded-3xl bg-surface-sunken p-8 shadow-card ring-1 ring-inset ring-line/[0.06]">
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="h-4 w-4 text-orbit-amber" aria-hidden />
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">Roster unreachable</span>
+            <span className="text-[12px] text-ink-dim">Couldn't load the team</span>
           </div>
           <div className="space-y-2">
             <p className="text-[15px] font-medium text-ink">Could not load your team.</p>
@@ -362,9 +362,9 @@ export default function TeamsPage() {
         </div>
       ) : roster.length === 0 ? (
         <div className="mb-32 space-y-2 rounded-3xl bg-surface-sunken p-8 shadow-card ring-1 ring-inset ring-line/[0.06]">
-          <p className="text-[15px] font-medium text-ink">Node network inactive.</p>
+          <p className="text-[15px] font-medium text-ink">No one on the team yet.</p>
           <p className="text-[13px] font-light leading-relaxed text-ink-muted">
-            Operational load metrics require primary operator assignment.
+            Workload shows up here once people join and get tasks assigned.
           </p>
         </div>
       ) : (
@@ -420,15 +420,15 @@ export default function TeamsPage() {
                         <h3 className="truncate text-xl font-light text-ink">
                           {member.name || member.email}
                         </h3>
-                        <p className="text-[11px] font-mono text-ink-dim uppercase tracking-widest mt-1">
-                          {member.roleDescriptor || (member.role === "OWNER" ? "Root Owner" : "Operator")}
+                        <p className="text-[12px] text-ink-dim mt-1">
+                          {member.roleDescriptor || (member.role === "OWNER" ? "Owner" : "Member")}
                           {isSelf && " · You"}
                         </p>
                       </div>
                     </div>
 
                     <div className="mb-8">
-                      <p className="text-[10px] font-mono text-ink-faint uppercase tracking-widest mb-4">Focus Module</p>
+                      <p className="text-[12px] text-ink-dim mb-4">Focus Module</p>
                       <div className="bg-base/40 rounded-xl p-4 ring-1 ring-line/[0.04]">
                         {focus ? (
                           <>
@@ -442,7 +442,7 @@ export default function TeamsPage() {
                                 style={{ width: `${focus.percent}%` }}
                               />
                             </div>
-                            <p className="mt-3 text-[10px] font-mono uppercase tracking-widest text-ink-dim">
+                            <p className="mt-3 text-[12px] text-ink-dim">
                               {focus.done} of {focus.total} closed
                             </p>
                           </>
@@ -463,7 +463,7 @@ export default function TeamsPage() {
                           <span className={cn("text-xl font-extralight leading-none tabular-nums", metric.tone)}>
                             {metric.value.toString().padStart(2, "0")}
                           </span>
-                          <span className="font-mono text-[9px] uppercase leading-none tracking-[0.14em] text-ink-dim">
+                          <span className="text-[12px] leading-none text-ink-dim">
                             {metric.label}
                           </span>
                         </div>
@@ -471,7 +471,7 @@ export default function TeamsPage() {
                     </div>
 
                     <div className="flex items-center justify-between gap-4 pt-6 border-t border-line/[0.04]">
-                      <span className={cn("text-[10px] font-mono uppercase tracking-widest", config.text)}>
+                      <span className={cn("text-[12px]", config.text)}>
                         {config.label}
                       </span>
                       <span className="truncate text-[11px] font-mono text-ink-dim">{member.email}</span>
@@ -486,19 +486,19 @@ export default function TeamsPage() {
           <ScrollReveal delay={200}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pt-16 border-t border-line/[0.04] pb-32">
               <div>
-                <p className="text-[10px] font-mono text-ink-faint uppercase tracking-widest mb-3">Saturation</p>
+                <p className="text-[12px] text-ink-dim mb-3">Saturation</p>
                 <p className="text-4xl font-light tracking-tighter text-ink tabular-nums">{totals.saturation}%</p>
-                <p className="mt-2 text-[11px] font-mono text-ink-dim uppercase tracking-widest">Operators at high load</p>
+                <p className="mt-2 text-[12px] text-ink-dim">People at high load</p>
               </div>
               <div>
-                <p className="text-[10px] font-mono text-ink-faint uppercase tracking-widest mb-3">Active Load</p>
+                <p className="text-[12px] text-ink-dim mb-3">Active Load</p>
                 <p className="text-4xl font-light tracking-tighter text-ink tabular-nums">{totals.active}</p>
-                <p className="mt-2 text-[11px] font-mono text-ink-dim uppercase tracking-widest">
+                <p className="mt-2 text-[12px] text-ink-dim">
                   {totals.unassigned} unassigned
                 </p>
               </div>
               <div>
-                <p className="text-[10px] font-mono text-ink-faint uppercase tracking-widest mb-3">Overdue</p>
+                <p className="text-[12px] text-ink-dim mb-3">Overdue</p>
                 <p
                   className={cn(
                     "text-4xl font-light tracking-tighter tabular-nums",
@@ -507,12 +507,12 @@ export default function TeamsPage() {
                 >
                   {totals.overdue}
                 </p>
-                <p className="mt-2 text-[11px] font-mono text-ink-dim uppercase tracking-widest">Across the roster</p>
+                <p className="mt-2 text-[12px] text-ink-dim">Across the roster</p>
               </div>
               <div>
-                <p className="text-[10px] font-mono text-ink-faint uppercase tracking-widest mb-3">Wins This Week</p>
+                <p className="text-[12px] text-ink-dim mb-3">Wins This Week</p>
                 <p className="text-4xl font-light tracking-tighter text-ink tabular-nums">{totals.wins}</p>
-                <p className="mt-2 text-[11px] font-mono text-ink-dim uppercase tracking-widest">Tasks closed</p>
+                <p className="mt-2 text-[12px] text-ink-dim">Tasks closed</p>
               </div>
             </div>
           </ScrollReveal>
@@ -546,11 +546,11 @@ export default function TeamsPage() {
             isOpen={!!memberToRemove}
             onClose={() => setMemberToRemove(null)}
             onConfirm={handleRemove}
-            title="Revoke Node Access"
+            title="Remove from workspace?"
             entityName={workloads.find((w) => w.member.id === memberToRemove)?.member.name || ""}
-            description="You are about to revoke system access for this operator. All active task vectors will be decoupled."
-            warningMessage="This execution will trigger an immediate session termination for the target node. All metadata and configuration associated with this node's operational state will be archived but inaccessible."
-            actionLabel="Confirm Revocation"
+            description="They lose access to this workspace straight away."
+            warningMessage="Their tasks stay, but they're unassigned from them. You can invite them back later."
+            actionLabel="Remove member"
           />
         </>
       )}

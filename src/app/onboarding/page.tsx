@@ -73,7 +73,7 @@ export default function OnboardingPage() {
         window.location.assign("/dashboard");
       }, 500);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Initialization failed. Check network.";
+      const msg = err instanceof Error ? err.message : "Couldn't save your details. Check your connection and try again.";
       setError(msg);
     }
   };
@@ -87,40 +87,46 @@ export default function OnboardingPage() {
         </div>
 
         <div className="mb-10 text-center">
-          <h1 className="text-2xl font-light text-ink tracking-tight">System configuration</h1>
+          <h1 className="text-2xl font-light text-ink tracking-tight">Set up your workspace</h1>
           <p className="text-[13px] text-ink-muted font-medium mt-2">
-            Establish your organizational parameters.
+            Two details and you're in.
           </p>
         </div>
 
         <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2.5">
-              <Label htmlFor="onboard-name">Operator Designation (Name)</Label>
+              <Label htmlFor="onboard-name">Your name</Label>
               <Input
                 id="onboard-name"
+                autoComplete="name"
+                aria-invalid={errors.name ? true : undefined}
+                aria-describedby={errors.name ? "onboard-name-error" : undefined}
                 placeholder="Your full name"
                 {...register("name")}
               />
               {errors.name && (
-                <p className="text-xs text-orbit-red mt-1">{errors.name.message}</p>
+                <p id="onboard-name-error" role="alert" className="text-[13px] text-orbit-red mt-1">{errors.name.message}</p>
               )}
             </div>
 
             <div className="space-y-2.5">
-              <Label htmlFor="onboard-org">Network Name (Studio / Agency)</Label>
+              <Label htmlFor="onboard-org">Studio or agency name</Label>
               <Input
                 id="onboard-org"
+                autoComplete="organization"
+                aria-invalid={errors.orgName ? true : undefined}
+                aria-describedby={errors.orgName ? "onboard-org-error" : undefined}
                 placeholder="e.g. Mirai Stack"
                 {...register("orgName")}
               />
               {errors.orgName && (
-                <p className="text-xs text-orbit-red mt-1">{errors.orgName.message}</p>
+                <p id="onboard-org-error" role="alert" className="text-[13px] text-orbit-red mt-1">{errors.orgName.message}</p>
               )}
             </div>
 
             {error && (
-              <div className="rounded-xl bg-orbit-red/[0.1] ring-1 ring-orbit-red/20 px-4 py-3">
+              <div role="alert" className="rounded-xl bg-orbit-red/[0.1] ring-1 ring-orbit-red/20 px-4 py-3">
                 <p className="text-[13px] text-orbit-red font-medium">{error}</p>
               </div>
             )}
@@ -131,7 +137,7 @@ export default function OnboardingPage() {
               disabled={isSubmitting}
               id="onboarding-submit"
             >
-              {isSubmitting ? "Configuring..." : "Launch Dashboard"}
+              {isSubmitting ? "Setting up…" : "Open my dashboard"}
             </Button>
           </form>
         </div>

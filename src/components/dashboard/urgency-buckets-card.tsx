@@ -34,7 +34,7 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
   return (
     <DashboardCard interactive={false} tone="quiet">
       <CardHeader
-        title="Operational Horizon"
+        title="Coming up"
         icon={Clock}
         action={
           action ? (
@@ -80,7 +80,7 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
                 <div className="flex min-w-0 items-center gap-2">
                   <CatIcon className={cn("h-3.5 w-3.5 shrink-0", cat.tasks.length > 0 ? cat.accent : "text-ink-faint")} aria-hidden />
                   <span className={cn(
-                    "truncate font-mono text-[10px] uppercase tracking-[0.16em]",
+                    "truncate text-[12px]",
                     cat.tasks.length > 0 ? "text-ink-muted" : "text-ink-dim"
                   )}>
                     {cat.label}
@@ -141,12 +141,12 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
                                 "group/task -mx-2 rounded-lg px-2 py-2 transition-colors duration-300",
                             })}
                       >
-                        <p className="truncate text-[13px] font-medium leading-tight text-ink-muted transition-colors duration-300 group-hover/task:text-ink-strong">
+                        <p className="truncate text-[13px] font-medium leading-tight text-ink-muted transition-colors duration-300 group-hover/task:text-ink-strong">
                           {task.title}
                         </p>
-                        <p className="mt-1.5 flex items-center gap-1.5 truncate font-mono text-[9px] uppercase tracking-[0.12em]">
+                        <p className="mt-1.5 flex items-center gap-1.5 truncate text-[12px]">
                           <span className="truncate text-ink-dim">{projectName}</span>
-                          <span className="text-ink-faint" aria-hidden>•</span>
+                          <span className="text-ink-dim" aria-hidden>•</span>
                           <span className={cn("shrink-0", cat.dueAccent)}>{dueStatusStr}</span>
                         </p>
                       </Row>
@@ -154,7 +154,7 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
                   })
                 )}
                 {cat.tasks.length > 3 && (
-                  <p className="px-0 pt-2 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-dim">
+                  <p className="px-0 pt-2 text-[12px] text-ink-dim">
                     +{cat.tasks.length - 3} more
                   </p>
                 )}

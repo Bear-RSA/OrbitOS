@@ -42,7 +42,7 @@ describe("naming a conversation", () => {
 
   it("says so rather than showing a uid when neither has a name", () => {
     const facts = dm({ participantNames: {} });
-    expect(conversationTitle(facts, SARAH)).toBe("Unknown operative");
+    expect(conversationTitle(facts, SARAH)).toBe("Unknown member");
   });
 
   it("uses the stored name for a group and for town hall", () => {

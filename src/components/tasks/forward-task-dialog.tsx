@@ -217,7 +217,7 @@ export function ForwardTaskDialog({
       else setErrorMsg(result.error);
     } catch (err) {
       console.error("[ForwardTask] Could not forward the directive:", err);
-      setErrorMsg("System error. Please try again.");
+      setErrorMsg("Something went wrong on our side. Try again.");
     } finally {
       setSending(false);
     }
@@ -240,11 +240,11 @@ export function ForwardTaskDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-4 w-4 opacity-70" />
-            {sentTo ? "Sent" : "Discuss This Directive"}
+            {sentTo ? "Sent" : "Discuss this task"}
           </DialogTitle>
           <DialogDescription>
             {sentTo
-              ? `${task?.title ?? "The directive"} is now in ${targetName}.`
+              ? `${task?.title ?? "The task"} is now in ${targetName}.`
               : "Send it to a chat so the conversation can be about it."}
           </DialogDescription>
         </DialogHeader>
@@ -288,7 +288,7 @@ export function ForwardTaskDialog({
             {/* What is being sent, named. A picker with no subject on it
                 is one mis-click away from forwarding the wrong node. */}
             <div className="rounded-lg border border-line/[0.06] bg-surface-control px-4 py-3">
-              <p className="font-mono text-[9px] uppercase tracking-[0.25em] text-ink-dim">
+              <p className="text-[12px] text-ink-dim">
                 Forwarding
               </p>
               <p className="mt-1.5 break-words text-[13px] font-medium tracking-tight text-ink">
@@ -316,7 +316,7 @@ export function ForwardTaskDialog({
               </div>
 
               {nothingToPick ? (
-                <p className="py-6 text-center font-mono text-[10px] uppercase tracking-[0.15em] text-ink-dim">
+                <p className="py-6 text-center text-[12px] text-ink-dim">
                   {needle ? "Nothing matches that" : "Nobody else in the workspace yet"}
                 </p>
               ) : (
@@ -399,7 +399,7 @@ export function ForwardTaskDialog({
                 <Label htmlFor="forward-note" className="text-left">
                   Add a Line
                 </Label>
-                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim">
+                <span className="text-[12px] text-ink-dim">
                   Optional
                 </span>
               </div>
@@ -475,7 +475,7 @@ function PickerRow({ picked, disabled, onPick, icon, title, subtitle }: PickerRo
           <span className="block truncate text-[13px] font-medium tracking-tight text-ink">
             {title}
           </span>
-          <span className="block truncate font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim">
+          <span className="block truncate text-[12px] text-ink-dim">
             {subtitle}
           </span>
         </span>

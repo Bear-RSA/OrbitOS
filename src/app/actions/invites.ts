@@ -58,7 +58,7 @@ export async function createInviteAction(
 
     const authStatus = await validateOwner(invitedBy);
     if (!authStatus.isOwner) {
-      return { success: false, error: authStatus.error ?? "Unauthorized. Requires OWNER clearance." };
+      return { success: false, error: authStatus.error ?? "Only the workspace owner can do this." };
     }
     const orgId = authStatus.orgId!;
 
@@ -129,7 +129,7 @@ export async function createInviteAction(
     const inviteLink = `${appUrl}/join?token=${txResult.token}`;
 
     const inviterSnap = await adminDb.collection("users").doc(invitedBy).get();
-    const inviterName = inviterSnap.exists ? inviterSnap.data()!.name || "Operator" : "System";
+    const inviterName = inviterSnap.exists ? inviterSnap.data()!.name || "Unnamed member" : "System";
 
     // Dispatch email — await result to surface success/failure
     const emailResult = await sendInviteEmail({
@@ -258,7 +258,7 @@ export async function redeemInviteAction(payload: RedeemPayload): Promise<{ succ
 
     // 3. Identity Match Verification
     if (invite.email !== email) {
-      return { success: false, error: "Identity mismatch. You cannot consume this invite with the incorrect account." };
+      return { success: false, error: "This invite was sent to a different email. Sign in with that email to accept it." };
     }
 
     // 4. Atomic Batch Update
@@ -298,6 +298,6 @@ export async function redeemInviteAction(payload: RedeemPayload): Promise<{ succ
     return { success: true };
   } catch (error: any) {
     console.error("[Invite Redemption Error]:", error);
-    return { success: false, error: "System encountered an error during redemption. Please try again." };
+    return { success: false, error: "Couldn't accept the invite. Try again." };
   }
 }

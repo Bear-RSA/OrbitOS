@@ -120,7 +120,7 @@ export default function ScheduledCallPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-base">
         <Loader />
-        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-dim">
+        <span className="text-[12px] text-ink-dim">
           Opening the room
         </span>
       </div>
@@ -131,7 +131,7 @@ export default function ScheduledCallPage() {
     return (
       <div className="flex min-h-screen flex-col bg-base p-4">
         <div className="mb-3 flex items-center justify-between">
-          <p className="truncate font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+          <p className="truncate text-[12px] text-ink-dim">
             {title ?? "Call"} · {grant.displayName}
           </p>
           <button
@@ -195,7 +195,7 @@ function Frame({ eyebrow, children }: { eyebrow: string; children: React.ReactNo
       <div className="w-full max-w-sm animate-fade-in">
         <div className="w-full rounded-[40px] border border-outline-variant/10 bg-surface-container/95 p-10 shadow-overlay backdrop-blur-2xl sm:p-12">
           <Logo className="mb-10" />
-          <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-ink-dim">
+          <p className="mb-3 text-[12px] text-ink-dim">
             {eyebrow}
           </p>
           {children}

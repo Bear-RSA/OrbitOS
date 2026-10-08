@@ -94,7 +94,7 @@ export default function MemberOnboardingPage() {
       <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
         <Loader />
         <div className="flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-ink-dim">
+          <span className="text-[12px] text-ink-dim">
             Preparing Workspace
           </span>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-line/[0.04] to-transparent"></div>
@@ -183,7 +183,7 @@ export default function MemberOnboardingPage() {
 
             {/* Full Name — required */}
             <div className="space-y-3">
-              <label className="text-[10px] font-mono text-ink-dim uppercase tracking-[0.3em] block">
+              <label className="text-[12px] text-ink-dim block">
                 Full Name
               </label>
               <input
@@ -192,40 +192,40 @@ export default function MemberOnboardingPage() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
                 required
-                className="w-full bg-surface-control border border-line/[0.04] rounded-xl h-12 px-5 text-[14px] font-light text-ink placeholder:text-ink-faint transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
+                className="w-full bg-surface-control border border-line/[0.04] rounded-xl h-12 px-5 text-[14px] font-light text-ink placeholder:text-ink-dim transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
               />
             </div>
 
             {/* Role / Title — optional */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-mono text-ink-dim uppercase tracking-[0.3em] block">
+                <label className="text-[12px] text-ink-dim block">
                   Role / Title
                 </label>
-                <span className="text-[8px] font-mono text-ink-dim uppercase tracking-widest">Optional</span>
+                <span className="text-[12px] text-ink-dim">Optional</span>
               </div>
               <input
                 type="text"
                 value={roleDescriptor}
                 onChange={(e) => setRoleDescriptor(e.target.value)}
                 placeholder="e.g. Frontend Engineer, Designer..."
-                className="w-full bg-surface-control border border-line/[0.04] rounded-xl h-12 px-5 text-[14px] font-light text-ink placeholder:text-ink-faint transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
+                className="w-full bg-surface-control border border-line/[0.04] rounded-xl h-12 px-5 text-[14px] font-light text-ink placeholder:text-ink-dim transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
               />
             </div>
 
             {/* Bio — optional */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-mono text-ink-dim uppercase tracking-[0.3em] block">
+                <label className="text-[12px] text-ink-dim block">
                   Short Bio
                 </label>
-                <span className="text-[8px] font-mono text-ink-dim uppercase tracking-widest">Optional</span>
+                <span className="text-[12px] text-ink-dim">Optional</span>
               </div>
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="What do you focus on?"
-                className="w-full bg-surface-control border border-line/[0.04] rounded-xl p-5 text-[14px] font-light text-ink min-h-[100px] resize-none placeholder:text-ink-faint transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
+                className="w-full bg-surface-control border border-line/[0.04] rounded-xl p-5 text-[14px] font-light text-ink min-h-[100px] resize-none placeholder:text-ink-dim transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
               />
             </div>
 
@@ -238,7 +238,7 @@ export default function MemberOnboardingPage() {
             <button
               type="submit"
               disabled={isSubmitting || !name.trim()}
-              className="w-full h-12 rounded-xl bg-ink text-on-ink font-bold text-[13px] tracking-tight transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-ink-strong hover:-translate-y-[2px] disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:bg-ink disabled:cursor-not-allowed shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06)] outline-none flex items-center justify-center gap-2"
+              className="w-full h-12 rounded-xl bg-ink text-on-ink font-bold text-[13px] tracking-tight transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-ink-strong hover:-translate-y-[2px] disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:bg-ink disabled:cursor-not-allowed shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06)] outline-none flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>

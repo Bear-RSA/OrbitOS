@@ -152,13 +152,13 @@ export function MessagesMenu({ uid, orgId, members, onOpen }: MessagesMenuProps)
           className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-80 overflow-hidden rounded-xl border border-line/[0.06] bg-surface-card shadow-raised ring-1 ring-line/5 backdrop-blur-xl"
         >
           <div className="border-b border-line/[0.04] px-4 py-3">
-            <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+            <h2 className="text-[12px] text-ink-dim">
               {unread.length > 0 ? `${unread.length} waiting` : "Messages"}
             </h2>
           </div>
 
           {unread.length === 0 ? (
-            <p className="px-4 py-8 text-center font-mono text-[10px] uppercase tracking-[0.15em] text-ink-dim">
+            <p className="px-4 py-8 text-center text-[12px] text-ink-dim">
               Nothing unread
             </p>
           ) : (
@@ -187,7 +187,7 @@ export function MessagesMenu({ uid, orgId, members, onOpen }: MessagesMenuProps)
                 setOpen(false);
                 onOpen();
               }}
-              className="w-full rounded-lg px-2.5 py-2 text-center font-mono text-[9px] uppercase tracking-[0.15em] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
+              className="w-full rounded-lg px-2.5 py-2 text-center text-[12px] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
             >
               Open Messages
             </button>
@@ -259,7 +259,7 @@ function UnreadRow({
             {title}
           </span>
           {sentAt && (
-            <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-dim">
+            <span className="shrink-0 text-[12px] text-ink-dim">
               {isToday(sentAt) ? format(sentAt, "HH:mm") : format(sentAt, "d MMM")}
             </span>
           )}

@@ -221,7 +221,7 @@ export async function submitTokenRsvpAction(
     // Gate 4. Unlike the others this one is safe to explain: the person
     // holds a valid link, so the state is already theirs to know.
     if (event.status === "cancelled") {
-      return { success: false, error: "This engagement was cancelled." };
+      return { success: false, error: "This event was cancelled." };
     }
 
     const field = subject.kind === "member" ? "rsvp" : "guestRsvp";
@@ -364,7 +364,7 @@ export async function joinScheduledCallAsGuestAction(
       maxParticipants: scheduledCallSeats(limits),
     });
 
-    return { success: true, grant, title: (event.title as string) || "Engagement" };
+    return { success: true, grant, title: (event.title as string) || "Event" };
   } catch (err: any) {
     console.error("[Rsvp] Guest join failed:", err);
     return { success: false, error: err?.message || "Could not join the call." };

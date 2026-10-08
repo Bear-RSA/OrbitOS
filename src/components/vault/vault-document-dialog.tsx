@@ -155,7 +155,7 @@ export function VaultDocumentDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg gap-4 sm:max-w-lg sm:p-8">
         <DialogHeader>
           <DialogTitle>{isRefile ? "Re-file Document" : "File a Document"}</DialogTitle>
           <DialogDescription>
@@ -165,11 +165,11 @@ export function VaultDocumentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-2">
+        <div className="space-y-4">
           {/* ── What is being filed, when the caller brought it ── */}
           {!isRefile && presetFile && (
             <div className="space-y-2">
-              <label className="text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim">
+              <label className="text-[12px] text-ink-dim">
                 Document
               </label>
               <div className="flex w-full items-center gap-3 rounded-lg border border-line/[0.12] bg-surface-sunken px-4 py-4">
@@ -189,7 +189,7 @@ export function VaultDocumentDialog({
           {/* ── File picker (new deposits only) ── */}
           {!isRefile && !presetFile && (
             <div className="space-y-2">
-              <label className="text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim">
+              <label className="text-[12px] text-ink-dim">
                 Document
               </label>
               <input
@@ -234,7 +234,7 @@ export function VaultDocumentDialog({
           <div className="space-y-2">
             <label
               htmlFor="vault-name"
-              className="text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim"
+              className="text-[12px] text-ink-dim"
             >
               Label
             </label>
@@ -249,7 +249,7 @@ export function VaultDocumentDialog({
 
           {/* ── Shelf ── */}
           <div className="space-y-2">
-            <label className="text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim">
+            <label className="text-[12px] text-ink-dim">
               Shelf
             </label>
             <Select
@@ -275,7 +275,7 @@ export function VaultDocumentDialog({
 
           {/* ── Clearance ── */}
           <div className="space-y-2">
-            <label className="text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim">
+            <label className="text-[12px] text-ink-dim">
               Clearance
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -308,7 +308,7 @@ export function VaultDocumentDialog({
           <div className="space-y-2">
             <label
               htmlFor="vault-note"
-              className="text-[9px] font-mono uppercase tracking-[0.25em] text-ink-dim"
+              className="text-[12px] text-ink-dim"
             >
               Note <span className="normal-case tracking-normal">(optional)</span>
             </label>
@@ -330,7 +330,7 @@ export function VaultDocumentDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="mt-2">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
@@ -383,7 +383,7 @@ function ClearanceOption({
         />
         <span
           className={cn(
-            "font-mono text-[10px] uppercase tracking-[0.18em]",
+            "text-[12px]",
             active ? "text-ink" : "text-ink-dim"
           )}
         >

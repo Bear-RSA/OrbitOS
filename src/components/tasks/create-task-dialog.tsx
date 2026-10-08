@@ -108,7 +108,7 @@ export function CreateTaskDialog({
 
   const onSubmit = async (data: CreateTaskInput) => {
     if (!targetProjectId) {
-      setError("Select a project for this directive.");
+      setError("Choose a project for this task.");
       return;
     }
 
@@ -158,7 +158,7 @@ export function CreateTaskDialog({
       // (org mismatch, missing project, the two-operative cap) closed
       // nothing and explained nothing.
       console.error("Failed to create task:", err);
-      setError(err instanceof Error ? err.message : "Failed to insert directive.");
+      setError(err instanceof Error ? err.message : "Couldn't add the task. Try again.");
     } finally {
       setLoading(false);
     }
@@ -200,7 +200,7 @@ export function CreateTaskDialog({
           )}
 
           <div className="space-y-2.5">
-            <Label htmlFor="task-title">Directive Title</Label>
+            <Label htmlFor="task-title">Task title</Label>
             <Input
               id="task-title"
               placeholder="What needs to be done?"
@@ -223,7 +223,7 @@ export function CreateTaskDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2.5">
-              <Label>Operators <span className="text-[9px] text-ink-dim ml-1 font-mono">(MAX 2)</span></Label>
+              <Label>Assignees <span className="ml-1 text-[12px] font-normal text-ink-muted">(up to 2)</span></Label>
               <div ref={dropdownRef} className="relative">
                 {/* Selected chips + trigger */}
                 <button
@@ -240,7 +240,7 @@ export function CreateTaskDialog({
                       return (
                         <span
                           key={uid}
-                          className="inline-flex items-center gap-1 bg-surface-control border border-line/[0.08] rounded px-2 py-0.5 text-[11px] text-ink font-mono uppercase tracking-wider"
+                          className="inline-flex items-center gap-1 bg-surface-control border border-line/[0.08] rounded px-2 py-0.5 text-[12px] text-ink"
                         >
                           {member?.name?.split(" ")[0] || "?"}
                           <button
@@ -278,9 +278,9 @@ export function CreateTaskDialog({
                           }`}
                         >
                           <span className="flex items-center gap-2">
-                            {isSelected && <span className="text-orbit-green text-[10px]">●</span>}
+                            {isSelected && <span className="text-orbit-green text-[11px]">●</span>}
                             {member.name}
-                            {isDisabled && <span className="text-[9px] text-ink-faint ml-auto uppercase tracking-widest">[MAX]</span>}
+                            {isDisabled && <span className="text-[11px] text-ink-dim ml-auto uppercase tracking-widest">[MAX]</span>}
                           </span>
                         </button>
                       );
@@ -316,13 +316,13 @@ export function CreateTaskDialog({
               id="submit-create-task"
               className="h-9 px-5 rounded-lg text-[12px] min-w-[120px]"
             >
-              {loading ? "Inserting..." : "Insert Directive"}
+              {loading ? "Adding…" : "Add task"}
             </Button>
             <Button
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="h-9 px-5 rounded-lg text-[12px] text-ink-faint hover:text-ink-muted hover:bg-transparent"
+              className="h-9 px-5 rounded-lg text-[12px] text-ink-dim hover:text-ink-muted hover:bg-transparent"
             >
               Cancel
             </Button>
@@ -333,8 +333,8 @@ export function CreateTaskDialog({
       <SuccessModal
         open={showSuccess}
         onOpenChange={setShowSuccess}
-        title="Directive Inserted"
-        description="The task vector has been successfully registered."
+        title="Task added"
+        description="It's on the project and its assignees can see it."
       />
     </>
   );

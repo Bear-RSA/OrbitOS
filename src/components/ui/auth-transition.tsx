@@ -13,7 +13,7 @@ import { themeColor } from "@/lib/theme/colors";
  * unqualified spinner for that long reads as a broken page, so after a few
  * seconds we say so explicitly rather than leaving the user guessing.
  */
-export function AuthTransition({ label = "Node Initialization" }: { label?: string }) {
+export function AuthTransition({ label = "Signing you in" }: { label?: string }) {
   const [slow, setSlow] = useState(false);
 
   useEffect(() => {
@@ -29,12 +29,12 @@ export function AuthTransition({ label = "Node Initialization" }: { label?: stri
     >
       <Loader color={themeColor.pink} />
       <div className="flex flex-col items-center gap-3 px-6 text-center">
-        <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-ink">
+        <span className="text-[12px] text-ink">
           <ScrambleText text={label} />
         </span>
         <div className="h-px w-24 bg-gradient-to-r from-transparent via-line/10 to-transparent" />
         <p
-          className={`max-w-xs font-mono text-[10px] uppercase leading-relaxed tracking-[0.18em] text-ink-dim transition-opacity duration-700 ${
+          className={`max-w-xs font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-ink-dim transition-opacity duration-700 ${
             slow ? "opacity-100" : "opacity-0"
           }`}
         >

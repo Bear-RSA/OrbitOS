@@ -55,7 +55,7 @@ export function TranscriptControl({ state, minimized }: TranscriptControlProps) 
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-orbit-red" />
         </span>
         {!minimized && (
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-dim">
+          <span className="text-[12px] text-ink-dim">
             {capturingMe ? "Transcribing" : "Transcribing · not you"}
           </span>
         )}
@@ -77,7 +77,7 @@ export function TranscriptControl({ state, minimized }: TranscriptControlProps) 
         className="flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-line/[0.06] bg-surface-control px-2.5"
       >
         <Loader2 className="h-3 w-3 animate-spin text-ink-dim" aria-hidden />
-        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-dim">
+        <span className="text-[12px] text-ink-dim">
           Asking · {tally.accepted}/{session?.headcount ?? 0}
         </span>
       </span>
@@ -91,7 +91,7 @@ export function TranscriptControl({ state, minimized }: TranscriptControlProps) 
         className="flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-line/[0.06] px-2.5"
       >
         <CaptionsOff className="h-3.5 w-3.5 text-ink-dim" aria-hidden />
-        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-dim">
+        <span className="text-[12px] text-ink-dim">
           Not transcribed
         </span>
       </span>
@@ -110,7 +110,7 @@ export function TranscriptControl({ state, minimized }: TranscriptControlProps) 
       )}
     >
       <Captions className="h-3.5 w-3.5" aria-hidden />
-      <span className="font-mono text-[9px] uppercase tracking-[0.2em]">Transcribe</span>
+      <span className="text-[12px]">Transcribe</span>
     </button>
   );
 }
@@ -148,7 +148,7 @@ export function TranscriptNotice({
       <button
         type="button"
         onClick={state.dismissNotice}
-        className="shrink-0 font-mono text-[9px] uppercase tracking-[0.2em] text-ink-dim transition-colors hover:text-ink"
+        className="shrink-0 text-[12px] text-ink-dim transition-colors hover:text-ink"
       >
         Dismiss
       </button>

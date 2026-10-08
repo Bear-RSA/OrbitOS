@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "var(--ease-spring)",
+        "createdAt": "2026-10-08T10:11:48.421Z",
+        "reason": "Claude, from source: --ease-spring in globals.css is a linear() curve documented as damping 1.0 with no overshoot; only --ease-spring-bounce overshoots"
+      }
+    ]
+  }
+}

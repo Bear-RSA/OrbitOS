@@ -37,7 +37,7 @@ const STATUSES: readonly TaskStatus[] = ["todo", "doing", "done"];
 export const TASK_STATUS_LABEL: Record<TaskStatus, string> = {
   todo: "Idle",
   doing: "Active",
-  done: "Executed",
+  done: "Done",
 };
 
 function clamp(value: string, max: number): string {
@@ -54,7 +54,7 @@ function clamp(value: string, max: number): string {
  * would drop the message out of the thread entirely.
  */
 function cardTitle(value: string): string {
-  return clamp(value, MAX_TASK_REF_TITLE_LENGTH) || "Untitled directive";
+  return clamp(value, MAX_TASK_REF_TITLE_LENGTH) || "Untitled task";
 }
 
 export interface TaskRefFacts {

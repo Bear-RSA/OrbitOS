@@ -19,7 +19,7 @@ export function UserAvatar({ photoURL, name, size = "md", className }: UserAvata
     .substring(0, 2);
 
   const sizeMap = {
-    sm: "w-8 h-8 rounded-lg text-[10px]",
+    sm: "w-8 h-8 rounded-lg text-[11px]",
     md: "w-10 h-10 rounded-xl text-[13px]",
     lg: "w-12 h-12 rounded-xl text-[15px]",
     xl: "w-20 h-20 rounded-2xl text-[24px]",

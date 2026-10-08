@@ -127,10 +127,9 @@
       --surface-hover: 231 228 220;
       --surface-active: 219 215 205;
       --surface-highest: 205 200 189;
-    --surface-highest: 205 200 189;
 
       --ink-strong: 0 0 0;
-    --ink: 22 24 29;
+      --ink: 22 24 29;
       --ink-muted: 88 93 104;
       --ink-dim: 107 112 121;
       --ink-faint: 139 144 153;
@@ -139,8 +138,6 @@
       --line: 22 24 29;
       --sheen: 22 24 29;
       --sheen-a: 0;
-    --sheen: 22 24 29;
-    --sheen-a: 0;
       --focus: 60 64 72;
 
       --orbit-amber: 156 88 7;
@@ -151,9 +148,6 @@
       --orbit-teal: 0 118 96;
       --orbit-gold: 141 96 0;
       --orbit-pink: 176 40 145;
-    --orbit-teal: 0 118 96;
-    --orbit-gold: 141 96 0;
-    --orbit-pink: 176 40 145;
 
       --shadow-card: 0 1px 2px rgb(22 24 29 / 0.05), 0 1px 1px rgb(22 24 29 / 0.03);
       --shadow-raised: 0 2px 6px rgb(22 24 29 / 0.07), 0 1px 2px rgb(22 24 29 / 0.05);
@@ -282,6 +276,15 @@
     background-color: rgb(var(--surface-control));
   }
 
+  /* Focus safety net. Tailwind's `outline-none` leaves a transparent 2px
+     outline in place, so recolouring it brings back a visible ring for
+     every control that hid its outline without drawing a ring of its own.
+     Controls that already draw a `ring` on focus are left alone, so
+     nothing gets two indicators. */
+  :focus-visible:not([class*="focus-visible:ring"]):not([class*="focus:ring"]):not(.focus-item) {
+    outline-color: rgb(var(--focus)) !important;
+  }
+
 }
 
 @layer utilities {
@@ -349,7 +352,9 @@
   }
 
   .urgency-breath {
-    animation: urgency-breath 3s ease-in-out infinite;
+    /* Three breaths, then still: a dot that pulses forever stops being
+       noticed, and competes with the alerts that are actually new. */
+    animation: urgency-breath 3s ease-in-out 3;
   }
 
   /* Dashboard Refinement: Pressure Bar Fill */
@@ -621,8 +626,17 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--line) / 0.26);
 }
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(var(--line) / 0.14) transparent;
+.custom-scrollbar::-webkit-scrollbar-button {
+  display: none;
+}
+/* Chrome 121+ drops every ::-webkit-scrollbar rule above as soon as the
+   standard properties are set, and falls back to the OS bar with its
+   arrow buttons. So the standard pair is for browsers without the
+   pseudo-elements (Firefox) only. */
+@supports not selector(::-webkit-scrollbar) {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--line) / 0.14) transparent;
+  }
 }
 

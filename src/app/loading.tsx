@@ -15,8 +15,8 @@ export default function Loading() {
       <Loader />
 
       <div className="flex flex-col items-center gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-dim">
-          System Rendering
+        <span className="text-[12px] text-ink-dim">
+          Loading…
         </span>
         <div className="h-px w-24 bg-gradient-to-r from-transparent via-line/[0.14] to-transparent" />
       </div>

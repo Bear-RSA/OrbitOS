@@ -126,7 +126,7 @@ export function GroupCall({ conversationId, title, onClose }: GroupCallProps) {
           ) : (
             <>
               <Loader />
-              <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-dim">
+              <span className="text-[12px] text-ink-dim">
                 Opening the room
               </span>
             </>

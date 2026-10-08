@@ -76,7 +76,7 @@ export function AddMemberDialog({
       reset();
     } catch (err) {
       console.error("Failed to create invite:", err);
-      setErrorMsg("System error. Please try again.");
+      setErrorMsg("Something went wrong on our side. Try again.");
     } finally {
       setLoading(false);
     }
@@ -177,7 +177,7 @@ export function AddMemberDialog({
               <Input
                 id="member-email"
                 type="email"
-                placeholder="operator@studio.co.za"
+                placeholder="name@studio.co.za"
                 disabled={loading}
                 {...register("email")}
               />

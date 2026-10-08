@@ -122,7 +122,7 @@ export function TranscriptOutcome({ roomId, title, onClose }: TranscriptOutcomeP
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <FileText className="h-3.5 w-3.5 text-ink-dim" aria-hidden />
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+            <p className="text-[12px] text-ink-dim">
               Transcript ready
             </p>
           </div>

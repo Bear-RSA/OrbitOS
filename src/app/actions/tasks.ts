@@ -34,7 +34,7 @@ async function namesFor(uids: string[]): Promise<Map<string, string>> {
   const refs = uids.map((uid) => adminDb.collection("users").doc(uid));
   const snaps = await adminDb.getAll(...refs);
   for (const snap of snaps) {
-    if (snap.exists) names.set(snap.id, snap.data()?.name || "Operator");
+    if (snap.exists) names.set(snap.id, snap.data()?.name || "Unnamed member");
   }
   return names;
 }
@@ -68,7 +68,7 @@ async function logAssignment(params: {
       taskTitle: params.taskTitle,
       assigneeUids: params.assigneeUids,
       assigneeName: params.assigneeUids
-        .map((uid) => names.get(uid) ?? "Operator")
+        .map((uid) => names.get(uid) ?? "Unnamed member")
         .join(", "),
     },
   });
@@ -213,7 +213,7 @@ export async function updateTaskStatusAction(
       eventType: "DIRECTIVE_TRANSITION",
       orgId: task.orgId,
       projectId: task.projectId ?? null,
-      actor: { uid, name: userSnap.data()!.name || "Operator" },
+      actor: { uid, name: userSnap.data()!.name || "Unnamed member" },
       metadata: {
         taskId,
         taskTitle: task.title,
@@ -365,7 +365,7 @@ export async function updateTaskAction(
 
     // Server-side enforcement: max 2 operatives
     if (updates.assignedTo && updates.assignedTo.length > 2) {
-      return { success: false, error: "Maximum 2 operatives allowed per directive." };
+      return { success: false, error: "A task can have at most 2 assignees." };
     }
 
     const userSnap = await adminDb.collection("users").doc(uid).get();
@@ -405,7 +405,7 @@ export async function updateTaskAction(
     console.log(`[TaskAction] Task ${taskId} updated by ${uid}`);
 
     const previous = taskSnap.data()!;
-    const actor = { uid, name: userSnap.data()!.name || "Operator" };
+    const actor = { uid, name: userSnap.data()!.name || "Unnamed member" };
     const taskTitle = updates.title ?? previous.title;
     const projectId = previous.projectId ?? null;
 
@@ -489,7 +489,7 @@ export async function createTaskAction(
 
     // Server-side enforcement: max 2 operatives
     if (assignedTo && assignedTo.length > 2) {
-      return { success: false, error: "Maximum 2 operatives allowed per directive." };
+      return { success: false, error: "A task can have at most 2 assignees." };
     }
 
     // Verify the user exists and belongs to the org
@@ -534,7 +534,7 @@ export async function createTaskAction(
     const ref = await adminDb.collection("tasks").add(taskData);
     console.log(`[TaskAction] Task created: ${ref.id} by ${createdBy}`);
 
-    const actor = { uid: createdBy, name: userData.name || "Operator" };
+    const actor = { uid: createdBy, name: userData.name || "Unnamed member" };
 
     await logActivity({
       eventType: "DIRECTIVE_CREATED",

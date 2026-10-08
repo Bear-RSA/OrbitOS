@@ -160,7 +160,7 @@ export function WorkspaceSection({ user }: { user: User }) {
           <div>
             <label
               htmlFor="workspace-name"
-              className="mb-2.5 block font-mono text-[10px] uppercase leading-none tracking-[0.18em] text-ink-dim"
+              className="mb-2.5 block text-[12px] leading-none text-ink-dim"
             >
               Workspace name
             </label>

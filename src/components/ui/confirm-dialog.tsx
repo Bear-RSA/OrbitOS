@@ -41,17 +41,11 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[420px] p-0 bg-surface-sunken/95 border-line/[0.04] overflow-hidden backdrop-blur-xl">
-        {isDestructive && (
-          <div className="h-1.5 w-full bg-orbit-red/10">
-            <div className="h-full bg-orbit-red animate-[shimmer_2s_infinite_linear]" style={{ width: '40%', background: 'linear-gradient(90deg, transparent, #ff4444, transparent)' }} />
-          </div>
-        )}
-        
         <div className="p-8 space-y-6">
           <div className="flex items-center gap-4">
             {isDestructive && (
               <div className="w-10 h-10 rounded-full bg-orbit-red/10 flex items-center justify-center ring-1 ring-orbit-red/20 shadow-[0_0_15px_rgb(var(--orbit-red)_/_0.1)]">
-                <AlertTriangle className="w-5 h-5 text-orbit-red" />
+                <AlertTriangle className="w-5 h-5 text-orbit-red" aria-hidden />
               </div>
             )}
             <DialogHeader className="text-left p-0">
@@ -62,13 +56,13 @@ export function ConfirmDialog({
           </div>
 
           <div className="space-y-4">
-            <DialogDescription className="text-[13px] leading-relaxed text-ink-muted font-light font-mono">
+            <DialogDescription className="text-[14px] leading-relaxed text-ink-muted">
               {description}
             </DialogDescription>
             
             {isDestructive && (
-              <p className="text-[10px] text-ink-dim uppercase tracking-[0.2em] font-mono leading-tight">
-                Action Status: <span className="text-orbit-red/60 italic">Irreversible</span>{" // Logged to Telemetry"}
+              <p className="text-[13px] text-orbit-red">
+                This can&apos;t be undone.
               </p>
             )}
           </div>
@@ -79,9 +73,9 @@ export function ConfirmDialog({
               variant="ghost"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="h-9 px-5 rounded-lg text-[10px] uppercase tracking-[0.2em] text-ink-faint hover:text-ink-muted hover:bg-surface-card transition-all"
+              className="h-10 px-5 rounded-lg text-[13px] font-medium text-ink-muted hover:text-ink hover:bg-surface-card transition-all"
             >
-              [{cancelText}]
+              {cancelText}
             </Button>
             <Button 
               onClick={(e) => {
@@ -90,7 +84,7 @@ export function ConfirmDialog({
               }} 
               isLoading={loading}
               className={cn(
-                "h-9 px-6 rounded-lg text-[10px] uppercase tracking-[0.2em] transition-all duration-500",
+                "h-10 px-6 rounded-lg text-[13px] font-medium transition-all duration-500",
                 isDestructive 
                   ? "bg-orbit-red/10 border border-orbit-red/20 text-orbit-red hover:bg-orbit-red hover:text-black shadow-[0_0_20px_rgb(var(--orbit-red)_/_0.1)] hover:shadow-[0_0_30px_rgb(var(--orbit-red)_/_0.3)]"
                   : "bg-surface-control border border-line/[0.1] text-ink hover:bg-ink hover:text-black"

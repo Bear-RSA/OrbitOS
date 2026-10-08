@@ -72,7 +72,7 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 pt-2">
           <div className="space-y-2.5">
-            <Label htmlFor="project-name">Project Designation</Label>
+            <Label htmlFor="project-name">Project name</Label>
             <Input
               id="project-name"
               placeholder="e.g. Acme Redesign"
@@ -92,9 +92,9 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
               disabled={loading}
               maxLength={500}
               rows={3}
-              className="w-full bg-surface-sunken border border-line/[0.1] rounded-lg px-3 py-2.5 text-[13px] font-mono text-ink placeholder:text-ink-faint transition-colors focus:outline-none focus:border-line/[0.2] disabled:opacity-50 resize-none"
+              className="w-full bg-surface-sunken border border-line/[0.1] rounded-lg px-3 py-2.5 text-[13px] font-mono text-ink placeholder:text-ink-dim transition-colors focus:outline-none focus:border-line/[0.2] disabled:opacity-50 resize-none"
             />
-            <p className="text-[10px] font-mono text-ink-faint text-right">{description.length}/500</p>
+            <p className="text-[11px] font-mono text-ink-dim text-right">{description.length}/500</p>
           </div>
           {error && <p className="text-[13px] text-orbit-red">{error}</p>}
           <DialogFooter className="flex-row justify-start sm:justify-start gap-4 mt-10">
@@ -103,7 +103,7 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
               disabled={!name.trim()} 
               isLoading={loading}
               variant="secondary"
-              className="h-9 px-5 rounded-md text-[10px] font-mono uppercase tracking-[0.2em] min-w-[140px]"
+              className="h-9 px-5 rounded-md text-[12px] min-w-[140px]"
             >
               Create Vector
             </Button>
@@ -112,7 +112,7 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
               variant="ghost"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="h-9 px-5 rounded-lg text-[12px] text-ink-faint hover:text-ink-muted hover:bg-transparent"
+              className="h-9 px-5 rounded-lg text-[12px] text-ink-dim hover:text-ink-muted hover:bg-transparent"
             >
               Cancel
             </Button>

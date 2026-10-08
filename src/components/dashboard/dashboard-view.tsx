@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 import { DashboardData } from "@/types/dashboard";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { useTodayEvents } from "@/hooks/use-today-events";
@@ -40,6 +41,8 @@ import { cn } from "@/lib/utils/classnames";
 /*  least.                                                             */
 /* ------------------------------------------------------------------ */
 
+const OVERVIEW_KEY = "orbitos:dashboard-overview";
+
 interface DashboardViewProps {
   data: DashboardData;
   members: Member[];
@@ -74,44 +77,34 @@ export function DashboardView({
   // (which needs it to tell whether someone is currently in a room).
   const { events, failed: eventsFailed } = useTodayEvents(orgId, refreshKey);
 
+  // The overview is reference, not triage, so it starts folded. Whoever
+  // opens it keeps it open: remembered per browser, never required.
+  const [overviewOpen, setOverviewOpen] = useState(false);
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(OVERVIEW_KEY) === "open") setOverviewOpen(true);
+    } catch {
+      /* Storage blocked: the folded default is fine. */
+    }
+  }, []);
+  const toggleOverview = () => {
+    const next = !overviewOpen;
+    setOverviewOpen(next);
+    try {
+      window.localStorage.setItem(OVERVIEW_KEY, next ? "open" : "closed");
+    } catch {
+      /* Storage blocked: the toggle still works for this visit. */
+    }
+  };
+
+  /* Order follows the page's promise, "what needs attention right now":
+     the Horizon first, then what is stuck and what today holds, then the
+     numbers. It used to open on two stat panels and put the Horizon
+     fourth, below nine cards of equal weight. */
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
-      {/* Risk and Attention Layer */}
-      <ScrollReveal>
-        <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
-          <WorkspaceAttentionCard metrics={data.metrics} hasProject={hasProject} />
-          <SystemHealthCard tasks={tasks} hasProject={hasProject} />
-        </div>
-      </ScrollReveal>
-
-      {/* Personal Layer — the one strip that is yours rather than the org's */}
-      <ScrollReveal delay={60}>
-        <PersonalMetricsCard metrics={data.personal} />
-      </ScrollReveal>
-
-      {/* Right Now Layer — what the day holds, and who is actually here
-          to deal with it. Both read the same engagement window. */}
-      <ScrollReveal delay={100}>
-        <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
-          <TodayScheduleCard
-            events={events}
-            failed={eventsFailed}
-            uid={userId}
-            members={members}
-            scope="org"
-            clock24h={clock24h}
-          />
-          <TeamPresenceCard
-            members={members}
-            events={events}
-            viewerId={userId}
-            clock24h={clock24h}
-          />
-        </div>
-      </ScrollReveal>
-
       {/* Operational Timeline Layer */}
-      <ScrollReveal delay={140}>
+      <ScrollReveal>
         <UrgencyBucketsCard
           buckets={showingMine ? data.myUrgencyBuckets : data.urgencyBuckets}
           projects={showingMine ? data.myProjects : data.projects}
@@ -129,7 +122,7 @@ export function DashboardView({
                   onClick={() => setScope(value)}
                   aria-pressed={scope === value}
                   className={cn(
-                    "rounded-[6px] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] transition-colors duration-300",
+                    "rounded-[6px] px-2.5 py-1 text-[12px] transition-colors duration-300",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                     scope === value
                       ? "bg-surface-hover text-ink"
@@ -144,17 +137,73 @@ export function DashboardView({
         />
       </ScrollReveal>
 
-      {/* Momentum and Obstruction Layer */}
-      <ScrollReveal delay={180}>
+      {/* Right Now Layer — what is stuck, what the day holds, and who is
+          actually here to deal with it. Schedule and presence read the
+          same engagement window. */}
+      <ScrollReveal delay={60}>
         <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-3">
-          <WeeklyProgressCard
-            weeklyProgress={data.weeklyProgress}
-            completedThisWeek={data.metrics.completedThisWeek}
-          />
-          <RecentWinsCard wins={data.recentWins} />
           <BlockedWorkCard items={data.blockedWork} />
+          <TodayScheduleCard
+            events={events}
+            failed={eventsFailed}
+            uid={userId}
+            members={members}
+            scope="org"
+            clock24h={clock24h}
+          />
+          <TeamPresenceCard
+            members={members}
+            events={events}
+            viewerId={userId}
+            clock24h={clock24h}
+          />
         </div>
       </ScrollReveal>
+
+      {/* Overview — the numbers. Useful for a weekly look, not for
+          deciding what to do next, so it sits behind one disclosure. */}
+      <section aria-labelledby="dashboard-overview-heading" className="pt-2">
+        <button
+          type="button"
+          onClick={toggleOverview}
+          aria-expanded={overviewOpen}
+          aria-controls="dashboard-overview"
+          className="group flex w-full items-center justify-between gap-4 rounded-xl px-1 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        >
+          <span>
+            <span id="dashboard-overview-heading" className="block text-[15px] font-medium text-ink">
+              Overview
+            </span>
+            <span className="mt-0.5 block text-[13px] text-ink-muted">
+              Workspace health, your week, and recent wins
+            </span>
+          </span>
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              "h-4 w-4 shrink-0 text-ink-muted transition-transform duration-quick ease-spring group-hover:text-ink",
+              overviewOpen && "rotate-180"
+            )}
+          />
+        </button>
+
+        {overviewOpen && (
+          <div id="dashboard-overview" className="mt-4 flex flex-col gap-6 animate-fade-in">
+            <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
+              <WorkspaceAttentionCard metrics={data.metrics} hasProject={hasProject} />
+              <SystemHealthCard tasks={tasks} hasProject={hasProject} />
+            </div>
+            <PersonalMetricsCard metrics={data.personal} />
+            <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
+              <WeeklyProgressCard
+                weeklyProgress={data.weeklyProgress}
+                completedThisWeek={data.metrics.completedThisWeek}
+              />
+              <RecentWinsCard wins={data.recentWins} />
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* Projects in Focus — at most two, ranked by how soon their next
           unfinished task is due, so overdue work leads. Absent entirely
@@ -169,8 +218,8 @@ export function DashboardView({
           <div className="pt-8">
             <WorkspaceProjects
               projectsHealth={data.focusProjects}
-              title="Projects in Focus"
-              eyebrow="Nearest Deadlines"
+              title="Projects in focus"
+              eyebrow="Nearest deadlines"
               orgId={orgId}
               userId={userId}
               isOwner={isOwner}
