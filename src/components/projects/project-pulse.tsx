@@ -124,7 +124,7 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
             </span>
             <span className={cn("mb-1 flex items-center gap-2 text-[12px]", verdict.text)}>
               <span className="relative flex h-1.5 w-1.5">
-                <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-75", verdict.fill)} />
+                <span className={cn("absolute inline-flex h-full w-full animate-ping [animation-iteration-count:3] [animation-fill-mode:forwards] rounded-full opacity-75", verdict.fill)} />
                 <span className={cn("relative inline-flex h-1.5 w-1.5 rounded-full", verdict.fill)} />
               </span>
               {verdict.label}
@@ -155,11 +155,11 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
       <div className="grid flex-1 grid-cols-1 divide-y divide-line/[0.06] border-b border-line/[0.06] sm:grid-cols-2 sm:divide-x sm:divide-y-0 md:border-b-0 md:border-r">
         {/* NETWORK */}
         <div className="group/nodes relative flex flex-col justify-between p-6 transition-colors duration-500 hover:bg-surface-sunken">
-          <CellLabel icon={Users}>Network</CellLabel>
+          <CellLabel icon={Users}>People</CellLabel>
           <div>
             <span className="flex items-center gap-2.5 font-mono text-[13px] tracking-[0.08em] text-ink">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ink-strong opacity-60" />
+                <span className="absolute inline-flex h-full w-full animate-ping [animation-iteration-count:3] [animation-fill-mode:forwards] rounded-full bg-ink-strong opacity-60" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-ink-strong" />
               </span>
               {pulse.activeUsers.length} online
@@ -214,7 +214,7 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
 
         {/* HORIZON */}
         <div className="flex flex-col justify-between p-6 transition-colors duration-500 hover:bg-surface-sunken">
-          <CellLabel icon={Clock}>Horizon</CellLabel>
+          <CellLabel icon={Clock}>Coming up</CellLabel>
           <div>
             <span
               className={cn(

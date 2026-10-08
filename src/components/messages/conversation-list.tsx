@@ -471,7 +471,7 @@ function ConversationRow({
           className="flex shrink-0 items-center gap-1.5 rounded-md bg-orbit-green/15 px-1.5 py-0.5 text-[12px] text-orbit-green ring-1 ring-inset ring-orbit-green/25"
         >
           <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orbit-green opacity-75" />
+            <span className="absolute inline-flex h-full w-full animate-ping [animation-iteration-count:3] [animation-fill-mode:forwards] rounded-full bg-orbit-green opacity-75" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-orbit-green" />
           </span>
           Live

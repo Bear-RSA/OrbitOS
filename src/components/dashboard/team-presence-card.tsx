@@ -51,7 +51,7 @@ const PRESENCE_RANK: Record<Presence, number> = {
 export function TeamPresenceCard({ members, events, viewerId, clock24h }: TeamPresenceCardProps) {
   const inMeeting = useMemo(() => {
     if (!events || events.length === 0) return {};
-    const names = Object.fromEntries(members.map((m) => [m.id, m.name || "Operative"]));
+    const names = Object.fromEntries(members.map((m) => [m.id, m.name || "Unnamed member"]));
     return engagementPresenceByMember(events, members.map((m) => m.id), names);
   }, [events, members]);
 

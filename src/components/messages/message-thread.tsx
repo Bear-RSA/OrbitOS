@@ -155,6 +155,9 @@ export function MessageThread({
     [members]
   );
 
+  const [announcement, setAnnouncement] = useState("");
+  const lastSeenIdRef = useRef<string | null | undefined>(undefined);
+
   /* One listener, bounded, torn down when the thread changes. */
   useEffect(() => {
     if (!conversationId) return;
@@ -163,8 +166,35 @@ export function MessageThread({
     setOlder([]);
     setExhausted(false);
 
-    return subscribeToMessages(conversationId, setLive);
+    /* The first snapshot of a thread is history, not news: it only sets
+       the baseline the announcer below compares against. Done here, in
+       the listener, because state still holds the previous thread's
+       messages for a render after the switch. */
+    lastSeenIdRef.current = undefined;
+    setAnnouncement("");
+    let first = true;
+    return subscribeToMessages(conversationId, (messages) => {
+      if (first) {
+        first = false;
+        lastSeenIdRef.current = messages[messages.length - 1]?.id ?? null;
+      }
+      setLive(messages);
+    });
   }, [conversationId]);
+
+  /* Screen readers get told when someone else's message lands. */
+  useEffect(() => {
+    if (lastSeenIdRef.current === undefined || live.length === 0) return;
+    const newest = live[live.length - 1];
+    if (newest.id === lastSeenIdRef.current) return;
+    lastSeenIdRef.current = newest.id;
+    if (newest.senderId === viewer.id) return;
+    const sender = liveNames[newest.senderId] || "Someone";
+    const body = newest.text?.trim();
+    setAnnouncement(
+      body ? `New message from ${sender}: ${body.slice(0, 140)}` : `New message from ${sender}`
+    );
+  }, [live, viewer.id, liveNames]);
 
   /* A staged picture belongs to the thread it was pasted into. Switching
      threads drops it rather than carrying a screenshot of one
@@ -517,7 +547,7 @@ export function MessageThread({
             {callLive ? (
               <>
                 <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orbit-green opacity-75" />
+                  <span className="absolute inline-flex h-full w-full animate-ping [animation-iteration-count:3] [animation-fill-mode:forwards] rounded-full bg-orbit-green opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-orbit-green" />
                 </span>
                 {viewerInRoom ? "Rejoin" : "Join call"}
@@ -538,7 +568,7 @@ export function MessageThread({
                   key={id}
                   type="button"
                   onClick={() => onOpenProfile(id)}
-                  title={person?.name ?? "Operative"}
+                  title={person?.name ?? "Unnamed member"}
                   className="rounded-lg ring-2 ring-surface-card transition-transform duration-200 hover:z-10 hover:-translate-y-0.5"
                 >
                   <UserAvatar
@@ -575,7 +605,7 @@ export function MessageThread({
       {callLive && !viewerInRoom && (
         <div className="flex shrink-0 items-center gap-3 border-b border-orbit-green/15 bg-orbit-green/[0.07] px-5 py-2.5">
           <span className="relative flex h-2 w-2 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orbit-green opacity-75" />
+            <span className="absolute inline-flex h-full w-full animate-ping [animation-iteration-count:3] [animation-fill-mode:forwards] rounded-full bg-orbit-green opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-orbit-green" />
           </span>
 
@@ -783,6 +813,9 @@ export function MessageThread({
           )}
 
           <div ref={bottomRef} />
+          <p role="status" aria-live="polite" className="sr-only">
+            {announcement}
+          </p>
         </div>
       </div>
 

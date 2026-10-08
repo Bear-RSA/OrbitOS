@@ -120,7 +120,7 @@ export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
               </div>
 
               <div className="space-y-4">
-                <Label className="text-[12px] text-ink-dim ml-1">Operational Summary</Label>
+                <Label className="text-[12px] text-ink-dim ml-1">About you</Label>
                 <textarea 
                   placeholder="What you do on the team…"
                   className="w-full bg-surface-sunken border-0 rounded-2xl p-6 text-[15px] font-light text-ink min-h-[140px] resize-none placeholder:text-ink-dim transition-all focus:outline-none focus:ring-1 focus:ring-orbit-violet/30 shadow-inner"

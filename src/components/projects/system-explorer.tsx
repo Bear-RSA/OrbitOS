@@ -375,7 +375,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
                   ? "bg-surface-control text-ink"
                   : "bg-transparent text-ink-dim hover:text-ink-muted"
               )}
-              title="Grid View"
+              title="Grid view"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
             </button>
@@ -761,16 +761,15 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orbit-green opacity-40" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-orbit-green" />
               </span>
               <span className="text-[12px] text-ink-dim">
-                Status: <span className="text-orbit-green">Operational</span>
+                <span className="text-orbit-green">Live</span>
               </span>
             </div>
             <span className="h-3 w-px bg-surface-hover" />
             <span className="text-[12px] text-ink-dim">
-              System Telemetry
+              Updates as files change
             </span>
           </div>
 

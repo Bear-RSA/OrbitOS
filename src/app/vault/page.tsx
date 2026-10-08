@@ -79,9 +79,9 @@ export default function VaultPage() {
 
       <ScrollReveal>
         <div className="mb-16">
-          <h2 className="mb-6 text-5xl font-light tracking-tighter text-ink">
+          <h1 className="mb-6 text-5xl font-light tracking-tighter text-ink">
             The Vault
-          </h2>
+          </h1>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2 rounded-full bg-surface-control px-3 py-1 ring-1 ring-line/[0.04]">
               <ShieldCheck className="h-3 w-3 text-ink-muted" />

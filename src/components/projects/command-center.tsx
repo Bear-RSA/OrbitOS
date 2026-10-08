@@ -305,7 +305,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
               <span className="relative flex h-2 w-2">
                 {!error && (
                   <span
-                    className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-40"
+                    className="absolute inline-flex h-full w-full animate-ping [animation-iteration-count:3] [animation-fill-mode:forwards] rounded-full opacity-40"
                     style={{ backgroundColor: status.color }}
                   />
                 )}
@@ -498,7 +498,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
             <span className="relative flex h-2 w-2">
               {!error && (
                 <span
-                  className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-40"
+                  className="absolute inline-flex h-full w-full animate-ping [animation-iteration-count:3] [animation-fill-mode:forwards] rounded-full opacity-40"
                   style={{ backgroundColor: status.color }}
                 />
               )}
@@ -521,7 +521,7 @@ export function CommandCenter({ projectId }: CommandCenterProps) {
                 Showing {visible.length} of {events.length}
               </>
             ) : (
-              <>Orbit_Telemetry_v4.1</>
+              <>Live activity</>
             )}
           </span>
         </div>

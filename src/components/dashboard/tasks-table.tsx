@@ -398,7 +398,7 @@ export function TasksTable({
                       onClick={onClearFilter}
                       className="mt-6 text-[12px] text-orbit-amber border border-orbit-amber/20 px-4 py-2 rounded-md hover:bg-orbit-amber/5 transition-all"
                     >
-                      Clear Filter Signal
+                      Clear filter
                     </button>
                   )}
                 </td>
@@ -589,7 +589,7 @@ export function TasksTable({
                               <p className="text-[12px] text-ink-muted leading-relaxed max-w-2xl whitespace-pre-wrap break-words">{task.description || "No description yet."}</p>
                             </div>
                             <div className="mb-8 flex flex-col gap-3">
-                              <h4 className="text-[11px] text-ink-dim uppercase tracking-[0.3em]">Operative Assignment //</h4>
+                              <h4 className="text-[12px] text-ink-dim">Assignees</h4>
                               <div className="flex flex-col gap-3">
                                 {task.assignedTo.length > 0 ? (
                                   task.assignedTo.map(uid => {

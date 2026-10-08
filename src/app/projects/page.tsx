@@ -44,7 +44,7 @@ export default function ProjectsPage() {
         <Loader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
-            Resolving Network
+            Loading projects…
           </span>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-surface-control to-transparent"></div>
         </div>
@@ -57,8 +57,8 @@ export default function ProjectsPage() {
       <AppHeader user={user ?? {}} />
 
       <div className="mb-20">
-        <h1 className="text-sm text-ink-dim">Workspace</h1>
-        <div className="text-xl font-medium tracking-tight mt-1">Operational Projects</div>
+        <p className="text-sm text-ink-dim">Workspace</p>
+        <h1 className="text-xl font-medium tracking-tight mt-1">Projects</h1>
       </div>
 
       <WorkspaceProjects

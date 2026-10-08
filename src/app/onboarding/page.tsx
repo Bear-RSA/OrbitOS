@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/brand/logo";
+import { friendlyAuthError } from "@/lib/firebase/auth-errors";
 
 
 export default function OnboardingPage() {
@@ -22,6 +23,7 @@ export default function OnboardingPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<OnboardingInput>({
     resolver: zodResolver(onboardingSchema),
@@ -29,6 +31,15 @@ export default function OnboardingPage() {
       name: user?.name ?? "",
     },
   });
+
+  /* Signup already asked for a name. `defaultValues` is read once, on the
+     first render, which lands before the profile loads, so the field used
+     to come up empty and ask again. Fill it when the profile arrives and
+     only show the field when there is genuinely no name on file. */
+  const knownName = user?.name?.trim() ?? "";
+  useEffect(() => {
+    if (knownName) setValue("name", knownName, { shouldValidate: true });
+  }, [knownName, setValue]);
 
   if (loading) return null;
 
@@ -73,8 +84,7 @@ export default function OnboardingPage() {
         window.location.assign("/dashboard");
       }, 500);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Couldn't save your details. Check your connection and try again.";
-      setError(msg);
+      setError(friendlyAuthError(err, "Couldn't save your details. Check your connection and try again."));
     }
   };
 
@@ -89,12 +99,13 @@ export default function OnboardingPage() {
         <div className="mb-10 text-center">
           <h1 className="text-2xl font-light text-ink tracking-tight">Set up your workspace</h1>
           <p className="text-[13px] text-ink-muted font-medium mt-2">
-            Two details and you're in.
+            {knownName ? "One detail and you're in." : "Two details and you're in."}
           </p>
         </div>
 
         <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {!knownName && (
             <div className="space-y-2.5">
               <Label htmlFor="onboard-name">Your name</Label>
               <Input
@@ -109,6 +120,7 @@ export default function OnboardingPage() {
                 <p id="onboard-name-error" role="alert" className="text-[13px] text-orbit-red mt-1">{errors.name.message}</p>
               )}
             </div>
+            )}
 
             <div className="space-y-2.5">
               <Label htmlFor="onboard-org">Studio or agency name</Label>

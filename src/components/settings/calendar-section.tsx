@@ -89,7 +89,7 @@ export function CalendarSection({ user }: { user: User }) {
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             readOnly
-            value={loading ? "Resolving…" : (url ?? "Unavailable")}
+            value={loading ? "Loading…" : (url ?? "Unavailable")}
             onFocus={(e) => e.currentTarget.select()}
             aria-label="Calendar subscription address"
             className={`${SETTINGS_FIELD_CLASS} h-10 font-mono text-[12px]`}

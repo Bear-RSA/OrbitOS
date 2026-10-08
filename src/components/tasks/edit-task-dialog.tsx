@@ -275,7 +275,7 @@ export function EditTaskDialog({
             </div>
 
             <div className="space-y-2.5">
-              <Label htmlFor="edit-task-due-date">Completion Horizon</Label>
+              <Label htmlFor="edit-task-due-date">Due date</Label>
               <Input
                 id="edit-task-due-date"
                 type="date"

@@ -103,7 +103,7 @@ export function AddMemberDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-4 h-4 opacity-70" />
-            Add Operator
+            Add member
           </DialogTitle>
           <DialogDescription>
             Generate an integration link for a new team member.
@@ -173,7 +173,7 @@ export function AddMemberDialog({
             )}
 
             <div className="space-y-2.5">
-              <Label htmlFor="member-email" className="text-center block">Network Address (Email)</Label>
+              <Label htmlFor="member-email" className="text-center block">Email</Label>
               <Input
                 id="member-email"
                 type="email"

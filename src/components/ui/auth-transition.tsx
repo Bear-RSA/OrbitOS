@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Loader } from "@/components/ui/loader";
-import { ScrambleText } from "@/components/ui/scramble-text";
 import { themeColor } from "@/lib/theme/colors";
 
 /**
@@ -29,16 +28,14 @@ export function AuthTransition({ label = "Signing you in" }: { label?: string })
     >
       <Loader color={themeColor.pink} />
       <div className="flex flex-col items-center gap-3 px-6 text-center">
-        <span className="text-[12px] text-ink">
-          <ScrambleText text={label} />
-        </span>
+        <span className="text-[14px] text-ink">{label}…</span>
         <div className="h-px w-24 bg-gradient-to-r from-transparent via-line/10 to-transparent" />
         <p
-          className={`max-w-xs font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-ink-dim transition-opacity duration-700 ${
+          className={`max-w-xs text-[13px] leading-relaxed text-ink-muted transition-opacity duration-700 ${
             slow ? "opacity-100" : "opacity-0"
           }`}
         >
-          Establishing secure session — the first connection can take a moment.
+          Still connecting. The first connection can take a few seconds.
         </p>
       </div>
     </div>

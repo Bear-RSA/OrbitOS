@@ -121,7 +121,7 @@ export function DestructiveActionModal({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 disabled={loading}
-                placeholder={targetConfirmText}
+                placeholder="Type it here"
                 autoComplete="off"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && isMatch && !loading) {

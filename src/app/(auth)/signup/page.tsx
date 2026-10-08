@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signUpSchema, SignUpInput } from "@/lib/validations/auth";
 import { signUp } from "@/lib/firebase/auth";
+import { friendlyAuthError } from "@/lib/firebase/auth-errors";
 import { safeRedirect } from "@/lib/utils/safe-redirect";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { useAuth } from "@/contexts/auth-context";
@@ -67,12 +68,7 @@ function SignupForm() {
 
       router.push(redirectPath);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to create account.";
-      if (msg.includes("email-already-in-use")) {
-        setError("An account with this email already exists. Sign in instead, or reset your password.");
-      } else {
-        setError(msg);
-      }
+      setError(friendlyAuthError(err, "Couldn't create your account. Try again in a moment."));
     }
   };
 

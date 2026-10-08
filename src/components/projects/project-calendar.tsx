@@ -640,7 +640,7 @@ export function ProjectCalendar({
                       type="button"
                       onClick={() => setOverdueOpen((v) => !v)}
                       aria-expanded={overdueOpen}
-                      className="mb-1 flex w-full items-center gap-1.5 rounded border-l-2 border-orbit-red bg-orbit-red/10 px-1.5 py-1 text-left font-mono text-[11px] text-orbit-red transition-colors hover:bg-orbit-red/[0.16] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orbit-red/50"
+                      className="mb-1 flex w-full items-center gap-1.5 rounded bg-orbit-red/10 ring-1 ring-inset ring-orbit-red/30 px-1.5 py-1 text-left text-[12px] font-medium text-orbit-red transition-colors hover:bg-orbit-red/[0.16] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orbit-red/50"
                     >
                       <AlertCircle className="h-2.5 w-2.5 shrink-0" aria-hidden />
                       <span className="truncate">{overdue.length} overdue</span>
@@ -742,7 +742,7 @@ export function ProjectCalendar({
                       type="button"
                       onClick={() => setOverdueOpen((v) => !v)}
                       aria-expanded={overdueOpen}
-                      className="flex w-full items-center gap-1.5 rounded border-l-2 border-orbit-red bg-orbit-red/10 px-1.5 py-1 text-left font-mono text-[11px] text-orbit-red transition-colors hover:bg-orbit-red/[0.16]"
+                      className="flex w-full items-center gap-1.5 rounded bg-orbit-red/10 ring-1 ring-inset ring-orbit-red/30 px-1.5 py-1 text-left text-[12px] font-medium text-orbit-red transition-colors hover:bg-orbit-red/[0.16]"
                     >
                       <AlertCircle className="h-2.5 w-2.5 shrink-0" aria-hidden />
                       <span className="truncate">{overdue.length} overdue</span>

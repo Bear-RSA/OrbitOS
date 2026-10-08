@@ -370,7 +370,7 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
 
               {renameError && (
                 <div className="mt-3 text-[11px] font-mono text-orbit-red flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orbit-red animate-pulse" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-orbit-red" />
                   {renameError}
                 </div>
               )}
@@ -428,7 +428,7 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
 
               {descriptionError && (
                 <div className="mt-3 text-[11px] font-mono text-orbit-red flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orbit-red animate-pulse" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-orbit-red" />
                   {descriptionError}
                 </div>
               )}

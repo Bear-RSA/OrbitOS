@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils/classnames";
 /* ------------------------------------------------------------------ */
 
 const OVERVIEW_KEY = "orbitos:dashboard-overview";
+const SCOPE_KEY = "orbitos:dashboard-scope";
 
 interface DashboardViewProps {
   data: DashboardData;
@@ -70,8 +71,25 @@ export function DashboardView({
 
   // Everyone lands on the workspace-wide Horizon. Narrowing to your own
   // queue is a filter on the shared view, not a different dashboard.
-  const [scope, setScope] = useState<"org" | "mine">("org");
+  // Remembered per browser, like the overview: whoever works from their
+  // own queue should not have to re-pick it on every visit.
+  const [scope, setScopeState] = useState<"org" | "mine">("org");
   const showingMine = scope === "mine";
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(SCOPE_KEY) === "mine") setScopeState("mine");
+    } catch {
+      /* Storage blocked: everyone-first is the default anyway. */
+    }
+  }, []);
+  const setScope = (next: "org" | "mine") => {
+    setScopeState(next);
+    try {
+      window.localStorage.setItem(SCOPE_KEY, next);
+    } catch {
+      /* Storage blocked: the choice still holds for this visit. */
+    }
+  };
 
   // One read of today's engagements, shared by the schedule and by presence
   // (which needs it to tell whether someone is currently in a room).
@@ -112,7 +130,7 @@ export function DashboardView({
           action={
             <div
               role="group"
-              aria-label="Horizon scope"
+              aria-label="Show tasks for"
               className="flex shrink-0 items-center gap-0.5 rounded-lg bg-surface-control p-0.5 ring-1 ring-inset ring-line/[0.08]"
             >
               {(["org", "mine"] as const).map((value) => (

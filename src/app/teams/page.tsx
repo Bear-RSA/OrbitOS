@@ -281,7 +281,7 @@ export default function TeamsPage() {
       {/* Header */}
       <ScrollReveal>
         <div className="mb-24">
-          <h2 className="text-5xl font-light tracking-tighter text-ink mb-6">Core Team</h2>
+          <h1 className="text-5xl font-light tracking-tighter text-ink mb-6">Team</h1>
           <div className="flex flex-wrap items-center gap-4">
             <div className="px-3 py-1 bg-surface-control rounded-full ring-1 ring-line/[0.04] flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-ink-strong shadow-[0_0_8px_rgb(var(--ink-strong)_/_0.4)]" />
@@ -428,7 +428,7 @@ export default function TeamsPage() {
                     </div>
 
                     <div className="mb-8">
-                      <p className="text-[12px] text-ink-dim mb-4">Focus Module</p>
+                      <p className="text-[12px] text-ink-dim mb-4">Focus</p>
                       <div className="bg-base/40 rounded-xl p-4 ring-1 ring-line/[0.04]">
                         {focus ? (
                           <>

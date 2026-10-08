@@ -104,7 +104,7 @@ export default function DashboardPage() {
         <Loader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
-            Resolving Network
+            Loading your workspace…
           </span>
           <div className="h-px w-24 bg-gradient-to-r from-transparent via-line/15 to-transparent"></div>
         </div>
@@ -162,7 +162,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2.5">
               <AlertTriangle className="h-4 w-4 text-orbit-amber" aria-hidden />
               <span className="text-[12px] text-ink-dim">
-                Telemetry unreachable
+                Couldn't load
               </span>
             </div>
             <div className="space-y-2">

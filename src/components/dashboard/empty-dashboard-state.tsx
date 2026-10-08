@@ -93,7 +93,7 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
           {config.action}
           {!isOwner && type !== "no_assigned_work" && type !== "no_projects" && (
             <div className="inline-flex h-12 items-center gap-3 rounded-xl bg-surface-control px-5 ring-1 ring-inset ring-line/[0.07]">
-              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink/50 shadow-[0_0_8px_rgb(var(--ink)_/_0.2)]" aria-hidden />
+              <div className="h-1.5 w-1.5 rounded-full bg-ink/50 shadow-[0_0_8px_rgb(var(--ink)_/_0.2)]" aria-hidden />
               <span className="text-[13px] font-medium tracking-wide text-ink-muted">Your workspace is ready — waiting for assignments</span>
             </div>
           )}

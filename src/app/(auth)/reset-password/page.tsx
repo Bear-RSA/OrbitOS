@@ -144,7 +144,7 @@ function ResetPasswordForm() {
           <div className="relative z-10 space-y-6">
             <div className="rounded-xl bg-destructive/5 ring-1 ring-destructive/20 p-5">
               <p className="text-[13px] text-destructive font-medium leading-relaxed flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse mt-1.5 shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-destructive mt-1.5 shrink-0" />
                 <span>{error}</span>
               </p>
             </div>
@@ -164,7 +164,7 @@ function ResetPasswordForm() {
           <div className="relative z-10 space-y-6">
             <div className="rounded-xl bg-orbit-green/5 ring-1 ring-orbit-green/20 p-5">
               <p className="text-[13px] text-orbit-green font-medium leading-relaxed flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-orbit-green animate-pulse mt-1.5 shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-orbit-green mt-1.5 shrink-0" />
                 <span>Your email address is confirmed.</span>
               </p>
             </div>
@@ -183,7 +183,7 @@ function ResetPasswordForm() {
           <div className="relative z-10 space-y-6">
             <div className="rounded-xl bg-orbit-green/5 ring-1 ring-orbit-green/20 p-5">
               <p className="text-[13px] text-orbit-green font-medium leading-relaxed flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-orbit-green animate-pulse mt-1.5 shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-orbit-green mt-1.5 shrink-0" />
                 <span>
                   Password updated{accountEmail ? ` for ${accountEmail}` : ""}.
                   Sign in with it now.
@@ -247,7 +247,7 @@ function ResetPasswordForm() {
             {error && (
               <div role="alert" className="rounded-xl bg-destructive/5 ring-1 ring-destructive/20 p-5 mt-4">
                 <p className="text-[13px] text-destructive font-medium leading-relaxed flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
                   {error}
                 </p>
               </div>

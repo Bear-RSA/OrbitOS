@@ -53,7 +53,7 @@ export function TodayScheduleCard({
   clock24h,
 }: TodayScheduleCardProps) {
   const memberNames = useMemo(
-    () => Object.fromEntries(members.map((m) => [m.id, m.name || "Operative"])),
+    () => Object.fromEntries(members.map((m) => [m.id, m.name || "Unnamed member"])),
     [members]
   );
   const { joinScheduledCall } = useCall();

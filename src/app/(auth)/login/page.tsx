@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInSchema, SignInInput } from "@/lib/validations/auth";
 import { signIn } from "@/lib/firebase/auth";
+import { friendlyAuthError } from "@/lib/firebase/auth-errors";
 import { safeRedirect } from "@/lib/utils/safe-redirect";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
@@ -66,13 +67,7 @@ function LoginForm() {
       await signIn(data.email, data.password);
       router.push(redirectPath);
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Invalid email or password.";
-      if (msg.includes("user-not-found") || msg.includes("wrong-password") || msg.includes("invalid-credential")) {
-        setError("That email and password don't match. Check both and try again.");
-      } else {
-        setError(msg);
-      }
+      setError(friendlyAuthError(err));
     }
   };
 

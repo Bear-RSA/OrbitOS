@@ -105,7 +105,7 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
               variant="secondary"
               className="h-9 px-5 rounded-md text-[12px] min-w-[140px]"
             >
-              Create Vector
+              Create project
             </Button>
             <Button
               type="button"

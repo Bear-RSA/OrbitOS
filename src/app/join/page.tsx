@@ -94,7 +94,7 @@ function JoinForm() {
     } catch (err: any) {
       console.error("Redeem error:", err);
       setStatus("error");
-      setErrorMsg(err?.message || "Network connection failed. Please attempt again.");
+      setErrorMsg(err?.message || "Couldn't reach OrbitOS. Check your connection and try again.");
     }
   };
 
