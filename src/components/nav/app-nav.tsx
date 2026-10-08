@@ -69,6 +69,8 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
   const [pill, setPill] = useState<{ x: number; width: number } | null>(null);
   // The first measurement places the pill; only later ones slide it.
   const [placed, setPlaced] = useState(false);
+  // Which edges have destinations scrolled out of view, for the edge fades.
+  const [edges, setEdges] = useState({ start: false, end: false });
 
   useLayoutEffect(() => {
     const list = listRef.current;
@@ -85,11 +87,35 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
       setPill({ x: rect.left - listRect.left + list.scrollLeft, width: rect.width });
     };
 
+    const readEdges = () => {
+      const max = list.scrollWidth - list.clientWidth;
+      setEdges({ start: list.scrollLeft > 1, end: list.scrollLeft < max - 1 });
+    };
+
+    /* On a phone the row is wider than the space it gets. Bring the current
+       page into view rather than leaving it scrolled off an edge. */
+    const active = list.querySelector<HTMLElement>('[aria-current="page"]');
+    if (active && list.scrollWidth > list.clientWidth) {
+      const left = active.offsetLeft;
+      const right = left + active.offsetWidth;
+      if (left < list.scrollLeft || right > list.scrollLeft + list.clientWidth) {
+        list.scrollLeft = left - (list.clientWidth - active.offsetWidth) / 2;
+      }
+    }
+
     measure();
+    readEdges();
     // Labels hide below `sm`, which changes every width.
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(() => {
+      measure();
+      readEdges();
+    });
     observer.observe(list);
-    return () => observer.disconnect();
+    list.addEventListener("scroll", readEdges, { passive: true });
+    return () => {
+      observer.disconnect();
+      list.removeEventListener("scroll", readEdges);
+    };
   }, [pathname, items.length]);
 
   useLayoutEffect(() => {
@@ -106,7 +132,19 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
           reflows to two rows changes the header height on every route. */}
       <ul
         ref={listRef}
-        className="relative flex items-center justify-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        /* `safe center`, not `center`: a centred row wider than its box
+           overflows on both sides, and the left half cannot be scrolled
+           to — on a phone it slid under the logo and took the selected
+           pill with it. Safe centring falls back to the start edge.
+           The fades say there is more to scroll to on that side. */
+        className={cn(
+          "relative flex items-center [justify-content:safe_center] gap-0.5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          edges.start && edges.end
+            ? "[mask-image:linear-gradient(to_right,transparent,black_20px,black_calc(100%-20px),transparent)]"
+            : edges.end
+              ? "[mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent)]"
+              : edges.start && "[mask-image:linear-gradient(to_right,transparent,black_20px)]"
+        )}
       >
         {pill && (
           <li
