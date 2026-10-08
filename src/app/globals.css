@@ -64,7 +64,8 @@
     --shadow-raised: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 2px 8px rgb(0 0 0 / 0.5);
     --shadow-overlay: 0 40px 100px rgb(0 0 0 / 0.6);
     --scrim: 0 0 0;
-    --scrim-alpha: 0.72;
+    /* Light enough that a fogged modal still has the page to fog. */
+    --scrim-alpha: 0.5;
     --noise-opacity: 0.006;
   }
 
@@ -493,6 +494,31 @@
     backdrop-filter: blur(calc(var(--material-blur) * 1.6)) saturate(160%);
   }
 
+  /* Fog: the calendar's panel recipe, shared with the dashboard cards.
+     A thin wash over the orbit backdrop with a light blur, so the planet
+     reads through the panel instead of stopping at its edge. Tone and
+     hover move `--fog-base` / `--fog-alpha` rather than restating it.
+
+     `.material-fog-modal` is the same fog for a panel that floats over
+     the page rather than the backdrop. Text sits behind it there, so it
+     takes a thicker wash and a heavier blur to keep its own copy legible. */
+  .material-fog,
+  .material-fog-modal {
+    background-color: rgb(var(--fog-base, var(--surface-card)) / var(--fog-alpha, 0.4));
+    -webkit-backdrop-filter: blur(var(--fog-blur, 4px));
+    backdrop-filter: blur(var(--fog-blur, 4px));
+  }
+  .material-fog-modal {
+    --fog-alpha: 0.45;
+    --fog-blur: 20px;
+  }
+  /* Solid field fills would cover most of a form modal and hide the fog,
+     so inside one they become a wash of the same tone. Floating lists
+     (`.absolute`) stay solid: they sit over other fields and must read. */
+  .material-fog-modal :is(.bg-surface-lowest, .bg-surface-sunken):not(.absolute) {
+    background-color: rgb(var(--surface-sunken) / 0.5);
+  }
+
   /* Scroll edge: where content meets floating chrome, a short fade instead
      of a 1px rule. Present only once something has scrolled under. */
   .scroll-edge::after {
@@ -520,7 +546,9 @@
 
   @media (prefers-reduced-transparency: reduce) {
     .material-chrome,
-    .material-sheet {
+    .material-sheet,
+    .material-fog,
+    .material-fog-modal {
       background-color: rgb(var(--surface-raised));
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
@@ -529,7 +557,9 @@
 
   @media (prefers-contrast: more) {
     .material-chrome,
-    .material-sheet {
+    .material-sheet,
+    .material-fog,
+    .material-fog-modal {
       background-color: rgb(var(--surface-card));
       -webkit-backdrop-filter: none;
       backdrop-filter: none;

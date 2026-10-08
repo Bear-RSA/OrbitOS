@@ -84,6 +84,40 @@ export function subscribeToEventsByOrg(
 }
 
 /**
+ * Live engagements one operative is on, across every project and the
+ * org-wide ones. Backs the personal calendar.
+ *
+ * The org filter is not redundant: the read rule checks org membership,
+ * and a query the rules cannot prove safe is rejected whole. Equality
+ * plus array-contains merges single-field indexes, so no composite.
+ */
+export function subscribeToEventsForAttendee(
+  uid: string,
+  orgId: string,
+  callback: (events: OrbitEvent[]) => void
+) {
+  const q = query(
+    collection(db, EVENTS_COLLECTION),
+    where("orgId", "==", orgId),
+    where("attendees", "array-contains", uid)
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const events = snapshot.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as OrbitEvent
+      );
+      callback(sortEvents(events));
+    },
+    (err) => {
+      console.error("[Events Subscription Error]:", err);
+      callback([]);
+    }
+  );
+}
+
+/**
  * Engagements overlapping [start, end).
  *
  * Firestore cannot express overlap directly — that needs a range on both

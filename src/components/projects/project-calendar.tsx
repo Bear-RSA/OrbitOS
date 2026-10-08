@@ -44,6 +44,7 @@ import { dayWindowFor, layoutCollisions, LayoutInput } from "@/lib/utils/event-l
 import { EngagementDialog } from "@/components/events/engagement-dialog";
 import { useCall } from "@/contexts/call-context";
 import { isOrbitCall } from "@/lib/calls/scheduled";
+import { saHolidayName } from "@/lib/calendar/sa-holidays";
 import { cn } from "@/lib/utils/classnames";
 
 /* ------------------------------------------------------------------ */
@@ -101,6 +102,75 @@ const RSVP_LABEL: Record<RsvpStatus, string> = {
   tentative: "Maybe",
   pending: "No answer",
 };
+
+/* A booking's colour says what the viewer still has to do about it:
+   amber is an invite waiting on an answer, blue is one they are going
+   to, and the quiet tones are ones that need nothing from them. */
+type BookingTone = "going" | "unanswered" | "declined" | "cancelled";
+
+const BOOKING_TONE: Record<BookingTone, { card: string; bar: string }> = {
+  going: {
+    card: "bg-orbit-blue/[0.10] text-ink ring-orbit-blue/20 hover:bg-orbit-blue/[0.16] hover:shadow-sm",
+    bar: "bg-orbit-blue",
+  },
+  unanswered: {
+    card: "bg-orbit-amber/[0.09] text-ink ring-orbit-amber/25 hover:bg-orbit-amber/[0.15] hover:shadow-sm",
+    bar: "bg-orbit-amber",
+  },
+  declined: {
+    card: "bg-surface-control/60 text-ink-dim ring-line/[0.06] hover:bg-surface-hover",
+    bar: "bg-line/30",
+  },
+  cancelled: {
+    card: "bg-surface-card text-ink-faint line-through ring-line/[0.04] hover:bg-surface-control",
+    bar: "bg-ink-faint/40",
+  },
+};
+
+/* Tasks share the booking card's shape and differ in weight: a regular
+   title against a meeting's medium one, so the two still read apart in
+   a crowded cell. Red is late, amber is due today, green is done. */
+type TaskTone = "open" | "today" | "late" | "done";
+
+const TASK_TONE: Record<TaskTone, { card: string; bar: string }> = {
+  open: {
+    card: "bg-surface-raised/70 text-ink-muted ring-line/[0.08] hover:bg-surface-hover hover:text-ink hover:shadow-sm",
+    bar: "bg-line/30",
+  },
+  today: {
+    card: "bg-orbit-amber/[0.09] text-ink ring-orbit-amber/25 hover:bg-orbit-amber/[0.15] hover:shadow-sm",
+    bar: "bg-orbit-amber",
+  },
+  late: {
+    card: "bg-orbit-red/[0.08] text-orbit-red ring-orbit-red/25 hover:bg-orbit-red/[0.14] hover:shadow-sm",
+    bar: "bg-orbit-red",
+  },
+  done: {
+    card: "bg-orbit-green/[0.06] text-ink-dim line-through ring-orbit-green/15 hover:bg-orbit-green/[0.10]",
+    bar: "bg-orbit-green/50",
+  },
+};
+
+function bookingTone(event: OrbitEvent, uid: string): BookingTone {
+  if (event.status === "cancelled") return "cancelled";
+  const mine = event.rsvp?.[uid];
+  // Not on the guest list at all (a project calendar shows everyone's
+  // meetings) reads as settled rather than as an invite to chase.
+  if (!event.attendees.includes(uid)) return "going";
+  if (mine === "declined") return "declined";
+  if (!mine || mine === "pending") return "unanswered";
+  return "going";
+}
+
+/**
+ * Weekends and South African public holidays are tinted. Cosmetic only:
+ * every off day still takes a double-click to book and a dropped task.
+ */
+function offDay(day: Date, key: string): { off: boolean; holiday: string | null } {
+  const holiday = saHolidayName(key);
+  const weekday = day.getDay();
+  return { off: holiday !== null || weekday === 0 || weekday === 6, holiday };
+}
 
 /** Scrolls to the task's row in the table below and flashes it. Mirrors
  *  the roadmap's behaviour so both viewers feel like the same control. */
@@ -444,48 +514,58 @@ export function ProjectCalendar({
     const isPending = pending.has(task.id);
     const isBeingDragged = drag?.moved && drag.taskId === task.id;
 
+    const tone = TASK_TONE[isDone ? "done" : isLate ? "late" : isDueToday ? "today" : "open"];
+
     return (
       <div
         key={task.id}
         {...chipProps(task)}
         title={task.title}
         className={cn(
-          "block w-full touch-none select-none truncate rounded border-l-2 px-1.5 py-1 text-left font-mono text-[11px] transition-all",
-          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus",
+          "relative flex w-full touch-none select-none items-center overflow-hidden rounded-md py-1 pl-3 pr-1.5 text-left ring-1 ring-inset transition-[background-color,box-shadow,opacity] duration-150",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
           isPending ? "cursor-wait opacity-40" : "cursor-grab active:cursor-grabbing",
           isBeingDragged && "opacity-30",
-          isDone && "border-orbit-green/40 bg-orbit-green/[0.06] text-ink-dim line-through",
-          isLate && "border-orbit-red bg-orbit-red/[0.08] text-orbit-red",
-          isDueToday && "border-orbit-amber bg-orbit-amber/[0.08] text-orbit-amber",
-          !isDone && !isLate && !isDueToday &&
-            "border-line/20 bg-surface-raised text-ink-muted hover:bg-surface-hover hover:text-ink"
+          tone.card
         )}
       >
-        {task.title}
+        <span aria-hidden className={cn("absolute inset-y-1 left-1 w-[3px] rounded-full", tone.bar)} />
+        <span className="truncate text-[12px] leading-tight">{task.title}</span>
       </div>
     );
   };
 
-  const renderAllDayEvent = (event: OrbitEvent) => {
-    const cancelled = event.status === "cancelled";
-    return (
-      <button
-        key={event.id}
-        type="button"
-        onClick={() => setSelectedEventId(event.id)}
-        title={event.title}
-        className={cn(
-          "block w-full select-none truncate rounded border-l-2 px-1.5 py-1 text-left font-mono text-[11px] transition-colors",
-          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus",
-          cancelled
-            ? "border-ink-faint bg-surface-card text-ink-faint line-through"
-            : "border-orbit-blue bg-orbit-blue/[0.10] text-orbit-blue hover:bg-orbit-blue/[0.16]"
-        )}
-      >
-        {event.title}
-      </button>
+  /** Shared shell for every booking, in every view. */
+  const bookingClass = (event: OrbitEvent) =>
+    cn(
+      "group/booking relative flex select-none overflow-hidden rounded-md text-left ring-1 ring-inset transition-[background-color,box-shadow] duration-150",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+      BOOKING_TONE[bookingTone(event, uid)].card,
+      selectedEventId === event.id && "ring-2 ring-focus"
     );
-  };
+
+  const bookingBar = (event: OrbitEvent) => (
+    <span
+      aria-hidden
+      className={cn(
+        "absolute inset-y-1 left-1 w-[3px] rounded-full",
+        BOOKING_TONE[bookingTone(event, uid)].bar
+      )}
+    />
+  );
+
+  const renderAllDayEvent = (event: OrbitEvent) => (
+    <button
+      key={event.id}
+      type="button"
+      onClick={() => setSelectedEventId(event.id)}
+      title={event.title}
+      className={cn(bookingClass(event), "w-full items-center py-1 pl-3 pr-1.5")}
+    >
+      {bookingBar(event)}
+      <span className="truncate text-[12px] font-medium leading-tight">{event.title}</span>
+    </button>
+  );
 
   return (
     <div className="mb-12 flex animate-fade-in flex-col overflow-hidden rounded-xl border border-line/[0.06] bg-surface-card/40 shadow-raised ring-1 ring-line/5 backdrop-blur-sm">
@@ -582,7 +662,10 @@ export function ProjectCalendar({
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
               <div
                 key={d}
-                className="select-none border-l border-line/[0.04] px-2 py-2 text-[12px] text-ink-dim first:border-l-0"
+                className={cn(
+                  "select-none border-l border-line/[0.04] px-2 py-2 text-[12px] text-ink-dim first:border-l-0",
+                  (d === "Sat" || d === "Sun") && "bg-surface-control/40"
+                )}
               >
                 {d}
               </div>
@@ -598,6 +681,7 @@ export function ProjectCalendar({
               const inMonth = isSameMonth(day, cursor);
               const isToday = key === todayKey;
               const isDropTarget = dropTargetKey === key;
+              const { off, holiday } = offDay(day, key);
 
               return (
                 <div
@@ -609,7 +693,7 @@ export function ProjectCalendar({
                   }}
                   className={cn(
                     "min-h-[112px] border-l border-t border-line/[0.04] p-1.5 transition-colors [&:nth-child(7n+1)]:border-l-0",
-                    !inMonth && "bg-surface-sunken",
+                    !inMonth ? "bg-surface-sunken" : off && "bg-surface-control/40",
                     isDropTarget && "bg-surface-control ring-1 ring-inset ring-focus"
                   )}
                 >
@@ -632,6 +716,18 @@ export function ProjectCalendar({
                       </span>
                     )}
                   </div>
+
+                  {holiday && (
+                    <p
+                      title={holiday}
+                      className={cn(
+                        "mb-1.5 select-none truncate px-0.5 text-[11px] leading-tight",
+                        inMonth ? "text-ink-dim" : "text-ink-faint"
+                      )}
+                    >
+                      {holiday}
+                    </p>
+                  )}
 
                   {/* Overdue rollup — one chip on today rather than stale
                       chips scattered across every past week. */}
@@ -658,26 +754,16 @@ export function ProjectCalendar({
                         key={event.id}
                         type="button"
                         onClick={() => setSelectedEventId(event.id)}
-                        title={event.title}
-                        className={cn(
-                          "flex w-full select-none items-center gap-1.5 rounded px-1.5 py-1 text-left font-mono text-[11px] transition-colors",
-                          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus",
-                          event.status === "cancelled"
-                            ? "text-ink-faint line-through hover:bg-surface-card"
-                            : "text-ink-muted hover:bg-surface-control hover:text-ink"
-                        )}
+                        title={`${format(event.startAt.toDate(), "HH:mm")} ${event.title}`}
+                        className={cn(bookingClass(event), "w-full items-baseline gap-1.5 py-1 pl-3 pr-1.5")}
                       >
-                        <span
-                          className={cn(
-                            "h-1.5 w-1.5 shrink-0 rounded-full",
-                            event.status === "cancelled" ? "bg-ink-faint" : "bg-orbit-blue"
-                          )}
-                          aria-hidden
-                        />
-                        <span className="shrink-0 tabular-nums opacity-70">
+                        {bookingBar(event)}
+                        <span className="shrink-0 font-mono text-[11px] tabular-nums opacity-60">
                           {format(event.startAt.toDate(), "HH:mm")}
                         </span>
-                        <span className="truncate">{event.title}</span>
+                        <span className="truncate text-[12px] font-medium leading-tight">
+                          {event.title}
+                        </span>
                       </button>
                     ))}
 
@@ -699,10 +785,14 @@ export function ProjectCalendar({
             {weekDays.map((day) => {
               const key = toDateKey(day);
               const isToday = key === todayKey;
+              const { off, holiday } = offDay(day, key);
               return (
                 <div
                   key={key}
-                  className="select-none border-l border-line/[0.04] px-2 py-2 text-[12px]"
+                  className={cn(
+                    "min-w-0 select-none border-l border-line/[0.04] px-2 py-2 text-[12px]",
+                    off && "bg-surface-control/40"
+                  )}
                 >
                   <span className={isToday ? "text-orbit-red" : "text-ink-dim"}>
                     {format(day, "EEE")}
@@ -710,6 +800,11 @@ export function ProjectCalendar({
                   <span className={cn("tabular-nums", isToday ? "text-orbit-red" : "text-ink-muted")}>
                     {format(day, "d")}
                   </span>
+                  {holiday && (
+                    <span title={holiday} className="mt-0.5 block truncate text-[11px] text-ink-dim">
+                      {holiday}
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -734,6 +829,7 @@ export function ProjectCalendar({
                   data-date-key={key}
                   className={cn(
                     "flex min-h-[56px] flex-col gap-1 border-l border-line/[0.04] p-1.5 transition-colors",
+                    offDay(day, key).off && "bg-surface-control/40",
                     isDropTarget && "bg-surface-control ring-1 ring-inset ring-focus"
                   )}
                 >
@@ -788,7 +884,10 @@ export function ProjectCalendar({
               return (
                 <div
                   key={key}
-                  className="relative border-l border-line/[0.04]"
+                  className={cn(
+                    "relative border-l border-line/[0.04]",
+                    offDay(day, key).off && "bg-surface-control/40"
+                  )}
                   style={{ height: laneHeight }}
                   onDoubleClick={() => {
                     setCreateDateKey(key);
@@ -818,9 +917,14 @@ export function ProjectCalendar({
                       (end.getTime() - start.getTime()) / 60_000
                     );
 
-                    const cancelled = event.status === "cancelled";
-                    const myRsvp = event.rsvp?.[uid] ?? "pending";
-                    const unanswered = !cancelled && myRsvp === "pending";
+                    /* Short bookings get one line; anything from 45
+                       minutes up has room for the range and where. */
+                    const roomy = durationMins >= 45;
+                    const WhereIcon = event.meetingUrl || isOrbitCall(event)
+                      ? Video
+                      : event.location
+                        ? MapPin
+                        : null;
 
                     return (
                       <button
@@ -829,26 +933,33 @@ export function ProjectCalendar({
                         onClick={() => setSelectedEventId(event.id)}
                         title={`${format(start, "HH:mm")}–${format(end, "HH:mm")} ${event.title}`}
                         className={cn(
-                          "absolute overflow-hidden rounded border-l-2 px-1.5 py-1 text-left font-mono text-[11px] leading-tight transition-colors",
-                          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus",
-                          cancelled
-                            ? "border-ink-faint bg-surface-card text-ink-faint line-through"
-                            : unanswered
-                              ? "border-orbit-amber bg-orbit-amber/[0.10] text-orbit-amber hover:bg-orbit-amber/[0.16]"
-                              : "border-orbit-blue bg-orbit-blue/[0.12] text-ink hover:bg-orbit-blue/[0.18]",
-                          selectedEventId === event.id && "ring-1 ring-focus"
+                          bookingClass(event),
+                          "absolute flex-col justify-start gap-0.5 py-1 pl-3 pr-1.5"
                         )}
                         style={{
-                          top: (startMins / 60) * PX_PER_HOUR,
-                          height: (durationMins / 60) * PX_PER_HOUR - 2,
+                          top: (startMins / 60) * PX_PER_HOUR + 1,
+                          height: (durationMins / 60) * PX_PER_HOUR - 3,
                           left: `calc(${box.left * 100}% + 2px)`,
                           width: `calc(${box.width * 100}% - 4px)`,
                         }}
                       >
-                        <span className="block tabular-nums opacity-70">
-                          {format(start, "HH:mm")}
+                        {bookingBar(event)}
+                        <span
+                          className={cn(
+                            "text-[12px] font-medium leading-tight",
+                            roomy ? "line-clamp-2" : "truncate"
+                          )}
+                        >
+                          {event.title}
                         </span>
-                        <span className="block truncate">{event.title}</span>
+                        {roomy && (
+                          <span className="flex items-center gap-1 font-mono text-[11px] tabular-nums opacity-60">
+                            {WhereIcon && <WhereIcon className="h-3 w-3 shrink-0" aria-hidden />}
+                            <span className="truncate">
+                              {format(start, "HH:mm")}–{format(end, "HH:mm")}
+                            </span>
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -1093,10 +1204,11 @@ export function ProjectCalendar({
         drag?.moved &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[100] max-w-[240px] truncate rounded border-l-2 border-line/50 bg-surface-control px-2 py-1 font-mono text-[11px] text-ink shadow-[0_8px_28px_rgb(var(--scrim)_/_0.7)] ring-1 ring-line/10"
+            className="pointer-events-none fixed z-[100] flex max-w-[240px] overflow-hidden rounded-md bg-surface-control py-1 pl-3 pr-2 text-ink shadow-[0_8px_28px_rgb(var(--scrim)_/_0.7)] ring-1 ring-inset ring-line/10"
             style={{ left: drag.x + 14, top: drag.y + 14 }}
           >
-            {drag.title}
+            <span aria-hidden className="absolute inset-y-1 left-1 w-[3px] rounded-full bg-line/40" />
+            <span className="truncate text-[12px] leading-tight">{drag.title}</span>
           </div>,
           document.body
         )}

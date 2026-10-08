@@ -59,7 +59,7 @@ export function SuccessModal({ open, onOpenChange, title, description }: Success
         data-state={state}
         role="status"
         className={cn(
-          "material-sheet relative flex min-w-[300px] flex-col items-center justify-center rounded-2xl p-8 text-center shadow-overlay ring-1 ring-inset ring-line/[0.08]",
+          "material-fog-modal relative flex min-w-[300px] flex-col items-center justify-center rounded-2xl border border-line/[0.06] p-8 text-center shadow-overlay ring-1 ring-line/5",
           "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:blur-in-sm",
           "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:duration-quick"
         )}

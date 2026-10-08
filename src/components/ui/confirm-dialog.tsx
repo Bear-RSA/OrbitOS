@@ -40,7 +40,7 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px] p-0 bg-surface-sunken/95 border-line/[0.04] overflow-hidden backdrop-blur-xl">
+      <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
         <div className="p-8 space-y-6">
           <div className="flex items-center gap-4">
             {isDestructive && (

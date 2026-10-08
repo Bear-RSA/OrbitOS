@@ -487,7 +487,7 @@ export function EngagementDialog({
             off both edges with nothing to scroll. Height is capped here and
             the field area scrolls inside it, keeping the title and the submit
             button visible at all times. Padding moves inward for that reason. */}
-        <DialogContent className="flex max-h-[92dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[560px] md:max-w-2xl lg:max-w-3xl bg-surface-sunken/95 border-line/[0.04]">
+        <DialogContent className="flex max-h-[92dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[560px] md:max-w-2xl lg:max-w-3xl">
           <DialogHeader className="shrink-0 mb-0 space-y-2 px-6 pb-4 pt-6 text-left sm:px-8 sm:pb-5 sm:pt-8 md:px-10 sm:text-left">
             <DialogTitle className="text-xl font-medium tracking-tight text-ink">
               {report
@@ -578,7 +578,7 @@ export function EngagementDialog({
                 </p>
               </div>
 
-              <DialogFooter className="mt-0 shrink-0 flex-row justify-start gap-4 border-t border-line/[0.05] bg-surface-sunken/95 px-6 py-4 sm:justify-start sm:px-8 sm:py-5 md:px-10">
+              <DialogFooter className="mt-0 shrink-0 flex-row justify-start gap-4 border-t border-line/[0.05] px-6 py-4 sm:justify-start sm:px-8 sm:py-5 md:px-10">
                 <Button
                   type="button"
                   onClick={dismissReport}
@@ -1035,7 +1035,7 @@ export function EngagementDialog({
 
             {/* Pinned below the scroll area — the submit action should never
                 be something you have to scroll to find. */}
-            <DialogFooter className="mt-0 shrink-0 flex-row justify-start gap-4 border-t border-line/[0.05] bg-surface-sunken/95 px-6 py-5 sm:justify-start sm:px-8 sm:py-6 md:px-10">
+            <DialogFooter className="mt-0 shrink-0 flex-row justify-start gap-4 border-t border-line/[0.05] px-6 py-5 sm:justify-start sm:px-8 sm:py-6 md:px-10">
               <Button type="submit" disabled={loading} className="h-9 min-w-[120px] rounded-lg px-5 text-[12px]">
                 {loading
                   ? isEdit

@@ -90,12 +90,13 @@ export function canJoinScheduledCall(
 /* ------------------------------------------------------------------ */
 /*  The lobby                                                          */
 /*                                                                     */
-/*  A scheduled call starts when its organizer walks in, the way a     */
-/*  Teams meeting does. Everyone else who arrives first — members,     */
-/*  invited guests, walk-ins — waits in a lobby that asks again every  */
-/*  few seconds and lets them through the moment the organizer is in.  */
-/*  `callActive` on the engagement is the "organizer is in" flag: only */
-/*  the organizer's join sets it.                                      */
+/*  A scheduled call starts when a workspace member on it walks in —   */
+/*  the organizer, or anyone they booked it for, so a meeting a P.A.   */
+/*  scheduled does not wait on the P.A. Invited guests and walk-ins    */
+/*  who arrive first wait in a lobby that asks again every few seconds */
+/*  and lets them through the moment a member is in. `callActive` on   */
+/*  the engagement is the "a member is in" flag, and only a member's   */
+/*  join sets it.                                                      */
 /* ------------------------------------------------------------------ */
 
 /** How often someone in the lobby asks again whether the host is in. */
@@ -103,11 +104,11 @@ export const LOBBY_POLL_MS = 5_000;
 
 /**
  * Whether someone already allowed into the call's window may go past
- * the lobby. The organizer always may; that is what opens the room.
+ * the lobby. A member always may; that is what opens the room.
  */
-export function canPassLobby(facts: { hostPresent: boolean; isHost: boolean }): JoinDecision {
-  if (facts.isHost || facts.hostPresent) return ALLOWED;
-  return refuse("waiting-for-host", "Waiting for the organizer to start the call.");
+export function canPassLobby(facts: { hostPresent: boolean; isMember: boolean }): JoinDecision {
+  if (facts.isMember || facts.hostPresent) return ALLOWED;
+  return refuse("waiting-for-host", "Waiting for the host to start the call.");
 }
 
 /**
@@ -132,7 +133,7 @@ export function lobbyFor(
 /* ------------------------------------------------------------------ */
 
 export interface WalkInFacts extends ScheduledCallFacts {
-  /** The organizer has started the call. */
+  /** A member has started the call. */
   callActive: boolean;
   /** From `resolveCallLimits`. -1 means the tier does not narrow it. */
   maxGuests: number;
@@ -160,7 +161,7 @@ export function canWalkIn(facts: WalkInFacts, now: number = Date.now()): JoinDec
     return refuse("tier", "This workspace's plan does not allow outside guests in calls.");
   }
   if (!facts.callActive) {
-    return refuse("waiting-for-host", "Waiting for the organizer to start the call.");
+    return refuse("waiting-for-host", "Waiting for the host to start the call.");
   }
   if (now > facts.endAtMs + JOIN_WINDOW_AFTER_MS) {
     return refuse("ended", "This call has ended.");

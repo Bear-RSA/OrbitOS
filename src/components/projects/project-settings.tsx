@@ -319,7 +319,7 @@ export function ProjectSettingsMenu({ projectId, projectName, projectDescription
 
       {/* Archive Success Modal */}
       <Dialog open={showArchiveSuccess} onOpenChange={(next) => { if (!next) dismissArchiveSuccess(); }}>
-        <DialogContent className="bg-surface-sunken border-line/[0.05] shadow-2xl p-6 sm:max-w-md">
+        <DialogContent className="p-6 sm:max-w-md">
           <DialogHeader className="space-y-3 flex flex-col items-center">
             <DialogTitle className="text-xl font-medium tracking-tight text-ink flex items-center justify-center gap-2 w-full">
               <Archive className="w-5 h-5 text-ink-muted" />

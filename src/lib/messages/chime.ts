@@ -1,4 +1,5 @@
 import {
+  BELL,
   getAudioContext,
   primeAudio,
   tone,
@@ -27,21 +28,25 @@ import {
 /*  to a fan or a room.                                                */
 /* ------------------------------------------------------------------ */
 
-/** A5 then C#6 — a rising third, which reads as "arrived", not "wrong". */
-const NOTES = [880, 1108.73];
-
-const NOTE_MS = 140;
-const GAP_MS = 70;
-
 /**
- * Peak amplitude per note.
+ * G5 then D6 — a rising fifth, struck like a small bell and left to
+ * ring. The fifth is the most consonant leap there is, so it reads as
+ * "something arrived" with no hint of "something went wrong". The
+ * second note is quieter and longer: a tap, then its answer.
+ */
+const NOTES = [
+  { frequency: 783.99, offsetMs: 0, durationMs: 650, peakGain: 0.2 },
+  { frequency: 1174.66, offsetMs: 95, durationMs: 1_100, peakGain: 0.17 },
+];
+
+/*
+ * Peak level sits around 0.2.
  *
  * Audible across a room at a normal system volume, still well under
  * anything that would make somebody jump. It fires while people are
  * working, and an alarming sound is one they turn off — after which
  * they hear nothing at all.
  */
-const PEAK_GAIN = 0.22;
 
 /**
  * Opens the audio context while a user gesture is in flight.
@@ -55,12 +60,14 @@ export function primeMessageChime(): void {
 
 function ring(ctx: AudioContext): void {
   const now = ctx.currentTime;
-  NOTES.forEach((frequency, index) => {
-    tone(ctx, frequency, now + (index * (NOTE_MS + GAP_MS)) / 1000, {
-      durationMs: NOTE_MS,
-      peakGain: PEAK_GAIN,
+  for (const note of NOTES) {
+    tone(ctx, note.frequency, now + note.offsetMs / 1000, {
+      durationMs: note.durationMs,
+      peakGain: note.peakGain,
+      attackMs: 4,
+      partials: BELL,
     });
-  });
+  }
 }
 
 /**

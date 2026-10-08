@@ -289,7 +289,7 @@ export function VaultExplorer({ orgId, uid, isOwner, onPermissionDenied }: Vault
       )}
 
       {/* ────────── SHELF ────────── */}
-      <div className="overflow-hidden rounded-2xl border border-line/[0.06] bg-surface-card">
+      <div className="material-fog overflow-hidden rounded-2xl border border-line/[0.06] shadow-raised ring-1 ring-line/5">
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <Loader size={22} />

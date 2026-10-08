@@ -5,7 +5,7 @@ import { lobbyRetryDelay } from "@/lib/calls/lobby";
 describe("lobbyRetryDelay", () => {
   const NOW = Date.parse("2026-10-08T12:40:00Z");
 
-  it("asks every few seconds while waiting on the organizer", () => {
+  it("asks every few seconds while waiting on a host", () => {
     expect(lobbyRetryDelay({ kind: "host" }, NOW)).toBe(LOBBY_POLL_MS);
   });
 

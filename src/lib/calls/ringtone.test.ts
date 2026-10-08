@@ -18,21 +18,38 @@ import {
 /*  enough to compete with the ring it is supposed to sit under.       */
 /* ------------------------------------------------------------------ */
 
-/** Every cycle in this file is a loop body, so it repeats every cycleMs. */
 function endOf(note: RingNote): number {
   return note.offsetMs + note.durationMs;
 }
 
+/** When the last tail in a cycle dies — not the last note's, since struck notes overlap. */
+function lastSound(cycle: RingNote[]): number {
+  return Math.max(...cycle.map(endOf));
+}
+
+/** Oscillators one cycle creates: one per partial a speaker can reproduce. */
+function voicesIn(cycle: RingNote[]): number {
+  return cycle.reduce(
+    (sum, note) =>
+      sum + note.partials.filter((p) => note.frequency * p.ratio <= 16_000).length,
+    0
+  );
+}
+
 describe("the ring", () => {
-  it("is two bursts of two notes", () => {
-    expect(ringCycle()).toHaveLength(4);
+  it("is one six-note phrase", () => {
+    expect(ringCycle()).toHaveLength(6);
   });
 
-  it("rises within each burst", () => {
-    const [first, second, third, fourth] = ringCycle();
-    expect(second.frequency).toBeGreaterThan(first.frequency);
-    expect(fourth.frequency).toBeGreaterThan(third.frequency);
-    expect(third.frequency).toBe(first.frequency);
+  it("climbs to a peak, then resolves back down", () => {
+    const pitches = ringCycle().map((note) => note.frequency);
+    const peak = pitches.indexOf(Math.max(...pitches));
+    for (let i = 1; i <= peak; i += 1) {
+      expect(pitches[i]).toBeGreaterThan(pitches[i - 1]);
+    }
+    for (let i = peak + 1; i < pitches.length; i += 1) {
+      expect(pitches[i]).toBeLessThan(pitches[i - 1]);
+    }
   });
 
   it("plays its notes in order", () => {
@@ -41,39 +58,38 @@ describe("the ring", () => {
     expect(new Set(offsets).size).toBe(offsets.length);
   });
 
-  it("never overlaps a note with the one after it", () => {
+  it("keeps the notes far enough apart to hear each one", () => {
     const notes = ringCycle();
     for (let i = 0; i < notes.length - 1; i += 1) {
-      expect(endOf(notes[i])).toBeLessThanOrEqual(notes[i + 1].offsetMs);
+      expect(notes[i + 1].offsetMs - notes[i].offsetMs).toBeGreaterThanOrEqual(100);
     }
   });
 
   it("finishes inside its own cycle, so repeats do not collide", () => {
-    const last = ringCycle().at(-1)!;
-    expect(endOf(last)).toBeLessThan(RING_CYCLE_MS);
+    expect(lastSound(ringCycle())).toBeLessThan(RING_CYCLE_MS);
   });
 
   it("leaves real silence between rings rather than droning", () => {
-    const last = ringCycle().at(-1)!;
-    expect(RING_CYCLE_MS - endOf(last)).toBeGreaterThan(1_000);
+    expect(RING_CYCLE_MS - lastSound(ringCycle())).toBeGreaterThan(1_000);
   });
 });
 
 describe("the ringback", () => {
-  it("is a single pulse", () => {
-    expect(ringbackCycle()).toHaveLength(1);
+  it("is two pulses", () => {
+    const starts = new Set(ringbackCycle().map((note) => note.offsetMs));
+    expect(starts.size).toBe(2);
   });
 
   it("finishes inside its own cycle", () => {
-    const last = ringbackCycle().at(-1)!;
-    expect(endOf(last)).toBeLessThan(RINGBACK_CYCLE_MS);
+    expect(lastSound(ringbackCycle())).toBeLessThan(RINGBACK_CYCLE_MS);
   });
 
   it("is quieter and lower than the ring", () => {
-    const ringback = ringbackCycle()[0];
-    for (const note of ringCycle()) {
-      expect(ringback.peakGain).toBeLessThan(note.peakGain);
-      expect(ringback.frequency).toBeLessThan(note.frequency);
+    for (const ringback of ringbackCycle()) {
+      for (const note of ringCycle()) {
+        expect(ringback.peakGain).toBeLessThan(note.peakGain);
+        expect(ringback.frequency).toBeLessThan(note.frequency);
+      }
     }
   });
 });
@@ -155,6 +171,22 @@ class FakeAudioContext {
   createGain() {
     return new FakeGain();
   }
+  createBiquadFilter() {
+    return { type: "lowpass", frequency: new FakeParam(), connect: (n: unknown) => n };
+  }
+  createDelay() {
+    return { delayTime: new FakeParam(), connect: (n: unknown) => n };
+  }
+  createDynamicsCompressor() {
+    return {
+      threshold: new FakeParam(),
+      knee: new FakeParam(),
+      ratio: new FakeParam(),
+      attack: new FakeParam(),
+      release: new FakeParam(),
+      connect: (n: unknown) => n,
+    };
+  }
   resume() {
     this.state = "running";
     return Promise.resolve();
@@ -182,7 +214,7 @@ describe("the loop", () => {
 
   it("plays a cycle immediately, then once per cycle", async () => {
     const { context, ringtone } = await withFakeAudio();
-    const perCycle = ringCycle().length;
+    const perCycle = voicesIn(ringCycle());
 
     const stop = ringtone.startIncomingRing();
     expect(context.oscillators).toHaveLength(perCycle);
@@ -231,10 +263,10 @@ describe("the loop", () => {
     const { context, ringtone } = await withFakeAudio();
 
     const stop = ringtone.startRingback();
-    expect(context.oscillators).toHaveLength(ringbackCycle().length);
+    expect(context.oscillators).toHaveLength(voicesIn(ringbackCycle()));
 
     stop();
     vi.advanceTimersByTime(RINGBACK_CYCLE_MS * 3);
-    expect(context.oscillators).toHaveLength(ringbackCycle().length);
+    expect(context.oscillators).toHaveLength(voicesIn(ringbackCycle()));
   });
 });

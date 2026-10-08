@@ -12,8 +12,8 @@ import type { CallLobby } from "@/types/call";
 /**
  * Milliseconds until the next attempt.
  *
- * Waiting on the organizer asks every few seconds, so the room opens
- * for everyone close to the moment they walk in. Waiting on the clock
+ * Waiting on a host asks every few seconds, so the room opens for
+ * everyone close to the moment one walks in. Waiting on the clock
  * asks when the room opens — never sooner than the poll interval, so a
  * device clock that disagrees with the server's cannot turn the wait
  * into a tight loop.

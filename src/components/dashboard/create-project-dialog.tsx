@@ -61,7 +61,7 @@ export function CreateProjectDialog({ open, onOpenChange, orgId, createdBy, onSu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] p-10 bg-surface-sunken/95 border-line/[0.04]">
+      <DialogContent className="sm:max-w-[480px] p-10">
         <DialogHeader className="text-left sm:text-left space-y-4">
           <DialogTitle className="text-xl font-medium tracking-tight text-ink">
             Initialize Project

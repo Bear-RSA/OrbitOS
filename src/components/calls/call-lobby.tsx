@@ -10,8 +10,8 @@ import type { CallLobby } from "@/types/call";
 /*  Call lobby                                                         */
 /*                                                                     */
 /*  Where someone waits for a scheduled call: before the room opens,   */
-/*  or before the organizer has walked in. The page keeps asking and   */
-/*  lets them through on its own, so the only instruction is to keep   */
+/*  or before a host from the workspace is in. The page keeps asking   */
+/*  and lets them through on its own, so the only instruction is to keep   */
 /*  it open. Shared by the member, invited-guest and walk-in paths so  */
 /*  all three wait the same way.                                       */
 /* ------------------------------------------------------------------ */
@@ -45,12 +45,12 @@ export function CallLobbyNotice({ lobby }: { lobby: CallLobby }) {
       {early ? <Clock className="h-5 w-5 text-ink-dim" aria-hidden /> : <Loader />}
       <div className="space-y-1.5">
         <p className="text-[15px] font-light tracking-tight text-ink">
-          {early ? `The room opens at ${openingTime(lobby.opensAt)}` : "Waiting for the organizer"}
+          {early ? `The room opens at ${openingTime(lobby.opensAt)}` : "Waiting for the host"}
         </p>
         <p className="max-w-xs text-[12px] font-light leading-relaxed text-ink-muted">
           {early
-            ? "Keep this page open. You'll be let in once the room opens and the organizer joins."
-            : "Keep this page open. You'll be let in as soon as the organizer joins."}
+            ? "Keep this page open. You'll be let in once the room opens and the host joins."
+            : "Keep this page open. You'll be let in as soon as the host joins."}
         </p>
       </div>
     </div>

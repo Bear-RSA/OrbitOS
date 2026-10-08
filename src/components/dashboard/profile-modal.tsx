@@ -59,7 +59,7 @@ export function ProfileModal({ open, onOpenChange, user }: ProfileModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px] bg-surface-highest p-0 border-0 shadow-overlay rounded-[32px] overflow-hidden selection:bg-surface-hover selection:text-ink-strong ring-1 ring-line/5">
+      <DialogContent className="sm:max-w-[560px] p-0 rounded-[32px] overflow-hidden selection:bg-surface-hover selection:text-ink-strong">
         <div className="flex flex-col h-full max-h-[90vh]">
           
           {/* Architectural Header */}

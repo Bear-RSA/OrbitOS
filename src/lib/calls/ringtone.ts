@@ -1,7 +1,10 @@
 import {
   cancelTone,
   getAudioContext,
+  MARIMBA,
+  PURE,
   tone,
+  type Partial,
   type ScheduledTone,
 } from "@/lib/audio/context";
 
@@ -31,47 +34,59 @@ import {
 export interface RingNote {
   frequency: number;
   offsetMs: number;
+  /** How long the note rings. Struck notes overlap their neighbours' tails. */
   durationMs: number;
   peakGain: number;
+  partials: readonly Partial[];
+  attackMs?: number;
+  releaseMs?: number;
 }
 
-/* C6 then E6 — brighter and higher than the message chime's rising
-   third, because this one is competing with headphones and a room, not
-   sitting politely underneath them. */
-const RING_NOTES = [1046.5, 1318.51];
+/* E major, B5 up to B6 and back down to E6, on a marimba. Up-and-back
+   is the shape of a phrase that asks and answers, so it sounds finished
+   every cycle instead of cut off. Everything sits above the ringback,
+   which is a different job: this one has to reach across a room. */
+const B5 = 987.77;
+const E6 = 1318.51;
+const Gs6 = 1661.22;
+const B6 = 1975.53;
 
-const RING_NOTE_MS = 180;
-
-/** Start-to-start within a burst. Longer than the note, so no overlap. */
-const RING_NOTE_GAP_MS = 200;
-
-/** Start-to-start between the two bursts that make one "brr-brring". */
-const RING_BURST_GAP_MS = 600;
-
-const RING_BURSTS = 2;
+/** Start-to-start between notes — a brisk eighth note. */
+const STEP_MS = 125;
 
 /**
- * Peak amplitude per note, above the chime's 0.22.
+ * Peak amplitude per note, above the chime's 0.2.
  *
  * A message chime interrupts someone who is already at the screen. A
  * ring has to reach someone who is not, and it only has 45 seconds.
  */
-const RING_PEAK_GAIN = 0.3;
+const RING_PEAK_GAIN = 0.26;
+
+const RING_PHRASE: [frequency: number, step: number, durationMs: number][] = [
+  [B5, 0, 420],
+  [E6, 1, 420],
+  [Gs6, 2, 420],
+  [B6, 3, 650],
+  [Gs6, 5, 420],
+  [E6, 6, 1_100],
+];
 
 /**
  * One full ring, sound and silence.
  *
- * Roughly a second of ringing then two and a half of nothing, which
- * fits about a dozen rings into the answer window — close enough to a
- * desk phone that nobody has to learn what it means.
+ * About a second and a half of phrase then two of quiet — close enough
+ * to a desk phone's rhythm that nobody has to learn what it means.
  */
 export const RING_CYCLE_MS = 3_600;
 
-/** A4. Low, plain, and nothing like the ring — these two never play in
-    the same room, but they do get compared by whoever built them. */
-const RINGBACK_FREQUENCY = 440;
+/* A4 and C#5 together — a warm major third, held. Low, soft and steady
+   where the ring is high, struck and moving: these two never play in
+   the same room, but they should not sound like relatives. */
+const RINGBACK_CHORD = [440, 554.37];
 
-const RINGBACK_NOTE_MS = 420;
+/** UK cadence: on, short gap, on, long gap. Read instantly as "ringing". */
+const RINGBACK_PULSES_MS = [0, 600];
+const RINGBACK_PULSE_MS = 420;
 
 /**
  * Quieter than the ring by design.
@@ -80,38 +95,35 @@ const RINGBACK_NOTE_MS = 420;
  * they started it. It is confirmation that the far end is ringing, not
  * a summons, and it plays into the ear of a person sitting still.
  */
-const RINGBACK_PEAK_GAIN = 0.12;
+const RINGBACK_PEAK_GAIN = 0.11;
 
-export const RINGBACK_CYCLE_MS = 3_600;
+export const RINGBACK_CYCLE_MS = 3_000;
 
 /** The notes of one ring cycle, in order. */
 export function ringCycle(): RingNote[] {
-  const notes: RingNote[] = [];
-
-  for (let burst = 0; burst < RING_BURSTS; burst += 1) {
-    RING_NOTES.forEach((frequency, index) => {
-      notes.push({
-        frequency,
-        offsetMs: burst * RING_BURST_GAP_MS + index * RING_NOTE_GAP_MS,
-        durationMs: RING_NOTE_MS,
-        peakGain: RING_PEAK_GAIN,
-      });
-    });
-  }
-
-  return notes;
+  return RING_PHRASE.map(([frequency, step, durationMs]) => ({
+    frequency,
+    offsetMs: step * STEP_MS,
+    durationMs,
+    peakGain: RING_PEAK_GAIN,
+    partials: MARIMBA,
+    attackMs: 3,
+  }));
 }
 
-/** The notes of one ringback cycle — a single pulse. */
+/** The notes of one ringback cycle — two soft held chords. */
 export function ringbackCycle(): RingNote[] {
-  return [
-    {
-      frequency: RINGBACK_FREQUENCY,
-      offsetMs: 0,
-      durationMs: RINGBACK_NOTE_MS,
+  return RINGBACK_PULSES_MS.flatMap((offsetMs) =>
+    RINGBACK_CHORD.map((frequency) => ({
+      frequency,
+      offsetMs,
+      durationMs: RINGBACK_PULSE_MS,
       peakGain: RINGBACK_PEAK_GAIN,
-    },
-  ];
+      partials: PURE,
+      attackMs: 40,
+      releaseMs: 120,
+    }))
+  );
 }
 
 /** No-op stop, for every path where there is no audio to stop. */
@@ -142,6 +154,9 @@ function loop(notes: RingNote[], cycleMs: number, label: string): () => void {
           tone(ctx, note.frequency, now + note.offsetMs / 1000, {
             durationMs: note.durationMs,
             peakGain: note.peakGain,
+            partials: note.partials,
+            attackMs: note.attackMs,
+            releaseMs: note.releaseMs,
           })
         );
       } catch (err) {

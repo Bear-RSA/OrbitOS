@@ -109,7 +109,7 @@ describe("walking in off a link", () => {
     expect(canWalkIn(walkIn(), NOW).allowed).toBe(true);
   });
 
-  it("holds a stranger in the lobby until the organizer starts the call", () => {
+  it("holds a stranger in the lobby until a member starts the call", () => {
     // This is what stops a forwarded link being a standing invitation.
     expect(canWalkIn(walkIn({ callActive: false }), NOW)).toMatchObject({
       allowed: false,
@@ -446,19 +446,19 @@ describe("adding somebody to a call", () => {
 });
 
 describe("the lobby", () => {
-  it("lets the organizer straight in and opens the room", () => {
-    expect(canPassLobby({ hostPresent: false, isHost: true }).allowed).toBe(true);
+  it("lets any member on the call straight in, so it can start without the organizer", () => {
+    expect(canPassLobby({ hostPresent: false, isMember: true }).allowed).toBe(true);
   });
 
-  it("holds everyone else until the organizer is in", () => {
-    expect(canPassLobby({ hostPresent: false, isHost: false })).toMatchObject({
+  it("holds guests until a member is in", () => {
+    expect(canPassLobby({ hostPresent: false, isMember: false })).toMatchObject({
       allowed: false,
       reason: "waiting-for-host",
     });
   });
 
-  it("lets everyone through once the organizer is in", () => {
-    expect(canPassLobby({ hostPresent: true, isHost: false }).allowed).toBe(true);
+  it("lets guests through once a member is in", () => {
+    expect(canPassLobby({ hostPresent: true, isMember: false }).allowed).toBe(true);
   });
 
   it("turns an early arrival into a wait for the room to open", () => {
@@ -466,8 +466,8 @@ describe("the lobby", () => {
     expect(lobbyFor(early, NOW)).toEqual({ kind: "early", opensAt: NOW - JOIN_WINDOW_BEFORE_MS });
   });
 
-  it("turns a missing organizer into a wait for the host", () => {
-    expect(lobbyFor(canPassLobby({ hostPresent: false, isHost: false }), NOW)).toEqual({
+  it("turns a missing host into a wait for the host", () => {
+    expect(lobbyFor(canPassLobby({ hostPresent: false, isMember: false }), NOW)).toEqual({
       kind: "host",
     });
   });

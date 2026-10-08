@@ -28,7 +28,7 @@ import type { CallGrant, CallLobby } from "@/types/call";
 /*      their inbox ends up in the same place as one who clicked Join. */
 /*                                                                     */
 /*    - a WALK-IN, with no session. The link was forwarded or pasted.  */
-/*      They type a name and wait in the lobby until the organizer is  */
+/*      They type a name and wait in the lobby until a member is       */
 /*      inside — the server's rule, not this page's; see `canWalkIn`.  */
 /*                                                                     */
 /*  An invited guest is not a third case here. Their invitation links  */
@@ -53,7 +53,7 @@ export default function ScheduledCallPage() {
   const [title, setTitle] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /* Set while waiting for the organizer; holds the name they typed so
+  /* Set while waiting for a host; holds the name they typed so
      the lobby can ask again without them. */
   const [lobby, setLobby] = useState<CallLobby | null>(null);
   const [waitingAs, setWaitingAs] = useState<string | null>(null);
@@ -200,8 +200,8 @@ export default function ScheduledCallPage() {
         {error && <p className="mt-6 text-[12px] font-light text-orbit-red">{error}</p>}
 
         <p className="mt-8 text-[11px] font-light leading-relaxed text-ink-dim">
-          You will be shown as a guest. The call starts when the organizer
-          joins; until then you will wait here.{" "}
+          You will be shown as a guest. The call starts when someone from the
+          workspace joins; until then you will wait here.{" "}
           <Link href="/login" className="text-ink-muted underline-offset-4 hover:underline">
             Part of this workspace? Sign in
           </Link>{" "}

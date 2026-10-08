@@ -81,7 +81,7 @@ export function DestructiveActionModal({
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !loading && onClose()}>
       <DialogContent 
-        className="sm:max-w-[480px] border-destructive/20 bg-base p-10 rounded-[32px] gap-0 overflow-hidden shadow-[0_0_50px_rgb(var(--scrim)_/_0.8)]"
+        className="sm:max-w-[480px] border-destructive/20 p-10 rounded-[32px] gap-0 overflow-hidden"
         id="destructive-modal"
       >
         <DialogHeader className="space-y-4 mb-8">

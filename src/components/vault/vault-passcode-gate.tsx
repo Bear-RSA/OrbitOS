@@ -371,7 +371,7 @@ function GateShell({
         <Icon className="h-5 w-5 text-ink-dim" aria-hidden />
       </div>
       <h2 className="mb-8 text-xl font-light tracking-tight text-ink">{title}</h2>
-      <div className="w-full rounded-[32px] bg-surface-sunken/80 p-10 text-left ring-1 ring-inset ring-line/[0.05] shadow-overlay backdrop-blur-3xl">
+      <div className="material-fog w-full rounded-[32px] border border-line/[0.06] p-10 text-left shadow-raised ring-1 ring-line/5">
         {children}
       </div>
     </div>

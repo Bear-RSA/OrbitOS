@@ -90,22 +90,116 @@ export function installAudioPrimer(): void {
   window.addEventListener("keydown", prime);
 }
 
-/** How long a note takes to reach full level. See `tone`. */
-const ATTACK_SECONDS = 0.015;
+/* ------------------------------------------------------------------ */
+/*  The output bus                                                     */
+/*                                                                     */
+/*  Every note goes through one chain before the speakers: a gentle    */
+/*  low-pass to take the glassy edge off the upper partials, a short   */
+/*  damped echo that gives the note a room to ring in, and a           */
+/*  compressor so stacked partials never clip. A bare oscillator into  */
+/*  `destination` is what made the first versions sound like a         */
+/*  microwave; this chain is most of the difference.                   */
+/* ------------------------------------------------------------------ */
+
+let bus: { ctx: AudioContext; input: AudioNode } | null = null;
+
+function output(ctx: AudioContext): AudioNode {
+  if (bus?.ctx === ctx) return bus.input;
+
+  const input = ctx.createGain();
+
+  const soften = ctx.createBiquadFilter();
+  soften.type = "lowpass";
+  soften.frequency.value = 7_000;
+
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -12;
+  limiter.knee.value = 10;
+  limiter.ratio.value = 6;
+  limiter.attack.value = 0.003;
+  limiter.release.value = 0.2;
+
+  input.connect(soften).connect(limiter).connect(ctx.destination);
+
+  /* The room. Quiet, short and darker than the dry note, so it reads as
+     space around the sound rather than as a second sound. */
+  const send = ctx.createGain();
+  send.gain.value = 0.22;
+  const delay = ctx.createDelay(1);
+  delay.delayTime.value = 0.13;
+  const damp = ctx.createBiquadFilter();
+  damp.type = "lowpass";
+  damp.frequency.value = 2_400;
+  const feedback = ctx.createGain();
+  feedback.gain.value = 0.32;
+
+  input.connect(send).connect(delay).connect(damp).connect(feedback).connect(delay);
+  damp.connect(limiter);
+
+  bus = { ctx, input };
+  return input;
+}
+
+/** Default time for a note to reach full level. See `tone`. */
+const ATTACK_MS = 6;
+
+/**
+ * One overtone of a note: a multiple of the fundamental, its level
+ * relative to the fundamental, and how much of the note's length it
+ * lasts. Real struck things lose their high partials first, which is
+ * why `decay` is usually below 1 for anything above the fundamental.
+ */
+export interface Partial {
+  ratio: number;
+  gain: number;
+  decay?: number;
+}
+
+/** A plain sine. The fallback, and the ringback's base. */
+export const PURE: readonly Partial[] = [{ ratio: 1, gain: 1 }];
+
+/**
+ * Struck wooden bar. The overtones sit at roughly 4x and 10x, not at
+ * the harmonic 2x and 3x, and die almost at once — that inharmonic
+ * click at the start is what the ear recognises as "marimba".
+ */
+export const MARIMBA: readonly Partial[] = [
+  { ratio: 1, gain: 1 },
+  { ratio: 3.93, gain: 0.16, decay: 0.25 },
+  { ratio: 9.87, gain: 0.04, decay: 0.08 },
+];
+
+/**
+ * Small bell or kalimba. A harmonic octave for warmth, plus a faint
+ * inharmonic shimmer that fades well before the note does.
+ */
+export const BELL: readonly Partial[] = [
+  { ratio: 1, gain: 1 },
+  { ratio: 2, gain: 0.22, decay: 0.55 },
+  { ratio: 2.76, gain: 0.07, decay: 0.3 },
+  { ratio: 5.4, gain: 0.025, decay: 0.15 },
+];
 
 /** A note that has been handed to the hardware and can still be called back. */
 export interface ScheduledTone {
-  oscillator: OscillatorNode;
-  gain: GainNode;
+  voices: { oscillator: OscillatorNode; gain: GainNode }[];
 }
 
 export interface ToneShape {
   durationMs: number;
   peakGain: number;
+  attackMs?: number;
+  /**
+   * When set, the note holds at full level and fades over this long at
+   * the end — a sustained tone. When not, it decays from the moment it
+   * peaks, the way anything struck does.
+   */
+  releaseMs?: number;
+  partials?: readonly Partial[];
 }
 
 /**
- * Schedules one sine note.
+ * Schedules one note, built from one sine per partial.
  *
  * Ramped rather than switched. A square-edged start and stop produces an
  * audible click at the boundary, which is the part that sounds cheap.
@@ -116,22 +210,41 @@ export function tone(
   startAt: number,
   shape: ToneShape
 ): ScheduledTone {
-  const oscillator = ctx.createOscillator();
-  const gain = ctx.createGain();
+  const destination = output(ctx);
+  const attack = (shape.attackMs ?? ATTACK_MS) / 1000;
+  const voices: ScheduledTone["voices"] = [];
 
-  oscillator.type = "sine";
-  oscillator.frequency.value = frequency;
+  for (const partial of shape.partials ?? PURE) {
+    const pitch = frequency * partial.ratio;
+    /* Past what a speaker reproduces cleanly, a partial is only aliasing. */
+    if (pitch > 16_000) continue;
 
-  const end = startAt + shape.durationMs / 1000;
-  gain.gain.setValueAtTime(0.0001, startAt);
-  gain.gain.linearRampToValueAtTime(shape.peakGain, startAt + ATTACK_SECONDS);
-  gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-  oscillator.connect(gain).connect(ctx.destination);
-  oscillator.start(startAt);
-  oscillator.stop(end + 0.02);
+    oscillator.type = "sine";
+    oscillator.frequency.value = pitch;
 
-  return { oscillator, gain };
+    const peak = shape.peakGain * partial.gain;
+    const length = (shape.durationMs / 1000) * (partial.decay ?? 1);
+    const end = startAt + Math.max(length, attack + 0.01);
+
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.linearRampToValueAtTime(peak, startAt + attack);
+    if (shape.releaseMs !== undefined) {
+      const fadeFrom = Math.max(startAt + attack, end - shape.releaseMs / 1000);
+      gain.gain.setValueAtTime(peak, fadeFrom);
+    }
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+    oscillator.connect(gain).connect(destination);
+    oscillator.start(startAt);
+    oscillator.stop(end + 0.02);
+
+    voices.push({ oscillator, gain });
+  }
+
+  return { voices };
 }
 
 /**
@@ -145,16 +258,15 @@ export function tone(
 export function cancelTone(ctx: AudioContext, scheduled: ScheduledTone): void {
   const now = ctx.currentTime;
 
-  try {
-    scheduled.gain.gain.cancelScheduledValues(now);
-    scheduled.gain.gain.setValueAtTime(
-      Math.max(scheduled.gain.gain.value, 0.0001),
-      now
-    );
-    scheduled.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
-    scheduled.oscillator.stop(now + 0.04);
-  } catch {
-    /* Already stopped, or stopped between the check and the call. Both
-       are the outcome this function wanted. */
+  for (const { oscillator, gain } of scheduled.voices) {
+    try {
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+      oscillator.stop(now + 0.04);
+    } catch {
+      /* Already stopped, or stopped between the check and the call. Both
+         are the outcome this function wanted. */
+    }
   }
 }

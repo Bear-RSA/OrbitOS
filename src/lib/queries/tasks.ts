@@ -91,6 +91,34 @@ export function subscribeToTasksByProject(
   });
 }
 
+/**
+ * Live directives assigned to one operative, across every project.
+ * Backs the personal calendar. Same org-filter reasoning as
+ * `subscribeToEventsForAttendee`.
+ */
+export function subscribeToTasksForAssignee(
+  uid: string,
+  orgId: string,
+  callback: (tasks: Task[]) => void
+) {
+  const q = query(
+    collection(db, TASKS_COLLECTION),
+    where("orgId", "==", orgId),
+    where("assignedTo", "array-contains", uid)
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Task[]);
+    },
+    (err) => {
+      console.error("[Tasks Subscription Error]:", err);
+      callback([]);
+    }
+  );
+}
+
 export async function getTasksByOrg(orgId: string): Promise<Task[]> {
   const q = query(
     collection(db, TASKS_COLLECTION),

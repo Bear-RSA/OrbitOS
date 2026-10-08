@@ -28,11 +28,11 @@ export function DashboardCard({
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-3xl",
         "p-6 sm:p-8",
-        "ring-1 ring-inset ring-line/[0.06]",
-        "shadow-card",
+        "material-fog border border-line/[0.06] ring-1 ring-line/5",
+        "shadow-raised",
         "transition-[background-color,box-shadow,border-color] duration-spring ease-spring",
-        tone === "quiet" ? "bg-surface-sunken" : "bg-surface-card",
-        interactive && "hover:bg-surface-raised hover:ring-line/[0.09]",
+        tone === "quiet" && "[--fog-base:var(--surface-sunken)]",
+        interactive && "hover:[--fog-alpha:0.55] hover:ring-line/[0.09]",
         className
       )}
     >

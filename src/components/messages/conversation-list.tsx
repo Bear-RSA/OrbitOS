@@ -147,7 +147,7 @@ export function ConversationList({
   return (
     <nav
       aria-label="Conversations"
-      className="hidden w-[17.5rem] shrink-0 flex-col overflow-hidden rounded-2xl border border-line/[0.05] bg-surface-sunken/60 shadow-card sm:flex"
+      className="hidden w-[17.5rem] shrink-0 flex-col overflow-hidden rounded-2xl border border-line/[0.06] shadow-raised ring-1 ring-line/5 material-fog [--fog-base:var(--surface-sunken)] sm:flex"
     >
       {/* ── Tabs ───────────────────────────────────────────────── */}
       <div

@@ -15,7 +15,6 @@ import {
   canAnswerCall,
   canJoinGroupCall,
   canJoinScheduledCall,
-  canPassLobby,
   canStartGroupCall,
   canStartDirectCall,
   canWalkIn,
@@ -203,9 +202,9 @@ function refusedJoin(
 /**
  * A member entering a scheduled call.
  *
- * The organizer's join opens the room by flagging `callActive`; every
- * other member waits in the lobby until then (see `canPassLobby`). The
- * flag is set and never cleared: the join window closing is what ends
+ * Any member on the engagement — the organizer, or whoever it was
+ * booked for — opens the room by flagging `callActive`, and guests wait
+ * in the lobby until one has (see `canPassLobby`). The flag is set and never cleared: the join window closing is what ends
  * the call, and every gate checks that window itself, so a flag left
  * true after the meeting lets nobody in.
  */
@@ -227,17 +226,14 @@ export async function joinScheduledCallAction(input: unknown): Promise<Scheduled
     }
 
     const attendees = (found.data.attendees as string[]) ?? [];
-    const isHost = found.data.createdBy === caller.uid;
+    const isOrganizer = found.data.createdBy === caller.uid;
     const now = Date.now();
 
     const decision = canJoinScheduledCall(
-      scheduledFacts(found.data, isHost || attendees.includes(caller.uid)),
+      scheduledFacts(found.data, isOrganizer || attendees.includes(caller.uid)),
       now
     );
     if (!decision.allowed) return refusedJoin(decision, found.data);
-
-    const lobby = canPassLobby({ hostPresent: Boolean(found.data.callActive), isHost });
-    if (!lobby.allowed) return refusedJoin(lobby, found.data);
 
     const limits = await resolveCallLimits(caller.orgId);
     /* Same reading as a direct call: a plan that seats fewer than two
@@ -246,10 +242,9 @@ export async function joinScheduledCallAction(input: unknown): Promise<Scheduled
       return { success: false, error: "Your plan does not include calling." };
     }
 
-    /* Only the organizer reaches here with the flag down — everyone
-       else was held in the lobby above. Flagged before the pass is
-       minted, not after. A provider failure
-       on the way in leaves the flag set, and that is the safe direction:
+    /* The first member in starts the call for the guests waiting in
+       the lobby. Flagged before the pass is minted, not after. A
+       provider failure on the way in leaves the flag set, and that is the safe direction:
        an open door to a room nobody can enter is nothing, whereas a
        member sitting in a room the flag says is closed keeps the guest
        they invited standing outside. */

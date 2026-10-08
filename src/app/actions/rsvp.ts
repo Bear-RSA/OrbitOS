@@ -330,10 +330,10 @@ export async function joinScheduledCallAsGuestAction(
       },
       now
     );
-    /* Too early, or the organizer is not in yet: a wait, not a refusal.
+    /* Too early, or no member is in yet: a wait, not a refusal.
        The page holds the guest in the lobby and asks again. */
     const passed = decision.allowed
-      ? canPassLobby({ hostPresent: Boolean(event.callActive), isHost: false })
+      ? canPassLobby({ hostPresent: Boolean(event.callActive), isMember: false })
       : decision;
     if (!passed.allowed) {
       const lobby = lobbyFor(passed, (event.startAt as FirebaseFirestore.Timestamp).toMillis());

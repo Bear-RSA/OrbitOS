@@ -92,7 +92,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [grant, setGrant] = useState<CallGrant | null>(null);
-  /* Set while waiting for the room to open or for the organizer; holds
+  /* Set while waiting for the room to open or for a host; holds
      the name so the lobby can ask again without them. */
   const [lobby, setLobby] = useState<CallLobby | null>(null);
   const [waitingAs, setWaitingAs] = useState<string | null>(null);
@@ -342,7 +342,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
                   )}
                   <p className="mt-3 text-[11px] font-light leading-relaxed text-ink-dim">
                     Opens ten minutes before the start. The call begins when the
-                    organizer joins.
+                    host joins.
                   </p>
                 </form>
               ) : (

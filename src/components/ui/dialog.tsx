@@ -94,8 +94,9 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
           data-dismissed={dismissed ? "" : undefined}
           className={cn(
             "fixed z-50 grid w-full gap-6 p-8 sm:p-12 text-ink selection:bg-primary/20",
-            "material-sheet shadow-overlay",
-            "ring-1 ring-inset ring-line/[0.08]",
+            /* The calendar's fog, weighted for a panel over the page. */
+            "material-fog-modal border border-line/[0.06] shadow-overlay",
+            "ring-1 ring-line/5",
             "focus:outline-none",
 
             /* ── Centred panel (sm and up) ──

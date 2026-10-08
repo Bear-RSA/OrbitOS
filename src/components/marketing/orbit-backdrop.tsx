@@ -68,6 +68,7 @@ const APP_STOPS: [prefix: string, stop: Stop][] = [
   ["/projects", { lon: 404, sun: 8, sat: -28, horizon: "84vh", roll: 1 }],
   ["/projects/", { lon: 418, sun: 2, sat: -30, horizon: "86vh", roll: 1.5 }],
   ["/messages", { lon: 428, sun: -4, sat: 30, horizon: "86vh", roll: -1 }],
+  ["/calendar", { lon: 440, sun: -8, sat: -26, horizon: "84vh", roll: 0 }],
   ["/teams", { lon: 452, sun: -12, sat: -28, horizon: "84vh", roll: -1 }],
   ["/vault", { lon: 476, sun: -20, sat: 28, horizon: "84vh", roll: 1 }],
   ["/profile", { lon: 500, sun: 12, sat: -28, horizon: "84vh", roll: 0 }],

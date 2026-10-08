@@ -22,12 +22,17 @@ import { SPRING } from "@/lib/motion/spring";
 type InteractiveCardProps = {
   children: React.ReactNode;
   className?: string;
+  /**
+   * "fog" is the calendar's translucent panel (`material-fog`), for cards
+   * that sit on the orbit backdrop inside the app. Marketing keeps "solid".
+   */
+  surface?: "solid" | "fog";
 };
 
 /** How far the card follows: 1/20 of the offset, scaled down again. */
 const FOLLOW = 0.15 / 20;
 
-export function InteractiveCard({ children, className }: InteractiveCardProps) {
+export function InteractiveCard({ children, className, surface = "solid" }: InteractiveCardProps) {
   const cardRef = React.useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
 
@@ -113,10 +118,15 @@ export function InteractiveCard({ children, className }: InteractiveCardProps) {
     <div
       ref={cardRef}
       className={cn(
-        "focus-item group relative overflow-hidden rounded-[32px] bg-surface-lowest",
+        "focus-item group relative overflow-hidden rounded-[32px]",
         // Colour and shadow ease; transform is owned by the springs above.
         "transition-[background-color,box-shadow] duration-settle ease-spring will-change-transform",
-        "hover:bg-surface-low hover:shadow-[0_24px_80px_rgb(var(--scrim)_/_0.5)]",
+        "hover:shadow-[0_24px_80px_rgb(var(--scrim)_/_0.5)]",
+        /* Fog lives in the same CSS layer as the bg utilities, so the two
+           are never combined — whichever is emitted later would win. */
+        surface === "fog"
+          ? "material-fog border border-line/[0.06] ring-1 ring-line/5 shadow-raised hover:[--fog-alpha:0.55]"
+          : "bg-surface-lowest hover:bg-surface-low",
         className
       )}
     >

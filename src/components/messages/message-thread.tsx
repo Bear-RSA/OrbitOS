@@ -457,9 +457,9 @@ export function MessageThread({
     /* The thread is the primary surface and now says so: it sits a rung
        above the rail on the ladder, with a real shadow rather than the
        same flat card treatment on both sides of the screen. */
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-line/[0.05] bg-surface-card shadow-raised">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-line/[0.06] shadow-raised ring-1 ring-line/5 material-fog">
       {/* ── Header ─────────────────────────────────────────────── */}
-      <header className="flex shrink-0 items-center gap-3.5 border-b border-line/[0.05] bg-surface-card/70 px-5 py-4">
+      <header className="flex shrink-0 items-center gap-3.5 border-b border-line/[0.05] px-5 py-4">
         {/* The picture opens the person — here, in the rail, and on every
             message. One rule, so it never has to be discovered twice. */}
         {conversation?.type === "dm" ? (
@@ -820,7 +820,7 @@ export function MessageThread({
       </div>
 
       {/* ── Composer ───────────────────────────────────────────── */}
-      <div className="shrink-0 border-t border-line/[0.05] bg-surface-card/60 px-4 py-3">
+      <div className="shrink-0 border-t border-line/[0.05] px-4 py-3">
         {error && (
           <p className="mb-2.5 rounded-lg bg-orbit-red/10 px-3 py-2 font-mono text-[11px] text-orbit-red ring-1 ring-orbit-red/20">
             {error}

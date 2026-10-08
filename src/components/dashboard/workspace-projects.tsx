@@ -208,7 +208,7 @@ export function WorkspaceProjects({
 
       {/* Archive Shelf */}
       {showArchive && archived.length > 0 && (
-        <div className="mb-10 rounded-3xl bg-surface-card p-5 ring-1 ring-inset ring-line/[0.06] sm:p-6">
+        <div className="material-fog mb-10 rounded-3xl border border-line/[0.06] p-5 shadow-raised ring-1 ring-line/5 sm:p-6">
           <div className="mb-4 flex items-center gap-2.5">
             <Archive className="h-3.5 w-3.5 text-ink-dim" aria-hidden />
             <span className="text-[12px] text-ink-dim">
@@ -265,7 +265,7 @@ export function WorkspaceProjects({
         {displayProjects.map((project, i) => (
           <ScrollReveal key={project.id} delay={i * 80}>
              <div onClick={() => !reordering && router.push(`/projects/${project.id}`)} className={cn("h-full", reordering ? "cursor-default" : "cursor-pointer")}>
-              <InteractiveCard className="group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl p-6 ring-1 ring-inset ring-line/[0.06] sm:p-8">
+              <InteractiveCard surface="fog" className="group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl p-6 sm:p-8">
                 {/* Reorder Controls */}
                 {reordering && (
                   <div className="absolute right-4 top-4 z-10 flex flex-col gap-1">

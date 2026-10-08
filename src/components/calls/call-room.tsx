@@ -5,6 +5,7 @@ import { Loader } from "@/components/ui/loader";
 import { AlertCircle, Clock } from "lucide-react";
 import { useCall } from "@/contexts/call-context";
 import { CLOSING_WARNING_MS, closingWarning } from "@/lib/calls/closing";
+import { MediaPermissionPanel, useMediaPermission } from "@/components/calls/media-permission";
 import type { CallGrant } from "@/types/call";
 
 /* ------------------------------------------------------------------ */
@@ -134,6 +135,10 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
   const [status, setStatus] = useState<"joining" | "joined" | "failed">("joining");
   const [error, setError] = useState<string | null>(null);
   const closing = useClosingWarning(grant.roomClosesAt);
+  /* Settled before the provider's frame exists, so the room opens on
+     the device preview rather than on the provider's own prompt. */
+  const media = useMediaPermission();
+  const mediaReady = media.phase === "ready";
 
   /* The shell paints a microphone button and a way out when the room is
      parked in the corner, and the continuity hook has to reach the
@@ -154,6 +159,8 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
   }, []);
 
   useEffect(() => {
+    if (!mediaReady) return;
+
     if (grant.provider !== "daily") {
       fail("This call uses a provider this build does not support.");
       return;
@@ -270,7 +277,7 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
       // Destroy, never just leave: a surviving iframe keeps the mic open.
       frame?.destroy?.();
     };
-  }, [grant, fail, registerFrame]);
+  }, [grant, fail, registerFrame, mediaReady]);
 
   return (
     <div className={className}>
@@ -288,6 +295,12 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
             </div>
           )}
         </div>
+
+        {!mediaReady && (
+          <div className="absolute inset-0 z-20 bg-surface-card">
+            <MediaPermissionPanel phase={media.phase as Exclude<typeof media.phase, "ready">} onAllow={media.request} onSkip={media.skip} />
+          </div>
+        )}
 
         {status === "joining" && (
           <div className="absolute inset-0 flex items-center justify-center bg-surface-card">
