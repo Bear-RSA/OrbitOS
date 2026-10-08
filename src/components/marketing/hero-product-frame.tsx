@@ -81,7 +81,7 @@ export function HeroProductFrame() {
         {/* Workspace header */}
         <div className="flex items-baseline justify-between gap-4">
           <p className="truncate text-left text-[15px] font-light text-ink sm:text-lg">
-            Good morning, Lerato
+            Good morning, Kristan
           </p>
           <span className="hidden shrink-0 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim sm:block">
             Thu 14 Aug · 09:24

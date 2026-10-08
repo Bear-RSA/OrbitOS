@@ -74,6 +74,9 @@ const PX_PER_HOUR = 48;
 
 type CalendarView = "month" | "week";
 
+/** Weeks run Sunday to Saturday. The weekday header below follows it. */
+const WEEK_STARTS_ON = 0;
+
 interface ProjectCalendarProps {
   tasks: Task[];
   events: OrbitEvent[];
@@ -348,8 +351,8 @@ export function ProjectCalendar({
   const monthDays = useMemo(
     () =>
       eachDayOfInterval({
-        start: startOfWeek(startOfMonth(cursor), { weekStartsOn: 1 }),
-        end: endOfWeek(endOfMonth(cursor), { weekStartsOn: 1 }),
+        start: startOfWeek(startOfMonth(cursor), { weekStartsOn: WEEK_STARTS_ON }),
+        end: endOfWeek(endOfMonth(cursor), { weekStartsOn: WEEK_STARTS_ON }),
       }),
     [cursor]
   );
@@ -357,8 +360,8 @@ export function ProjectCalendar({
   const weekDays = useMemo(
     () =>
       eachDayOfInterval({
-        start: startOfWeek(cursor, { weekStartsOn: 1 }),
-        end: endOfWeek(cursor, { weekStartsOn: 1 }),
+        start: startOfWeek(cursor, { weekStartsOn: WEEK_STARTS_ON }),
+        end: endOfWeek(cursor, { weekStartsOn: WEEK_STARTS_ON }),
       }),
     [cursor]
   );
@@ -659,7 +662,7 @@ export function ProjectCalendar({
       {view === "month" && (
         <>
           <div className="grid grid-cols-7 border-b border-line/[0.04]">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
               <div
                 key={d}
                 className={cn(

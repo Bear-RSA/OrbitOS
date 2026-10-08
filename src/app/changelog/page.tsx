@@ -11,7 +11,56 @@ export const metadata: Metadata = {
 };
 
 export default function ChangelogPage() {
-  const releases = [
+  /* `version` is set from v5.7 on. Earlier months shipped without a
+     version number and are left that way rather than given one after
+     the fact. */
+  const releases: {
+    month: string;
+    version?: string;
+    entries: { title: string; desc: string }[];
+  }[] = [
+    {
+      month: "October 2026",
+      version: "v5.7",
+      entries: [
+        {
+          title: "Your Own Calendar",
+          desc: "Everyone now has a personal calendar at /calendar. It shows the meetings you're invited to and the tasks assigned to you, across every project. When someone books a meeting with you, it appears there straight away."
+        },
+        {
+          title: "South African Public Holidays",
+          desc: "Calendars mark South African public holidays by name, including Good Friday, Family Day and the Monday off when a holiday falls on a Sunday. Weekends and holidays are shaded, but you can still book meetings on them."
+        },
+        {
+          title: "Clearer Meeting and Task Cards",
+          desc: "Meetings and tasks on the calendar are now easier to scan. Amber means an invite is waiting for your answer, blue means you're going, and late tasks show in red."
+        },
+        {
+          title: "Frosted Panels",
+          desc: "The dashboard, projects, messages, vault and every modal now use the calendar's translucent panel, so the app reads as one surface. Panels turn solid if your system asks for less transparency or more contrast."
+        },
+        {
+          title: "Call Lobby",
+          desc: "Arrive early and you wait in a lobby until the room opens or a host joins, then you're let in automatically. The room warns everyone before it closes."
+        },
+        {
+          title: "Call Room Notices",
+          desc: "The call room shows a short notice when someone joins, leaves or sends a chat message, so you don't miss them while you're looking at the video."
+        },
+        {
+          title: "Images in Chat",
+          desc: "You can paste or attach images in direct messages and group chats."
+        },
+        {
+          title: "Smoother Motion",
+          desc: "Panels, tabs and modals now move with spring physics, so they settle naturally and can be interrupted mid-move. The selected navigation tab shrinks to its icon to save space."
+        },
+        {
+          title: "Plain-Language Errors",
+          desc: "Error messages say what went wrong and what to do next, without internal jargon. Placeholders and headings were rewritten in the same way."
+        }
+      ]
+    },
     {
       month: "September 2026",
       entries: [
@@ -333,6 +382,7 @@ export default function ChangelogPage() {
             <div className="mb-32">
               <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-dim mb-12 flex items-center gap-4">
                 {release.month}
+                {release.version && <span className="normal-case tracking-normal text-ink">{release.version}</span>}
                 <span className="flex-grow h-px bg-white/[0.04]"></span>
               </h2>
 

@@ -26,7 +26,7 @@ export default function LandingPage() {
             href="/changelog"
             className="group mb-8 inline-flex items-center gap-2.5 rounded-lg transition-transform duration-quick ease-spring active:scale-[0.97] active:duration-press active:ease-press"
           >
-            <span className="inline-flex items-center gap-2 font-mono text-[11px] text-ink"><span aria-hidden className="h-1.5 w-1.5 rounded-full bg-orbit-amber" />v1.2</span>
+            <span className="font-mono text-[11px] text-ink">v5.7</span>
             <span className="h-3 w-px bg-white/[0.12]" />
             <span className="text-[12px] text-ink-muted group-hover:text-ink transition-colors">
               See what shipped

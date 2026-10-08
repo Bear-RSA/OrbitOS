@@ -24,8 +24,8 @@ export function isInactive(lastUpdatedAt: Date, thresholdHours = 48): boolean {
 
 export function getCurrentWeekDays(): Date[] {
   const now = new Date();
-  const start = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-  const end = endOfWeek(now, { weekStartsOn: 1 }); // Sunday
+  const start = startOfWeek(now, { weekStartsOn: 0 }); // Sunday
+  const end = endOfWeek(now, { weekStartsOn: 0 }); // Saturday
   return eachDayOfInterval({ start, end });
 }
 
@@ -46,7 +46,7 @@ export function isSameDay(date1: Date, date2: Date): boolean {
 }
 
 export function isDateThisWeek(date: Date): boolean {
-  return isThisWeek(date, { weekStartsOn: 1 });
+  return isThisWeek(date, { weekStartsOn: 0 });
 }
 
 /* ------------------------------------------------------------------ */

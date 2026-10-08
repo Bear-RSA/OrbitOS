@@ -246,8 +246,9 @@ function MessagesScreen() {
     return partner?.roleDescriptor || (partner?.role === "OWNER" ? "Owner" : "Member");
   };
 
+  /* Viewport minus the h-10 site credit below it. */
   return (
-    <div className="flex h-[100dvh] flex-col bg-ground text-ink">
+    <div className="flex h-[calc(100dvh-2.5rem)] flex-col bg-ground text-ink">
       <AppHeader user={user} variant="flush" />
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 gap-4 overflow-hidden px-5 py-5 sm:px-8 lg:px-10">

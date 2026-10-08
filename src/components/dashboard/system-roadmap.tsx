@@ -312,7 +312,7 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
   const months = eachMonthOfInterval({ start: windowStart, end: windowEnd });
   const weeks =
     pxPerDay >= 8
-      ? eachWeekOfInterval({ start: windowStart, end: windowEnd }, { weekStartsOn: 1 })
+      ? eachWeekOfInterval({ start: windowStart, end: windowEnd }, { weekStartsOn: 0 })
       : [];
   const weekendDays =
     pxPerDay >= 20 && model.totalDays <= WEEKEND_SHADING_MAX_DAYS

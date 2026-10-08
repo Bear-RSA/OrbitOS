@@ -98,7 +98,7 @@ export function EditTaskDialog({
     const current = selectedAssignees;
     if (current.includes(memberId)) {
       setValue("assignedTo", current.filter(id => id !== memberId));
-    } else if (current.length < 2) {
+    } else {
       setValue("assignedTo", [...current, memberId]);
     }
   };
@@ -204,7 +204,7 @@ export function EditTaskDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2.5">
-              <Label>Assignees <span className="ml-1 text-[12px] font-normal text-ink-muted">(up to 2)</span></Label>
+              <Label>Assignees</Label>
               <div ref={dropdownRef} className="relative">
                 {/* Selected chips + trigger */}
                 <button
@@ -240,28 +240,23 @@ export function EditTaskDialog({
 
                 {/* Dropdown */}
                 {dropdownOpen && (
-                  <div className="absolute z-50 mt-1 w-full bg-surface-sunken border border-line/[0.1] rounded-md shadow-raised overflow-hidden">
+                  <div className="absolute z-50 mt-1 w-full bg-surface-sunken border border-line/[0.1] rounded-md shadow-raised max-h-60 overflow-y-auto">
                     {members.map(member => {
                       const isSelected = selectedAssignees.includes(member.id);
-                      const isDisabled = !isSelected && selectedAssignees.length >= 2;
                       return (
                         <button
                           key={member.id}
                           type="button"
-                          disabled={isDisabled}
                           onClick={() => toggleAssignee(member.id)}
                           className={`w-full text-left px-3 py-2 text-[12px] font-mono transition-colors ${
                             isSelected
                               ? "bg-surface-control text-ink"
-                              : isDisabled
-                                ? "text-ink-faint cursor-not-allowed"
-                                : "text-ink-muted hover:bg-surface-raised hover:text-ink"
+                              : "text-ink-muted hover:bg-surface-raised hover:text-ink"
                           }`}
                         >
                           <span className="flex items-center gap-2">
                             {isSelected && <span className="text-orbit-green text-[11px]">●</span>}
                             {member.name}
-                            {isDisabled && <span className="text-[11px] text-ink-dim ml-auto uppercase tracking-widest">[MAX]</span>}
                           </span>
                         </button>
                       );

@@ -10,6 +10,7 @@ import { CallProvider } from "@/contexts/call-context";
 import { CallHost } from "@/components/calls/call-host";
 import { MessageNotifier } from "@/components/messages/message-notifier";
 import { OrbitBackdrop } from "@/components/marketing/orbit-backdrop";
+import { SiteCredit } from "@/components/site-credit";
 
 // Self-hosted at build time by next/font — no render-blocking @import, no FOUT,
 // and a size-adjusted fallback so there is no layout shift while they load.
@@ -92,6 +93,7 @@ export default function RootLayout({
                 screen underneath can come and go around a live call. */}
             <CallProvider>
               {children}
+              <SiteCredit />
               <CallHost />
             </CallProvider>
             {/* Renders nothing; chimes when a colleague writes to you.

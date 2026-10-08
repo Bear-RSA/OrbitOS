@@ -93,7 +93,7 @@ function SignupForm() {
             <Label htmlFor="signup-name" className="text-ink-muted">Your name</Label>
             <Input
               id="signup-name"
-              placeholder="Lerato Mokoena"
+              placeholder="Kristan Kraak"
               autoComplete="name"
               aria-invalid={errors.name ? true : undefined}
               aria-describedby={errors.name ? "signup-name-error" : undefined}

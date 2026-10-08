@@ -363,10 +363,6 @@ export async function updateTaskAction(
     }
     const uid = session.uid;
 
-    // Server-side enforcement: max 2 operatives
-    if (updates.assignedTo && updates.assignedTo.length > 2) {
-      return { success: false, error: "A task can have at most 2 assignees." };
-    }
 
     const userSnap = await adminDb.collection("users").doc(uid).get();
     if (!userSnap.exists || !userSnap.data()?.orgId) {
@@ -487,10 +483,6 @@ export async function createTaskAction(
       return { success: false, error: "Title is required." };
     }
 
-    // Server-side enforcement: max 2 operatives
-    if (assignedTo && assignedTo.length > 2) {
-      return { success: false, error: "A task can have at most 2 assignees." };
-    }
 
     // Verify the user exists and belongs to the org
     const userSnap = await adminDb.collection("users").doc(createdBy).get();
