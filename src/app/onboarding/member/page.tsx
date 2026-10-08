@@ -112,7 +112,7 @@ export default function MemberOnboardingPage() {
             <div className="mx-auto w-12 h-12 rounded-full bg-orbit-red/[0.1] flex items-center justify-center mb-6">
               <AlertCircle className="w-5 h-5 text-orbit-red" />
             </div>
-            <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Couldn't load your profile</h1>
+            <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Couldn&apos;t load your profile</h1>
             <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-6">
               {profileError || "Something went wrong loading your profile. Try again."}
             </p>

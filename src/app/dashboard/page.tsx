@@ -162,7 +162,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2.5">
               <AlertTriangle className="h-4 w-4 text-orbit-amber" aria-hidden />
               <span className="text-[12px] text-ink-dim">
-                Couldn't load
+                Couldn&apos;t load
               </span>
             </div>
             <div className="space-y-2">

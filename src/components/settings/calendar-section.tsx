@@ -149,7 +149,7 @@ export function CalendarSection({ user }: { user: User }) {
             finer.
           </li>
           <li>
-            <span className="text-ink">Events you're invited to</span>, at their scheduled time,
+            <span className="text-ink">Events you&apos;re invited to</span>, at their scheduled time,
             with the location and join link attached.
           </li>
           <li>

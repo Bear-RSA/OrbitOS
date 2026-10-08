@@ -343,7 +343,7 @@ export default function TeamsPage() {
         <div className="mb-32 flex flex-col items-start gap-5 rounded-3xl border border-line/[0.06] p-8 shadow-raised ring-1 ring-line/5 material-fog [--fog-base:var(--surface-sunken)]">
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="h-4 w-4 text-orbit-amber" aria-hidden />
-            <span className="text-[12px] text-ink-dim">Couldn't load the team</span>
+            <span className="text-[12px] text-ink-dim">Couldn&apos;t load the team</span>
           </div>
           <div className="space-y-2">
             <p className="text-[15px] font-medium text-ink">Could not load your team.</p>
