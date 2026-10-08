@@ -850,10 +850,55 @@
 @media (pointer: fine) {
   .card-lean { will-change: transform; }
 }
-/* An endless animation under translucent panels keeps the phone's GPU
-   redrawing the whole screen even when nothing is being touched. */
-@media (pointer: coarse) {
-  .orbit-stars[data-layer="twinkle"] { animation: none; }
+/* Scroll follow on touch screens, run by the compositor.
+
+   The JS follow in orbit-backdrop writes transforms from the main thread,
+   which on a phone falls behind momentum scrolling whenever the app is
+   busy, and it measured against innerHeight, which changes as the URL bar
+   collapses — so the planet jumped. A scroll-driven animation is sampled
+   on the compositor every frame of the scroll, and `svh` is the viewport
+   with the URL bar shown, which never changes. Same travel as the JS:
+   10 (app) or 24 (marketing) viewport-heights of lift, -3deg of sky,
+   16deg of satellite drift, across the full scroll range.
+
+   Browsers without scroll timelines fall through to the JS path. */
+.orbit-backdrop { --orbit-lift: 24; }
+.orbit-backdrop[data-mode="app"] { --orbit-lift: 10; }
+
+@keyframes orbit-scroll-lift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, calc(var(--orbit-lift) * -1svh), 0); }
+}
+@keyframes orbit-scroll-sky {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-3deg); }
+}
+@keyframes orbit-scroll-sat {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(16deg); }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (pointer: coarse) and (prefers-reduced-motion: no-preference) {
+    /* `animation-timeline` after the shorthand, which resets it. */
+    .orbit-lift {
+      animation: orbit-scroll-lift linear both;
+      animation-timeline: scroll(root block);
+    }
+    .orbit-sky {
+      animation: orbit-scroll-sky linear both;
+      animation-timeline: scroll(root block);
+    }
+    .orbit-satellite-drift {
+      animation: orbit-scroll-sat linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+/* The in-app reduce-motion switch shortens durations, which does nothing to
+   an animation driven by scroll position, so it is switched off outright. */
+html[data-reduced-motion="true"] :is(.orbit-lift, .orbit-sky, .orbit-satellite-drift) {
+  animation: none !important;
 }
 @keyframes orbit-twinkle {
   from { opacity: 1; }

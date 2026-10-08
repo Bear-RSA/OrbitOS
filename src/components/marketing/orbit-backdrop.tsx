@@ -157,14 +157,19 @@ export function OrbitBackdrop() {
     const sat = satDriftRef.current;
     if (!lift || !skyEl || !sat) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    /* Touch screens keep the backdrop still. Following the scroll on a phone
-       moved three full-screen layers every frame — and every translucent
-       panel above them with it — and `innerHeight` changes as the URL bar
-       collapses, so the planet also jumped mid-scroll. The route-to-route
-       camera move is CSS and still runs. */
-    if (window.matchMedia("(pointer: coarse)").matches) return;
+    /* Touch screens with scroll timelines follow the scroll in CSS, on the
+       compositor — see "Scroll follow on touch screens" in globals.css.
+       Writing transforms here as well would fight it. */
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    if (coarse && CSS.supports("animation-timeline: scroll()")) return;
 
     const liftVh = mode === "app" ? 10 : 24;
+    /* The viewport height the lift is measured against. On a touch screen
+       `innerHeight` grows and shrinks as the URL bar hides and shows, which
+       made the planet jump mid-scroll, so it is read once and only re-read
+       when the width changes too (a rotation, not the URL bar). */
+    let viewportH = window.innerHeight;
+    let viewportW = window.innerWidth;
     const TAU = 140; // ms
     let current = 0;
     let target = 0;
@@ -172,7 +177,7 @@ export function OrbitBackdrop() {
     let last = 0;
 
     const paint = (p: number) => {
-      lift.style.transform = `translate3d(0, ${(-p * liftVh * window.innerHeight) / 100}px, 0)`;
+      lift.style.transform = `translate3d(0, ${(-p * liftVh * viewportH) / 100}px, 0)`;
       skyEl.style.transform = `rotate(${-p * 3}deg)`;
       sat.style.transform = `rotate(${p * 16}deg)`;
     };
@@ -195,12 +200,20 @@ export function OrbitBackdrop() {
       if (!frame) frame = requestAnimationFrame(tick);
     };
 
+    const onResize = () => {
+      if (!coarse || window.innerWidth !== viewportW) {
+        viewportH = window.innerHeight;
+        viewportW = window.innerWidth;
+      }
+      read();
+    };
+
     read();
     window.addEventListener("scroll", read, { passive: true });
-    window.addEventListener("resize", read);
+    window.addEventListener("resize", onResize);
     return () => {
       window.removeEventListener("scroll", read);
-      window.removeEventListener("resize", read);
+      window.removeEventListener("resize", onResize);
       cancelAnimationFrame(frame);
     };
   }, [active, mode, pathname]);
