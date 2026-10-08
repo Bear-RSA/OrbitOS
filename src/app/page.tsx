@@ -6,6 +6,7 @@ import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { HeroProductFrame } from "@/components/marketing/hero-product-frame";
 import { MarketingNav } from "@/components/marketing/marketing-nav";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
+import { Eyebrow } from "@/components/marketing/brand";
 export const metadata: Metadata = {
   title: "OrbitOS · Workspace Intelligence",
   description: "The Calm Control Center for Digital Studios.",
@@ -13,13 +14,9 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <main className="theme-dark relative isolate min-h-screen bg-base text-ink font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark relative isolate min-h-screen bg-transparent text-ink font-sans selection:bg-orbit-amber/25">
       {/* Ambient light source. Gives the hero a direction without introducing a
           second colour — everything else on the page is flat. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[720px] bg-[radial-gradient(ellipse_55%_100%_at_50%_0%,rgba(255,255,255,0.05),transparent_70%)]"
-      />
       <MarketingNav active="features" />
 
       {/* Hero Section */}
@@ -29,7 +26,7 @@ export default function LandingPage() {
             href="/changelog"
             className="group mb-8 inline-flex items-center gap-2.5 rounded-lg transition-transform duration-quick ease-spring active:scale-[0.97] active:duration-press active:ease-press"
           >
-            <span className="text-[12px] text-ink">v1.2</span>
+            <span className="inline-flex items-center gap-2 font-mono text-[11px] text-ink"><span aria-hidden className="h-1.5 w-1.5 rounded-full bg-orbit-amber" />v1.2</span>
             <span className="h-3 w-px bg-white/[0.12]" />
             <span className="text-[12px] text-ink-muted group-hover:text-ink transition-colors">
               See what shipped
@@ -77,7 +74,7 @@ export default function LandingPage() {
       <section id="features" className="scroll-mt-24 py-20 px-6 md:px-8 max-w-7xl mx-auto">
         <ScrollReveal>
           <div className="mb-16">
-            <span className="text-[12px] text-ink-dim">Core Engine</span>
+            <Eyebrow index="01">Core Engine</Eyebrow>
             <h2 className="mt-4 text-title-lg text-ink md:text-[2.5rem] md:leading-[1.08] md:tracking-[-0.025em]">The Attention Grid</h2>
           </div>
         </ScrollReveal>
@@ -149,11 +146,11 @@ export default function LandingPage() {
       {/* Raised surface + hairline rules. The page is otherwise a flat #050505
           from nav to footer, which leaves the eye no landmarks across a long
           scroll; this is the one section given a different ground. */}
-      <section className="py-28 md:py-40 px-6 md:px-8 border-y border-white/[0.04] bg-gradient-to-b from-[#090909] via-[#070707] to-[#050505]">
+      <section className="py-28 md:py-40 px-6 md:px-8 border-y border-white/[0.04] bg-gradient-to-b from-[#090909]/80 via-[#070707]/60 to-transparent">
         <ScrollReveal>
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start gap-12 md:gap-20">
             <div className="md:w-1/2">
-              <span className="text-[12px] text-ink">The Methodology</span>
+              <Eyebrow index="02">The Methodology</Eyebrow>
               <h2 className="mb-12 mt-8 text-display-sm text-ink">
                 An intentional, minimal approach for agency owners.
               </h2>

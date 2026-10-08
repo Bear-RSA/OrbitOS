@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRef } from "react";
-import { Logo } from "@/components/brand/logo";
+import { OrbitLockup } from "@/components/marketing/brand";
 import { useScrolledPast } from "@/hooks/use-scrolled-past";
 import { cn } from "@/lib/utils/classnames";
 
@@ -45,10 +45,10 @@ export function MarketingNav({ active }: { active?: NavKey }) {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 md:px-8">
           <Link
             href="/"
-            className={cn("flex items-center gap-3 rounded-lg font-mono text-lg tracking-tighter text-ink", PRESS)}
+            aria-label="OrbitOS home"
+            className={cn("rounded-lg", PRESS)}
           >
-            <Logo size="sm" className="rounded-md" />
-            OrbitOS
+            <OrbitLockup />
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">

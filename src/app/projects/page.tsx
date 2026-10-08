@@ -40,7 +40,7 @@ export default function ProjectsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6">
+      <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6">
         <Loader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
@@ -53,7 +53,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
+    <DashboardShell className="bg-ground text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
       <AppHeader user={user ?? {}} />
 
       <div className="mb-20">

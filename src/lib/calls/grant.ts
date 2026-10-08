@@ -74,5 +74,6 @@ export async function grantFor(request: GrantRequest): Promise<CallGrant> {
     token,
     displayName,
     expiresAt: Date.now() + ttlSeconds * 1000,
+    roomClosesAt: room.expiresAt?.getTime() ?? null,
   };
 }

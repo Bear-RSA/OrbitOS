@@ -89,7 +89,7 @@ function isTabId(value: string | null): value is TabId {
 /** Shared by the auth gate and the `useSearchParams` Suspense boundary. */
 function SettingsLoader() {
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-base">
+    <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground">
       <Loader />
       <div className="flex flex-col items-center gap-2">
         <span className="text-[12px] text-ink-dim">
@@ -139,7 +139,7 @@ function SettingsView() {
   const current = visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0];
 
   return (
-    <DashboardShell className="min-h-[100dvh] bg-base text-ink selection:bg-surface-hover selection:text-ink-strong">
+    <DashboardShell className="min-h-[100dvh] bg-ground text-ink selection:bg-surface-hover selection:text-ink-strong">
       {/* ── Chrome ─────────────────────────────────────────────────── */}
       <AppHeader user={user ?? {}} />
 

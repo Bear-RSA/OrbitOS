@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { Logo } from "@/components/brand/logo";
 
 
@@ -10,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-base flex items-center justify-center p-6 selection:bg-primary/10">
+    <div className="min-h-screen bg-ground flex items-center justify-center p-6 selection:bg-primary/10">
       <div className="w-full max-w-sm shutter-reveal">
         {/* Logo */}
         <div className="flex flex-col items-center gap-4 mb-8 justify-center">

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { joinScheduledCallAction } from "@/app/actions/calls";
 import { AddToCall } from "@/components/calls/add-to-call";
+import { CallLobbyNotice, useLobbyRetry } from "@/components/calls/call-lobby";
 import { CallRoom } from "@/components/calls/call-room";
 import { CallShell } from "@/components/calls/call-shell";
 import { Loader } from "@/components/ui/loader";
-import type { CallGrant } from "@/types/call";
+import type { CallGrant, CallLobby } from "@/types/call";
 
 /* ------------------------------------------------------------------ */
 /*  Scheduled call                                                     */
@@ -37,33 +38,44 @@ export function ScheduledCall({ roomId, title: initialTitle, onClose }: Schedule
      what ringing a colleague in adds them to. */
   const [eventId, setEventId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /* Set while waiting for the room to open or for the organizer. */
+  const [lobby, setLobby] = useState<CallLobby | null>(null);
+  const mounted = useRef(true);
 
-  /* Joining is not in a callback: it happens once, when this mounts,
-     and mounting IS the click. */
-  useEffect(() => {
-    let cancelled = false;
-
+  const join = useCallback(() => {
     joinScheduledCallAction(roomId).then((result) => {
-      if (cancelled) return;
+      if (!mounted.current) return;
 
       if (result.success) {
+        setLobby(null);
         setGrant(result.grant);
         setTitle(result.title);
         setEventId(result.eventId);
+      } else if (result.lobby) {
+        setLobby(result.lobby);
       } else {
+        setLobby(null);
         setError(result.error);
       }
     });
-
-    return () => {
-      cancelled = true;
-    };
   }, [roomId]);
+
+  /* The first attempt happens once, when this mounts, and mounting IS
+     the click. Later attempts are the lobby asking again. */
+  useEffect(() => {
+    mounted.current = true;
+    join();
+    return () => {
+      mounted.current = false;
+    };
+  }, [join]);
+
+  useLobbyRetry(lobby, join);
 
   return (
     <CallShell
       title={title}
-      headline={error ? "Call unavailable" : undefined}
+      headline={error ? "Call unavailable" : lobby ? "Waiting to start" : undefined}
       hangUpLabel={error ? "Close" : "Hang up"}
       actions={grant && eventId ? <AddToCall target={{ eventId }} /> : null}
       onHangUp={onClose}
@@ -72,7 +84,9 @@ export function ScheduledCall({ roomId, title: initialTitle, onClose }: Schedule
         <CallRoom grant={grant} onLeave={onClose} className="h-full w-full" />
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-4 rounded-xl bg-surface-card">
-          {error ? (
+          {lobby ? (
+            <CallLobbyNotice lobby={lobby} />
+          ) : error ? (
             <p className="max-w-sm px-6 text-center text-[13px] font-light leading-relaxed text-orbit-red">
               {error}
             </p>

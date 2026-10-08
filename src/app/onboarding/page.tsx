@@ -89,7 +89,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-base flex items-center justify-center p-4">
+    <div className="min-h-screen bg-ground flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="flex flex-col items-center gap-3 mb-12 justify-center">
           <Logo size={40} />

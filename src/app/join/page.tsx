@@ -271,7 +271,7 @@ function JoinForm() {
 
   if (loading || status === "loading") {
     return (
-      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
+      <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
         <Loader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
@@ -284,7 +284,7 @@ function JoinForm() {
   }
 
   return (
-    <div className="min-h-screen bg-base flex items-center justify-center p-4">
+    <div className="min-h-screen bg-ground flex items-center justify-center p-4">
       <div className="w-full max-w-sm animate-fade-in text-center flex flex-col items-center">
         <div className="flex flex-col items-center gap-3 mb-10 justify-center">
           <Logo size={40} />
@@ -300,7 +300,7 @@ function JoinForm() {
 export default function JoinPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
+      <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
         <Loader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">

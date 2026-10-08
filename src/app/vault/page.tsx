@@ -45,7 +45,7 @@ export default function VaultPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-base">
+      <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground">
         <Loader />
       </div>
     );
@@ -58,7 +58,7 @@ export default function VaultPage() {
      rather than rendering an empty shelf that looks broken. */
   if (!user.orgId) {
     return (
-      <DashboardShell className="min-h-screen bg-base text-ink">
+      <DashboardShell className="min-h-screen bg-ground text-ink">
         <AppHeader user={user} />
         <div className="flex flex-1 flex-col items-center justify-center gap-4 pb-24 text-center">
           <p className="text-[13px] text-ink">No workspace yet</p>
@@ -74,7 +74,7 @@ export default function VaultPage() {
   const isOwner = user.role === "OWNER";
 
   return (
-    <DashboardShell className="min-h-screen bg-base text-ink selection:bg-surface-hover selection:text-ink-strong">
+    <DashboardShell className="min-h-screen bg-ground text-ink selection:bg-surface-hover selection:text-ink-strong">
       <AppHeader user={user} />
 
       <ScrollReveal>

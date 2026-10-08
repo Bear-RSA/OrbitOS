@@ -29,6 +29,7 @@ export type JoinRefusal =
   | "not-a-call"
   | "not-invited"
   | "not-started"
+  | "waiting-for-host"
   | "ended"
   | "tier";
 
@@ -87,11 +88,51 @@ export function canJoinScheduledCall(
 }
 
 /* ------------------------------------------------------------------ */
+/*  The lobby                                                          */
+/*                                                                     */
+/*  A scheduled call starts when its organizer walks in, the way a     */
+/*  Teams meeting does. Everyone else who arrives first — members,     */
+/*  invited guests, walk-ins — waits in a lobby that asks again every  */
+/*  few seconds and lets them through the moment the organizer is in.  */
+/*  `callActive` on the engagement is the "organizer is in" flag: only */
+/*  the organizer's join sets it.                                      */
+/* ------------------------------------------------------------------ */
+
+/** How often someone in the lobby asks again whether the host is in. */
+export const LOBBY_POLL_MS = 5_000;
+
+/**
+ * Whether someone already allowed into the call's window may go past
+ * the lobby. The organizer always may; that is what opens the room.
+ */
+export function canPassLobby(facts: { hostPresent: boolean; isHost: boolean }): JoinDecision {
+  if (facts.isHost || facts.hostPresent) return ALLOWED;
+  return refuse("waiting-for-host", "Waiting for the organizer to start the call.");
+}
+
+/**
+ * What a refused joiner should be shown while they wait, or null when
+ * the refusal is final. Too early and no-host-yet are both waits: the
+ * page stays open and tries again rather than leaving them at an error.
+ */
+export function lobbyFor(
+  decision: JoinDecision,
+  startAtMs: number
+): { kind: "early"; opensAt: number } | { kind: "host" } | null {
+  if (decision.allowed) return null;
+  if (decision.reason === "not-started") {
+    return { kind: "early", opensAt: startAtMs - JOIN_WINDOW_BEFORE_MS };
+  }
+  if (decision.reason === "waiting-for-host") return { kind: "host" };
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Walk-ins                                                           */
 /* ------------------------------------------------------------------ */
 
 export interface WalkInFacts extends ScheduledCallFacts {
-  /** A member has actually started the call. */
+  /** The organizer has started the call. */
   callActive: boolean;
   /** From `resolveCallLimits`. -1 means the tier does not narrow it. */
   maxGuests: number;
@@ -119,7 +160,7 @@ export function canWalkIn(facts: WalkInFacts, now: number = Date.now()): JoinDec
     return refuse("tier", "This workspace's plan does not allow outside guests in calls.");
   }
   if (!facts.callActive) {
-    return refuse("not-started", "This call has not started yet.");
+    return refuse("waiting-for-host", "Waiting for the organizer to start the call.");
   }
   if (now > facts.endAtMs + JOIN_WINDOW_AFTER_MS) {
     return refuse("ended", "This call has ended.");

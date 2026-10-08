@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { ReactNode, useRef } from "react";
+import { OrbitMark } from "@/components/brand/orbit-mark";
 import { AppNav } from "@/components/nav/app-nav";
 import { ProfileLink } from "@/components/nav/profile-link";
 import { useScrolledPast } from "@/hooks/use-scrolled-past";
@@ -91,7 +91,9 @@ export function AppHeader({ user, hide = DEFAULT_HIDE, actions, variant = "shell
                 aria-hidden
                 className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-b from-sheen/[0.04] to-transparent opacity-0 transition-opacity group-hover:opacity-100"
               />
-              <Image src="/logo.png" alt="" fill className="z-10 rounded-[inherit] object-cover" />
+              <div className="relative z-10 flex h-full w-full items-center justify-center">
+                <OrbitMark className="h-[64%] w-[64%] text-ink-strong" />
+              </div>
             </div>
             {/* The wordmark yields to the nav on small screens. */}
             <span className="vibrant hidden text-[15px] tracking-tight transition-colors group-hover:text-ink-strong md:inline">

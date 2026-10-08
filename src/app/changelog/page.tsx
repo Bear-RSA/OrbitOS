@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { MarketingNav } from "@/components/marketing/marketing-nav";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
+import { Eyebrow } from "@/components/marketing/brand";
 
 export const metadata: Metadata = {
   title: "Changelog · OrbitOS",
@@ -308,15 +309,13 @@ export default function ChangelogPage() {
   ];
 
   return (
-    <main className="theme-dark min-h-screen bg-base text-ink font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark min-h-screen bg-transparent text-ink font-sans selection:bg-orbit-amber/25">
       <MarketingNav active="changelog" />
 
       {/* Hero Section */}
       <section className="pt-48 pb-20 px-8 max-w-7xl mx-auto">
         <ScrollReveal className="flex flex-col items-center text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-raised shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] mb-8">
-            <span className="text-[12px] text-ink">The Record</span>
-          </div>
+          <Eyebrow className="mb-8">The Record</Eyebrow>
           <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 text-ink">
             Changelog
           </h1>
@@ -332,7 +331,7 @@ export default function ChangelogPage() {
         {releases.map((release) => (
           <ScrollReveal key={release.month}>
             <div className="mb-32">
-              <h2 className="text-[12px] text-ink-dim mb-12 flex items-center gap-4">
+              <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-dim mb-12 flex items-center gap-4">
                 {release.month}
                 <span className="flex-grow h-px bg-white/[0.04]"></span>
               </h2>

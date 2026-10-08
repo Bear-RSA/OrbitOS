@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader } from "@/components/ui/loader";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Clock } from "lucide-react";
 import { useCall } from "@/contexts/call-context";
+import { CLOSING_WARNING_MS, closingWarning } from "@/lib/calls/closing";
 import type { CallGrant } from "@/types/call";
 
 /* ------------------------------------------------------------------ */
@@ -95,10 +96,44 @@ function readDailyTheme() {
   };
 }
 
+/**
+ * The warning text for this room, re-read every few seconds once the
+ * five-minute mark arrives. Before then it is one timer, not a tick.
+ */
+function useClosingWarning(closesAt: number | null): string | null {
+  const [warning, setWarning] = useState(() => closingWarning(closesAt));
+
+  useEffect(() => {
+    if (typeof closesAt !== "number") {
+      setWarning(null);
+      return;
+    }
+
+    let tick: ReturnType<typeof setInterval> | null = null;
+    const update = () => setWarning(closingWarning(closesAt));
+    const startTicking = () => {
+      update();
+      tick = setInterval(update, 5_000);
+    };
+
+    const untilWarning = closesAt - CLOSING_WARNING_MS - Date.now();
+    const wait = untilWarning > 0 ? setTimeout(startTicking, untilWarning) : null;
+    if (!wait) startTicking();
+
+    return () => {
+      if (wait) clearTimeout(wait);
+      if (tick) clearInterval(tick);
+    };
+  }, [closesAt]);
+
+  return warning;
+}
+
 export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [status, setStatus] = useState<"joining" | "joined" | "failed">("joining");
   const [error, setError] = useState<string | null>(null);
+  const closing = useClosingWarning(grant.roomClosesAt);
 
   /* The shell paints a microphone button and a way out when the room is
      parked in the corner, and the continuity hook has to reach the
@@ -241,6 +276,18 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
     <div className={className}>
       <div className="relative h-full w-full overflow-hidden rounded-xl bg-surface-card">
         <div ref={containerRef} className="h-full w-full" />
+
+        {/* The provider ejects everyone at the room's expiry. Saying so
+            five minutes out lets people wrap up instead of being cut off
+            mid-sentence. Pointer events pass through to the room. */}
+        <div role="status" aria-live="polite" className="pointer-events-none absolute inset-x-2 top-2 z-10 flex justify-center">
+          {status === "joined" && closing && (
+            <div className="flex max-w-full animate-fade-in items-center gap-2 rounded-xl border border-line/[0.08] bg-surface-container/95 px-3 py-2 shadow-overlay backdrop-blur-2xl">
+              <Clock className="h-3.5 w-3.5 shrink-0 text-orbit-red" aria-hidden />
+              <p className="truncate text-[12px] font-light leading-snug text-ink">{closing}</p>
+            </div>
+          )}
+        </div>
 
         {status === "joining" && (
           <div className="absolute inset-0 flex items-center justify-center bg-surface-card">

@@ -137,7 +137,19 @@ export interface CallGrant {
   displayName: string;
   /** Unix millis — the client stops trusting the grant after this. */
   expiresAt: number;
+  /**
+   * Unix millis — when the provider closes the room and ejects everyone
+   * in it. Drives the warning shown before that happens. Null when the
+   * provider did not say, in which case no warning is shown.
+   */
+  roomClosesAt: number | null;
 }
+
+/**
+ * A refused join that is really a wait: too early, or the organizer is
+ * not in yet. The page keeps the person there and tries again.
+ */
+export type CallLobby = { kind: "early"; opensAt: number } | { kind: "host" };
 
 /** Why a join was refused, for the screens that have to say something. */
 export interface CallDenied {
@@ -145,6 +157,7 @@ export interface CallDenied {
     | "not-a-call"
     | "not-invited"
     | "not-started"
+    | "waiting-for-host"
     | "ended"
     | "tier"
     | "unavailable";

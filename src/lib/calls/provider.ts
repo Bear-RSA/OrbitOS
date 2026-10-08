@@ -35,6 +35,14 @@ export interface CreatedRoom {
    * which is what lets one field cover both.
    */
   roomUrl: string;
+  /**
+   * When the provider will close the room, as it actually holds it.
+   *
+   * Not the `expiresAt` that was asked for: the room is get-or-create,
+   * so everyone after the first joiner finds the deadline the first one
+   * set. Null when the provider does not say.
+   */
+  expiresAt: Date | null;
 }
 
 export interface MintTokenOptions {

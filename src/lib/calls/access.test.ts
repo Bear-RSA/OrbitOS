@@ -5,11 +5,13 @@ import {
   canAddToCall,
   canAnswerCall,
   canJoinGroupCall,
+  canPassLobby,
   canJoinScheduledCall,
   canStartDirectCall,
   canStartGroupCall,
   canWalkIn,
   groupCallLive,
+  lobbyFor,
   type AddToCallFacts,
   type JoinGroupCallFacts,
   type ScheduledCallFacts,
@@ -107,11 +109,11 @@ describe("walking in off a link", () => {
     expect(canWalkIn(walkIn(), NOW).allowed).toBe(true);
   });
 
-  it("refuses before anyone has started the call", () => {
+  it("holds a stranger in the lobby until the organizer starts the call", () => {
     // This is what stops a forwarded link being a standing invitation.
     expect(canWalkIn(walkIn({ callActive: false }), NOW)).toMatchObject({
       allowed: false,
-      reason: "not-started",
+      reason: "waiting-for-host",
     });
   });
 
@@ -440,5 +442,39 @@ describe("adding somebody to a call", () => {
       allowed: false,
       reason: "tier",
     });
+  });
+});
+
+describe("the lobby", () => {
+  it("lets the organizer straight in and opens the room", () => {
+    expect(canPassLobby({ hostPresent: false, isHost: true }).allowed).toBe(true);
+  });
+
+  it("holds everyone else until the organizer is in", () => {
+    expect(canPassLobby({ hostPresent: false, isHost: false })).toMatchObject({
+      allowed: false,
+      reason: "waiting-for-host",
+    });
+  });
+
+  it("lets everyone through once the organizer is in", () => {
+    expect(canPassLobby({ hostPresent: true, isHost: false }).allowed).toBe(true);
+  });
+
+  it("turns an early arrival into a wait for the room to open", () => {
+    const early = canJoinScheduledCall(scheduled(), NOW - 2 * HOUR);
+    expect(lobbyFor(early, NOW)).toEqual({ kind: "early", opensAt: NOW - JOIN_WINDOW_BEFORE_MS });
+  });
+
+  it("turns a missing organizer into a wait for the host", () => {
+    expect(lobbyFor(canPassLobby({ hostPresent: false, isHost: false }), NOW)).toEqual({
+      kind: "host",
+    });
+  });
+
+  it("treats an ended or refused call as final, not a wait", () => {
+    const ended = canJoinScheduledCall(scheduled({ cancelled: true }), NOW);
+    expect(lobbyFor(ended, NOW)).toBeNull();
+    expect(lobbyFor({ allowed: true }, NOW)).toBeNull();
   });
 });

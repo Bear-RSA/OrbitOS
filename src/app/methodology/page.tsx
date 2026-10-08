@@ -15,6 +15,7 @@ import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { InteractiveCard } from "@/components/ui/interactive-card";
 import { MarketingNav } from "@/components/marketing/marketing-nav";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
+import { Eyebrow } from "@/components/marketing/brand";
 
 export const metadata: Metadata = {
   title: "Methodology",
@@ -55,14 +56,14 @@ const WORKFLOW = [
 
 export default function MethodologyPage() {
   return (
-    <main className="theme-dark min-h-screen bg-base text-ink font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark min-h-screen bg-transparent text-ink font-sans selection:bg-orbit-amber/25">
       {/* TopNavBar - Replicated for consistency */}
       <MarketingNav active="methodology" />
 
       {/* Hero Section */}
       <section className="pt-48 pb-32 px-8 max-w-7xl mx-auto">
         <ScrollReveal className="flex flex-col items-center text-center">
-          <span className="text-[12px] text-ink-dim mb-8 block">Operational Discipline</span>
+          <Eyebrow className="mb-8">Operational Discipline</Eyebrow>
           <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 max-w-4xl text-ink">
             Methodology
           </h1>
@@ -78,7 +79,7 @@ export default function MethodologyPage() {
       <section className="py-20 px-8 max-w-7xl mx-auto">
         <ScrollReveal>
           <div className="mb-16">
-            <span className="text-[12px] text-ink-dim">Core Principles</span>
+            <Eyebrow index="01">Core Principles</Eyebrow>
             <h2 className="text-4xl font-light tracking-tight mt-4 text-ink">The Foundation of OrbitOS</h2>
           </div>
         </ScrollReveal>
@@ -139,7 +140,7 @@ export default function MethodologyPage() {
         <div className="max-w-7xl mx-auto">
           <ScrollReveal>
             <div className="mb-20 md:mb-24 text-center">
-              <span className="text-[12px] text-ink-dim">Operational Flow</span>
+              <Eyebrow index="02">Operational Flow</Eyebrow>
               <h2 className="text-4xl md:text-5xl font-light tracking-tight mt-4 text-ink">How OrbitOS Operates</h2>
               <p className="text-ink-muted text-base md:text-lg font-light leading-relaxed mt-6 max-w-lg mx-auto">
                 One continuous loop. Each phase hands clean inputs to the next, and the last one feeds the first.
@@ -204,7 +205,7 @@ export default function MethodologyPage() {
         <div className="flex flex-col md:flex-row items-start gap-20">
           <div className="md:w-1/2">
             <ScrollReveal>
-              <span className="text-[12px] text-ink-dim">Business Value</span>
+              <Eyebrow index="03">Business Value</Eyebrow>
               <h2 className="text-4xl md:text-5xl font-light tracking-tighter mt-8 mb-12 text-ink">
                 Precision as a Competitive Advantage
               </h2>

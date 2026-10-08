@@ -53,7 +53,7 @@ export default function MessagesPage() {
 
 function OpeningChannels() {
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-base">
+    <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground">
       <Loader />
       <span className="text-[12px] text-ink-dim">
         Opening Channels
@@ -247,7 +247,7 @@ function MessagesScreen() {
   };
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-base text-ink">
+    <div className="flex h-[100dvh] flex-col bg-ground text-ink">
       <AppHeader user={user} variant="flush" />
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 gap-4 overflow-hidden px-5 py-5 sm:px-8 lg:px-10">

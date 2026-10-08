@@ -151,7 +151,7 @@ function ResetPasswordForm() {
             <Button
               type="button"
               size="lg"
-              className="w-full text-[14px] font-medium bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 border-0 h-14 rounded-2xl"
+              className="w-full text-[14px] font-medium bg-ink-strong text-on-ink hover:bg-ink hover:text-on-ink transition-all duration-500 border-0 h-14 rounded-2xl"
               onClick={() => router.push("/forgot-password")}
               id="reset-request-new"
             >
@@ -171,7 +171,7 @@ function ResetPasswordForm() {
             <Button
               type="button"
               size="lg"
-              className="w-full text-[14px] font-medium bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 border-0 h-14 rounded-2xl"
+              className="w-full text-[14px] font-medium bg-ink-strong text-on-ink hover:bg-ink hover:text-on-ink transition-all duration-500 border-0 h-14 rounded-2xl"
               onClick={() => router.push("/login")}
             >
               Continue to sign in
@@ -193,7 +193,7 @@ function ResetPasswordForm() {
             <Button
               type="button"
               size="lg"
-              className="w-full text-[14px] font-medium bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 border-0 h-14 rounded-2xl"
+              className="w-full text-[14px] font-medium bg-ink-strong text-on-ink hover:bg-ink hover:text-on-ink transition-all duration-500 border-0 h-14 rounded-2xl"
               onClick={() => router.push("/login")}
               id="reset-go-to-login"
             >
@@ -256,7 +256,7 @@ function ResetPasswordForm() {
             <Button
               type="submit"
               size="lg"
-              className="w-full text-[14px] font-medium bg-ink-strong text-black hover:bg-ink hover:text-black transition-all duration-500 shadow-[0_0_20px_rgb(var(--ink-strong)_/_0.05)] hover:shadow-[0_0_30px_rgb(var(--ink-strong)_/_0.1)] border-0 h-14 rounded-2xl"
+              className="w-full text-[14px] font-medium bg-ink-strong text-on-ink hover:bg-ink hover:text-on-ink transition-all duration-500 shadow-[0_0_20px_rgb(var(--ink-strong)_/_0.05)] hover:shadow-[0_0_30px_rgb(var(--ink-strong)_/_0.1)] border-0 h-14 rounded-2xl"
               disabled={isSubmitting}
               id="reset-submit"
             >

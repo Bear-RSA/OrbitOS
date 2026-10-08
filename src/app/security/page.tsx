@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { MarketingNav } from "@/components/marketing/marketing-nav";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
+import { Eyebrow } from "@/components/marketing/brand";
 
 export const metadata: Metadata = {
   title: "Security · OrbitOS",
@@ -11,18 +12,18 @@ export const metadata: Metadata = {
 
 export default function SecurityPage() {
   return (
-    <main className="theme-dark min-h-screen bg-base text-ink font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark min-h-screen bg-transparent text-ink font-sans selection:bg-orbit-amber/25">
       <MarketingNav />
 
       {/* Hero Section */}
       <section className="pt-48 pb-20 px-8 max-w-7xl mx-auto">
         <ScrollReveal className="flex flex-col items-center text-center">
-          <span className="text-[12px] text-ink-dim mb-8 block">Operational Integrity</span>
+          <Eyebrow className="mb-8">Operational Integrity</Eyebrow>
           <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 text-ink">
             Security
           </h1>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.2] to-transparent"></div>
-          <p className="mt-8 text-[12px] text-ink-dim">Last Updated: April 2026</p>
+          <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-dim">Last Updated: April 2026</p>
         </ScrollReveal>
       </section>
 
@@ -101,11 +102,6 @@ export default function SecurityPage() {
                       <td className="py-4">Hosting & CDN</td>
                       <td className="py-4">SOC 2 Type 2, DDoS mitigation</td>
                     </tr>
-                    <tr className="border-b border-white/[0.04]">
-                      <td className="py-4 text-ink">Upstash</td>
-                      <td className="py-4">Rate Limiting</td>
-                      <td className="py-4">Encrypted Redis protocols</td>
-                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -120,7 +116,7 @@ export default function SecurityPage() {
                 </li>
                 <li className="flex gap-4">
                   <span className="text-ink font-medium min-w-[140px]">Rate Limiting:</span>
-                  <span className="text-ink-muted font-light leading-relaxed">Intelligent abuse prevention via Upstash Redis.</span>
+                  <span className="text-ink-muted font-light leading-relaxed">Attempt limits on sensitive actions, such as entering the vault passcode, enforced on the server.</span>
                 </li>
                 <li className="flex gap-4">
                   <span className="text-ink font-medium min-w-[140px]">Headers:</span>

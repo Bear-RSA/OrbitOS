@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { Loader } from "@/components/ui/loader";
+import { CallLobbyNotice, useLobbyRetry } from "@/components/calls/call-lobby";
 import { CallRoom } from "@/components/calls/call-room";
 import { AlertCircle, Calendar, Check, Clock, Link2, MapPin, Video, X } from "lucide-react";
 import {
@@ -14,7 +15,7 @@ import {
   type RsvpContext,
 } from "@/app/actions/rsvp";
 import { vetDisplayName } from "@/lib/calls/display-name";
-import type { CallGrant } from "@/types/call";
+import type { CallGrant, CallLobby } from "@/types/call";
 import type { RsvpStatus } from "@/types/event";
 
 /* ------------------------------------------------------------------ */
@@ -91,6 +92,28 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [grant, setGrant] = useState<CallGrant | null>(null);
+  /* Set while waiting for the room to open or for the organizer; holds
+     the name so the lobby can ask again without them. */
+  const [lobby, setLobby] = useState<CallLobby | null>(null);
+  const [waitingAs, setWaitingAs] = useState<string | null>(null);
+
+  const attemptJoin = async (fullName: string) => {
+    const result = await joinScheduledCallAsGuestAction({ token, fullName });
+    if (result.success) {
+      setLobby(null);
+      setGrant(result.grant);
+    } else if (result.lobby) {
+      setWaitingAs(fullName);
+      setLobby(result.lobby);
+    } else {
+      setLobby(null);
+      setJoinError(result.error);
+    }
+  };
+
+  useLobbyRetry(lobby, () => {
+    if (waitingAs) void attemptJoin(waitingAs);
+  });
 
   const joinCall = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -104,10 +127,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
     setJoining(true);
     setJoinError(null);
 
-    const result = await joinScheduledCallAsGuestAction({ token, fullName: checked.name! });
-    if (result.success) setGrant(result.grant);
-    else setJoinError(result.error);
-
+    await attemptJoin(checked.name!);
     setJoining(false);
   };
 
@@ -155,7 +175,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-base flex items-center justify-center p-4">
+      <div className="min-h-screen bg-ground flex items-center justify-center p-4">
         <Loader />
       </div>
     );
@@ -163,7 +183,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
 
   if (!context) {
     return (
-      <div className="min-h-screen bg-base flex items-center justify-center p-4">
+      <div className="min-h-screen bg-ground flex items-center justify-center p-4">
         <div className="w-full max-w-sm animate-fade-in text-center flex flex-col items-center">
           <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
             <div className="mx-auto w-12 h-12 rounded-full bg-orbit-red/[0.1] flex items-center justify-center mb-6">
@@ -191,7 +211,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
      brings the card back, answer and all. */
   if (grant) {
     return (
-      <div className="flex min-h-screen flex-col bg-base p-4">
+      <div className="flex min-h-screen flex-col bg-ground p-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="truncate text-[12px] text-ink-dim">
             {context.title} · {grant.displayName}
@@ -212,7 +232,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
   const orbitCall = context.callProvider === "orbit" && !context.cancelled;
 
   return (
-    <div className="min-h-screen bg-base flex items-center justify-center p-4">
+    <div className="min-h-screen bg-ground flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-10 sm:p-12">
           <Logo className="mb-10" />
@@ -287,7 +307,11 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
               rights that have no business riding on a forwardable link. */}
           {orbitCall && (
             <div className="mb-8 rounded-2xl bg-surface-control/60 p-5 ring-1 ring-inset ring-line/[0.05]">
-              {context.subjectKind === "guest" ? (
+              {context.subjectKind === "guest" && lobby ? (
+                <div className="py-4">
+                  <CallLobbyNotice lobby={lobby} />
+                </div>
+              ) : context.subjectKind === "guest" ? (
                 <form onSubmit={joinCall}>
                   <label
                     htmlFor="join-name"
@@ -317,7 +341,8 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
                     <p className="mt-3 text-[12px] font-light text-orbit-red">{joinError}</p>
                   )}
                   <p className="mt-3 text-[11px] font-light leading-relaxed text-ink-dim">
-                    Opens ten minutes before the start.
+                    Opens ten minutes before the start. The call begins when the
+                    organizer joins.
                   </p>
                 </form>
               ) : (

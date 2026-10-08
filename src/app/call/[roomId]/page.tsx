@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
+import { CallLobbyNotice, useLobbyRetry } from "@/components/calls/call-lobby";
 import { CallRoom } from "@/components/calls/call-room";
 import { Loader } from "@/components/ui/loader";
 import { useAuth } from "@/contexts/auth-context";
@@ -11,7 +12,7 @@ import { useCall } from "@/contexts/call-context";
 import { walkInToScheduledCallAction } from "@/app/actions/calls";
 import { vetDisplayName } from "@/lib/calls/display-name";
 import { roomIdSchema } from "@/lib/validations/call";
-import type { CallGrant } from "@/types/call";
+import type { CallGrant, CallLobby } from "@/types/call";
 
 /* ------------------------------------------------------------------ */
 /*  A call's front door                                                */
@@ -27,7 +28,7 @@ import type { CallGrant } from "@/types/call";
 /*      their inbox ends up in the same place as one who clicked Join. */
 /*                                                                     */
 /*    - a WALK-IN, with no session. The link was forwarded or pasted.  */
-/*      They type a name and are let in only while a member is already */
+/*      They type a name and wait in the lobby until the organizer is  */
 /*      inside — the server's rule, not this page's; see `canWalkIn`.  */
 /*                                                                     */
 /*  An invited guest is not a third case here. Their invitation links  */
@@ -52,6 +53,10 @@ export default function ScheduledCallPage() {
   const [title, setTitle] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /* Set while waiting for the organizer; holds the name they typed so
+     the lobby can ask again without them. */
+  const [lobby, setLobby] = useState<CallLobby | null>(null);
+  const [waitingAs, setWaitingAs] = useState<string | null>(null);
 
   const isMember = Boolean(user?.orgId);
 
@@ -89,20 +94,29 @@ export default function ScheduledCallPage() {
 
     setJoining(true);
     setError(null);
-
-    const result = await walkInToScheduledCallAction({
-      roomId,
-      fullName: checked.name!,
-    });
-    if (result.success) {
-      setGrant(result.grant);
-      setTitle(result.title);
-    } else {
-      setError(result.error);
-    }
-
+    await attempt(checked.name!);
     setJoining(false);
   }
+
+  async function attempt(fullName: string) {
+    if (!roomId) return;
+    const result = await walkInToScheduledCallAction({ roomId, fullName });
+    if (result.success) {
+      setLobby(null);
+      setGrant(result.grant);
+      setTitle(result.title);
+    } else if (result.lobby) {
+      setWaitingAs(fullName);
+      setLobby(result.lobby);
+    } else {
+      setLobby(null);
+      setError(result.error);
+    }
+  }
+
+  useLobbyRetry(lobby, () => {
+    if (waitingAs) void attempt(waitingAs);
+  });
 
   if (!roomId) {
     return (
@@ -147,6 +161,16 @@ export default function ScheduledCallPage() {
     );
   }
 
+  if (lobby) {
+    return (
+      <Frame eyebrow="You have been sent a call link">
+        <div className="py-6">
+          <CallLobbyNotice lobby={lobby} />
+        </div>
+      </Frame>
+    );
+  }
+
   return (
     <Frame eyebrow="You have been sent a call link">
       <form onSubmit={enter}>
@@ -176,8 +200,8 @@ export default function ScheduledCallPage() {
         {error && <p className="mt-6 text-[12px] font-light text-orbit-red">{error}</p>}
 
         <p className="mt-8 text-[11px] font-light leading-relaxed text-ink-dim">
-          You will be shown as a guest. The room opens once someone from the
-          workspace is in it.{" "}
+          You will be shown as a guest. The call starts when the organizer
+          joins; until then you will wait here.{" "}
           <Link href="/login" className="text-ink-muted underline-offset-4 hover:underline">
             Part of this workspace? Sign in
           </Link>{" "}

@@ -5,6 +5,7 @@ import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { InteractiveCard } from "@/components/ui/interactive-card";
 import { MarketingNav } from "@/components/marketing/marketing-nav";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
+import { Eyebrow } from "@/components/marketing/brand";
 
 export const metadata: Metadata = {
   title: "Pricing · OrbitOS",
@@ -13,13 +14,13 @@ export const metadata: Metadata = {
 
 export default function PricingPage() {
   return (
-    <main className="theme-dark min-h-screen bg-base text-ink font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark min-h-screen bg-transparent text-ink font-sans selection:bg-orbit-amber/25">
       <MarketingNav active="pricing" />
 
       {/* Hero Section */}
       <section className="pt-48 pb-32 px-8 max-w-7xl mx-auto">
         <ScrollReveal className="flex flex-col items-center text-center">
-          <span className="text-[12px] text-ink-dim mb-8 block">Operational Scale</span>
+          <Eyebrow className="mb-8">Operational Scale</Eyebrow>
           <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 max-w-4xl text-ink">
             Pricing
           </h1>
@@ -60,7 +61,7 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <Link href="/login" className="block w-full py-4 rounded-xl border border-white/[0.04] bg-surface-raised text-ink text-center text-sm font-medium hover:bg-surface-control transition-all duration-300">
+              <Link href="/signup" className="block w-full py-4 rounded-xl border border-white/[0.04] bg-surface-raised text-ink text-center text-sm font-medium hover:bg-surface-control transition-all duration-300">
                 Get Started
               </Link>
             </InteractiveCard>
@@ -178,7 +179,7 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto">
           <ScrollReveal>
             <div className="mb-20 text-center">
-              <span className="text-[12px] text-ink-dim">Operational Unlock</span>
+              <Eyebrow index="01">Operational Unlock</Eyebrow>
               <h2 className="text-4xl md:text-5xl font-light tracking-tight mt-4 text-ink">What OrbitOS pricing unlocks</h2>
             </div>
           </ScrollReveal>
@@ -280,7 +281,7 @@ export default function PricingPage() {
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-32 bg-gradient-to-b from-ink/30 to-transparent"></div>
             <h2 className="text-4xl md:text-6xl font-light tracking-tight mb-8 text-ink">Ready to exit the chaos?</h2>
             <p className="text-lg text-ink-muted font-light mb-12 max-w-xl mx-auto">
-              Join over 400 world-class studios using OrbitOS to run their operations with surgical precision.
+              Free for teams of three. No card needed, billed in rand when you grow.
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-6">
               <Link href="/signup" className="inline-block bg-ink text-on-ink px-10 py-4 rounded-xl font-medium text-[15px] hover:bg-white hover:-translate-y-[2px] transition-all duration-300">

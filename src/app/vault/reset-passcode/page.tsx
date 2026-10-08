@@ -206,7 +206,7 @@ function Notice({ tone, children }: { tone: "error" | "success"; children: React
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-base p-6">
+    <div className="flex min-h-screen w-full items-center justify-center bg-ground p-6">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border border-line/[0.06] bg-surface-sunken">
@@ -234,7 +234,7 @@ export default function ResetVaultPasscodePage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen w-full items-center justify-center bg-base">
+        <div className="flex min-h-screen w-full items-center justify-center bg-ground">
           <Loader />
         </div>
       }

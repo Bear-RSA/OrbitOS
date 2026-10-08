@@ -11,7 +11,7 @@ import { Loader } from "@/components/ui/loader";
  */
 export default function Loading() {
   return (
-    <div className="animate-in fade-in flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-base duration-1000">
+    <div className="animate-in fade-in flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground duration-1000">
       <Loader />
 
       <div className="flex flex-col items-center gap-2">

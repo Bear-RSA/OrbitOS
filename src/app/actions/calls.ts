@@ -15,10 +15,12 @@ import {
   canAnswerCall,
   canJoinGroupCall,
   canJoinScheduledCall,
+  canPassLobby,
   canStartGroupCall,
   canStartDirectCall,
   canWalkIn,
   groupCallLive,
+  lobbyFor,
   type ScheduledCallFacts,
 } from "@/lib/calls/access";
 import {
@@ -49,7 +51,7 @@ import {
   startCallSchema,
   walkInSchema,
 } from "@/lib/validations/call";
-import type { CallGrant } from "@/types/call";
+import type { CallGrant, CallLobby } from "@/types/call";
 
 /* ------------------------------------------------------------------ */
 /*  Call Server Actions                                                */
@@ -149,7 +151,7 @@ export type ScheduledGrantResult =
        */
       eventId: string | null;
     }
-  | { success: false; error: string };
+  | { success: false; error: string; lobby?: CallLobby };
 
 /**
  * The engagement a room belongs to, or null.
@@ -188,13 +190,24 @@ function scheduledFacts(
   };
 }
 
+/** A refusal, carrying the lobby to wait in when it is only a wait. */
+function refusedJoin(
+  decision: { allowed: false; message: string } & Parameters<typeof lobbyFor>[0],
+  event: FirebaseFirestore.DocumentData
+) {
+  const startAtMs = (event.startAt as FirebaseFirestore.Timestamp)?.toMillis?.() ?? 0;
+  const lobby = lobbyFor(decision, startAtMs);
+  return { success: false as const, error: decision.message, ...(lobby ? { lobby } : {}) };
+}
+
 /**
  * A member entering a scheduled call.
  *
- * The first member in opens the room for walk-ins by flagging
- * `callActive`. It is set and never cleared: the join window closing is
- * what ends the call, and `canWalkIn` checks that window itself, so a
- * flag left true after the meeting lets nobody in.
+ * The organizer's join opens the room by flagging `callActive`; every
+ * other member waits in the lobby until then (see `canPassLobby`). The
+ * flag is set and never cleared: the join window closing is what ends
+ * the call, and every gate checks that window itself, so a flag left
+ * true after the meeting lets nobody in.
  */
 export async function joinScheduledCallAction(input: unknown): Promise<ScheduledGrantResult> {
   try {
@@ -214,13 +227,17 @@ export async function joinScheduledCallAction(input: unknown): Promise<Scheduled
     }
 
     const attendees = (found.data.attendees as string[]) ?? [];
+    const isHost = found.data.createdBy === caller.uid;
     const now = Date.now();
 
     const decision = canJoinScheduledCall(
-      scheduledFacts(found.data, attendees.includes(caller.uid)),
+      scheduledFacts(found.data, isHost || attendees.includes(caller.uid)),
       now
     );
-    if (!decision.allowed) return { success: false, error: decision.message };
+    if (!decision.allowed) return refusedJoin(decision, found.data);
+
+    const lobby = canPassLobby({ hostPresent: Boolean(found.data.callActive), isHost });
+    if (!lobby.allowed) return refusedJoin(lobby, found.data);
 
     const limits = await resolveCallLimits(caller.orgId);
     /* Same reading as a direct call: a plan that seats fewer than two
@@ -229,7 +246,9 @@ export async function joinScheduledCallAction(input: unknown): Promise<Scheduled
       return { success: false, error: "Your plan does not include calling." };
     }
 
-    /* Flagged before the pass is minted, not after. A provider failure
+    /* Only the organizer reaches here with the flag down — everyone
+       else was held in the lobby above. Flagged before the pass is
+       minted, not after. A provider failure
        on the way in leaves the flag set, and that is the safe direction:
        an open door to a room nobody can enter is nothing, whereas a
        member sitting in a room the flag says is closed keeps the guest
@@ -298,7 +317,7 @@ export async function walkInToScheduledCallAction(
       },
       now
     );
-    if (!decision.allowed) return { success: false, error: decision.message };
+    if (!decision.allowed) return refusedJoin(decision, found.data);
 
     const grant = await grantFor({
       roomId,

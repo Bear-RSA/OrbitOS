@@ -1,7 +1,7 @@
 import type { EngagementCallProvider } from "@/types/event";
 import { getAppUrl } from "@/lib/utils/getAppUrl";
 import { JOIN_WINDOW_AFTER_MS } from "./access";
-import { HARD_MAX_PARTICIPANTS, groupCallSeats } from "./ceiling";
+import { HARD_MAX_PARTICIPANTS, HARD_MAX_ROOM_MINUTES, groupCallSeats } from "./ceiling";
 
 /* ------------------------------------------------------------------ */
 /*  Scheduled calls                                                    */
@@ -80,13 +80,16 @@ export function scheduledCallSeats(limits: { maxParticipants: number }): number 
 }
 
 /**
- * How long a pass minted now should last: until the room closes, which
- * is the scheduled end plus the same grace `canJoinScheduledCall`
- * allows for late entry. Whole minutes, never less than one, and the
- * ceilings clamp it again downstream — a 6-hour engagement still gets
- * tokens that expire and rooms that eject.
+ * How long a pass minted now should last: the full room ceiling, or
+ * until the scheduled end plus the late-entry grace if that is later.
+ *
+ * The calendar end is when people meant to stop, not when they do. It
+ * used to be the deadline, and the room is sized once, by whoever joins
+ * first, so a 30-minute meeting that started on time ejected everyone at
+ * the 60-minute mark mid-sentence. Cost is still bounded: the ceilings
+ * clamp this downstream, so a room nobody hangs up still closes.
  */
 export function scheduledCallMinutes(endAtMs: number, now: number = Date.now()): number {
-  const remaining = endAtMs + JOIN_WINDOW_AFTER_MS - now;
-  return Math.max(1, Math.ceil(remaining / 60_000));
+  const remaining = Math.ceil((endAtMs + JOIN_WINDOW_AFTER_MS - now) / 60_000);
+  return Math.max(HARD_MAX_ROOM_MINUTES, remaining);
 }

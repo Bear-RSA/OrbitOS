@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { MarketingNav } from "@/components/marketing/marketing-nav";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
+import { Eyebrow } from "@/components/marketing/brand";
 
 export const metadata: Metadata = {
   title: "Terms of Service · OrbitOS",
@@ -11,18 +12,18 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <main className="theme-dark min-h-screen bg-base text-ink font-sans selection:bg-white/[0.1]">
+    <main className="theme-dark min-h-screen bg-transparent text-ink font-sans selection:bg-orbit-amber/25">
       <MarketingNav />
 
       {/* Hero Section */}
       <section className="pt-48 pb-20 px-8 max-w-7xl mx-auto">
         <ScrollReveal className="flex flex-col items-center text-center">
-          <span className="text-[12px] text-ink-dim mb-8 block">Operational Contract</span>
+          <Eyebrow className="mb-8">Legal</Eyebrow>
           <h1 className="text-5xl md:text-[5.5rem] font-light tracking-tighter leading-[0.95] mb-8 text-ink">
             Terms of Service
           </h1>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/[0.2] to-transparent"></div>
-          <p className="mt-8 text-[12px] text-ink-dim">Last Updated: July 2026</p>
+          <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-dim">Last Updated: July 2026</p>
         </ScrollReveal>
       </section>
 
@@ -102,7 +103,7 @@ export default function TermsPage() {
             <section>
               <h2 className="text-2xl mb-6">10. Third-Party Services</h2>
               <p>
-                The Service relies on third-party providers including Firebase (Google), Vercel, Resend, Upstash, Cloudinary, and Payfast. Your use of OrbitOS is subject to their respective terms.
+                The Service relies on third-party providers including Firebase (Google), Vercel, Resend, Cloudinary, and Payfast. Your use of OrbitOS is subject to their respective terms.
               </p>
             </section>
 

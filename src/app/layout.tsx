@@ -9,6 +9,7 @@ import { ThemeScript } from "@/components/theme-script";
 import { CallProvider } from "@/contexts/call-context";
 import { CallHost } from "@/components/calls/call-host";
 import { MessageNotifier } from "@/components/messages/message-notifier";
+import { OrbitBackdrop } from "@/components/marketing/orbit-backdrop";
 
 // Self-hosted at build time by next/font — no render-blocking @import, no FOUT,
 // and a size-adjusted fallback so there is no layout shift while they load.
@@ -77,6 +78,10 @@ export default function RootLayout({
         <ThemeScript />
       </head>
       <body className="antialiased" suppressHydrationWarning>
+        {/* Above the router so the planet persists between marketing pages
+            and navigation can move along the orbit. Renders nothing on any
+            other route. */}
+        <OrbitBackdrop />
         <InteractionProvider>
           <AuthProvider>
             <PreferenceEffects />

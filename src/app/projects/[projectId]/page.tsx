@@ -97,7 +97,7 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
 
   if (authLoading || loading) {
     return (
-      <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-background">
+      <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground">
         <Loader />
       </div>
     );

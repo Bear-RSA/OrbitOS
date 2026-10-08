@@ -265,7 +265,7 @@ export default function TeamsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6">
+      <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6">
         <Loader />
       </div>
     );
@@ -274,7 +274,7 @@ export default function TeamsPage() {
   if (!user) return null;
 
   return (
-    <DashboardShell className="bg-base text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
+    <DashboardShell className="bg-ground text-ink min-h-screen selection:bg-surface-hover selection:text-ink-strong">
       {/* Top nav */}
       <AppHeader user={user} />
 

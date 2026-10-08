@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { JOIN_WINDOW_AFTER_MS } from "@/lib/calls/access";
-import { HARD_MAX_PARTICIPANTS } from "@/lib/calls/ceiling";
+import { HARD_MAX_PARTICIPANTS, HARD_MAX_ROOM_MINUTES } from "@/lib/calls/ceiling";
 import {
   effectiveCallProvider,
   isOrbitCall,
@@ -79,17 +79,18 @@ describe("scheduledCallSeats", () => {
 describe("scheduledCallMinutes", () => {
   const NOW = Date.parse("2026-09-10T14:00:00Z");
 
-  it("runs to the end of the room's grace period", () => {
+  it("outlasts a short meeting that runs over", () => {
+    // A 30-minute meeting joined on time used to eject everyone at 60.
     const endAt = NOW + 30 * 60_000;
-    expect(scheduledCallMinutes(endAt, NOW)).toBe(30 + JOIN_WINDOW_AFTER_MS / 60_000);
+    expect(scheduledCallMinutes(endAt, NOW)).toBe(HARD_MAX_ROOM_MINUTES);
   });
 
-  it("rounds a partial minute up rather than cutting a call short", () => {
-    const endAt = NOW + 90_500 - JOIN_WINDOW_AFTER_MS; // 1.5 min + a bit
-    expect(scheduledCallMinutes(endAt, NOW)).toBe(2);
+  it("runs to the end of the grace period for a meeting longer than the floor", () => {
+    const endAt = NOW + 300 * 60_000;
+    expect(scheduledCallMinutes(endAt, NOW)).toBe(300 + JOIN_WINDOW_AFTER_MS / 60_000);
   });
 
-  it("never asks for less than a minute", () => {
-    expect(scheduledCallMinutes(NOW - 10 * 60 * 60_000, NOW)).toBe(1);
+  it("still gets the full floor when joined after the scheduled end", () => {
+    expect(scheduledCallMinutes(NOW - 10 * 60 * 60_000, NOW)).toBe(HARD_MAX_ROOM_MINUTES);
   });
 });

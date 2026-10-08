@@ -40,6 +40,17 @@ function apiKey(): string {
 interface DailyRoom {
   name: string;
   url: string;
+  /** Unix seconds. Absent on a room created without an expiry. */
+  config?: { exp?: number };
+}
+
+function createdRoom(room: DailyRoom): CreatedRoom {
+  const exp = room.config?.exp;
+  return {
+    roomName: room.name,
+    roomUrl: room.url,
+    expiresAt: typeof exp === "number" ? new Date(exp * 1000) : null,
+  };
 }
 
 /**
@@ -122,7 +133,7 @@ export const dailyProvider: CallProvider = {
        would fail anyway. */
     const existing = await request<DailyRoom>(`/rooms/${options.name}`, { method: "GET" });
     if (existing.ok) {
-      return { roomName: existing.data.name, roomUrl: existing.data.url };
+      return createdRoom(existing.data);
     }
     if (existing.status !== 404) {
       console.error(
@@ -157,7 +168,7 @@ export const dailyProvider: CallProvider = {
     });
 
     if (created.ok) {
-      return { roomName: created.data.name, roomUrl: created.data.url };
+      return createdRoom(created.data);
     }
 
     /* Two people joining an empty room at once both see a 404 and both
@@ -166,7 +177,7 @@ export const dailyProvider: CallProvider = {
     if (created.status === 400) {
       const retry = await request<DailyRoom>(`/rooms/${options.name}`, { method: "GET" });
       if (retry.ok) {
-        return { roomName: retry.data.name, roomUrl: retry.data.url };
+        return createdRoom(retry.data);
       }
     }
 

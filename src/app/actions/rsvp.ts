@@ -6,7 +6,7 @@ import { logActivity } from "@/lib/telemetry";
 import { verifyRsvpToken, type RsvpIdentity } from "@/lib/calendar/rsvp-token";
 import { notifyOrganizerOfRsvp } from "@/lib/calendar/notify-organizer";
 import { resolveCallLimits } from "@/lib/auth/permissions";
-import { canJoinScheduledCall } from "@/lib/calls/access";
+import { canJoinScheduledCall, canPassLobby, lobbyFor } from "@/lib/calls/access";
 import { grantFor } from "@/lib/calls/grant";
 import { sanitizeDisplayName } from "@/lib/calls/display-name";
 import {
@@ -15,7 +15,7 @@ import {
   scheduledCallSeats,
 } from "@/lib/calls/scheduled";
 import { guestJoinSchema } from "@/lib/validations/call";
-import type { CallGrant } from "@/types/call";
+import type { CallGrant, CallLobby } from "@/types/call";
 import type { EngagementCallProvider, RsvpStatus } from "@/types/event";
 
 /* ------------------------------------------------------------------ */
@@ -280,7 +280,7 @@ export async function submitTokenRsvpAction(
 
 type GuestJoinResult =
   | { success: true; grant: CallGrant; title: string }
-  | { success: false; error: string };
+  | { success: false; error: string; lobby?: CallLobby };
 
 export async function joinScheduledCallAsGuestAction(
   input: unknown
@@ -330,7 +330,15 @@ export async function joinScheduledCallAsGuestAction(
       },
       now
     );
-    if (!decision.allowed) return { success: false, error: decision.message };
+    /* Too early, or the organizer is not in yet: a wait, not a refusal.
+       The page holds the guest in the lobby and asks again. */
+    const passed = decision.allowed
+      ? canPassLobby({ hostPresent: Boolean(event.callActive), isHost: false })
+      : decision;
+    if (!passed.allowed) {
+      const lobby = lobbyFor(passed, (event.startAt as FirebaseFirestore.Timestamp).toMillis());
+      return { success: false, error: passed.message, ...(lobby ? { lobby } : {}) };
+    }
 
     const limits = await resolveCallLimits(subject.orgId);
     if (limits.maxGuests === 0) {

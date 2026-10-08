@@ -330,8 +330,11 @@
   }
 
   /* Signature Moment: Terminal Shutter Open */
+  /* `backwards`, not `forwards`: holding the end frame kept a clip-path
+     and filter on the element for good, which cut descendants' shadows off
+     at its box and made it a backdrop root for their blur. */
   .shutter-reveal {
-    animation: shutter-open 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: shutter-open 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
   }
 
   @keyframes shutter-open {
@@ -640,3 +643,236 @@
   }
 }
 
+
+/* ── Orbit backdrop ─────────────────────────────────────────────────────
+   See components/marketing/orbit-backdrop.tsx. Every moving part is its own
+   compositor layer and moves by transform only, set on that element: route
+   changes transition it, scroll writes it. Masks and gradients are drawn
+   once with the light at the top and never change, so nothing repaints
+   while the orbit moves. */
+.orbit-backdrop {
+  --orbit-d: max(150vw, 1500px);
+  /* Phone heroes wrap to twice the height; sink the planet to clear them. */
+  --orbit-drop: 0px;
+  /* A camera move across the screen: ease-in-out, strong. Long on the
+     marketing site, where the move is the point; short in the app, where
+     it happens on every click. */
+  --orbit-ease: cubic-bezier(0.77, 0, 0.175, 1);
+  --orbit-dur: 1.6s;
+  /* Palette. Night (photograph) by default; the app's light theme swaps
+     these for day (a printed star chart) further down. Channels only, so
+     each rule keeps its own alpha. */
+  --o-ground: 5 5 5;
+  --o-planet: 7 7 7;
+  --o-line: 255 255 255;
+  --o-limb-a: 0.85;
+  --o-limb-b: 0.5;
+  --o-rim-a: 0.09;
+  --o-ring-a: 0.07;
+  --o-haze: 214 222 255;
+  --o-haze-a: 0.11;
+  --o-day-a: 0.075;
+  --o-surface-a: 0.075;
+  --o-surface-filter: none;
+  --o-stars-filter: none;
+  --o-sat: 245 166 35;
+  --o-grain-a: 0.035;
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+  background: rgb(var(--o-ground));
+  contain: strict;
+}
+.orbit-move {
+  transition: transform var(--orbit-dur) var(--orbit-ease);
+  will-change: transform;
+}
+/* The satellite trails the camera a little, so it reads as its own body. */
+.orbit-move-slow { transition-duration: calc(var(--orbit-dur) * 1.18); }
+
+.orbit-pivot {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+.orbit-lift,
+.orbit-sky,
+.orbit-satellite,
+.orbit-satellite-drift {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+}
+.orbit-planet,
+.orbit-limb,
+.orbit-haze,
+.orbit-ring {
+  position: absolute;
+  border-radius: 9999px;
+  width: var(--w);
+  height: var(--w);
+  left: calc(var(--w) / -2);
+  top: calc(var(--w) / -2);
+}
+.orbit-planet {
+  --w: var(--orbit-d);
+  overflow: hidden;
+  background: rgb(var(--o-planet));
+  box-shadow: inset 0 0 0 1px rgb(var(--o-line) / var(--o-rim-a));
+}
+.orbit-lit,
+.orbit-dayside {
+  position: absolute;
+  inset: 0;
+}
+.orbit-lit {
+  -webkit-mask-image: radial-gradient(42% 26% at 50% 0%, #000, transparent);
+  mask-image: radial-gradient(42% 26% at 50% 0%, #000, transparent);
+}
+.orbit-surface {
+  position: absolute;
+  inset: 0;
+  background-size: 1100px 1100px;
+  opacity: var(--o-surface-a);
+  filter: var(--o-surface-filter);
+}
+.orbit-dayside {
+  background: radial-gradient(46% 18% at 50% 0%, rgb(255 255 255 / var(--o-day-a)), transparent 72%);
+}
+.orbit-limb {
+  --w: var(--orbit-d);
+  box-shadow: inset 0 1.5px 0 0 rgb(var(--o-line) / var(--o-limb-a)), inset 0 0 0 1px rgb(var(--o-line) / var(--o-limb-b));
+  -webkit-mask-image: conic-gradient(from -75deg, transparent 0deg, rgb(0 0 0 / 0.3) 25deg, #000 62deg, #000 88deg, rgb(0 0 0 / 0.3) 125deg, transparent 150deg);
+  mask-image: conic-gradient(from -75deg, transparent 0deg, rgb(0 0 0 / 0.3) 25deg, #000 62deg, #000 88deg, rgb(0 0 0 / 0.3) 125deg, transparent 150deg);
+}
+.orbit-haze {
+  --w: calc(var(--orbit-d) + 220px);
+  background: radial-gradient(closest-side, transparent calc(100% - 111px), rgb(var(--o-haze) / var(--o-haze-a)) calc(100% - 109px), rgb(var(--o-haze) / calc(var(--o-haze-a) * 0.27)) calc(100% - 60px), transparent 100%);
+  -webkit-mask-image: conic-gradient(from -80deg, transparent 0deg, #000 60deg, #000 100deg, transparent 160deg);
+  mask-image: conic-gradient(from -80deg, transparent 0deg, #000 60deg, #000 100deg, transparent 160deg);
+}
+/* The satellite's path: the tilted ring from the mark, seen from inside it. */
+.orbit-ring {
+  --w: calc(var(--orbit-d) * 1.16);
+  border: 1px solid rgb(var(--o-line) / var(--o-ring-a));
+  -webkit-mask-image: conic-gradient(from -70deg, transparent, #000 45deg, #000 95deg, transparent 140deg);
+  mask-image: conic-gradient(from -70deg, transparent, #000 45deg, #000 95deg, transparent 140deg);
+}
+.orbit-satellite-drift > span {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  left: -2.5px;
+  top: calc(var(--orbit-d) * -0.58 - 2.5px);
+  border-radius: 9999px;
+  background: rgb(var(--o-sat));
+  box-shadow: 0 0 10px 2px rgb(var(--o-sat) / 0.45), 0 0 34px 8px rgb(var(--o-sat) / 0.12);
+}
+/* The sky fades in once the client has generated it; the layers inside only
+   ever change transform (and, for twinkle, opacity). */
+.orbit-sky {
+  opacity: 0;
+  transition: opacity 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.orbit-sky[data-ready="true"] { opacity: 1; }
+.orbit-stars {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  border-radius: 9999px;
+  filter: var(--o-stars-filter);
+}
+.orbit-stars[data-layer="twinkle"] {
+  animation: orbit-twinkle 5.5s ease-in-out infinite alternate;
+}
+@keyframes orbit-twinkle {
+  from { opacity: 1; }
+  to { opacity: 0.25; }
+}
+.orbit-grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--o-grain-a);
+  background-size: 200px 200px;
+}
+@media (max-width: 640px) {
+  .orbit-backdrop { --orbit-drop: 14vh; }
+}
+
+/* App mode: the same planet, quieter — lower, dimmer, shorter moves, and
+   nothing animating at rest, so an open tab costs nothing. */
+.orbit-backdrop[data-mode="app"] { --orbit-dur: 0.7s; }
+.orbit-backdrop[data-mode="app"] .orbit-limb { opacity: 0.5; }
+.orbit-backdrop[data-mode="app"] .orbit-haze,
+.orbit-backdrop[data-mode="app"] .orbit-dayside { opacity: 0.6; }
+.orbit-backdrop[data-mode="app"] .orbit-ring { opacity: 0.6; }
+.orbit-backdrop[data-mode="app"] .orbit-sky[data-ready="true"] { opacity: 0.7; }
+.orbit-backdrop[data-mode="app"] .orbit-stars[data-layer="twinkle"] { display: none; }
+
+/* Day: the app's light theme. Marketing forces .theme-dark and never gets
+   here. The planet becomes a printed star chart — a paper disc a shade
+   deeper than the page, an ink hairline limb, a white highlight where the
+   light lands, ink specks for stars (inverted, so the same box-shadows
+   serve), and a deeper amber that holds up on paper. Declared twice
+   because "system" resolves through a media query. */
+html[data-theme="light"] .orbit-backdrop[data-mode="app"] {
+  --o-ground: 250 249 247;
+  --o-planet: 241 239 233;
+  --o-line: 22 24 29;
+  --o-limb-a: 0.7;
+  --o-limb-b: 0.32;
+  --o-rim-a: 0.1;
+  --o-ring-a: 0.1;
+  --o-haze: 22 24 29;
+  --o-haze-a: 0.05;
+  --o-day-a: 0.85;
+  --o-surface-a: 0.07;
+  --o-surface-filter: invert(1);
+  --o-stars-filter: invert(1);
+  --o-sat: 205 120 8;
+  --o-grain-a: 0.02;
+}
+@media (prefers-color-scheme: light) {
+  html[data-theme="system"] .orbit-backdrop[data-mode="app"] {
+    --o-ground: 250 249 247;
+    --o-planet: 241 239 233;
+    --o-line: 22 24 29;
+    --o-limb-a: 0.7;
+    --o-limb-b: 0.32;
+    --o-rim-a: 0.1;
+    --o-ring-a: 0.1;
+    --o-haze: 22 24 29;
+    --o-haze-a: 0.05;
+    --o-day-a: 0.85;
+    --o-surface-a: 0.07;
+    --o-surface-filter: invert(1);
+    --o-stars-filter: invert(1);
+    --o-sat: 205 120 8;
+    --o-grain-a: 0.02;
+  }
+}
+/* A dense dust field reads as dirt on paper; the chart keeps the stars. */
+html[data-theme="light"] .orbit-backdrop[data-mode="app"] .orbit-stars[data-layer="dust"] { display: none; }
+@media (prefers-color-scheme: light) {
+  html[data-theme="system"] .orbit-backdrop[data-mode="app"] .orbit-stars[data-layer="dust"] { display: none; }
+}
+
+/* Full-page grounds in the app. Solid by default; transparent while the
+   app backdrop is mounted, in either theme. :has() resolves at first
+   paint — no flash of a solid ground before hydration. */
+.bg-ground { background-color: rgb(var(--base)); }
+html:has(.orbit-backdrop[data-mode="app"]) .bg-ground { background-color: transparent; }
+@media (prefers-reduced-motion: reduce) {
+  /* The scene still changes per page — instantly, without travel. */
+  .orbit-move { transition: none; }
+  .orbit-stars[data-layer="twinkle"] { animation: none; }
+}

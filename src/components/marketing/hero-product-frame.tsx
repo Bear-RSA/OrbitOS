@@ -96,7 +96,7 @@ export function HeroProductFrame() {
             <div className="flex items-center gap-2">
               <Clock className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
               <span className="text-[13px] font-light tracking-tight text-ink">
-                Operational Horizon
+                Coming up
               </span>
             </div>
             <span className="font-mono text-[10px] uppercase leading-none tracking-[0.18em] text-orbit-amber">

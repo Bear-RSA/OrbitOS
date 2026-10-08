@@ -91,7 +91,7 @@ export default function MemberOnboardingPage() {
   // --- Loading state ---
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
+      <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
         <Loader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
@@ -106,7 +106,7 @@ export default function MemberOnboardingPage() {
   // --- Profile fetch error state ---
   if (profileError || !memberProfile) {
     return (
-      <div className="min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000 p-4">
+      <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000 p-4">
         <div className="w-full max-w-sm text-center">
           <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
             <div className="mx-auto w-12 h-12 rounded-full bg-orbit-red/[0.1] flex items-center justify-center mb-6">
@@ -154,7 +154,7 @@ export default function MemberOnboardingPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-base flex items-center justify-center p-4 font-sans">
+    <div className="min-h-[100dvh] bg-ground flex items-center justify-center p-4 font-sans">
       <div className="w-full max-w-md animate-in fade-in duration-1000 slide-in-from-bottom-4">
 
         {/* Logo */}

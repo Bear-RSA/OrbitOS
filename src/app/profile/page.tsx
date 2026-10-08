@@ -260,7 +260,7 @@ export default function ProfilePage() {
 
   if (authLoading || dataLoading) {
     return (
-      <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-base">
+      <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground">
         <Loader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
@@ -326,7 +326,7 @@ export default function ProfilePage() {
   const displayBio = bio.trim();
 
   return (
-    <DashboardShell className="min-h-[100dvh] bg-base text-ink selection:bg-surface-hover selection:text-ink-strong">
+    <DashboardShell className="min-h-[100dvh] bg-ground text-ink selection:bg-surface-hover selection:text-ink-strong">
       {/* ── Chrome ─────────────────────────────────────────────────────── */}
       <AppHeader
         user={{ ...user, name: displayName }}

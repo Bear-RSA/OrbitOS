@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
+import { Eyebrow, OrbitMark } from "@/components/marketing/brand";
 
 export const metadata: Metadata = {
   title: "Contact Sales · OrbitOS",
@@ -10,25 +11,20 @@ export const metadata: Metadata = {
 
 export default function ContactSalesPage() {
   return (
-    <main className="theme-dark min-h-screen bg-base flex items-center justify-center px-6 font-mono selection:bg-white/[0.08]">
+    <main className="theme-dark min-h-screen bg-transparent flex items-center justify-center px-6 font-mono selection:bg-orbit-amber/25">
       {/* Centered card */}
       <div
-        className="relative w-full max-w-lg text-center py-20 px-10 rounded-2xl"
-        style={{
-          border: "1px solid #1a1a1a",
-          background: "#000000",
-        }}
+        className="relative w-full max-w-lg text-center py-20 px-10 rounded-2xl bg-surface-sunken ring-1 ring-line/[0.06]"
       >
         {/* Top accent line */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-px bg-gradient-to-r from-transparent via-[#333333] to-transparent" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-px bg-gradient-to-r from-transparent via-line/[0.2] to-transparent" />
 
-        {/* Mono label */}
-        <span className="text-[11px] tracking-[0.35em] uppercase text-ink-dim block mb-8">
-          Sales Inquiry
-        </span>
+        <OrbitMark className="mx-auto mb-10 h-10 w-10" />
+
+        <Eyebrow className="mb-8">Sales Inquiry</Eyebrow>
 
         {/* Heading */}
-        <h1 className="text-2xl md:text-3xl font-light text-ink tracking-tight mb-6">
+        <h1 className="font-sans text-2xl md:text-3xl font-light text-ink tracking-tight mb-6">
           Contact Sales
         </h1>
 
@@ -44,8 +40,7 @@ export default function ContactSalesPage() {
 
         {/* Placeholder email */}
         <div
-          className="inline-block px-6 py-3 rounded-xl text-[12px] text-ink-dim tracking-widest uppercase mb-12"
-          style={{ border: "1px solid #1a1a1a" }}
+          className="inline-block px-6 py-3 rounded-xl text-[12px] text-ink-dim tracking-widest uppercase mb-12 ring-1 ring-line/[0.06]"
         >
           sales@orbitos.dev
         </div>
@@ -56,8 +51,7 @@ export default function ContactSalesPage() {
         {/* Return button */}
         <Link
           href="/"
-          className="inline-flex items-center gap-3 px-8 py-3.5 rounded-xl text-[11px] uppercase tracking-[0.2em] text-ink transition-all duration-300 hover:bg-surface-card"
-          style={{ border: "1px solid #1a1a1a" }}
+          className="inline-flex items-center gap-3 px-8 py-3.5 rounded-xl text-[11px] uppercase tracking-[0.2em] text-ink transition-all duration-300 hover:bg-surface-card ring-1 ring-line/[0.06]"
         >
           <ArrowLeft className="w-3.5 h-3.5 opacity-50" />
           Return to Homepage
