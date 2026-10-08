@@ -60,6 +60,8 @@ interface ConversationListProps {
   onCreateGroup: () => void;
   /** Clears a thread from THIS person's rail. Never deletes anything. */
   onClearConversation: (conversationId: string) => void;
+  /** Visibility per breakpoint is the page's call — see `/messages`. */
+  className?: string;
 }
 
 export function ConversationList({
@@ -78,6 +80,7 @@ export function ConversationList({
   onOpenProfile,
   onCreateGroup,
   onClearConversation,
+  className,
 }: ConversationListProps) {
   const [search, setSearch] = useState("");
 
@@ -147,7 +150,10 @@ export function ConversationList({
   return (
     <nav
       aria-label="Conversations"
-      className="hidden w-[17.5rem] shrink-0 flex-col overflow-hidden rounded-2xl border border-line/[0.06] shadow-raised ring-1 ring-line/5 material-fog [--fog-base:var(--surface-sunken)] sm:flex"
+      className={cn(
+        "w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-line/[0.06] shadow-raised ring-1 ring-line/5 material-fog [--fog-base:var(--surface-sunken)] sm:flex sm:w-[17.5rem]",
+        className
+      )}
     >
       {/* ── Tabs ───────────────────────────────────────────────── */}
       <div

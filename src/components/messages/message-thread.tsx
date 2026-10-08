@@ -5,6 +5,7 @@ import { format, isSameDay, isToday, isYesterday } from "date-fns";
 import Link from "next/link";
 import {
   ArrowUpRight,
+  ChevronLeft,
   CircleSlash,
   ClipboardList,
   ImagePlus,
@@ -105,6 +106,12 @@ interface MessageThreadProps {
    * happened is decided on the server, where the thread is read.
    */
   onGroupCall?: (conversationId: string) => void;
+  /**
+   * Back to the conversation list. Phones show one pane at a time, so the
+   * thread carries the way out; from `sm` up both panes are on screen and
+   * the button is hidden.
+   */
+  onBack?: () => void;
 }
 
 /** "Today" and "Yesterday" beat a date somebody has to decode. */
@@ -123,6 +130,7 @@ export function MessageThread({
   onOpenProfile,
   onCall,
   onGroupCall,
+  onBack,
 }: MessageThreadProps) {
   const [live, setLive] = useState<Message[]>([]);
   const [older, setOlder] = useState<Message[]>([]);
@@ -459,7 +467,17 @@ export function MessageThread({
        same flat card treatment on both sides of the screen. */
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-line/[0.06] shadow-raised ring-1 ring-line/5 material-fog">
       {/* ── Header ─────────────────────────────────────────────── */}
-      <header className="flex shrink-0 items-center gap-3.5 border-b border-line/[0.05] px-5 py-4">
+      <header className="flex shrink-0 items-center gap-3.5 border-b border-line/[0.05] px-5 py-4 max-sm:gap-2.5 max-sm:pl-2.5">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="All conversations"
+            className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors active:bg-surface-hover hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus sm:hidden"
+          >
+            <ChevronLeft className="h-5 w-5" aria-hidden />
+          </button>
+        )}
         {/* The picture opens the person — here, in the rail, and on every
             message. One rule, so it never has to be discovered twice. */}
         {conversation?.type === "dm" ? (

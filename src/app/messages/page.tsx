@@ -25,6 +25,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { conversationTitle } from "@/lib/messages/summary";
 import { TOWN_HALL_NAME, type Conversation } from "@/types/message";
 import type { Member } from "@/types/member";
+import { cn } from "@/lib/utils/classnames";
 
 /* ------------------------------------------------------------------ */
 /*  Messages                                                           */
@@ -71,6 +72,17 @@ function MessagesScreen() {
   const [townHall, setTownHall] = useState<Conversation | null>(null);
   const [threads, setThreads] = useState<Conversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /* Phones show one pane at a time: the list (Town Hall, chats, people) or
+     the open thread. Desktop shows both and ignores this. A link that
+     names a thread (`?c=`) lands in it; otherwise you start at the list. */
+  const [mobilePane, setMobilePane] = useState<"list" | "thread">(() =>
+    searchParams.get("c") ? "thread" : "list"
+  );
+  /** Picking a conversation, on any screen, also shows it on a phone. */
+  const openConversation = useCallback((conversationId: string) => {
+    setSelectedId(conversationId);
+    setMobilePane("thread");
+  }, []);
   const [active, setActive] = useState<Conversation | null>(null);
   const [tab, setTab] = useState<ConversationTab>("chats");
   const [opening, setOpening] = useState<string | null>(null);
@@ -164,7 +176,7 @@ function MessagesScreen() {
     try {
       const result = await getOrCreateDmAction({ targetUid });
       if (result.success) {
-        setSelectedId(result.conversationId);
+        openConversation(result.conversationId);
         setTab("chats");
       } else {
         setError(result.error);
@@ -172,7 +184,7 @@ function MessagesScreen() {
     } finally {
       setOpening(null);
     }
-  }, []);
+  }, [openConversation]);
 
   const liveNames = useMemo(
     () => Object.fromEntries(members.map((m) => [m.id, m.name])),
@@ -263,14 +275,20 @@ function MessagesScreen() {
           tab={tab}
           opening={opening}
           onTabChange={setTab}
-          onSelect={setSelectedId}
+          onSelect={openConversation}
+          className={mobilePane === "list" ? "flex" : "hidden"}
           onOpenDm={(targetUid) => void openDm(targetUid)}
           onOpenProfile={setProfileUid}
           onCreateGroup={() => setCreateGroupOpen(true)}
           onClearConversation={setClearingId}
         />
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div
+          className={cn(
+            "min-w-0 flex-1 flex-col sm:flex",
+            mobilePane === "thread" ? "flex" : "hidden"
+          )}
+        >
           {error && (
             <p className="mb-3 rounded-lg bg-orbit-red/10 px-4 py-3 font-mono text-[11px] text-orbit-red ring-1 ring-orbit-red/20">
               {error}
@@ -295,6 +313,7 @@ function MessagesScreen() {
               subtitle={subtitleFor(active)}
               onOpenProfile={setProfileUid}
               onCall={callPerson}
+              onBack={() => setMobilePane("list")}
               onGroupCall={(conversationId) =>
                 joinGroupCall(
                   conversationId,
@@ -348,7 +367,7 @@ function MessagesScreen() {
         onOpenChange={setCreateGroupOpen}
         people={people}
         onCreated={(conversationId) => {
-          setSelectedId(conversationId);
+          openConversation(conversationId);
           setTab("chats");
         }}
       />
