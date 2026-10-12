@@ -8,10 +8,9 @@ import { RefObject, useEffect, useState, useSyncExternalStore } from "react";
 /*  Puts quick-liquid's refracting lens on a panel. The lens bends the */
 /*  page behind the panel's rim through an SVG displacement map fed   */
 /*  to `backdrop-filter: url()`, which only Chromium renders. Safari  */
-/*  and Firefox keep the panel's own CSS material instead, as do       */
-/*  touch screens — the fog already drops its blur there for scroll   */
-/*  cost, and a lens per card is heavier than the blur was — and       */
-/*  anyone who asked for less transparency or more contrast.           */
+/*  and Firefox keep the panel's own CSS material instead — so every  */
+/*  iPhone browser does, all being WebKit — as does anyone who asked  */
+/*  for less transparency or more contrast. Android Chrome gets it.   */
 /*                                                                     */
 /*  The panel must render its children inside a `.ql-content` element */
 /*  of its own. Without one the engine moves React's nodes into a     */
@@ -24,7 +23,6 @@ import { RefObject, useEffect, useState, useSyncExternalStore } from "react";
 /* ------------------------------------------------------------------ */
 
 const QUERIES = [
-  "(pointer: fine)",
   "(prefers-reduced-transparency: reduce)",
   "(prefers-contrast: more)",
 ];
@@ -36,8 +34,8 @@ function isChromium(): boolean {
 }
 
 function readSupport(): boolean {
-  const [fine, lessTransparency, moreContrast] = QUERIES.map((q) => window.matchMedia(q).matches);
-  return isChromium() && fine && !lessTransparency && !moreContrast;
+  const [lessTransparency, moreContrast] = QUERIES.map((q) => window.matchMedia(q).matches);
+  return isChromium() && !lessTransparency && !moreContrast;
 }
 
 function subscribe(onChange: () => void): () => void {
