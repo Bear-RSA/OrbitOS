@@ -12,6 +12,7 @@ import { groupCallLive } from "@/lib/calls/access";
 import { useNow } from "@/hooks/use-now";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils/classnames";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { TOWN_HALL_NAME, type Conversation } from "@/types/message";
 import type { Member } from "@/types/member";
 
@@ -148,10 +149,13 @@ export function ConversationList({
       : visiblePeople.length === 0;
 
   return (
-    <nav
+    <GlassSurface
+      role="navigation"
       aria-label="Conversations"
+      fallback="material-fog [--fog-base:var(--surface-sunken)]"
+      tint="surface-sunken"
       className={cn(
-        "w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-line/[0.06] shadow-raised ring-1 ring-line/5 material-fog [--fog-base:var(--surface-sunken)] sm:flex sm:w-[17.5rem]",
+        "w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-line/[0.06] shadow-raised ring-1 ring-line/5 sm:flex sm:w-[17.5rem]",
         className
       )}
     >
@@ -326,7 +330,7 @@ export function ConversationList({
           </button>
         </div>
       )}
-    </nav>
+    </GlassSurface>
   );
 }
 

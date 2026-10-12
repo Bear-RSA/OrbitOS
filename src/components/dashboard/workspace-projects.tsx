@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ProjectHealth } from "@/types/dashboard";
 import { Project } from "@/types/project";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { InteractiveCard } from "@/components/ui/interactive-card";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { useRouter } from "next/navigation";
@@ -208,7 +209,10 @@ export function WorkspaceProjects({
 
       {/* Archive Shelf */}
       {showArchive && archived.length > 0 && (
-        <div className="material-fog mb-10 rounded-3xl border border-line/[0.06] p-5 shadow-raised ring-1 ring-line/5 sm:p-6">
+        <GlassSurface
+          fallback="material-fog"
+          className="mb-10 rounded-3xl border border-line/[0.06] p-5 shadow-raised ring-1 ring-line/5 sm:p-6"
+        >
           <div className="mb-4 flex items-center gap-2.5">
             <Archive className="h-3.5 w-3.5 text-ink-dim" aria-hidden />
             <span className="text-[12px] text-ink-dim">
@@ -258,7 +262,7 @@ export function WorkspaceProjects({
               </li>
             ))}
           </ul>
-        </div>
+        </GlassSurface>
       )}
 
       <div className="mb-16 grid grid-cols-1 gap-5 md:grid-cols-2">

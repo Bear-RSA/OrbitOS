@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /**
  * The Firebase email action handler.
@@ -127,10 +128,18 @@ function ResetPasswordForm() {
         <h1 className="text-3xl font-light text-ink tracking-tight">{heading}</h1>
       </div>
 
-      <div className="rounded-[32px] bg-surface-sunken/80 backdrop-blur-3xl ring-1 ring-line/[0.05] shadow-overlay p-12 flex flex-col gap-8 relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-line/10 to-transparent" />
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-surface-control blur-[100px]" />
-
+      <GlassSurface
+        fallback="bg-surface-sunken/80 backdrop-blur-3xl"
+        tint="surface-sunken"
+        className="rounded-[32px] ring-1 ring-line/[0.05] shadow-overlay p-12 flex flex-col gap-8 relative overflow-hidden"
+        decoration={
+          <>
+            {/* Decorative scanline or top bar */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-line/10 to-transparent" />
+            <div className="absolute -top-24 -left-24 w-48 h-48 bg-surface-control blur-[100px]" />
+          </>
+        }
+      >
         {phase === "verifying" && (
           <div className="relative z-10 flex flex-col items-center gap-4 py-8">
             <Loader />
@@ -269,7 +278,7 @@ function ResetPasswordForm() {
             </Button>
           </form>
         )}
-      </div>
+      </GlassSurface>
 
       <div className="mt-12 flex flex-col items-center gap-4">
         <div className="h-px w-8 bg-surface-control" />

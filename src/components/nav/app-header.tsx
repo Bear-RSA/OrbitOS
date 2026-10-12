@@ -7,6 +7,7 @@ import { AppNav } from "@/components/nav/app-nav";
 import { ProfileLink } from "@/components/nav/profile-link";
 import { useScrolledPast } from "@/hooks/use-scrolled-past";
 import { cn } from "@/lib/utils/classnames";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  App Header                                                         */
@@ -61,10 +62,14 @@ export function AppHeader({ user, hide = DEFAULT_HIDE, actions, variant = "shell
       {/* Zero-height marker just above the bar. When it leaves the
           viewport, the bar is stuck and content is under it. */}
       {sticky && <div ref={sentinelRef} aria-hidden className="h-px w-px -mb-px" />}
-      <header
+      <GlassSurface
+        role="banner"
+        weight="chrome"
+        tint="base"
+        fallback="material-chrome"
         data-scrolled={sticky && scrolled ? "true" : undefined}
         className={cn(
-          "material-chrome scroll-edge relative px-5 sm:px-8 lg:px-10",
+          "scroll-edge relative px-5 sm:px-8 lg:px-10",
           sticky ? "sticky top-0 z-40 -mx-5 mb-12 sm:-mx-8 lg:-mx-10" : "shrink-0",
           className
         )}
@@ -113,7 +118,7 @@ export function AppHeader({ user, hide = DEFAULT_HIDE, actions, variant = "shell
             <ProfileLink photoURL={user.photoURL} name={user.name} className="ml-1" />
           </div>
         </div>
-      </header>
+      </GlassSurface>
     </>
   );
 }

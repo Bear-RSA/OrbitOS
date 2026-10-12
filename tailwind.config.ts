@@ -219,7 +219,11 @@ const config: Config = {
           animationName: "enter",
           animationDuration: "var(--t-spring)",
           animationTimingFunction: "var(--ease-spring)",
-          animationFillMode: "both",
+          /* `backwards`, not `both`: the end frame is the element's own
+             style anyway, but holding it kept `filter: blur(0px)` — the
+             interpolated end of a blur-in — on the element for good, and
+             any filter cuts a glass panel's lens off from the page. */
+          animationFillMode: "backwards",
           "--tw-enter-opacity": "initial",
           "--tw-enter-scale": "initial",
           "--tw-enter-blur": "initial",

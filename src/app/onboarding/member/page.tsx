@@ -10,6 +10,7 @@ import { Users, ArrowRight, ChevronRight, AlertCircle } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import type { User } from "@/types/auth";
 import { themeColor } from "@/lib/theme/colors";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 
 export default function MemberOnboardingPage() {
@@ -108,7 +109,7 @@ export default function MemberOnboardingPage() {
     return (
       <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000 p-4">
         <div className="w-full max-w-sm text-center">
-          <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
+          <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
             <div className="mx-auto w-12 h-12 rounded-full bg-orbit-red/[0.1] flex items-center justify-center mb-6">
               <AlertCircle className="w-5 h-5 text-orbit-red" />
             </div>
@@ -122,7 +123,7 @@ export default function MemberOnboardingPage() {
             >
               Retry
             </button>
-          </div>
+          </GlassSurface>
         </div>
       </div>
     );
@@ -178,7 +179,7 @@ export default function MemberOnboardingPage() {
         </div>
 
         {/* Form Card */}
-        <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
+        <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
           <form onSubmit={handleSubmit} className="space-y-6">
 
             {/* Full Name — required */}
@@ -253,7 +254,7 @@ export default function MemberOnboardingPage() {
               )}
             </button>
           </form>
-        </div>
+        </GlassSurface>
 
         {/* Skip */}
         <button

@@ -23,6 +23,7 @@ import { Task } from "@/types/task";
 import { Project } from "@/types/project";
 import { UserPlus, UserMinus, RefreshCw, X, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  Teams — the roster, on real people                                 */
@@ -324,7 +325,11 @@ export default function TeamsPage() {
       </ScrollReveal>
 
       {messageError && (
-        <div className="mb-10 flex items-start justify-between gap-4 rounded-2xl px-6 py-4 ring-1 ring-inset ring-orbit-amber/20 material-fog [--fog-base:var(--surface-sunken)]">
+        <GlassSurface
+          fallback="material-fog [--fog-base:var(--surface-sunken)]"
+          tint="surface-sunken"
+          className="mb-10 flex items-start justify-between gap-4 rounded-2xl px-6 py-4 ring-1 ring-inset ring-orbit-amber/20"
+        >
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-orbit-amber" aria-hidden />
             <p className="text-[13px] font-light text-ink-muted">{messageError}</p>
@@ -336,11 +341,15 @@ export default function TeamsPage() {
           >
             <X className="h-3.5 w-3.5" />
           </button>
-        </div>
+        </GlassSurface>
       )}
 
       {loadError ? (
-        <div className="mb-32 flex flex-col items-start gap-5 rounded-3xl border border-line/[0.06] p-8 shadow-raised ring-1 ring-line/5 material-fog [--fog-base:var(--surface-sunken)]">
+        <GlassSurface
+          fallback="material-fog [--fog-base:var(--surface-sunken)]"
+          tint="surface-sunken"
+          className="mb-32 flex flex-col items-start gap-5 rounded-3xl border border-line/[0.06] p-8 shadow-raised ring-1 ring-line/5"
+        >
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="h-4 w-4 text-orbit-amber" aria-hidden />
             <span className="text-[12px] text-ink-dim">Couldn&apos;t load the team</span>
@@ -359,14 +368,19 @@ export default function TeamsPage() {
             <RefreshCw className="w-4 h-4" />
             Retry
           </button>
-        </div>
+        </GlassSurface>
       ) : roster.length === 0 ? (
-        <div className="mb-32 space-y-2 rounded-3xl border border-line/[0.06] p-8 shadow-raised ring-1 ring-line/5 material-fog [--fog-base:var(--surface-sunken)]">
+        <GlassSurface
+          fallback="material-fog [--fog-base:var(--surface-sunken)]"
+          tint="surface-sunken"
+          className="mb-32 rounded-3xl border border-line/[0.06] p-8 shadow-raised ring-1 ring-line/5"
+          contentClassName="space-y-2"
+        >
           <p className="text-[15px] font-medium text-ink">No one on the team yet.</p>
           <p className="text-[13px] font-light leading-relaxed text-ink-muted">
             Workload shows up here once people join and get tasks assigned.
           </p>
-        </div>
+        </GlassSurface>
       ) : (
         <>
           {/* Roster — every seat in the org, with the load it is carrying */}

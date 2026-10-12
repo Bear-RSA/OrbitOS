@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils/classnames";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { AnimatedValue } from "@/lib/motion/animated-value";
 import { SPRING } from "@/lib/motion/spring";
@@ -114,24 +115,17 @@ export function InteractiveCard({ children, className, surface = "solid" }: Inte
     };
   }, [reducedMotion]);
 
-  return (
-    <div
-      ref={cardRef}
-      className={cn(
-        "focus-item group relative overflow-hidden rounded-[32px]",
-        // Colour and shadow ease; transform is owned by the springs above.
-        "transition-[background-color,box-shadow] duration-settle ease-spring",
-        // The lean is mouse-only, so only a fine pointer pays for a layer.
-        "card-lean",
-        "hover:shadow-[0_24px_80px_rgb(var(--scrim)_/_0.5)]",
-        /* Fog lives in the same CSS layer as the bg utilities, so the two
-           are never combined — whichever is emitted later would win. */
-        surface === "fog"
-          ? "material-fog border border-line/[0.06] ring-1 ring-line/5 shadow-raised hover:[--fog-alpha:0.55]"
-          : "bg-surface-lowest hover:bg-surface-low",
-        className
-      )}
-    >
+  const base = cn(
+    "focus-item group relative overflow-hidden rounded-[32px]",
+    // Colour and shadow ease; transform is owned by the springs above.
+    "transition-[background-color,box-shadow] duration-settle ease-spring",
+    // The lean is mouse-only, so only a fine pointer pays for a layer.
+    "card-lean",
+    "hover:shadow-[0_24px_80px_rgb(var(--scrim)_/_0.5)]"
+  );
+
+  const glow = (
+    <>
       {/* Cursor-aware glow, centred until the first move and on touch. */}
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-settle ease-spring group-hover:opacity-100"
@@ -142,7 +136,36 @@ export function InteractiveCard({ children, className, surface = "solid" }: Inte
 
       {/* Surface depth shimmer (tone, not glow) */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-sheen/[0.01] to-transparent opacity-0 transition-opacity duration-settle ease-spring group-hover:opacity-100" />
+    </>
+  );
 
+  // The fog card is glass where the browser can draw it. Its lean writes
+  // `transform`, which the lens does not mind; only filters and opacity do.
+  if (surface === "fog") {
+    return (
+      <GlassSurface
+        ref={cardRef}
+        fallback="material-fog hover:[--fog-alpha:0.55]"
+        className={cn(base, "border border-line/[0.06] ring-1 ring-line/5 shadow-raised", className)}
+        decoration={glow}
+      >
+        <div className="relative z-10">{children}</div>
+      </GlassSurface>
+    );
+  }
+
+  return (
+    <div
+      ref={cardRef}
+      className={cn(
+        base,
+        /* Kept apart from the fog recipe: both live in the same CSS layer
+           as the bg utilities, so whichever is emitted later would win. */
+        "bg-surface-lowest hover:bg-surface-low",
+        className
+      )}
+    >
+      {glow}
       <div className="relative z-10">{children}</div>
     </div>
   );

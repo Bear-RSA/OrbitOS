@@ -85,7 +85,9 @@ export function InteractionProvider({ children }: { children: React.ReactNode })
         }
         @keyframes interaction-memory-fade {
           0% { filter: brightness(1.08) saturate(1.05); }
-          100% { filter: brightness(1) saturate(1); }
+          /* Ends on none, not on identity values: \`forwards\` holds this
+             frame, and any held filter walls a glass panel's lens off. */
+          100% { filter: none; }
         }
       `}} />
       {children}

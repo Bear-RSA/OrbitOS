@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSheetGesture } from "@/hooks/use-sheet-gesture";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  Dialog                                                             */
@@ -92,46 +93,63 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
           ref={setRefs}
           data-sheet={isSheet ? "" : undefined}
           data-dismissed={dismissed ? "" : undefined}
-          className={cn(
-            "fixed z-50 grid w-full gap-6 p-8 sm:p-12 text-ink selection:bg-primary/20",
-            /* The calendar's fog, weighted for a panel over the page. */
-            "material-fog-modal border border-line/[0.06] shadow-overlay",
-            "ring-1 ring-line/5",
-            "focus:outline-none",
-
-            /* ── Centred panel (sm and up) ──
-               Capped to the viewport and scrolling inside: a panel centred
-               with translate grows off both edges when its content is
-               taller than the window, taking the footer's buttons with it. */
-            "sm:left-1/2 sm:top-1/2 sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[32px]",
-            "sm:max-h-[calc(100dvh-3rem)] sm:overflow-y-auto sm:overscroll-contain",
-            /* Slim house scrollbar, inset so it clears the rounded corners. */
-            "custom-scrollbar [&::-webkit-scrollbar-track]:my-8",
-            "sm:data-[state=open]:animate-in sm:data-[state=open]:fade-in-0 sm:data-[state=open]:zoom-in-95 sm:data-[state=open]:blur-in sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]",
-            "sm:data-[state=closed]:animate-out sm:data-[state=closed]:fade-out-0 sm:data-[state=closed]:zoom-out-95 sm:data-[state=closed]:blur-out sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%]",
-
-            /* ── Sheet (below sm) ──
-               Position is driven by the gesture hook writing `transform`;
-               the only CSS motion is the exit, which runs from wherever the
-               sheet currently is. `pan-y` leaves scrolling inside to the
-               browser; the hook takes over only at the top edge. */
-            "max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[92dvh] max-sm:overflow-y-auto max-sm:overscroll-contain",
-            "max-sm:rounded-t-[28px] max-sm:rounded-b-none max-sm:pt-12 max-sm:pb-[max(2rem,env(safe-area-inset-bottom))]",
-            "max-sm:[touch-action:pan-y] max-sm:will-change-transform",
-            className
-          )}
           {...props}
+          asChild
         >
-          {/* Grab handle. Only the sheet has one; it is the affordance that
-              says "this can be pulled". */}
-          {isSheet && (
-            <div
-              aria-hidden
-              className="absolute inset-x-0 top-0 flex h-9 items-start justify-center pt-3 [touch-action:none]"
-            >
-              <div className="h-[5px] w-10 rounded-full bg-ink/20" />
-            </div>
-          )}
+          {/* Glass on the centred panel only. The engine pins the panel's
+              overflow to hidden, so there the scroll lives on the content
+              inside it; a sheet keeps its own scroll and its fog, because
+              the pull gesture is built around the sheet scrolling. */}
+          <GlassSurface
+            weight="overlay"
+            disabled={isSheet}
+            /* The calendar's fog, weighted for a panel over the page. */
+            fallback="material-fog-modal"
+            className={cn(
+              "fixed z-50 grid w-full gap-6 p-8 sm:p-0 text-ink selection:bg-primary/20",
+              "border border-line/[0.06] shadow-overlay",
+              "ring-1 ring-line/5",
+              "focus:outline-none",
+
+              /* ── Centred panel (sm and up) ──
+                 Capped to the viewport and scrolling inside: a panel centred
+                 with translate grows off both edges when its content is
+                 taller than the window, taking the footer's buttons with it. */
+              "sm:left-1/2 sm:top-1/2 sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[32px]",
+              "sm:max-h-[calc(100dvh-3rem)]",
+              /* Slim house scrollbar, inset so it clears the rounded corners. */
+              "custom-scrollbar [&::-webkit-scrollbar-track]:my-8",
+              "sm:data-[state=open]:animate-in sm:data-[state=open]:fade-in-0 sm:data-[state=open]:zoom-in-95 sm:data-[state=open]:blur-in sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]",
+              "sm:data-[state=closed]:animate-out sm:data-[state=closed]:fade-out-0 sm:data-[state=closed]:zoom-out-95 sm:data-[state=closed]:blur-out sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%]",
+
+              /* ── Sheet (below sm) ──
+                 Position is driven by the gesture hook writing `transform`;
+                 the only CSS motion is the exit, which runs from wherever the
+                 sheet currently is. `pan-y` leaves scrolling inside to the
+                 browser; the hook takes over only at the top edge. */
+              "max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[92dvh] max-sm:overflow-y-auto max-sm:overscroll-contain",
+              "max-sm:rounded-t-[28px] max-sm:rounded-b-none max-sm:pt-12 max-sm:pb-[max(2rem,env(safe-area-inset-bottom))]",
+              "max-sm:[touch-action:pan-y] max-sm:will-change-transform",
+              className
+            )}
+            contentClassName={cn(
+              "sm:max-h-[inherit] sm:overflow-y-auto sm:overscroll-contain sm:p-12",
+              "custom-scrollbar [&::-webkit-scrollbar-track]:my-8"
+            )}
+            decoration={
+              /* Grab handle. Only the sheet has one; it is the affordance
+                 that says "this can be pulled". Above the content layer so
+                 the finger lands on it. */
+              isSheet && (
+                <div
+                  aria-hidden
+                  className="absolute inset-x-0 top-0 z-20 flex h-9 items-start justify-center pt-3 [touch-action:none]"
+                >
+                  <div className="h-[5px] w-10 rounded-full bg-ink/20" />
+                </div>
+              )
+            }
+          >
           {children}
           <DialogClose
             ref={closeRef}
@@ -147,6 +165,7 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
           </DialogClose>
+          </GlassSurface>
         </DialogPrimitive.Content>
       </DialogPortal>
     );

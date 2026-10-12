@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/brand/logo";
 import { friendlyAuthError } from "@/lib/firebase/auth-errors";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 
 export default function OnboardingPage() {
@@ -103,7 +104,7 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        <div className="rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
+        <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {!knownName && (
             <div className="space-y-2.5">
@@ -152,7 +153,7 @@ export default function OnboardingPage() {
               {isSubmitting ? "Setting up…" : "Open my dashboard"}
             </Button>
           </form>
-        </div>
+        </GlassSurface>
       </div>
     </div>
   );

@@ -46,6 +46,7 @@ import { useCall } from "@/contexts/call-context";
 import { isOrbitCall } from "@/lib/calls/scheduled";
 import { saHolidayName } from "@/lib/calendar/sa-holidays";
 import { cn } from "@/lib/utils/classnames";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  Directive Calendar                                                 */
@@ -62,9 +63,10 @@ import { cn } from "@/lib/utils/classnames";
 /*  deriving a day from an instant drifts the grid by a timezone.      */
 /*                                                                     */
 /*  Rescheduling runs on pointer events rather than HTML5 drag-and-    */
-/*  drop. This panel sets `backdrop-filter`, which makes it the        */
-/*  containing block for positioned descendants and is exactly the     */
-/*  kind of ancestor that leaves native dragging inert.                */
+/*  drop. Where glass is unavailable this panel falls back to          */
+/*  `backdrop-filter`, which makes it the containing block for         */
+/*  positioned descendants and is exactly the kind of ancestor that    */
+/*  leaves native dragging inert.                                      */
 /* ------------------------------------------------------------------ */
 
 /** Pointer travel, in px, before a press stops being a click. */
@@ -571,7 +573,10 @@ export function ProjectCalendar({
   );
 
   return (
-    <div className="mb-12 flex animate-fade-in flex-col overflow-hidden rounded-xl border border-line/[0.06] bg-surface-card/40 shadow-raised ring-1 ring-line/5 backdrop-blur-sm">
+    <GlassSurface
+      fallback="bg-surface-card/40 backdrop-blur-sm"
+      className="mb-12 flex animate-fade-in flex-col overflow-hidden rounded-xl border border-line/[0.06] shadow-raised ring-1 ring-line/5"
+    >
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/[0.04] p-4">
         <h2 className="select-none text-[12px] text-ink-dim">
@@ -1239,6 +1244,6 @@ export function ProjectCalendar({
           event={editingEvent}
         />
       )}
-    </div>
+    </GlassSurface>
   );
 }

@@ -17,6 +17,7 @@ import {
 import { vetDisplayName } from "@/lib/calls/display-name";
 import type { CallGrant, CallLobby } from "@/types/call";
 import type { RsvpStatus } from "@/types/event";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  Guest RSVP                                                         */
@@ -185,7 +186,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
     return (
       <div className="min-h-screen bg-ground flex items-center justify-center p-4">
         <div className="w-full max-w-sm animate-fade-in text-center flex flex-col items-center">
-          <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
+          <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="w-full rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
             <div className="mx-auto w-12 h-12 rounded-full bg-orbit-red/[0.1] flex items-center justify-center mb-6">
               <AlertCircle className="w-5 h-5 text-orbit-red" />
             </div>
@@ -201,7 +202,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
             >
               Go to OrbitOS
             </Link>
-          </div>
+          </GlassSurface>
         </div>
       </div>
     );
@@ -234,7 +235,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
   return (
     <div className="min-h-screen bg-ground flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-fade-in">
-        <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-10 sm:p-12">
+        <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="w-full rounded-[40px] border border-outline-variant/10 shadow-overlay p-10 sm:p-12">
           <Logo className="mb-10" />
 
           <p className="text-[12px] text-ink-dim mb-3">
@@ -420,7 +421,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
           <p className="text-[11px] text-ink-dim font-light mt-10 pt-6 border-t border-line/[0.04]">
             Sent by {context.orgName || "an OrbitOS workspace"}.
           </p>
-        </div>
+        </GlassSurface>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils/classnames";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  Success modal                                                      */
@@ -55,11 +56,13 @@ export function SuccessModal({ open, onOpenChange, title, description }: Success
           "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:duration-quick"
         )}
       />
-      <div
+      <GlassSurface
         data-state={state}
         role="status"
+        weight="overlay"
+        fallback="material-fog-modal"
         className={cn(
-          "material-fog-modal relative flex min-w-[300px] flex-col items-center justify-center rounded-2xl border border-line/[0.06] p-8 text-center shadow-overlay ring-1 ring-line/5",
+          "relative flex min-w-[300px] flex-col items-center justify-center rounded-2xl border border-line/[0.06] p-8 text-center shadow-overlay ring-1 ring-line/5",
           "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:blur-in-sm",
           "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:duration-quick"
         )}
@@ -93,7 +96,7 @@ export function SuccessModal({ open, onOpenChange, title, description }: Success
         {description && (
           <p className="max-w-[240px] text-body-sm font-light text-ink-muted">{description}</p>
         )}
-      </div>
+      </GlassSurface>
     </div>
   );
 }

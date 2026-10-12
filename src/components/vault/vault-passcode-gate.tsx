@@ -11,6 +11,7 @@ import {
   setVaultPasscodeAction,
   verifyVaultPasscodeAction,
 } from "@/app/actions/vault-passcode";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  The passcode gate                                                  */
@@ -371,9 +372,12 @@ function GateShell({
         <Icon className="h-5 w-5 text-ink-dim" aria-hidden />
       </div>
       <h2 className="mb-8 text-xl font-light tracking-tight text-ink">{title}</h2>
-      <div className="material-fog w-full rounded-[32px] border border-line/[0.06] p-10 text-left shadow-raised ring-1 ring-line/5">
+      <GlassSurface
+        fallback="material-fog"
+        className="w-full rounded-[32px] border border-line/[0.06] p-10 text-left shadow-raised ring-1 ring-line/5"
+      >
         {children}
-      </div>
+      </GlassSurface>
     </div>
   );
 }

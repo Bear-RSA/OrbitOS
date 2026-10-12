@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, UserPlus } from "lucide-react";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 function JoinForm() {
   const router = useRouter();
@@ -129,33 +130,33 @@ function JoinForm() {
   const renderContent = () => {
     if (status === "error") {
       return (
-        <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
+        <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="w-full rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
           <div className="mx-auto w-12 h-12 rounded-full bg-orbit-red/[0.1] flex items-center justify-center mb-6">
              <AlertCircle className="w-5 h-5 text-orbit-red" />
           </div>
           <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Integration Failed</h1>
           <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-8">{errorMsg}</p>
           <Link href="/" className="text-[12px] font-medium text-ink bg-surface-control px-5 py-2.5 rounded-lg border border-line/[0.04] hover:bg-surface-raised transition-all inline-block tracking-wide">Return to Core</Link>
-        </div>
+        </GlassSurface>
       );
     }
 
     if (status === "done") {
       return (
-        <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
+        <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="w-full rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
           <div className="mx-auto w-12 h-12 rounded-full bg-orbit-green/[0.1] flex items-center justify-center mb-6">
              <CheckCircle2 className="w-5 h-5 text-orbit-green" />
           </div>
           <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Integration Complete</h1>
           <p className="text-[13px] text-ink-muted font-light leading-relaxed">Taking you to your dashboard…</p>
-        </div>
+        </GlassSurface>
       );
     }
 
     if (!isInviteReady) return null;
 
     return (
-      <div className="w-full rounded-[40px] bg-surface-container/95 border border-outline-variant/10 backdrop-blur-2xl shadow-overlay p-12">
+      <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="w-full rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
         <div className="mx-auto w-12 h-12 rounded-full bg-surface-control border border-line/[0.04] flex items-center justify-center mb-6 shadow-card">
           <UserPlus className="w-5 h-5 text-ink" />
         </div>
@@ -265,7 +266,7 @@ function JoinForm() {
              </div>
           </div>
         )}
-      </div>
+      </GlassSurface>
     );
   };
 

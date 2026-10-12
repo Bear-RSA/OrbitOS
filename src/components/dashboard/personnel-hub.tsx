@@ -13,6 +13,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { useCall } from "@/contexts/call-context";
 import { MemberProfile } from "@/components/members/member-profile";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 interface PersonnelHubProps {
   projectId: string;
@@ -107,7 +108,10 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
   });
 
   return (
-    <div className="bg-surface-card/40 backdrop-blur-sm border border-line/[0.06] rounded-xl overflow-hidden shadow-raised ring-1 ring-line/5">
+    <GlassSurface
+      fallback="bg-surface-card/40 backdrop-blur-sm"
+      className="border border-line/[0.06] rounded-xl overflow-hidden shadow-raised ring-1 ring-line/5"
+    >
        <div className="p-4 border-b border-line/[0.04] bg-transparent flex justify-between items-center">
           <h2 className="text-[12px] text-ink-dim">Team</h2>
           {selectedAssignee && (
@@ -268,6 +272,6 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
            events={events}
          />
        )}
-    </div>
+    </GlassSurface>
   );
 }

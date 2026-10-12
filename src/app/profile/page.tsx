@@ -391,12 +391,17 @@ export default function ProfilePage() {
       <div className="flex flex-col gap-6 sm:gap-8">
         {/* ══ Identity ═══════════════════════════════════════════════════ */}
         <ScrollReveal>
-          <DashboardCard interactive={false} className="p-8 sm:p-10">
-            {/* Ambient light behind the avatar — gives the hero a source */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -left-20 -top-24 h-72 w-72 rounded-full bg-surface-raised blur-3xl"
-            />
+          <DashboardCard
+            interactive={false}
+            className="p-8 sm:p-10"
+            decoration={
+              /* Ambient light behind the avatar — gives the hero a source */
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -left-20 -top-24 h-72 w-72 rounded-full bg-surface-raised blur-3xl"
+              />
+            }
+          >
 
             <div className="relative flex flex-col gap-8 sm:flex-row sm:items-center sm:gap-10">
               <ProfilePictureManager user={user} />

@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { OrbitLockup } from "@/components/marketing/brand";
 import { useScrolledPast } from "@/hooks/use-scrolled-past";
 import { cn } from "@/lib/utils/classnames";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /**
  * The single top bar for every marketing page.
@@ -38,9 +39,13 @@ export function MarketingNav({ active }: { active?: NavKey }) {
   return (
     <>
       <div ref={sentinelRef} aria-hidden className="absolute left-0 top-0 h-px w-px" />
-      <nav
+      <GlassSurface
+        role="navigation"
+        weight="chrome"
+        tint="base"
+        fallback="material-chrome"
         data-scrolled={scrolled ? "true" : undefined}
-        className="material-chrome scroll-edge fixed top-0 z-50 w-full"
+        className="scroll-edge fixed top-0 z-50 w-full"
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 md:px-8">
           <Link
@@ -88,7 +93,7 @@ export function MarketingNav({ active }: { active?: NavKey }) {
             </Link>
           </div>
         </div>
-      </nav>
+      </GlassSurface>
     </>
   );
 }

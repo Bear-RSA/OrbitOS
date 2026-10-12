@@ -540,6 +540,40 @@
     .material-fog-modal { --fog-alpha: 0.9; }
   }
 
+  /* Liquid glass (components/ui/glass-surface.tsx).
+     `.ql-content` holds the children above the glass layers, so it has to
+     be positioned; it then hands on the panel's flex or grid layout as if
+     it were not there, glass or fallback. */
+  .liquid-host > .ql-content {
+    position: relative;
+    z-index: 10;
+    display: inherit;
+    flex: 1 1 auto;
+    flex-direction: inherit;
+    flex-wrap: inherit;
+    align-self: stretch;
+    align-items: inherit;
+    align-content: inherit;
+    justify-content: inherit;
+    gap: inherit;
+    grid-template-columns: inherit;
+    grid-template-rows: inherit;
+    grid-column: 1 / -1;
+    min-width: 0;
+    min-height: 0;
+  }
+  /* A full-width bar has square corners, so nothing needs clipping, and
+     its scroll-edge fade hangs below the box. */
+  .liquid-glass.scroll-edge {
+    overflow: visible !important;
+  }
+  /* The engine writes its own shadow inline. The card keeps its ring and
+     raised shadow instead — a stylesheet `!important` outranks an inline
+     declaration that is not. */
+  .liquid-glass {
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000) !important;
+  }
+
   /* Scroll edge: where content meets floating chrome, a short fade instead
      of a 1px rule. Present only once something has scrolled under. */
   .scroll-edge::after {

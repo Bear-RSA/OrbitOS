@@ -21,6 +21,7 @@ import {
   RoadmapBar,
   RoadmapState,
 } from "@/lib/roadmap/build";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  Deployment Roadmap                                                 */
@@ -325,7 +326,10 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
   const isEmpty = drawnCount === 0 && model.unscheduled.length === 0;
 
   return (
-    <div className="mb-12 flex flex-col overflow-hidden rounded-xl border border-line/[0.06] bg-surface-card/40 shadow-raised ring-1 ring-line/5 backdrop-blur-sm animate-fade-in">
+    <GlassSurface
+      fallback="bg-surface-card/40 backdrop-blur-sm"
+      className="mb-12 flex flex-col overflow-hidden rounded-xl border border-line/[0.06] shadow-raised ring-1 ring-line/5 animate-fade-in"
+    >
       {/* ── Header ── */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/[0.04] p-4">
         <div className="flex items-center gap-2.5">
@@ -581,7 +585,7 @@ export function SystemRoadmap({ tasks, members }: SystemRoadmapProps) {
           )}
         </>
       )}
-    </div>
+    </GlassSurface>
   );
 }
 

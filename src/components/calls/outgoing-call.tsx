@@ -19,6 +19,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { listNames, othersInCall } from "@/lib/calls/party";
 import type { CallGrant, CallStatus, OrbitCall } from "@/types/call";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  Outgoing call                                                      */
@@ -175,10 +176,13 @@ export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
   const over = status === "declined" || status === "missed" || status === "ended";
 
   return (
-    <div
+    <GlassSurface
+      fallback="bg-surface-container/95 backdrop-blur-2xl"
+      tint="surface-control"
+      weight="overlay"
       role="status"
       aria-live="polite"
-      className="fixed bottom-6 right-6 z-[60] w-[300px] animate-fade-in rounded-2xl border border-line/[0.08] bg-surface-container/95 p-5 shadow-overlay backdrop-blur-2xl"
+      className="fixed bottom-6 right-6 z-[60] w-[300px] animate-fade-in rounded-2xl border border-line/[0.08] p-5 shadow-overlay"
     >
       <p className="mb-4 text-[12px] text-ink-dim">
         {status === "placing" && "Connecting"}
@@ -213,6 +217,6 @@ export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
         {!over && <PhoneOff className="h-3.5 w-3.5" aria-hidden />}
         {over ? "Close" : "Cancel"}
       </button>
-    </div>
+    </GlassSurface>
   );
 }

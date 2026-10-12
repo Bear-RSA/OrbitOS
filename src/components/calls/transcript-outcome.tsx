@@ -12,6 +12,7 @@ import {
 } from "@/app/actions/transcripts";
 import { durationLabel } from "@/lib/transcripts/render";
 import type { VaultCategory, VaultClearance } from "@/types/vault";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  After the call                                                     */
@@ -114,10 +115,13 @@ export function TranscriptOutcome({ roomId, title, onClose }: TranscriptOutcomeP
 
   return (
     <>
-      <div
+      <GlassSurface
+        fallback="bg-surface-container/95 backdrop-blur-2xl"
+        tint="surface-control"
+        weight="overlay"
         role="status"
         aria-live="polite"
-        className="fixed bottom-6 right-6 z-[60] w-[320px] animate-fade-in rounded-2xl border border-line/[0.08] bg-surface-container/95 p-5 shadow-overlay backdrop-blur-2xl"
+        className="fixed bottom-6 right-6 z-[60] w-[320px] animate-fade-in rounded-2xl border border-line/[0.08] p-5 shadow-overlay"
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -180,7 +184,7 @@ export function TranscriptOutcome({ roomId, title, onClose }: TranscriptOutcomeP
             </div>
           </>
         )}
-      </div>
+      </GlassSurface>
 
       {presetFile && (
         <VaultDocumentDialog

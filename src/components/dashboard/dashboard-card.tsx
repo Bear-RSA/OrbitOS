@@ -3,6 +3,7 @@
 import * as React from "react";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /**
  * The single surface recipe for every dashboard panel.
@@ -11,35 +12,51 @@ import { cn } from "@/lib/utils/classnames";
  * `bg-surface-sunken/50`, `/30`, flat `#0A0A0A`), so panels sitting side by side in
  * the same grid row read as two different components. One recipe, one hover
  * response, one padding scale.
+ *
+ * On desktop Chromium the fog gives way to liquid glass: the same tint, with
+ * the orbit backdrop bending through the rim. Everywhere else it stays fog.
  */
 export function DashboardCard({
   className,
   children,
+  decoration,
   interactive = true,
   tone = "default",
 }: {
   className?: string;
   children: React.ReactNode;
+  /**
+   * Absolutely positioned art placed against the card itself rather than
+   * its padded content box, and seen through the glass.
+   */
+  decoration?: React.ReactNode;
   interactive?: boolean;
   tone?: "default" | "quiet";
 }) {
   return (
-    <div
+    <GlassSurface
+      fallback="material-fog"
+      tint={tone === "quiet" ? "surface-sunken" : "surface-card"}
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-3xl",
         "p-6 sm:p-8",
-        "material-fog border border-line/[0.06] ring-1 ring-line/5",
+        "border border-line/[0.06] ring-1 ring-line/5",
         "shadow-raised",
         "transition-[background-color,box-shadow,border-color] duration-spring ease-spring",
         tone === "quiet" && "[--fog-base:var(--surface-sunken)]",
         interactive && "hover:[--fog-alpha:0.55] hover:ring-line/[0.09]",
         className
       )}
+      decoration={
+        <>
+          {/* Top-edge light catch — gives the surface a direction without a border */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sheen/[0.07] to-transparent" />
+          {decoration}
+        </>
+      }
     >
-      {/* Top-edge light catch — gives the surface a direction without a border */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sheen/[0.07] to-transparent" />
       {children}
-    </div>
+    </GlassSurface>
   );
 }
 

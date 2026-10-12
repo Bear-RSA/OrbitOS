@@ -9,6 +9,7 @@ import { ActionButton } from "@/components/dashboard/dashboard-card";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { Member } from "@/types/member";
 import type { Conversation } from "@/types/message";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  Messages menu                                                      */
@@ -146,10 +147,12 @@ export function MessagesMenu({ uid, orgId, members, onOpen }: MessagesMenuProps)
       />
 
       {open && (
-        <div
+        <GlassSurface
+          fallback="bg-surface-card backdrop-blur-xl"
+          weight="overlay"
           role="dialog"
           aria-label="Unread messages"
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-80 overflow-hidden rounded-xl border border-line/[0.06] bg-surface-card shadow-raised ring-1 ring-line/5 backdrop-blur-xl"
+          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-80 overflow-hidden rounded-xl border border-line/[0.06] shadow-raised ring-1 ring-line/5"
         >
           <div className="border-b border-line/[0.04] px-4 py-3">
             <h2 className="text-[12px] text-ink-dim">
@@ -192,7 +195,7 @@ export function MessagesMenu({ uid, orgId, members, onOpen }: MessagesMenuProps)
               Open Messages
             </button>
           </div>
-        </div>
+        </GlassSurface>
       )}
     </div>
   );

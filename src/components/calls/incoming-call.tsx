@@ -24,6 +24,7 @@ import { CallRoom } from "@/components/calls/call-room";
 import { CallShell } from "@/components/calls/call-shell";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { CallGrant, OrbitCall } from "@/types/call";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  Incoming call                                                      */
@@ -246,7 +247,10 @@ export function IncomingCall() {
   const addingIn = Boolean(ringing.joinsCallId || ringing.joinsEventId);
 
   return (
-    <div
+    <GlassSurface
+      fallback="bg-surface-container/95 backdrop-blur-2xl"
+      tint="surface-control"
+      weight="overlay"
       role="alertdialog"
       aria-live="assertive"
       aria-label={
@@ -254,7 +258,7 @@ export function IncomingCall() {
           ? `${ringing.fromName} is adding you to a call`
           : `Incoming call from ${ringing.fromName}`
       }
-      className="fixed bottom-6 right-6 z-[60] w-[300px] animate-fade-in rounded-2xl border border-line/[0.08] bg-surface-container/95 p-5 shadow-overlay backdrop-blur-2xl"
+      className="fixed bottom-6 right-6 z-[60] w-[300px] animate-fade-in rounded-2xl border border-line/[0.08] p-5 shadow-overlay"
     >
       <div className="mb-4 flex items-center gap-3">
         <span className="relative flex h-2 w-2 shrink-0">
@@ -302,6 +306,6 @@ export function IncomingCall() {
       </div>
 
       {error && <p className="mt-3 text-[11px] font-light text-orbit-red">{error}</p>}
-    </div>
+    </GlassSurface>
   );
 }

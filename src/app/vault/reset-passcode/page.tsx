@@ -8,6 +8,7 @@ import { ShieldAlert } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { resetVaultPasscodeAction } from "@/app/actions/vault-passcode";
 import { Loader } from "@/components/ui/loader";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  /vault/reset-passcode                                              */
@@ -214,9 +215,13 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
           </div>
           <h1 className="text-2xl font-light tracking-tight text-ink">{title}</h1>
         </div>
-        <div className="rounded-[32px] bg-surface-sunken/80 p-10 ring-1 ring-inset ring-line/[0.05] shadow-overlay backdrop-blur-3xl">
+        <GlassSurface
+          fallback="bg-surface-sunken/80 backdrop-blur-3xl"
+          tint="surface-sunken"
+          className="rounded-[32px] p-10 ring-1 ring-inset ring-line/[0.05] shadow-overlay"
+        >
           {children}
-        </div>
+        </GlassSurface>
         <div className="mt-10 flex justify-center">
           <Link
             href="/vault"

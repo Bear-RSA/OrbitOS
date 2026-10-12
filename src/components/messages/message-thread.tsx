@@ -52,6 +52,7 @@ import type {
   MessageAttachment,
   MessageTaskRef,
 } from "@/types/message";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
 /*  Message thread                                                     */
@@ -465,7 +466,10 @@ export function MessageThread({
     /* The thread is the primary surface and now says so: it sits a rung
        above the rail on the ladder, with a real shadow rather than the
        same flat card treatment on both sides of the screen. */
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-line/[0.06] shadow-raised ring-1 ring-line/5 material-fog">
+    <GlassSurface
+      fallback="material-fog"
+      className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-line/[0.06] shadow-raised ring-1 ring-line/5"
+    >
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="flex shrink-0 items-center gap-3.5 border-b border-line/[0.05] px-5 py-4 max-sm:gap-2.5 max-sm:pl-2.5">
         {onBack && (
@@ -1005,7 +1009,7 @@ export function MessageThread({
           </p>
         )}
       </div>
-    </div>
+    </GlassSurface>
   );
 }
 
