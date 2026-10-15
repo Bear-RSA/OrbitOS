@@ -170,7 +170,6 @@ export function WorkspaceProjects({
         <div>
           <h2 className="mb-3 text-2xl font-light tracking-tight text-ink sm:text-3xl">{title}</h2>
           <div className="inline-flex items-center gap-2 rounded-full bg-surface-control px-3 py-1 ring-1 ring-inset ring-line/[0.07]">
-             <span className="h-1.5 w-1.5 rounded-full bg-orbit-green shadow-[0_0_8px_rgb(var(--orbit-green)_/_0.4)]" aria-hidden />
              <span className="text-[12px] text-ink-muted">{eyebrow}</span>
           </div>
         </div>
