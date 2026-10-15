@@ -261,12 +261,26 @@ export async function redeemInviteAction(payload: RedeemPayload): Promise<{ succ
       return { success: false, error: "This invite was sent to a different email. Sign in with that email to accept it." };
     }
 
-    // 4. Atomic Batch Update
-    const batch = adminDb.batch();
-
-    // Create or update user document
     const userRef = adminDb.collection("users").doc(uid);
     const userSnap = await userRef.get();
+
+    // 4. Seat limit, checked again here. The check at invite time counts
+    //    only people who have already joined, so an owner could send ten
+    //    invites from a two-seat plan and every one of them would land.
+    //    Someone already in this workspace takes no new seat.
+    if (userSnap.data()?.orgId !== invite.orgId) {
+      const quota = await validateTierQuota(invite.orgId, "members");
+      if (!quota.allowed) {
+        console.warn("[RedeemInvite] Seat limit reached:", { orgId: invite.orgId, ...quota });
+        return {
+          success: false,
+          error: "This workspace has no free seats on its plan. Ask the owner to upgrade, then open the link again.",
+        };
+      }
+    }
+
+    // 5. Atomic Batch Update
+    const batch = adminDb.batch();
 
     if (userSnap.exists) {
       // Existing user — only attach org membership

@@ -343,12 +343,16 @@ export async function validateTierQuota(
     let currentCount = 0;
 
     if (resource === "members") {
-      // Count all users (OWNER + MEMBER) in the org
+      // Members only. Owners have their own allowance (`maxOwners`), and
+      // the plans are sold as "1 owner + 2 members", so counting the owner
+      // here would quietly take a seat off every tier.
       const usersSnap = await adminDb
         .collection("users")
         .where("orgId", "==", orgId)
         .get();
-      currentCount = usersSnap.size;
+      currentCount = usersSnap.docs.filter(
+        (doc) => doc.data().role !== "OWNER"
+      ).length;
     } else if (resource === "projects") {
       // Count active (non-archived) projects in the org
       const projectsSnap = await adminDb

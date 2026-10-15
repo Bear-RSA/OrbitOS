@@ -306,6 +306,14 @@ export async function unarchiveProjectAction(
       return { success: true };
     }
 
+    // Archived projects sit outside the plan's project count, so a restore
+    // takes a slot the same way a create does. Without this, archive, create
+    // and restore would get round the limit.
+    const quota = await validateTierQuota(userOrgId!, "projects");
+    if (!quota.allowed) {
+      return { success: false, error: quota.error || "Project limit reached." };
+    }
+
     const userSnap = await adminDb.collection("users").doc(uid).get();
     const userName = userSnap.data()?.name || "System";
 

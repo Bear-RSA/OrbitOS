@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 import crypto from "crypto";
+import { TIER_DEFINITIONS, type SubscriptionTier } from "@/types/subscription";
 
 /* ------------------------------------------------------------------ */
 /*  Payfast ITN (Instant Transaction Notification) Webhook             */
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
 
     // 4. Extract custom fields
     //    custom_str1 = orgId
-    //    custom_str2 = tier (e.g., "foundational", "studio_core", "total_visibility")
+    //    custom_str2 = tier ("foundational" or "studio_core"; Custom is never sold here)
     const orgId = data.custom_str1;
     const tier = data.custom_str2;
     const paymentStatus = data.payment_status;
@@ -130,9 +131,29 @@ export async function POST(req: NextRequest) {
     const now = AdminTimestamp.now();
 
     if (paymentStatus === "COMPLETE") {
-      // Successful payment — activate the new tier
-      const validTiers = ["exploration", "foundational", "studio_core", "total_visibility"];
-      const activeTier = validTiers.includes(tier) ? tier : "exploration";
+      // The checkout form is built in the browser, so the tier and amount
+      // in this notice are whatever the buyer submitted. The signature only
+      // proves Payfast sent it. Activate a tier only when it is sold
+      // self-serve and the full price was actually paid; anything else
+      // leaves the org as it was. Payfast still gets its 200.
+      const tierDef = Object.prototype.hasOwnProperty.call(TIER_DEFINITIONS, tier)
+        ? TIER_DEFINITIONS[tier as SubscriptionTier]
+        : null;
+      const amountPaid = Number(data.amount_gross);
+      if (
+        !tierDef ||
+        tierDef.contactSales ||
+        tierDef.priceZAR <= 0 ||
+        !(amountPaid >= tierDef.priceZAR)
+      ) {
+        console.error("[Payfast ITN] Payment does not match a self-serve tier:", {
+          orgId,
+          tier,
+          amountGross: data.amount_gross,
+        });
+        return new NextResponse("OK", { status: 200 });
+      }
+      const activeTier = tierDef.id;
 
       await orgRef.update({
         "subscription.tier": activeTier,

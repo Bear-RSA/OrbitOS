@@ -500,7 +500,9 @@ service cloud.firestore {
 
     match /projects/{projectId} {
       allow read: if isMember(resource.data.orgId);
-      allow create: if isMember(request.resource.data.orgId);
+      /* Created only by `createProjectAction` on the Admin SDK, which
+         enforces the plan's project limit. A client create would skip it. */
+      allow create: if false;
       allow update: if isOwner(resource.data.orgId);
       allow delete: if isOwner(resource.data.orgId);
 
