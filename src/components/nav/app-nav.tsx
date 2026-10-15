@@ -17,10 +17,8 @@ import { cn } from "@/lib/utils/classnames";
 /*  roster was effectively hidden from anyone who had not gone looking */
 /*  for it in the settings tree.                                       */
 /*                                                                     */
-/*  The active state is one pill that slides between destinations on   */
-/*  the house spring, rather than a highlight that blinks off one item */
-/*  and on another. Because it is a CSS transition on `transform`, a   */
-/*  second click mid-slide simply retargets it from where it is.       */
+/*  The current page is marked by its icon alone: a heavier stroke and */
+/*  full-strength ink, eased in, with no box behind it.                */
 /* ------------------------------------------------------------------ */
 
 interface NavItem {
@@ -67,9 +65,6 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
   const items = hide?.length ? ITEMS.filter((item) => !hide.includes(item.href)) : ITEMS;
 
   const listRef = useRef<HTMLUListElement>(null);
-  const [pill, setPill] = useState<{ x: number; width: number } | null>(null);
-  // The first measurement places the pill; only later ones slide it.
-  const [placed, setPlaced] = useState(false);
   // Which edges have destinations scrolled out of view, for the edge fades.
   const [edges, setEdges] = useState({ start: false, end: false });
 
@@ -127,20 +122,6 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
     const list = listRef.current;
     if (!list) return;
 
-    const measure = () => {
-      const active = list.querySelector<HTMLElement>('[aria-current="page"]');
-      if (!active) {
-        setPill(null);
-        return;
-      }
-      /* Layout offsets, not getBoundingClientRect: the header scales while
-         it hides on scroll, and a rect read mid-flight is scaled with it.
-         The pill was left short of its label until the next resize. The
-         list is the link's offsetParent and the pill lives in its scrolled
-         content, so offsetLeft is already the right coordinate. */
-      setPill({ x: active.offsetLeft, width: active.offsetWidth });
-    };
-
     const readEdges = () => {
       const max = list.scrollWidth - list.clientWidth;
       setEdges({ start: list.scrollLeft > 1, end: list.scrollLeft < max - 1 });
@@ -157,12 +138,8 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
       }
     }
 
-    measure();
     readEdges();
-    const observer = new ResizeObserver(() => {
-      measure();
-      readEdges();
-    });
+    const observer = new ResizeObserver(readEdges);
     observer.observe(list);
     list.addEventListener("scroll", readEdges, { passive: true });
     return () => {
@@ -170,14 +147,6 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
       list.removeEventListener("scroll", readEdges);
     };
   }, [pathname, items.length]);
-
-  useLayoutEffect(() => {
-    if (pill && !placed) {
-      // Let the first position paint before transitions are enabled.
-      const frame = requestAnimationFrame(() => setPlaced(true));
-      return () => cancelAnimationFrame(frame);
-    }
-  }, [pill, placed]);
 
   return (
     <nav aria-label="Primary" className={cn("min-w-0", className)}>
@@ -187,11 +156,10 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
         ref={listRef}
         /* `safe center`, not `center`: a centred row wider than its box
            overflows on both sides, and the left half cannot be scrolled
-           to — on a phone it slid under the logo and took the selected
-           pill with it. Safe centring falls back to the start edge.
+           to — on a phone it slid under the logo. Safe centring falls back to the start edge.
            The fades say there is more to scroll to on that side. */
         className={cn(
-          "relative flex items-center [justify-content:safe_center] gap-1 sm:gap-2.5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          "relative flex items-center [justify-content:safe_center] gap-0.5 sm:gap-1.5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
           edges.start && edges.end
             ? "[mask-image:linear-gradient(to_right,transparent,black_20px,black_calc(100%-20px),transparent)]"
             : edges.end
@@ -199,16 +167,6 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
               : edges.start && "[mask-image:linear-gradient(to_right,transparent,black_20px)]"
         )}
       >
-        {pill && (
-          <li
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute left-0 top-0 h-9 rounded-full bg-surface-control ring-1 ring-inset ring-line/[0.08]",
-              placed && "transition-[transform,width] duration-spring ease-spring"
-            )}
-            style={{ transform: `translate3d(${pill.x}px, 0, 0)`, width: pill.width }}
-          />
-        )}
         {items.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href, pathname);
@@ -229,17 +187,23 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
                 }}
                 onBlur={leaveTip}
                 className={cn(
-                  // `relative` lifts the link above the absolutely positioned
-                  // pill; without it the pill paints over the label.
-                  "group/nav relative inline-flex h-9 min-w-9 items-center justify-center gap-2 rounded-full px-[11px]",
+                  "group/nav relative inline-flex h-9 min-w-9 items-center justify-center gap-2 rounded-full px-4",
                   "transition-[color,background-color,transform] duration-quick ease-spring",
                   "active:scale-[0.96] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base",
-                  active ? "text-ink" : "text-ink-muted hover:bg-surface-control/50 hover:text-ink"
+                  active ? "font-semibold text-ink-strong" : "text-ink-muted hover:bg-surface-control/50 hover:text-ink"
                 )}
               >
                 <span className="relative flex shrink-0 items-center justify-center">
-                  <Icon className="h-3.5 w-3.5" aria-hidden />
+                  {/* CSS `stroke-width` outranks Lucide's attribute and, unlike
+                      it, animates — so the icon thickens rather than snaps. */}
+                  <Icon
+                    className={cn(
+                      "h-4 w-4 transition-[stroke-width] duration-quick ease-spring",
+                      active ? "[stroke-width:2.6]" : "[stroke-width:1.75]"
+                    )}
+                    aria-hidden
+                  />
                   {showBadge && (
                     <span className="absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full bg-orbit-red ring-2 ring-base" />
                   )}
