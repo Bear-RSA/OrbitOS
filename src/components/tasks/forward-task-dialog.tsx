@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   Check,
-  Megaphone,
   MessagesSquare,
   Search,
   Send,
@@ -33,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { TownHallAvatar } from "@/components/messages/town-hall-avatar";
 import { cn } from "@/lib/utils/classnames";
 import { TOWN_HALL_NAME, type Conversation } from "@/types/message";
 import type { Member } from "@/types/member";
@@ -174,7 +174,7 @@ export function ForwardTaskDialog({
         viewerOrgId: viewer.orgId,
         viewerRole: viewer.role,
       }).allowed &&
-      (!needle || TOWN_HALL_NAME.toLowerCase().includes(needle))
+      (!needle || (townHall.name || TOWN_HALL_NAME).toLowerCase().includes(needle))
   );
 
   const close = useCallback(() => {
@@ -226,11 +226,11 @@ export function ForwardTaskDialog({
   const targetName = useMemo(() => {
     if (!target) return null;
     if (target.kind === "person") return directory.get(target.uid)?.name ?? "that person";
-    if (target.id === townHallId) return TOWN_HALL_NAME;
+    if (target.id === townHallId) return townHall?.name || TOWN_HALL_NAME;
 
     const found = threads.find((c) => c.id === target.id);
     return found ? conversationTitle(found, viewer.id, liveNames) : "that chat";
-  }, [target, directory, threads, townHallId, viewer.id, liveNames]);
+  }, [target, directory, threads, townHallId, townHall?.name, viewer.id, liveNames]);
 
   const nothingToPick = chats.length === 0 && people.length === 0 && !townHallPostable;
 
@@ -326,8 +326,14 @@ export function ForwardTaskDialog({
                       picked={target?.kind === "conversation" && target.id === townHall.id}
                       disabled={sending}
                       onPick={() => setTarget({ kind: "conversation", id: townHall.id })}
-                      icon={<Megaphone className="h-3.5 w-3.5 text-ink-dim" aria-hidden />}
-                      title={TOWN_HALL_NAME}
+                      icon={
+                        <TownHallAvatar
+                          photoURL={townHall.photoURL}
+                          name={townHall.name || TOWN_HALL_NAME}
+                          className="h-7 w-7"
+                        />
+                      }
+                      title={townHall.name || TOWN_HALL_NAME}
                       subtitle="Everyone reads this"
                     />
                   )}

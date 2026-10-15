@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   canCreateGroup,
+  canDeleteMessage,
+  canEditMessage,
+  canManageTownHall,
   canOpenDm,
   canPostToConversation,
   canReadConversation,
   type ConversationFacts,
   type GroupFacts,
+  type MessageFacts,
 } from "@/lib/messages/access";
 
 /* ------------------------------------------------------------------ */
@@ -188,5 +192,92 @@ describe("creating a group", () => {
       ],
     });
     expect(canCreateGroup(facts).allowed).toBe(true);
+  });
+});
+
+describe("deleting a message", () => {
+  const facts = (over: Partial<MessageFacts> = {}): MessageFacts => ({
+    ...townhall({ viewerUid: OWNER, viewerRole: "OWNER" }),
+    senderId: SARAH,
+    hasTaskRef: false,
+    hasText: true,
+    ...over,
+  });
+
+  it("lets an owner delete anyone's message", () => {
+    expect(canDeleteMessage(facts()).allowed).toBe(true);
+  });
+
+  it("refuses a member, even on their own message", () => {
+    expect(
+      canDeleteMessage(facts({ viewerUid: SARAH, viewerRole: "MEMBER" }))
+    ).toMatchObject({ allowed: false, reason: "owners-only" });
+  });
+
+  it("refuses an owner in a thread they cannot read", () => {
+    expect(
+      canDeleteMessage(facts({ ...dm({ viewerUid: OWNER, viewerRole: "OWNER" }) }))
+    ).toMatchObject({ allowed: false, reason: "not-a-participant" });
+  });
+});
+
+describe("editing a message", () => {
+  const facts = (over: Partial<MessageFacts> = {}): MessageFacts => ({
+    ...dm(),
+    senderId: SARAH,
+    hasTaskRef: false,
+    hasText: true,
+    ...over,
+  });
+
+  it("lets the sender edit their own words", () => {
+    expect(canEditMessage(facts()).allowed).toBe(true);
+  });
+
+  it("refuses someone else's message, owner or not", () => {
+    expect(
+      canEditMessage(facts({ senderId: MARCUS, viewerRole: "OWNER" }))
+    ).toMatchObject({ allowed: false, reason: "not-yours" });
+  });
+
+  it("refuses a task card and a bare picture", () => {
+    expect(canEditMessage(facts({ hasTaskRef: true }))).toMatchObject({
+      allowed: false,
+      reason: "not-editable",
+    });
+    expect(canEditMessage(facts({ hasText: false }))).toMatchObject({
+      allowed: false,
+      reason: "not-editable",
+    });
+  });
+
+  it("refuses a member who can no longer post in Town Hall", () => {
+    expect(
+      canEditMessage(facts({ ...townhall({ viewerRole: "MEMBER" }), senderId: SARAH }))
+    ).toMatchObject({ allowed: false, reason: "announcements-only" });
+  });
+});
+
+describe("managing Town Hall", () => {
+  it("lets any owner speak for the company", () => {
+    expect(canManageTownHall(townhall({ viewerUid: OWNER, viewerRole: "OWNER" })).allowed).toBe(true);
+  });
+
+  it("refuses a member", () => {
+    expect(canManageTownHall(townhall({ viewerRole: "MEMBER" }))).toMatchObject({
+      allowed: false,
+      reason: "owners-only",
+    });
+  });
+
+  it("refuses a group, which has no company profile", () => {
+    const group = dm({ type: "group", participantIds: [SARAH, OWNER], viewerUid: OWNER, viewerRole: "OWNER" });
+    expect(canManageTownHall(group)).toMatchObject({ allowed: false, reason: "not-town-hall" });
+  });
+
+  it("refuses another workspace's owner", () => {
+    expect(
+      canManageTownHall(townhall({ viewerOrgId: "org2", viewerRole: "OWNER" }))
+    ).toMatchObject({ allowed: false, reason: "wrong-org" });
   });
 });

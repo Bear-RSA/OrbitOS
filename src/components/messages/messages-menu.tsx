@@ -226,7 +226,9 @@ function UnreadRow({
   const speaker =
     conversation.type === "dm"
       ? null
-      : conversation.lastMessageBy
+      : conversation.lastMessageAsCompany
+        ? null
+        : conversation.lastMessageBy
         ? liveNames[conversation.lastMessageBy] ||
           conversation.participantNames?.[conversation.lastMessageBy] ||
           null

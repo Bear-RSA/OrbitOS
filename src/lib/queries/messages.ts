@@ -134,6 +134,25 @@ export function subscribeToConversation(
 }
 
 /**
+ * One message, live — for Town Hall's pinned notices, which may sit far
+ * above the page the transcript has loaded. Null once it is deleted.
+ */
+export function subscribeToMessage(
+  conversationId: string,
+  messageId: string,
+  callback: (message: Message | null) => void
+) {
+  return onSnapshot(
+    doc(messagesRef(conversationId), messageId),
+    (snap) => callback(snap.exists() ? toMessage(snap) : null),
+    (err) => {
+      console.error("[Message Subscription Error]:", err);
+      callback(null);
+    }
+  );
+}
+
+/**
  * The newest messages in a thread, live, oldest-first.
  *
  * Firestore can only take the newest N by ordering DESCENDING, but a
@@ -209,7 +228,9 @@ export async function sendMessage(
   conversationId: string,
   senderId: string,
   rawText: string,
-  attachment: MessageAttachment | null = null
+  attachment: MessageAttachment | null = null,
+  /** Town Hall only: post under the company's name. The rules hold it there. */
+  asCompany = false
 ): Promise<string> {
   const text = rawText.trim();
 
@@ -236,6 +257,7 @@ export async function sendMessage(
     text,
     attachment,
     createdAt: serverTimestamp(),
+    asCompany,
     editedAt: null,
     deletedAt: null,
   });
@@ -248,6 +270,7 @@ export async function sendMessage(
       ? messagePreview(text)
       : attachmentPreview(attachment?.kind ?? "gif"),
     lastMessageBy: senderId,
+    lastMessageAsCompany: asCompany,
   });
 
   await batch.commit();

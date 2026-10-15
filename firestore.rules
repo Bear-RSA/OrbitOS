@@ -260,7 +260,7 @@ service cloud.firestore {
 
       /* The same split `lib/messages/access` makes: in Town Hall,
          posting is narrower than reading. Everyone gets the notices;
-         only the OWNER writes them. */
+         only owners write them. */
       function mayPost() {
         return resource.data.type == 'townhall'
           ? isOwner(resource.data.orgId)
@@ -336,8 +336,13 @@ service cloud.firestore {
       allow update: if isSignedIn()
         && editedKeys().hasOnly([
              'lastMessageAt', 'lastMessagePreview', 'lastMessageBy',
-             'lastReadAt', 'clearedAt'
+             'lastMessageAsCompany', 'lastReadAt', 'clearedAt'
            ])
+        /* Only Town Hall speaks as the company, so only there may the rail
+           be told the last line was the company's. */
+        && (!editedKeys().hasAny(['lastMessageAsCompany']) ||
+            request.resource.data.lastMessageAsCompany == false ||
+            resource.data.type == 'townhall')
         && touchesOnlyOwnReadReceipt()
         && touchesOnlyOwnClearedAt()
         && (!editedKeys().hasAny(['lastMessageBy']) ||
@@ -452,8 +457,15 @@ service cloud.firestore {
            thread is provably server-written. */
         allow create: if isSignedIn()
           && request.resource.data.keys().hasOnly([
-               'senderId', 'createdAt', 'text', 'editedAt', 'deletedAt', 'attachment'
+               'senderId', 'createdAt', 'text', 'editedAt', 'deletedAt', 'attachment',
+               'asCompany'
              ])
+          /* Posting as the company is Town Hall's alone; the branch below
+             already holds Town Hall to owners. */
+          && (!('asCompany' in request.resource.data) ||
+              request.resource.data.asCompany == false ||
+              (request.resource.data.asCompany == true &&
+               conversation().type == 'townhall'))
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.createdAt == request.time
           && request.resource.data.text is string
@@ -468,23 +480,22 @@ service cloud.firestore {
                  request.auth.uid in conversation().participantIds)
           );
 
-        /* Editing and soft-deleting your own message only. Deletion is
-           withheld outright: `deletedAt` keeps the row and the thread's
-           shape, and removing the document would leave replies answering
-           nothing. */
-        /* `taskRef` is not in the editable set either: a card cannot be
-           added to an ordinary message, and one already on a message
-           cannot be re-pointed at a different directive after the fact. */
-        allow update: if isSignedIn()
-          && resource.data.senderId == request.auth.uid
-          && editedKeys().hasOnly(['text', 'editedAt', 'deletedAt'])
-          && (!editedKeys().hasAny(['text']) || (
-               request.resource.data.text is string &&
-               request.resource.data.text.size() > 0 &&
-               request.resource.data.text.size() <= 4000
-             ));
-
+        /* No client edits or deletes. Both go through
+           `actions/message-history` on the Admin SDK, because each one
+           writes a record to `history` below in the same transaction —
+           a browser able to change a message directly could change it
+           without the record, and the account holder's view of what was
+           said would quietly stop being true. */
+        allow update: if false;
         allow delete: if false;
+      }
+
+      /* Every edit and delete, with the words as they stood. Closed in
+         both directions: it holds exactly what the people in the thread
+         were told is gone, so it is read by the account holder through
+         `getMessageHistoryAction` and by no client at all. */
+      match /history/{entryId} {
+        allow read, write: if false;
       }
     }
 

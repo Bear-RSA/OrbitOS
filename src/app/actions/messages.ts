@@ -7,7 +7,12 @@ import { cloudinary } from "@/lib/cloudinary";
 import { requireServerUid } from "@/lib/auth/session";
 import { resolveChatImageLimit } from "@/lib/auth/permissions";
 import { dmConversationId, townHallConversationId } from "@/lib/messages/conversation-id";
-import { canCreateGroup, canOpenDm, canPostToConversation } from "@/lib/messages/access";
+import {
+  canCreateGroup,
+  canManageTownHall,
+  canOpenDm,
+  canPostToConversation,
+} from "@/lib/messages/access";
 import { attachmentPreview } from "@/lib/messages/attachment";
 import {
   PREVIEW_WIDTH_PX,
@@ -460,6 +465,7 @@ export async function forwardTaskAction(input: unknown): Promise<ConversationRes
       lastMessageAt: AdminTimestamp.now(),
       lastMessagePreview: taskForwardPreview(taskRef.title, note),
       lastMessageBy: caller.uid,
+      lastMessageAsCompany: false,
     });
 
     await batch.commit();
@@ -509,7 +515,7 @@ export async function sendImageMessageAction(input: unknown): Promise<Conversati
         error: parsed.error.issues[0]?.message ?? "Invalid picture.",
       };
     }
-    const { conversationId, publicId, width, height, bytes, text } = parsed.data;
+    const { conversationId, publicId, width, height, bytes, text, asCompany } = parsed.data;
 
     const caller = await requireCaller();
     if (!caller.ok) return { success: false, error: caller.error };
@@ -525,15 +531,21 @@ export async function sendImageMessageAction(input: unknown): Promise<Conversati
     }
     const conversation = conversationSnap.data()!;
 
-    const decision = canPostToConversation({
+    const facts = {
       type: conversation.type,
       conversationOrgId: (conversation.orgId as string) ?? "",
       participantIds: (conversation.participantIds as string[]) ?? [],
       viewerUid: caller.uid,
       viewerOrgId: caller.orgId,
       viewerRole: caller.role,
-    });
+    };
+    const decision = canPostToConversation(facts);
     if (!decision.allowed) return { success: false, error: decision.message };
+
+    if (asCompany) {
+      const speaking = canManageTownHall(facts);
+      if (!speaking.allowed) return { success: false, error: speaking.message };
+    }
 
     /* Two renditions off one stored asset. The transcript pulls a
        width-limited, auto-format copy — a 2400px PNG screenshot served
@@ -591,6 +603,7 @@ export async function sendImageMessageAction(input: unknown): Promise<Conversati
         text,
         attachment,
         createdAt: AdminTimestamp.now(),
+        asCompany,
         editedAt: null,
         deletedAt: null,
       });
@@ -599,6 +612,7 @@ export async function sendImageMessageAction(input: unknown): Promise<Conversati
         lastMessageAt: AdminTimestamp.now(),
         lastMessagePreview: text ? messagePreview(text) : attachmentPreview("image"),
         lastMessageBy: caller.uid,
+        lastMessageAsCompany: asCompany,
       });
 
       tx.set(orgRef, { chatImageUsage: applyChatImageDelta(usage, bytes) }, { merge: true });

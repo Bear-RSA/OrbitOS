@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Eraser, Megaphone, Plus, Search, Users, X } from "lucide-react";
+import { Eraser, Plus, Search, Users, X } from "lucide-react";
+import { TownHallAvatar } from "@/components/messages/town-hall-avatar";
 import {
   conversationCleared,
   conversationTitle,
@@ -137,7 +138,7 @@ export function ConversationList({
   const groups = visible.filter((t) => t.conversation.type === "group");
 
   const townHallVisible =
-    !needle || TOWN_HALL_NAME.toLowerCase().includes(needle);
+    !needle || (townHall?.name || TOWN_HALL_NAME).toLowerCase().includes(needle);
 
   const visiblePeople = needle
     ? people.filter((m) => m.name.toLowerCase().includes(needle))
@@ -222,7 +223,7 @@ export function ConversationList({
                 {/* Always present — Town Hall is the one thread nobody
                     joins or leaves. */}
                 <ConversationRow
-                  title={TOWN_HALL_NAME}
+                  title={townHall?.name || TOWN_HALL_NAME}
                   preview={
                     townHall?.lastMessagePreview ?? `${members.length} in the workspace`
                   }
@@ -230,7 +231,12 @@ export function ConversationList({
                   selected={selectedId === townHallId}
                   unread={townHall ? conversationUnread(townHall, viewerUid) : false}
                   onClick={() => townHallId && onSelect(townHallId)}
-                  icon={<Megaphone className="h-3.5 w-3.5 text-ink-muted" aria-hidden />}
+                  picture={
+                    <TownHallAvatar
+                      photoURL={townHall?.photoURL}
+                      name={townHall?.name || TOWN_HALL_NAME}
+                    />
+                  }
                 />
               </Section>
             )}
@@ -355,6 +361,8 @@ interface ConversationRowProps {
   busy?: boolean;
   onClick: () => void;
   icon?: React.ReactNode;
+  /** Drawn in place of the icon tile, when the row has a picture of its own. */
+  picture?: React.ReactNode;
   avatar?: { name: string; photoURL?: string | null };
   /** Tailwind background class for the presence dot, or null for none. */
   presence?: string | null;
@@ -390,6 +398,7 @@ function ConversationRow({
   busy = false,
   onClick,
   icon,
+  picture,
   avatar,
   presence,
   live = false,
@@ -401,6 +410,8 @@ function ConversationRow({
     <span className="relative block">
       {avatar ? (
         <UserAvatar size="sm" name={avatar.name} photoURL={avatar.photoURL} />
+      ) : picture ? (
+        picture
       ) : (
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-control ring-1 ring-line/[0.06]">
           {icon}

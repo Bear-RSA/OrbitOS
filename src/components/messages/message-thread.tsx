@@ -8,13 +8,18 @@ import {
   ChevronLeft,
   CircleSlash,
   ClipboardList,
+  History,
   ImagePlus,
   Lock,
   Megaphone,
   MessagesSquare,
+  Pencil,
   Phone,
+  Pin,
+  PinOff,
   SendHorizonal,
   Smile,
+  Trash2,
   Users,
   Video,
   X,
@@ -33,26 +38,45 @@ import {
   loadOlderMessages,
   markConversationRead,
   sendMessage,
+  subscribeToMessage,
   subscribeToMessages,
 } from "@/lib/queries/messages";
 import { notifyMessageAction } from "@/app/actions/messages";
+import {
+  canViewMessageHistoryAction,
+  deleteMessageAction,
+  editMessageAction,
+  getMessageHistoryAction,
+} from "@/app/actions/message-history";
+import { foldHistory } from "@/lib/messages/history";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { pinMessageAction } from "@/app/actions/town-hall";
+import { TownHallAvatar } from "@/components/messages/town-hall-avatar";
+import { TownHallProfileDialog } from "@/components/messages/town-hall-profile-dialog";
 import { withdrawNotifications } from "@/lib/notifications/worker";
-import { canPostToConversation } from "@/lib/messages/access";
+import {
+  canDeleteMessage,
+  canEditMessage,
+  canManageTownHall,
+  canPostToConversation,
+} from "@/lib/messages/access";
 import { groupCallLive } from "@/lib/calls/access";
 import { TASK_STATUS_LABEL, isValidTaskRef } from "@/lib/messages/task-ref";
 import { clearedBeforeMs, conversationTitle } from "@/lib/messages/summary";
 import { presenceTone, resolvePresence } from "@/lib/members/presence";
 import { useNow } from "@/hooks/use-now";
 import { parseDateKey } from "@/lib/utils/dates";
-import { MAX_MESSAGE_LENGTH } from "@/lib/validations/messages";
+import { MAX_MESSAGE_LENGTH, MAX_PINNED_NOTICES } from "@/lib/validations/messages";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils/classnames";
 import type { Member } from "@/types/member";
-import type {
-  Conversation,
-  Message,
-  MessageAttachment,
-  MessageTaskRef,
+import {
+  TOWN_HALL_NAME,
+  type Conversation,
+  type Message,
+  type MessageAttachment,
+  type MessageHistoryEntry,
+  type MessageTaskRef,
 } from "@/types/message";
 import { GlassSurface } from "@/components/ui/glass-surface";
 
@@ -78,6 +102,9 @@ import { GlassSurface } from "@/components/ui/glass-surface";
 /*  on a message that its author could have made up: see the note in   */
 /*  `types/message`.                                                   */
 /* ------------------------------------------------------------------ */
+
+/** Remembers whether an owner last posted in Town Hall as the company. */
+const AS_COMPANY_KEY = "orbit-townhall-as-company";
 
 /** Matches the composer's `max-h-40`, in pixels, for the auto-grow. */
 const COMPOSER_MAX_HEIGHT = 160;
@@ -144,6 +171,46 @@ export function MessageThread({
   const [error, setError] = useState<string | null>(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
 
+  /* Changing what was said. Both leave the thread looking untouched for
+     everyone in it — see `actions/message-history`. */
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Message | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  /* The account holder's view of edits and deletes. Asked of the server
+     once, because who holds the account is not something the client is
+     ever told about anybody else. */
+  const [mayViewHistory, setMayViewHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<MessageHistoryEntry[]>([]);
+  const [openTrail, setOpenTrail] = useState<string | null>(null);
+
+  /* Town Hall as the company: its profile dialog, pinned notices, and
+     whether this owner is speaking as the company or as themselves.
+     Company is the default — it is the company's channel. */
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [pinned, setPinned] = useState<Record<string, Message | null>>({});
+  const [asCompany, setAsCompanyState] = useState(true);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(AS_COMPANY_KEY) === "me") setAsCompanyState(false);
+    } catch {
+      /* Storage blocked — the default stands. */
+    }
+  }, []);
+
+  const setAsCompany = useCallback((next: boolean) => {
+    setAsCompanyState(next);
+    try {
+      window.localStorage.setItem(AS_COMPANY_KEY, next ? "company" : "me");
+    } catch {
+      /* Storage blocked — the choice lasts for this visit. */
+    }
+  }, []);
+
   /* A picture waiting in the composer, and the object URL that draws
      it. Staged rather than sent on paste: a screenshot usually wants a
      sentence with it, and a paste that fires an upload gives nobody a
@@ -193,6 +260,59 @@ export function MessageThread({
     });
   }, [conversationId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void canViewMessageHistoryAction().then((allowed) => {
+      if (!cancelled) setMayViewHistory(allowed);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [viewer.id]);
+
+  /* A half-written edit belongs to the thread it was started in. */
+  useEffect(() => {
+    setEditingId(null);
+    setOpenTrail(null);
+  }, [conversationId]);
+
+  /* Re-read whenever the transcript changes, since an edit or a delete
+     is exactly a change to it. Snapshots only fire on a change, so this
+     is one read per edit, send or delete while the view is open. */
+  useEffect(() => {
+    if (!showHistory || !conversationId) {
+      setHistory([]);
+      return;
+    }
+    let cancelled = false;
+    void getMessageHistoryAction(conversationId).then((result) => {
+      if (cancelled) return;
+      if (result.success) setHistory(result.entries);
+      else setError(result.error);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [showHistory, conversationId, live]);
+
+  /* Pinned notices, each watched on its own: a pin may sit far above the
+     page the transcript has loaded, and an edit to one has to show. */
+  const pinnedKey = (conversation?.pinnedMessageIds ?? []).join(",");
+  useEffect(() => {
+    if (!conversationId || !pinnedKey) {
+      setPinned({});
+      return;
+    }
+    const ids = pinnedKey.split(",");
+    setPinned({});
+    const stops = ids.map((id) =>
+      subscribeToMessage(conversationId, id, (message) =>
+        setPinned((prev) => ({ ...prev, [id]: message }))
+      )
+    );
+    return () => stops.forEach((stop) => stop());
+  }, [conversationId, pinnedKey]);
+
   /* Screen readers get told when someone else's message lands. */
   useEffect(() => {
     if (lastSeenIdRef.current === undefined || live.length === 0) return;
@@ -200,12 +320,14 @@ export function MessageThread({
     if (newest.id === lastSeenIdRef.current) return;
     lastSeenIdRef.current = newest.id;
     if (newest.senderId === viewer.id) return;
-    const sender = liveNames[newest.senderId] || "Someone";
+    const sender = newest.asCompany
+      ? conversation?.name || TOWN_HALL_NAME
+      : liveNames[newest.senderId] || "Someone";
     const body = newest.text?.trim();
     setAnnouncement(
       body ? `New message from ${sender}: ${body.slice(0, 140)}` : `New message from ${sender}`
     );
-  }, [live, viewer.id, liveNames]);
+  }, [live, viewer.id, liveNames, conversation?.name]);
 
   /* A staged picture belongs to the thread it was pasted into. Switching
      threads drops it rather than carrying a screenshot of one
@@ -282,6 +404,20 @@ export function MessageThread({
 
   const mayPost = decision?.allowed === true;
 
+  const manageTownHall = conversation
+    ? canManageTownHall({
+        type: conversation.type,
+        conversationOrgId: conversation.orgId,
+        participantIds: conversation.participantIds ?? [],
+        viewerUid: viewer.id,
+        viewerOrgId: viewer.orgId,
+        viewerRole: viewer.role,
+      }).allowed
+    : false;
+  const postAsCompany = manageTownHall && asCompany;
+  const companyName = conversation?.name || TOWN_HALL_NAME;
+  const companyPhoto = conversation?.photoURL ?? null;
+
   const loadEarlier = useCallback(async () => {
     const oldest = messages[0];
     if (!conversationId || !oldest?.createdAt || loadingOlder) return;
@@ -355,6 +491,70 @@ export function MessageThread({
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
+  const startEdit = useCallback((message: Message) => {
+    setEditingId(message.id);
+    setEditDraft(message.text);
+    setError(null);
+  }, []);
+
+  const saveEdit = useCallback(async () => {
+    const id = editingId;
+    const text = editDraft.trim();
+    if (!conversationId || !id || savingEdit) return;
+    if (!text) {
+      setError("Write something first.");
+      return;
+    }
+
+    setSavingEdit(true);
+    setError(null);
+    const result = await editMessageAction({ conversationId, messageId: id, text });
+    setSavingEdit(false);
+
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+    /* The listener covers the latest page; an older page was a one-shot
+       read and has to be told. */
+    setOlder((prev) => prev.map((m) => (m.id === id ? { ...m, text } : m)));
+    setEditingId(null);
+  }, [conversationId, editingId, editDraft, savingEdit]);
+
+  const confirmDelete = useCallback(async () => {
+    const target = pendingDelete;
+    if (!conversationId || !target || deleting) return;
+
+    setDeleting(true);
+    const result = await deleteMessageAction({ conversationId, messageId: target.id });
+    setDeleting(false);
+
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+    setOlder((prev) => prev.filter((m) => m.id !== target.id));
+    setPendingDelete(null);
+  }, [conversationId, pendingDelete, deleting]);
+
+  const togglePin = useCallback(
+    async (messageId: string, next: boolean) => {
+      if (!conversationId) return;
+      setError(null);
+      const result = await pinMessageAction({ conversationId, messageId, pinned: next });
+      if (!result.success) setError(result.error);
+    },
+    [conversationId]
+  );
+
+  /* The pinned message is often above the loaded page; when it is on
+     screen, take the reader to it. */
+  const jumpTo = useCallback((messageId: string) => {
+    document
+      .getElementById(`message-${messageId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
+
   /* A picture may travel with whatever is already in the box, or on its
      own — picking a GIF mid-sentence sends the sentence with it rather
      than throwing the draft away. A staged upload takes the words as
@@ -371,10 +571,16 @@ export function MessageThread({
       setError(null);
       try {
         if (image) {
-          await sendImageMessage(conversationId, image, text);
+          await sendImageMessage(conversationId, image, text, postAsCompany);
           clearImage();
         } else {
-          const messageId = await sendMessage(conversationId, viewer.id, text, attachment);
+          const messageId = await sendMessage(
+            conversationId,
+            viewer.id,
+            text,
+            attachment,
+            postAsCompany
+          );
           /* Not awaited: the line is already in the thread, and a push
              to everybody else's phone is no reason to hold the composer. */
           void notifyMessageAction({ conversationId, messageId });
@@ -389,7 +595,7 @@ export function MessageThread({
         setSending(false);
       }
     },
-    [conversationId, draft, sending, mayPost, viewer.id, pendingImage, clearImage]
+    [conversationId, draft, sending, mayPost, viewer.id, pendingImage, clearImage, postAsCompany]
   );
 
   const title = conversation
@@ -470,6 +676,17 @@ export function MessageThread({
   /* A full first page means there is probably more behind it. */
   const mayHaveHistory = !exhausted && live.length >= MESSAGE_PAGE_SIZE;
 
+  /* For the account holder: deleted messages back in place, and each
+     edited one's earlier wordings. Ghosts stop at the oldest message
+     loaded, so history does not run ahead of "Load earlier". */
+  const folded = useMemo(() => {
+    if (!showHistory) return null;
+    const loadedFrom = mayHaveHistory ? (messages[0]?.createdAt?.toMillis?.() ?? 0) : 0;
+    return foldHistory(messages, history, Math.max(loadedFrom, clearedBefore));
+  }, [showHistory, messages, history, mayHaveHistory, clearedBefore]);
+
+  const shown = folded?.messages ?? messages;
+
   return (
     /* The thread is the primary surface and now says so: it sits a rung
        above the rail on the ladder, with a real shadow rather than the
@@ -514,21 +731,12 @@ export function MessageThread({
           ) : (
             <UserAvatar size="lg" name={title} photoURL={partner?.photoURL} />
           )
-        ) : (
-          <span
-            className={cn(
-              "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-card ring-1 ring-line/[0.06]",
-              conversation?.type === "townhall"
-                ? "bg-orbit-amber/10 ring-orbit-amber/20"
-                : "bg-surface-control"
-            )}
-          >
-            {conversation?.type === "group" ? (
-              <Users className="h-4 w-4 text-ink-muted" aria-hidden />
-            ) : (
-              <Megaphone className="h-4 w-4 text-orbit-amber" aria-hidden />
-            )}
+        ) : conversation?.type === "group" ? (
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-control shadow-card ring-1 ring-line/[0.06]">
+            <Users className="h-4 w-4 text-ink-muted" aria-hidden />
           </span>
+        ) : (
+          <TownHallAvatar size="lg" photoURL={companyPhoto} name={companyName} className="shadow-card" />
         )}
 
         <ThreadHeading title={title} subtitle={subtitle} />
@@ -617,6 +825,37 @@ export function MessageThread({
           </div>
         )}
 
+        {manageTownHall && conversation && (
+          <button
+            type="button"
+            onClick={() => setProfileOpen(true)}
+            title="Edit Town Hall"
+            aria-label="Edit Town Hall's name and picture"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-control text-ink-muted ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            <Pencil className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        )}
+
+        {mayViewHistory && conversation && (
+          <button
+            type="button"
+            onClick={() => setShowHistory((on) => !on)}
+            aria-pressed={showHistory}
+            title={showHistory ? "Hide edits and deleted messages" : "Show edits and deleted messages"}
+            aria-label={showHistory ? "Hide edits and deleted messages" : "Show edits and deleted messages"}
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+              showHistory
+                ? "bg-orbit-amber/15 text-orbit-amber ring-orbit-amber/25"
+                : "bg-surface-control text-ink-muted ring-line/[0.06] hover:bg-surface-hover hover:text-ink"
+            )}
+          >
+            <History className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        )}
+
         {conversation?.type === "townhall" && (
           <span className="hidden shrink-0 items-center gap-1.5 rounded-md bg-surface-control px-2 py-1 text-[12px] text-ink-dim ring-1 ring-line/[0.06] sm:flex">
             <Megaphone className="h-2.5 w-2.5" aria-hidden />
@@ -656,6 +895,49 @@ export function MessageThread({
         </div>
       )}
 
+      {/* ── Pinned notices ─────────────────────────────────────── */}
+      {conversation?.type === "townhall" && (conversation.pinnedMessageIds?.length ?? 0) > 0 && (
+        <ul className="flex shrink-0 flex-col gap-1 border-b border-orbit-amber/15 bg-orbit-amber/[0.05] px-5 py-2.5">
+          {(conversation.pinnedMessageIds ?? []).map((id) => {
+            const notice = pinned[id];
+            if (notice === null) return null;
+            const author = notice?.asCompany
+              ? companyName
+              : notice
+                ? liveNames[notice.senderId] || "Someone"
+                : "";
+            const body = notice
+              ? notice.text.trim() ||
+                (isValidTaskRef(notice.taskRef) ? notice.taskRef.title : "Picture")
+              : "Loading…";
+            return (
+              <li key={id} className="flex min-w-0 items-center gap-2.5">
+                <Pin className="h-3 w-3 shrink-0 text-orbit-amber" aria-hidden />
+                <button
+                  type="button"
+                  onClick={() => jumpTo(id)}
+                  className="min-w-0 flex-1 truncate text-left text-[12px] text-ink-muted transition-colors hover:text-ink"
+                >
+                  {author && <span className="font-medium text-ink">{author}: </span>}
+                  {body}
+                </button>
+                {manageTownHall && (
+                  <button
+                    type="button"
+                    onClick={() => void togglePin(id, false)}
+                    aria-label="Unpin notice"
+                    title="Unpin"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-hover hover:text-ink"
+                  >
+                    <X className="h-3 w-3" aria-hidden />
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
       {/* ── Transcript ─────────────────────────────────────────── */}
       <div className="custom-scrollbar flex-1 overflow-y-auto px-5 py-5">
         {/* `min-h-full` + `justify-end` is what pins a short thread to
@@ -676,16 +958,45 @@ export function MessageThread({
             </div>
           )}
 
-          {messages.length === 0 ? (
+          {showHistory && (
+            <p className="mb-4 rounded-lg bg-orbit-amber/[0.07] px-3 py-2 text-center text-[12px] text-ink-muted ring-1 ring-orbit-amber/15">
+              Showing edits and deleted messages. Only you can see these.
+            </p>
+          )}
+
+          {shown.length === 0 ? (
             <EmptyThread type={conversation?.type} mayPost={mayPost} />
           ) : (
             <ol className="flex flex-col">
-              {messages.map((message, index) => {
-                const previous = messages[index - 1];
+              {shown.map((message, index) => {
+                const previous = shown[index - 1];
                 const sender = directory.get(message.senderId);
                 const sentAt = message.createdAt?.toDate?.() ?? null;
                 const previousAt = previous?.createdAt?.toDate?.() ?? null;
                 const mine = message.senderId === viewer.id;
+                const company = message.asCompany === true;
+                const speakerName = company ? companyName : sender?.name ?? "Unknown member";
+                const isPinned = (conversation?.pinnedMessageIds ?? []).includes(message.id);
+
+                const removed = folded?.removed.get(message.id);
+                const trail = folded?.edits.get(message.id);
+                const editing = editingId === message.id;
+                const facts =
+                  conversation && !removed
+                    ? {
+                        type: conversation.type,
+                        conversationOrgId: conversation.orgId,
+                        participantIds: conversation.participantIds ?? [],
+                        viewerUid: viewer.id,
+                        viewerOrgId: viewer.orgId,
+                        viewerRole: viewer.role,
+                        senderId: message.senderId,
+                        hasTaskRef: isValidTaskRef(message.taskRef),
+                        hasText: message.text.trim().length > 0,
+                      }
+                    : null;
+                const mayEdit = facts ? canEditMessage(facts).allowed : false;
+                const mayDelete = facts ? canDeleteMessage(facts).allowed : false;
 
                 /* A new day, or a new voice, starts a block. Consecutive
                    lines from one person are one block — a name and a
@@ -694,15 +1005,18 @@ export function MessageThread({
                 const newDay = Boolean(
                   sentAt && (!previousAt || !isSameDay(sentAt, previousAt))
                 );
-                const newSpeaker = newDay || previous?.senderId !== message.senderId;
+                const newSpeaker =
+                  newDay ||
+                  previous?.senderId !== message.senderId ||
+                  (previous?.asCompany === true) !== company;
 
                 /* In a dm the header already names the other person, so
                    repeating it over every block is noise. A group is
                    where the name earns its place. */
-                const showName = newSpeaker && !mine && conversation?.type !== "dm";
+                const showName = newSpeaker && (!mine || company) && conversation?.type !== "dm";
 
                 return (
-                  <li key={message.id} className="stream-in">
+                  <li key={message.id} id={`message-${message.id}`} className="stream-in">
                     {newDay && sentAt && (
                       <div className="my-5 flex items-center gap-3 first:mt-0">
                         <span className="h-px flex-1 bg-line/[0.06]" />
@@ -725,7 +1039,9 @@ export function MessageThread({
                       <div className="w-8 shrink-0">
                         {!mine &&
                           newSpeaker &&
-                          (onOpenProfile ? (
+                          (company ? (
+                            <TownHallAvatar size="sm" photoURL={companyPhoto} name={companyName} />
+                          ) : onOpenProfile ? (
                             /* Most useful in a group or Town Hall, where
                                the name above a message may belong to
                                somebody you have not met. */
@@ -761,8 +1077,18 @@ export function MessageThread({
                           <div className="mb-1 flex items-baseline gap-2 px-1">
                             {showName && (
                               <span className="text-[12px] font-medium tracking-tight text-ink-strong">
-                                {sender?.name ?? "Unknown member"}
+                                {speakerName}
                               </span>
+                            )}
+                            {/* Who wrote a company post is the account
+                                holder's to know, and the author's own. */}
+                            {company && showHistory && !mine && (
+                              <span className="text-[11px] text-orbit-amber">
+                                by {sender?.name ?? "an owner"}
+                              </span>
+                            )}
+                            {isPinned && (
+                              <Pin className="h-3 w-3 self-center text-orbit-amber" aria-label="Pinned" />
                             )}
                             {sentAt && (
                               <span className="font-mono text-[11px] tabular-nums tracking-[0.12em] text-ink-dim">
@@ -772,67 +1098,120 @@ export function MessageThread({
                           </div>
                         )}
 
-                        {message.deletedAt ? (
-                          <p className="rounded-2xl border border-dashed border-line/[0.1] px-4 py-2.5 text-[13px] italic text-ink-dim">
-                            Message withdrawn
-                          </p>
-                        ) : isValidTaskRef(message.taskRef) ? (
-                          /* A forwarded directive. Ahead of the media
-                             branch because a card never travels with a
-                             GIF, and behind the withdrawn one because a
-                             withdrawn message shows nothing at all. */
-                          <ForwardedTask
-                            taskRef={message.taskRef}
-                            note={message.text}
-                            mine={mine}
-                          />
-                        ) : message.attachment ? (
-                          <MessageMedia
-                            attachment={message.attachment}
-                            caption={message.text}
-                            mine={mine}
-                          />
-                        ) : emojiOnlyCount(message.text) > 0 ? (
-                          /* A lone 👍 is a gesture, not a sentence. At
-                             body size inside a bubble it reads as a
-                             typo; given room it reads as the answer it
-                             is. No bubble, because there is no text for
-                             one to contain. */
-                          <p
-                            className={cn(
-                              "px-1 leading-none",
-                              emojiOnlyCount(message.text) === 1
-                                ? "text-[40px]"
-                                : "text-[30px]"
-                            )}
-                          >
-                            {message.text}
-                          </p>
-                        ) : (
+                        <div
+                          className={cn(
+                            "group/msg flex max-w-full items-center gap-1",
+                            mine ? "flex-row-reverse" : "flex-row"
+                          )}
+                        >
                           <div
                             className={cn(
-                              "rounded-2xl px-4 py-2.5 shadow-card ring-1",
-                              /* Yours sits well up the surface ladder so
-                                 the two sides read apart at a glance, not
-                                 only on inspection. */
-                              mine
-                                ? "bg-surface-active ring-line/[0.08]"
-                                : "bg-surface-control ring-line/[0.06]",
-                              /* A squared corner on the side the block
-                                 comes from — the bubble points at its
-                                 author. */
-                              newSpeaker && (mine ? "rounded-tr-md" : "rounded-tl-md")
+                              "min-w-0",
+                              removed &&
+                                "rounded-2xl opacity-60 outline-dashed outline-1 outline-offset-2 outline-orbit-red/40"
                             )}
                           >
-                            <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ink">
-                              {message.text}
-                            </p>
-                            {message.editedAt && (
-                              <span className="mt-1 block text-[12px] text-ink-dim">
-                                edited
-                              </span>
+                            {editing ? (
+                              <EditBox
+                                value={editDraft}
+                                onChange={setEditDraft}
+                                onSave={() => void saveEdit()}
+                                onCancel={() => setEditingId(null)}
+                                saving={savingEdit}
+                              />
+                            ) : (
+                              <>
+                            {message.deletedAt ? (
+                              <p className="rounded-2xl border border-dashed border-line/[0.1] px-4 py-2.5 text-[13px] italic text-ink-dim">
+                                Message withdrawn
+                              </p>
+                            ) : isValidTaskRef(message.taskRef) ? (
+                              /* A forwarded directive. Ahead of the media
+                                 branch because a card never travels with a
+                                 GIF, and behind the withdrawn one because a
+                                 withdrawn message shows nothing at all. */
+                              <ForwardedTask
+                                taskRef={message.taskRef}
+                                note={message.text}
+                                mine={mine}
+                              />
+                            ) : message.attachment ? (
+                              <MessageMedia
+                                attachment={message.attachment}
+                                caption={message.text}
+                                mine={mine}
+                              />
+                            ) : emojiOnlyCount(message.text) > 0 ? (
+                              /* A lone 👍 is a gesture, not a sentence. At
+                                 body size inside a bubble it reads as a
+                                 typo; given room it reads as the answer it
+                                 is. No bubble, because there is no text for
+                                 one to contain. */
+                              <p
+                                className={cn(
+                                  "px-1 leading-none",
+                                  emojiOnlyCount(message.text) === 1
+                                    ? "text-[40px]"
+                                    : "text-[30px]"
+                                )}
+                              >
+                                {message.text}
+                              </p>
+                            ) : (
+                              <div
+                                className={cn(
+                                  "rounded-2xl px-4 py-2.5 shadow-card ring-1",
+                                  /* Yours sits well up the surface ladder so
+                                     the two sides read apart at a glance, not
+                                     only on inspection. */
+                                  mine
+                                    ? "bg-surface-active ring-line/[0.08]"
+                                    : "bg-surface-control ring-line/[0.06]",
+                                  /* A squared corner on the side the block
+                                     comes from — the bubble points at its
+                                     author. */
+                                  newSpeaker && (mine ? "rounded-tr-md" : "rounded-tl-md")
+                                )}
+                              >
+                                <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ink">
+                                  {message.text}
+                                </p>
+                              </div>
+                            )}
+                              </>
                             )}
                           </div>
+
+                          {(mayEdit || mayDelete || (manageTownHall && !removed)) && !editing && (
+                            <MessageActions
+                              onEdit={mayEdit ? () => startEdit(message) : undefined}
+                              onDelete={mayDelete ? () => setPendingDelete(message) : undefined}
+                              pinned={isPinned}
+                              onPin={
+                                manageTownHall && !removed
+                                  ? () => void togglePin(message.id, !isPinned)
+                                  : undefined
+                              }
+                            />
+                          )}
+                        </div>
+
+                        {removed && (
+                          <p className="mt-1.5 px-1 text-[11px] text-orbit-red/80">
+                            Deleted by {liveNames[removed.actorId] || "an owner"} ·{" "}
+                            {format(new Date(removed.atMs), "d MMM, HH:mm")}
+                          </p>
+                        )}
+
+                        {trail && trail.length > 0 && (
+                          <EditTrail
+                            entries={trail}
+                            open={openTrail === message.id}
+                            onToggle={() =>
+                              setOpenTrail((current) => (current === message.id ? null : message.id))
+                            }
+                            align={mine ? "end" : "start"}
+                          />
                         )}
                       </div>
                     </div>
@@ -861,6 +1240,38 @@ export function MessageThread({
             the Personnel Network makes. Hiding the composer would make
             Town Hall look broken rather than deliberately one-way. */}
         {mayPost ? (
+          <>
+          {manageTownHall && (
+            <div className="mb-2 flex items-center gap-2 px-1 text-[12px] text-ink-dim">
+              <span>Posting as</span>
+              <div
+                role="radiogroup"
+                aria-label="Post as"
+                className="flex rounded-lg bg-surface-control p-0.5 ring-1 ring-inset ring-line/[0.06]"
+              >
+                {[
+                  { value: true, label: companyName },
+                  { value: false, label: "You" },
+                ].map((option) => (
+                  <button
+                    key={String(option.value)}
+                    type="button"
+                    role="radio"
+                    aria-checked={asCompany === option.value}
+                    onClick={() => setAsCompany(option.value)}
+                    className={cn(
+                      "max-w-[12rem] truncate rounded-md px-2.5 py-1 transition-colors",
+                      asCompany === option.value
+                        ? "bg-surface-active text-ink shadow-card"
+                        : "text-ink-muted hover:text-ink"
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -999,6 +1410,7 @@ export function MessageThread({
               </button>
             </div>
           </form>
+          </>
         ) : (
           <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-line/[0.08] bg-surface-control/60 px-3.5 py-3">
             <Lock className="h-3.5 w-3.5 shrink-0 text-ink-dim" aria-hidden />
@@ -1017,7 +1429,198 @@ export function MessageThread({
           </p>
         )}
       </div>
+
+      {manageTownHall && conversation && (
+        <TownHallProfileDialog
+          open={profileOpen}
+          townHall={conversation}
+          onClose={() => setProfileOpen(false)}
+        />
+      )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setPendingDelete(null);
+        }}
+        title="Delete this message?"
+        description="It disappears for everyone in this conversation, with nothing left in its place."
+        confirmText="Delete"
+        variant="destructive"
+        loading={deleting}
+        onConfirm={() => void confirmDelete()}
+      />
     </GlassSurface>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Edit and delete                                                    */
+/* ------------------------------------------------------------------ */
+
+/* Shown on hover where there is a pointer, and always — quietly — on a
+   touch screen, which has no hover to reveal it with. */
+function MessageActions({
+  onEdit,
+  onDelete,
+  onPin,
+  pinned = false,
+}: {
+  onEdit?: () => void;
+  onDelete?: () => void;
+  /** Town Hall owners only. */
+  onPin?: () => void;
+  pinned?: boolean;
+}) {
+  const button =
+    "flex h-7 w-7 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus";
+
+  return (
+    <div className="flex shrink-0 items-center opacity-70 transition-opacity focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/msg:opacity-100">
+      {onPin && (
+        <button
+          type="button"
+          onClick={onPin}
+          aria-label={pinned ? "Unpin notice" : "Pin notice"}
+          title={pinned ? "Unpin" : `Pin to the top (up to ${MAX_PINNED_NOTICES})`}
+          className={cn(button, pinned ? "text-orbit-amber hover:text-ink" : "hover:text-orbit-amber")}
+        >
+          {pinned ? (
+            <PinOff className="h-3.5 w-3.5" aria-hidden />
+          ) : (
+            <Pin className="h-3.5 w-3.5" aria-hidden />
+          )}
+        </button>
+      )}
+      {onEdit && (
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label="Edit message"
+          title="Edit"
+          className={cn(button, "hover:text-ink")}
+        >
+          <Pencil className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      )}
+      {onDelete && (
+        <button
+          type="button"
+          onClick={onDelete}
+          aria-label="Delete message"
+          title="Delete for everyone"
+          className={cn(button, "hover:text-orbit-red")}
+        >
+          <Trash2 className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function EditBox({
+  value,
+  onChange,
+  onSave,
+  onCancel,
+  saving,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  return (
+    <div className="w-[min(32rem,70vw)] rounded-2xl bg-surface-control p-2 shadow-card ring-1 ring-line/[0.12]">
+      <textarea
+        autoFocus
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            onSave();
+          }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            onCancel();
+          }
+        }}
+        onFocus={(e) => {
+          const end = e.currentTarget.value.length;
+          e.currentTarget.setSelectionRange(end, end);
+        }}
+        rows={Math.min(6, Math.max(2, value.split("\n").length))}
+        maxLength={MAX_MESSAGE_LENGTH}
+        aria-label="Edit message"
+        disabled={saving}
+        className="custom-scrollbar w-full resize-none bg-transparent px-2 py-1 text-[13px] leading-relaxed text-ink focus-visible:outline-none disabled:opacity-50"
+      />
+      <div className="mt-1 flex items-center justify-end gap-1.5">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="rounded-md px-2.5 py-1 text-[12px] text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink disabled:opacity-40"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving || !value.trim()}
+          className="rounded-md bg-ink px-2.5 py-1 text-[12px] font-medium text-on-ink transition-opacity hover:opacity-90 disabled:opacity-40"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* The account holder's view of how a message read before. */
+function EditTrail({
+  entries,
+  open,
+  onToggle,
+  align,
+}: {
+  entries: MessageHistoryEntry[];
+  open: boolean;
+  onToggle: () => void;
+  align: "start" | "end";
+}) {
+  return (
+    <div className={cn("mt-1 flex flex-col px-1", align === "end" ? "items-end" : "items-start")}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="text-[11px] text-orbit-amber transition-opacity hover:opacity-80"
+      >
+        {open
+          ? "Hide earlier versions"
+          : `Edited ${entries.length === 1 ? "once" : `${entries.length} times`}`}
+      </button>
+      {open && (
+        <ol className="mt-1.5 flex flex-col gap-1.5">
+          {entries.map((entry) => (
+            <li
+              key={entry.id}
+              className="rounded-xl border border-dashed border-orbit-amber/25 px-3 py-2"
+            >
+              <p className="whitespace-pre-wrap break-words text-[12px] leading-relaxed text-ink-muted">
+                {entry.text || "(no words)"}
+              </p>
+              <p className="mt-1 font-mono text-[11px] tabular-nums text-ink-dim">
+                Replaced {format(new Date(entry.atMs), "d MMM, HH:mm")}
+              </p>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
   );
 }
 
@@ -1255,7 +1858,7 @@ function EmptyThread({
           {isTownHall
             ? mayPost
               ? "Anything posted here reaches everyone in the workspace."
-              : "Notices from the owner will appear here."
+              : "Notices from owners will appear here."
             : "Say something to get this started."}
         </p>
       </div>

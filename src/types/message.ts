@@ -181,6 +181,28 @@ export interface Conversation {
    * really live — this field only says a document is worth looking at.
    */
   callActive?: boolean;
+
+  /**
+   * Town Hall only: the company's picture, set by an owner. Town Hall is
+   * the workspace's public face inside the app, so it carries the logo
+   * rather than a megaphone once somebody has uploaded one.
+   *
+   * Server-written, like `name` — the rules keep both out of the keys a
+   * client may touch.
+   */
+  photoURL?: string | null;
+  /** The Cloudinary asset behind `photoURL`, so a replaced logo can be removed. */
+  photoPublicId?: string | null;
+
+  /** Town Hall only: notices owners have pinned, newest pin first. */
+  pinnedMessageIds?: string[];
+
+  /**
+   * Whether the last message was posted as the company rather than as
+   * the owner who wrote it — so the rail can name the company instead of
+   * the person.
+   */
+  lastMessageAsCompany?: boolean;
 }
 
 /**
@@ -331,6 +353,12 @@ export interface Message {
    */
   taskRef?: MessageTaskRef | null;
 
+  /**
+   * Town Hall only: shown under the company's name and picture instead
+   * of the owner who wrote it. Absent reads as false.
+   */
+  asCompany?: boolean;
+
   editedAt: Timestamp | null;
 
   /**
@@ -349,4 +377,33 @@ export interface ConversationSummary extends Conversation {
   /** Resolved per viewer — the other person for a dm, `name` otherwise. */
   title: string;
   unread: boolean;
+}
+
+/**
+ * One change to a message, as the account holder's history view gets it.
+ *
+ * Kept in `conversations/{id}/history`, which no client can read — the
+ * account holder reaches it through `getMessageHistoryAction`, and
+ * everyone else never learns it exists. That is what lets an edit carry
+ * no "edited" mark and a delete leave no placeholder: the record of the
+ * change lives somewhere only one person can open.
+ *
+ * Times are plain millis because this crosses a server action boundary,
+ * where a Firestore Timestamp does not survive.
+ */
+export interface MessageHistoryEntry {
+  id: string;
+  messageId: string;
+  /** `edited`: `text` is the wording before the change. `deleted`: the whole message as it stood. */
+  kind: "edited" | "deleted";
+  /** Who made the change — the sender for an edit, an owner for a delete. */
+  actorId: string;
+  atMs: number;
+  senderId: string;
+  sentAtMs: number;
+  text: string;
+  attachment: MessageAttachment | null;
+  taskRef: MessageTaskRef | null;
+  /** Posted under the company's name — the history view still shows who. */
+  asCompany: boolean;
 }

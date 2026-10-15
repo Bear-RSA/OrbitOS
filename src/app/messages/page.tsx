@@ -250,7 +250,7 @@ function MessagesScreen() {
 
   const subtitleFor = (conversation: Conversation | null): string | undefined => {
     if (!conversation) return undefined;
-    if (conversation.type === "townhall") return "Announcements — owner posts, everyone reads";
+    if (conversation.type === "townhall") return "Announcements — owners post, everyone reads";
     if (conversation.type === "group") return participantSummary(conversation);
 
     const partnerUid = conversation.participantIds?.find((id) => id !== user.id);

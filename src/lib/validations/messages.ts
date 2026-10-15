@@ -122,6 +122,8 @@ export const sendImageMessageSchema = z.object({
   bytes: z.number().int().min(1),
   /** A caption is optional — a screenshot usually speaks for itself. */
   text: z.string().trim().max(MAX_MESSAGE_LENGTH, "That message is too long.").optional().default(""),
+  /** Town Hall only, owners only — checked in the action. */
+  asCompany: z.boolean().optional().default(false),
 });
 
 export type OpenDmInput = z.infer<typeof openDmSchema>;
@@ -137,3 +139,37 @@ export function messagePreview(text: string): string {
     ? flat
     : `${flat.slice(0, MESSAGE_PREVIEW_LENGTH - 1)}…`;
 }
+
+/** One message, named by its thread and its Firestore auto id. */
+export const messageRefSchema = z.object({
+  conversationId: conversationIdSchema,
+  messageId: z.string().regex(/^[A-Za-z0-9]{20}$/),
+});
+
+export const editMessageSchema = messageRefSchema.extend({
+  text: messageTextSchema,
+});
+
+/**
+ * How many notices Town Hall can pin at once. Few on purpose: a pinned
+ * strip with ten items is a second transcript, and the point of a pin is
+ * that it is the thing you cannot miss.
+ */
+export const MAX_PINNED_NOTICES = 3;
+
+export const MAX_TOWN_HALL_NAME_LENGTH = 60;
+
+export const pinMessageSchema = messageRefSchema.extend({
+  pinned: z.boolean(),
+});
+
+export const townHallProfileSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Give Town Hall a name.")
+    .max(MAX_TOWN_HALL_NAME_LENGTH, "That name is too long."),
+  /* undefined keeps the picture, null removes it, a string replaces it
+     with the asset the server just signed. */
+  photoPublicId: z.string().trim().min(1).max(300).nullable().optional(),
+});

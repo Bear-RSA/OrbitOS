@@ -23,7 +23,11 @@ export type MessageRefusal =
   | "announcements-only"
   | "self"
   | "too-many"
-  | "empty";
+  | "empty"
+  | "owners-only"
+  | "not-yours"
+  | "not-editable"
+  | "not-town-hall";
 
 export type MessageDecision =
   | { allowed: true }
@@ -87,7 +91,7 @@ export function canReadConversation(facts: ConversationFacts): MessageDecision {
 /**
  * Whether this person may send into the thread.
  *
- * Town Hall is read-only for everyone but the OWNER by design — it is
+ * Town Hall is read-only for everyone but owners by design — it is
  * the notices channel, not a group chat. That is the one place where
  * posting is narrower than reading, and it is why this is a separate
  * function rather than a flag on the one above.
@@ -97,7 +101,82 @@ export function canPostToConversation(facts: ConversationFacts): MessageDecision
   if (!canRead.allowed) return canRead;
 
   if (facts.type === "townhall" && !isOwnerRole(facts.viewerRole)) {
-    return refuse("announcements-only", "Only the owner can post in Town Hall.");
+    return refuse("announcements-only", "Only owners can post in Town Hall.");
+  }
+  return ALLOWED;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Town Hall as the company's profile                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Whether this person may speak for the company in Town Hall: rename
+ * it, change its picture, pin notices, and post under its name.
+ *
+ * Every owner, not only the account holder — Town Hall is the
+ * company's, and the owners run the company between them.
+ */
+export function canManageTownHall(facts: ConversationFacts): MessageDecision {
+  const canRead = canReadConversation(facts);
+  if (!canRead.allowed) return canRead;
+
+  if (facts.type !== "townhall") {
+    return refuse("not-town-hall", "Only Town Hall speaks for the company.");
+  }
+  if (!isOwnerRole(facts.viewerRole)) {
+    return refuse("owners-only", "Only owners can change Town Hall.");
+  }
+  return ALLOWED;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Changing what was said                                             */
+/* ------------------------------------------------------------------ */
+
+export interface MessageFacts extends ConversationFacts {
+  senderId: string;
+  /** Whether the message carries a forwarded task card. */
+  hasTaskRef: boolean;
+  /** Whether it has words in it, as opposed to only a picture. */
+  hasText: boolean;
+}
+
+/**
+ * Whether this person may delete the message for everyone.
+ *
+ * Owners only, in any thread they can read. The message leaves the
+ * thread entirely — no "withdrawn" placeholder — so nobody reading it
+ * afterwards can tell anything was there. The one exception is the
+ * account holder's history view, which is not decided here.
+ */
+export function canDeleteMessage(facts: MessageFacts): MessageDecision {
+  const canRead = canReadConversation(facts);
+  if (!canRead.allowed) return canRead;
+
+  if (!isOwnerRole(facts.viewerRole)) {
+    return refuse("owners-only", "Only owners can delete messages.");
+  }
+  return ALLOWED;
+}
+
+/**
+ * Whether this person may rewrite the message.
+ *
+ * Your own words only, and only while you can still post in the thread
+ * — a Member demoted out of Town Hall rights cannot reach back into it.
+ * A task card is server-written and quotes a real directive, so it is
+ * never editable, and a bare picture has no words to change.
+ */
+export function canEditMessage(facts: MessageFacts): MessageDecision {
+  const canPost = canPostToConversation(facts);
+  if (!canPost.allowed) return canPost;
+
+  if (facts.senderId !== facts.viewerUid) {
+    return refuse("not-yours", "You can only edit your own messages.");
+  }
+  if (facts.hasTaskRef || !facts.hasText) {
+    return refuse("not-editable", "That message cannot be edited.");
   }
   return ALLOWED;
 }
