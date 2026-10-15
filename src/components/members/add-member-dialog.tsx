@@ -5,18 +5,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { addMemberSchema, AddMemberInput } from "@/lib/validations/member";
 import { createInviteAction } from "@/app/actions/invites";
-import { UserPlus, Copy, Check, CheckCircle2, AlertCircle } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Check, Copy, Link2, Mail, MailCheck, MailWarning, UserPlus } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { DIALOG_FOOTER_CLASS, DialogHeading, DialogNotice } from "@/components/ui/dialog-parts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils/classnames";
 
 interface AddMemberDialogProps {
   open: boolean;
@@ -67,7 +62,7 @@ export function AddMemberDialog({
           setSuccessEmail(result.email ?? data.email);
         } else {
           // Invite created, but email failed — show warning, still show the link
-          setErrorMsg(result.error ?? "Email dispatch failed. Share the link manually.");
+          setErrorMsg(result.error ?? "The email didn't send. Copy the link and send it yourself.");
         }
       } else {
         setErrorMsg(result.error ?? "An unexpected error occurred.");
@@ -89,120 +84,131 @@ export function AddMemberDialog({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleClose = () => {
+  /** Back to an empty form, for inviting the next person. */
+  const startOver = () => {
     setInviteLink(null);
     setSuccessEmail(null);
     setErrorMsg(null);
+    setCopied(false);
     reset();
+  };
+
+  const handleClose = () => {
+    startOver();
     onOpenChange(false);
   };
 
+  const emailFailed = !!inviteLink && !successEmail;
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md" id="add-member-dialog">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-4 h-4 opacity-70" />
-            Add member
-          </DialogTitle>
-          <DialogDescription>
-            Generate an integration link for a new team member.
-          </DialogDescription>
-        </DialogHeader>
-
+      <DialogContent className="sm:max-w-[480px]" id="add-member-dialog">
         {inviteLink ? (
-          <div className="space-y-4 mt-2">
-            {/* Success banner */}
-            {successEmail && (
-              <div className="flex items-start gap-3 rounded-lg bg-orbit-green/10 ring-1 ring-orbit-green/20 px-4 py-3">
-                <CheckCircle2 className="w-4 h-4 text-orbit-green mt-0.5 shrink-0" />
-                <p className="text-[12px] font-mono text-orbit-green leading-relaxed">
-                  Invite dispatched to <strong>{successEmail}</strong>
-                </p>
-              </div>
-            )}
-
-            {/* Error banner (email failed but invite link still created) */}
-            {errorMsg && (
-              <div className="flex items-start gap-3 rounded-lg bg-orbit-red/10 ring-1 ring-orbit-red/20 px-4 py-3">
-                <AlertCircle className="w-4 h-4 text-orbit-red mt-0.5 shrink-0" />
-                <p className="text-[12px] font-mono text-orbit-red leading-relaxed">
-                  {errorMsg}
-                </p>
-              </div>
-            )}
-
-            <p className="text-[13px] text-ink-muted font-light text-center">
-              Link active. Transmit to operator:
-            </p>
-            <div className="flex items-center gap-3">
-              <Input
-                value={inviteLink}
-                readOnly
-                className="text-[12px] font-mono text-ink"
-                id="invite-link-input"
-              />
-              <Button
-                type="button"
-                size="icon"
-                variant="secondary"
-                onClick={copyLink}
-                id="copy-invite-link"
-              >
-                {copied ? (
-                  <Check className="w-4 h-4 text-orbit-green" />
+          <div>
+            <DialogHeading
+              icon={emailFailed ? MailWarning : MailCheck}
+              tone={emailFailed ? "amber" : "green"}
+              title={emailFailed ? "Invite ready, email not sent" : "Invite sent"}
+              description={
+                emailFailed ? (
+                  "The invite exists, but the email didn't go out. Copy the link below and send it yourself."
                 ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-              </Button>
+                  <>
+                    We emailed <span className="font-normal text-ink">{successEmail}</span> a link to join.
+                    You can also share it yourself.
+                  </>
+                )
+              }
+            />
+
+            <div className="space-y-4">
+              {emailFailed && errorMsg && <DialogNotice tone="amber">{errorMsg}</DialogNotice>}
+
+              <div className="space-y-2.5">
+                <Label htmlFor="invite-link-input" className="block text-[12px] text-ink-dim">
+                  Invite link
+                </Label>
+                <div className="flex items-center gap-2 rounded-xl bg-surface-lowest p-1.5 pl-4 ring-1 ring-inset ring-line/[0.06]">
+                  <Link2 className="h-3.5 w-3.5 shrink-0 text-ink-dim" aria-hidden />
+                  <input
+                    id="invite-link-input"
+                    value={inviteLink}
+                    readOnly
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="min-w-0 flex-1 truncate bg-transparent font-mono text-[12px] text-ink focus:outline-none"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={copyLink}
+                    id="copy-invite-link"
+                    className="h-8 shrink-0 rounded-lg px-3"
+                  >
+                    {copied ? (
+                      <Check className="h-3.5 w-3.5 text-orbit-green" aria-hidden />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" aria-hidden />
+                    )}
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                </div>
+                <p className="text-[12px] text-ink-dim">The link works for 7 days.</p>
+              </div>
             </div>
-            <DialogFooter className="mt-8 border-t border-line/[0.04] pt-6 sm:justify-center">
-              <Button onClick={handleClose} id="close-invite-dialog">Acknowledge</Button>
+
+            <DialogFooter className={cn(DIALOG_FOOTER_CLASS, "gap-2")}>
+              <Button type="button" variant="ghost" onClick={startOver}>
+                Invite someone else
+              </Button>
+              <Button onClick={handleClose} id="close-invite-dialog">
+                Done
+              </Button>
             </DialogFooter>
           </div>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-2">
-            {/* Error banner (full failure — no link created) */}
-            {errorMsg && !inviteLink && (
-              <div className="flex items-start gap-3 rounded-lg bg-orbit-red/10 ring-1 ring-orbit-red/20 px-4 py-3">
-                <AlertCircle className="w-4 h-4 text-orbit-red mt-0.5 shrink-0" />
-                <p className="text-[12px] font-mono text-orbit-red leading-relaxed">
-                  {errorMsg}
-                </p>
-              </div>
-            )}
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <DialogHeading
+              icon={UserPlus}
+              title="Invite a teammate"
+              description="We'll email them a link to join this workspace. You'll get the link too, in case you'd rather send it yourself."
+            />
 
-            <div className="space-y-2.5">
-              <Label htmlFor="member-email" className="text-center block">Email</Label>
-              <Input
-                id="member-email"
-                type="email"
-                placeholder="name@studio.co.za"
-                disabled={loading}
-                {...register("email")}
-              />
-              {errors.email && (
-                <p className="text-[12px] text-orbit-red">{errors.email.message}</p>
-              )}
+            <div className="space-y-4">
+              {/* Full failure: no invite was created. */}
+              {errorMsg && <DialogNotice tone="red">{errorMsg}</DialogNotice>}
+
+              <div className="space-y-2.5">
+                <Label htmlFor="member-email" className="block text-[12px] text-ink-dim">
+                  Email address
+                </Label>
+                <div className="relative">
+                  <Mail
+                    className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-dim"
+                    aria-hidden
+                  />
+                  <Input
+                    id="member-email"
+                    type="email"
+                    placeholder="name@studio.co.za"
+                    autoComplete="off"
+                    autoFocus
+                    disabled={loading}
+                    aria-invalid={errors.email ? true : undefined}
+                    className={cn("pl-11", errors.email && "ring-1 ring-orbit-red/40")}
+                    {...register("email")}
+                  />
+                </div>
+                {errors.email && <p className="text-[12px] text-orbit-red">{errors.email.message}</p>}
+              </div>
             </div>
-            <DialogFooter className="gap-2 mt-8 border-t border-line/[0.04] pt-6 sm:justify-center">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={loading}
-              >
+
+            <DialogFooter className={cn(DIALOG_FOOTER_CLASS, "gap-2")}>
+              <Button type="button" variant="ghost" onClick={handleClose} disabled={loading}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading} id="submit-add-member">
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 border-2 border-line/[0.3] border-t-on-ink rounded-full animate-spin" />
-                    Dispatching…
-                  </span>
-                ) : (
-                  "Generate Link"
-                )}
+              <Button type="submit" isLoading={loading} id="submit-add-member">
+                {loading ? "Sending…" : "Send invite"}
               </Button>
             </DialogFooter>
           </form>

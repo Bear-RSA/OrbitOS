@@ -1,15 +1,9 @@
 "use client";
 
 import { useState, useEffect, useId } from "react";
-import { AlertTriangle, X } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { AlertTriangle } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { DIALOG_FOOTER_CLASS, DialogHeading, DialogNotice } from "@/components/ui/dialog-parts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils/classnames";
@@ -79,100 +73,70 @@ export function DestructiveActionModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(val) => !loading && onClose()}>
-      <DialogContent 
-        className="sm:max-w-[480px] border-destructive/20 p-10 rounded-[32px] gap-0 overflow-hidden"
-        id="destructive-modal"
-      >
-        <DialogHeader className="space-y-4 mb-8">
-          <DialogTitle className="flex items-center gap-3 text-destructive text-2xl font-light tracking-tight">
-            <AlertTriangle className="w-6 h-6 shrink-0" aria-hidden />
-            {title}
-          </DialogTitle>
-          <DialogDescription className="text-ink-muted text-[15px] font-light leading-relaxed">
-            {description || (
-              <>
-                You&apos;re about to delete <span className="font-semibold text-ink-strong">&quot;{entityName}&quot;</span>.
-              </>
-            )}
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog open={isOpen} onOpenChange={() => !loading && onClose()}>
+      <DialogContent className="sm:max-w-[480px]" id="destructive-modal">
+        <DialogHeading
+          icon={AlertTriangle}
+          tone="red"
+          title={title}
+          description={
+            <>
+              {entityName && (
+                <span className="mb-1 block truncate font-normal text-ink">{entityName}</span>
+              )}
+              {description || "You're about to delete this."}
+            </>
+          }
+        />
 
-        <div className="space-y-6">
-          {/* Warning Box */}
-          <div className="bg-orbit-red/[0.1] border border-destructive/10 rounded-2xl p-5 relative overflow-hidden">
-            <div className="absolute inset-0 bg-destructive/5 opacity-20 pointer-events-none" />
-            <p className="text-[14px] text-destructive/90 font-light leading-relaxed relative z-10">
-              {warningMessage}
-            </p>
-          </div>
+        <div className="space-y-5">
+          <DialogNotice tone="red">{warningMessage}</DialogNotice>
 
-          {/* Confirmation Input */}
-          <div className="space-y-3">
-            <label htmlFor={inputId} className="text-[13px] text-ink-muted block">
+          {/* Typing the name is the speed bump: it can't be clicked through on autopilot. */}
+          <div className="space-y-2.5">
+            <label htmlFor={inputId} className="block text-[12px] text-ink-dim">
               Type <span className="font-medium text-ink">{targetConfirmText}</span> to confirm
             </label>
-            <div className="relative">
-              <input
-                id={inputId}
-                type="text"
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? errorId : undefined}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                disabled={loading}
-                placeholder="Type it here"
-                autoComplete="off"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && isMatch && !loading) {
-                    handleConfirm();
-                  }
-                }}
-                className={cn(
-                  "w-full bg-surface-sunken border border-line/[0.06] rounded-xl h-12 px-5 text-[14px] font-light text-ink placeholder:text-ink-dim transition-all focus:outline-none focus:border-destructive/40 focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50",
-                  isMatch && "border-destructive/20 bg-orbit-red/[0.06]"
-                )}
-              />
-            </div>
+            <Input
+              id={inputId}
+              type="text"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? errorId : undefined}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              disabled={loading}
+              placeholder={targetConfirmText}
+              autoComplete="off"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && isMatch && !loading) {
+                  handleConfirm();
+                }
+              }}
+              className={cn(isMatch && "ring-1 ring-orbit-red/30 focus-visible:ring-orbit-red/40")}
+            />
           </div>
 
           {error && (
-            <div id={errorId} role="alert" className="text-[13px] text-destructive animate-fade-in flex items-center gap-2 px-1">
-              <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-destructive" />
+            <p id={errorId} role="alert" className="flex items-center gap-2 px-1 text-[13px] text-orbit-red animate-fade-in">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-orbit-red" />
               {error}
-            </div>
+            </p>
           )}
         </div>
 
-        <DialogFooter className="flex-row items-center justify-end gap-3 mt-10 pt-0 border-none">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={loading}
-            onClick={onClose}
-            className="h-11 px-8 rounded-xl text-[13px] font-medium text-ink bg-surface-sunken border border-line/[0.05] hover:bg-surface-control hover:text-ink-strong transition-all"
-          >
+        <DialogFooter className={cn(DIALOG_FOOTER_CLASS, "gap-2")}>
+          <Button type="button" variant="ghost" disabled={loading} onClick={onClose}>
             Cancel
           </Button>
           <Button
             type="button"
-            disabled={loading || !isMatch}
+            variant="destructive"
+            disabled={!isMatch}
+            isLoading={loading}
             onClick={handleConfirm}
-            className={cn(
-              "h-11 px-8 rounded-xl text-[13px] font-medium text-ink-strong transition-all duration-500",
-              isMatch 
-                ? "bg-destructive hover:bg-orbit-red shadow-[0_0_20px_rgb(var(--orbit-red)_/_0.4)]" 
-                : "bg-destructive/20 text-ink-strong/30 cursor-not-allowed"
-            )}
+            className={cn(isMatch && "bg-orbit-red/20 ring-1 ring-inset ring-orbit-red/30 hover:bg-orbit-red/30")}
           >
-            {loading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 border-2 border-line/30 border-t-white rounded-full animate-spin" />
-                Deleting…
-              </div>
-            ) : (
-              actionLabel
-            )}
+            {actionLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -176,6 +176,9 @@ export function MemberProfile({
       <Dialog open onOpenChange={(next) => !next && onClose()}>
         <DialogContent
           className="gap-0 overflow-hidden rounded-[28px] p-6 sm:max-w-md"
+          /* The banner bleeds to the edges by exactly this padding, so the
+             desktop layer has to use it too rather than the default 48px. */
+          contentClassName="sm:p-6"
           id="member-profile"
         >
           {/* ── Banner ─────────────────────────────────────────── */}

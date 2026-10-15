@@ -54,10 +54,16 @@ interface DialogContentProps extends React.ComponentPropsWithoutRef<typeof Dialo
    * a dialog that must stay centred everywhere can opt out.
    */
   sheet?: boolean;
+  /**
+   * Classes for the scrolling layer inside the panel, which is where the
+   * desktop padding lives. A dialog that draws edge-to-edge bands sets its
+   * own padding here.
+   */
+  contentClassName?: string;
 }
 
 const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, DialogContentProps>(
-  ({ className, children, sheet = true, ...props }, forwardedRef) => {
+  ({ className, contentClassName, children, sheet = true, ...props }, forwardedRef) => {
     const contentRef = React.useRef<HTMLDivElement | null>(null);
     const overlayRef = React.useRef<HTMLDivElement | null>(null);
     const closeRef = React.useRef<HTMLButtonElement | null>(null);
@@ -106,7 +112,11 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
             /* The calendar's fog, weighted for a panel over the page. */
             fallback="material-fog-modal"
             className={cn(
-              "fixed z-50 grid w-full gap-6 p-8 sm:p-0 text-ink selection:bg-primary/20",
+              /* `grid-cols-1` is minmax(0, 1fr), which the content layer
+                 inherits. Without it the implicit column sizes to its widest
+                 unbreakable line, so one long `truncate` title pushed the
+                 whole dialog past its own frame instead of truncating. */
+              "fixed z-50 grid grid-cols-1 w-full gap-6 p-8 sm:p-0 text-ink selection:bg-primary/20",
               "border border-line/[0.06] shadow-overlay",
               "ring-1 ring-line/5",
               "focus:outline-none",
@@ -119,8 +129,13 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
               "sm:max-h-[calc(100dvh-3rem)]",
               /* Slim house scrollbar, inset so it clears the rounded corners. */
               "custom-scrollbar [&::-webkit-scrollbar-track]:my-8",
-              "sm:data-[state=open]:animate-in sm:data-[state=open]:fade-in-0 sm:data-[state=open]:zoom-in-95 sm:data-[state=open]:blur-in sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]",
-              "sm:data-[state=closed]:animate-out sm:data-[state=closed]:fade-out-0 sm:data-[state=closed]:zoom-out-95 sm:data-[state=closed]:blur-out sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%]",
+              /* A small rise and a near-1 scale, no blur. A `filter` on the
+                 panel walls the glass lens off from the page, so a blur-in
+                 left the lens dark for the whole entrance and it snapped on
+                 at the end — the visible jolt. The keyframe's `from` replaces
+                 the centring transform, hence -50% plus a few pixels. */
+              "sm:data-[state=open]:animate-in sm:data-[state=open]:fade-in-0 sm:data-[state=open]:zoom-in-98 sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[calc(50%_-_8px)]",
+              "sm:data-[state=closed]:animate-out sm:data-[state=closed]:fade-out-0 sm:data-[state=closed]:zoom-out-98 sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[calc(50%_-_4px)]",
 
               /* ── Sheet (below sm) ──
                  Position is driven by the gesture hook writing `transform`;
@@ -134,7 +149,8 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
             )}
             contentClassName={cn(
               "sm:max-h-[inherit] sm:overflow-y-auto sm:overscroll-contain sm:p-12",
-              "custom-scrollbar [&::-webkit-scrollbar-track]:my-8"
+              "custom-scrollbar [&::-webkit-scrollbar-track]:my-8",
+              contentClassName
             )}
             decoration={
               /* Grab handle. Only the sheet has one; it is the affordance

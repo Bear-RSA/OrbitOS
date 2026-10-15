@@ -246,7 +246,7 @@ const config: Config = {
       });
 
       const opacity = { DEFAULT: "0", 0: "0", 5: "0.05", 10: "0.1", 25: "0.25", 50: "0.5", 75: "0.75", 90: "0.9" };
-      const scale = { DEFAULT: "0", 0: "0", 50: "0.5", 75: "0.75", 90: "0.9", 95: "0.95", 100: "1", 105: "1.05", 110: "1.1" };
+      const scale = { DEFAULT: "0", 0: "0", 50: "0.5", 75: "0.75", 90: "0.9", 95: "0.95", 98: "0.98", 100: "1", 105: "1.05", 110: "1.1" };
       const blur = { DEFAULT: "8px", sm: "4px", md: "8px", lg: "16px", none: "0px" };
       type Values = Record<string, string>;
       const distance = theme("spacing") as Values;

@@ -1,17 +1,11 @@
 "use client";
 
 import * as React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { DIALOG_FOOTER_CLASS, DialogHeading } from "@/components/ui/dialog-parts";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/classnames";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, HelpCircle } from "lucide-react";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -40,60 +34,35 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
-        <div className="p-8 space-y-6">
-          <div className="flex items-center gap-4">
-            {isDestructive && (
-              <div className="w-10 h-10 rounded-full bg-orbit-red/10 flex items-center justify-center ring-1 ring-orbit-red/20 shadow-[0_0_15px_rgb(var(--orbit-red)_/_0.1)]">
-                <AlertTriangle className="w-5 h-5 text-orbit-red" aria-hidden />
-              </div>
-            )}
-            <DialogHeader className="text-left p-0">
-              <DialogTitle className="text-lg font-medium tracking-tight text-ink">
-                {title}
-              </DialogTitle>
-            </DialogHeader>
-          </div>
-
-          <div className="space-y-4">
-            <DialogDescription className="text-[14px] leading-relaxed text-ink-muted">
+      <DialogContent className="sm:max-w-[440px]">
+        <DialogHeading
+          icon={isDestructive ? AlertTriangle : HelpCircle}
+          tone={isDestructive ? "red" : "neutral"}
+          title={title}
+          description={
+            <>
               {description}
-            </DialogDescription>
-            
-            {isDestructive && (
-              <p className="text-[13px] text-orbit-red">
-                This can&apos;t be undone.
-              </p>
-            )}
-          </div>
+              {isDestructive && <span className="mt-2 block text-orbit-red/90">This can&apos;t be undone.</span>}
+            </>
+          }
+        />
 
-          <DialogFooter className="flex-row justify-end gap-3 mt-4">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-              className="h-10 px-5 rounded-lg text-[13px] font-medium text-ink-muted hover:text-ink hover:bg-surface-card transition-all"
-            >
-              {cancelText}
-            </Button>
-            <Button 
-              onClick={(e) => {
-                e.preventDefault();
-                onConfirm();
-              }} 
-              isLoading={loading}
-              className={cn(
-                "h-10 px-6 rounded-lg text-[13px] font-medium transition-all duration-500",
-                isDestructive 
-                  ? "bg-orbit-red/10 border border-orbit-red/20 text-orbit-red hover:bg-orbit-red hover:text-black shadow-[0_0_20px_rgb(var(--orbit-red)_/_0.1)] hover:shadow-[0_0_30px_rgb(var(--orbit-red)_/_0.3)]"
-                  : "bg-surface-control border border-line/[0.1] text-ink hover:bg-ink hover:text-black"
-              )}
-            >
-              {confirmText}
-            </Button>
-          </DialogFooter>
-        </div>
+        <DialogFooter className={cn(DIALOG_FOOTER_CLASS, "mt-2 gap-2")}>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={loading}>
+            {cancelText}
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
+            isLoading={loading}
+            variant={isDestructive ? "destructive" : "default"}
+            className={cn(isDestructive && "ring-1 ring-inset ring-orbit-red/25")}
+          >
+            {confirmText}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
