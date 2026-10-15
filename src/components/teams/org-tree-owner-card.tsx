@@ -17,7 +17,7 @@ import { Eyebrow, ManageButton, TreeAvatar, type TreeNodeContext } from "./org-t
 /*  else is ever told which owner that is.                             */
 /* ------------------------------------------------------------------ */
 
-/** Matches `w-[300px]` below; the tree lays out by it. */
+/** Matches `sm:w-[300px]` below; the desktop tree lays out by it. */
 export const OWNER_CARD_WIDTH = 300;
 
 export function OrgTreeOwnerCard({
@@ -36,7 +36,7 @@ export function OrgTreeOwnerCard({
   const isSelf = member.id === context.viewerId;
 
   return (
-    <InteractiveCard surface="fog" className="w-[300px] p-6 ring-orbit-gold/35">
+    <InteractiveCard surface="fog" className="w-full p-6 ring-orbit-gold/35 sm:w-[300px]">
       <div className="flex items-center gap-4">
         <button
           type="button"

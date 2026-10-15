@@ -214,6 +214,10 @@ export function ProjectCalendar({
   const [busy, setBusy] = useState(false);
   const [guests, setGuests] = useState<ParticipantView[]>([]);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  /* Phones: a month cell is ~47px wide, too narrow for a readable chip,
+     so the grid shows dots and the tapped day lists in full below it.
+     Null means today. */
+  const [agendaDayKey, setAgendaDayKey] = useState<string | null>(null);
 
   /* Pointer handlers fire faster than React commits, so the authoritative
      drag state lives in a ref; `drag` exists only to render the ghost. */
@@ -512,14 +516,18 @@ export function ProjectCalendar({
 
   /* ---------------- Renderers ---------------- */
 
+  const taskTone = (task: Task, dayKey: string): TaskTone => {
+    if (task.status === "done") return "done";
+    if (dayKey < todayKey) return "late";
+    if (dayKey === todayKey) return "today";
+    return "open";
+  };
+
   const renderTaskChip = (task: Task, dayKey: string) => {
-    const isDone = task.status === "done";
-    const isLate = !isDone && dayKey < todayKey;
-    const isDueToday = !isDone && dayKey === todayKey;
     const isPending = pending.has(task.id);
     const isBeingDragged = drag?.moved && drag.taskId === task.id;
 
-    const tone = TASK_TONE[isDone ? "done" : isLate ? "late" : isDueToday ? "today" : "open"];
+    const tone = TASK_TONE[taskTone(task, dayKey)];
 
     return (
       <div
@@ -578,17 +586,31 @@ export function ProjectCalendar({
       className="mb-12 flex animate-fade-in flex-col overflow-hidden rounded-xl border border-line/[0.06] shadow-raised ring-1 ring-line/5"
     >
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/[0.04] p-4">
-        <h2 className="select-none text-[12px] text-ink-dim">
+      {/* Phones: title and Schedule on one line, scale and navigation on
+          the next. From sm up it is one row with Schedule at the end. */}
+      <div className="flex flex-wrap items-center gap-3 border-b border-line/[0.04] p-4">
+        <h2 className="flex-1 select-none text-[12px] text-ink-dim">
           Calendar · {view === "month" ? "Month" : "Week"}
         </h2>
 
-        <div className="flex flex-wrap items-center gap-1">
+        <button
+          type="button"
+          onClick={() => {
+            setCreateDateKey(todayKey);
+            setCreateOpen(true);
+          }}
+          className="flex items-center gap-1.5 rounded-lg bg-surface-control px-2.5 py-1.5 text-[12px] text-ink ring-1 ring-inset ring-line/[0.09] transition-colors hover:bg-surface-hover active:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus sm:order-last sm:py-1"
+        >
+          <Plus className="h-3 w-3" aria-hidden />
+          Schedule
+        </button>
+
+        <div className="flex w-full items-center gap-1 sm:w-auto">
           {/* View toggle */}
           <div
             role="tablist"
             aria-label="Calendar scale"
-            className="mr-2 flex items-center gap-1 rounded-lg bg-surface-card p-0.5 ring-1 ring-inset ring-line/[0.06]"
+            className="mr-auto flex items-center gap-1 rounded-lg bg-surface-card p-0.5 ring-1 ring-inset ring-line/[0.06] sm:mr-2"
           >
             {([
               { id: "month", icon: CalendarDays, label: "Month" },
@@ -607,7 +629,7 @@ export function ProjectCalendar({
                     : "text-ink-dim hover:bg-surface-raised hover:text-ink-muted"
                 )}
               >
-                <Icon className="h-3 w-3" aria-hidden />
+                <Icon className="hidden h-3 w-3 sm:block" aria-hidden />
                 {label}
               </button>
             ))}
@@ -624,7 +646,7 @@ export function ProjectCalendar({
             <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
           </button>
 
-          <span className="min-w-[9.5rem] select-none text-center text-[12px] text-ink-muted">
+          <span className="select-none text-center text-[12px] text-ink-muted sm:min-w-[9.5rem]">
             {view === "month"
               ? format(cursor, "MMMM yyyy")
               : `${format(weekDays[0], "d MMM")} – ${format(weekDays[6], "d MMM")}`}
@@ -643,22 +665,13 @@ export function ProjectCalendar({
 
           <button
             type="button"
-            onClick={() => setCursor(new Date())}
+            onClick={() => {
+              setCursor(new Date());
+              setAgendaDayKey(null);
+            }}
             className="ml-1 rounded-lg px-2.5 py-1 text-[12px] text-ink-dim ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             Today
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setCreateDateKey(todayKey);
-              setCreateOpen(true);
-            }}
-            className="ml-2 flex items-center gap-1.5 rounded-lg bg-surface-control px-2.5 py-1 text-[12px] text-ink ring-1 ring-inset ring-line/[0.09] transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-          >
-            <Plus className="h-3 w-3" aria-hidden />
-            Schedule
           </button>
         </div>
       </div>
@@ -671,11 +684,12 @@ export function ProjectCalendar({
               <div
                 key={d}
                 className={cn(
-                  "select-none border-l border-line/[0.04] px-2 py-2 text-[12px] text-ink-dim first:border-l-0",
+                  "select-none border-l border-line/[0.04] py-2 text-center text-[12px] text-ink-dim first:border-l-0 sm:px-2 sm:text-left",
                   (d === "Sat" || d === "Sun") && "bg-surface-control/40"
                 )}
               >
-                {d}
+                <span aria-hidden className="sm:hidden">{d[0]}</span>
+                <span className="max-sm:sr-only">{d}</span>
               </div>
             ))}
           </div>
@@ -689,23 +703,33 @@ export function ProjectCalendar({
               const inMonth = isSameMonth(day, cursor);
               const isToday = key === todayKey;
               const isDropTarget = dropTargetKey === key;
+              const isAgendaDay = key === (agendaDayKey ?? todayKey);
               const { off, holiday } = offDay(day, key);
+
+              /* One dot per item, in its chip's colour, for the phone grid. */
+              const dots = [
+                ...dayAllDay.map((e) => BOOKING_TONE[bookingTone(e, uid)].bar),
+                ...dayTimed.map((e) => BOOKING_TONE[bookingTone(e, uid)].bar),
+                ...dayTasks.map((t) => TASK_TONE[taskTone(t, key)].bar),
+              ];
 
               return (
                 <div
                   key={key}
                   data-date-key={key}
+                  onClick={() => setAgendaDayKey(key)}
                   onDoubleClick={() => {
                     setCreateDateKey(key);
                     setCreateOpen(true);
                   }}
                   className={cn(
-                    "min-h-[112px] border-l border-t border-line/[0.04] p-1.5 transition-colors [&:nth-child(7n+1)]:border-l-0",
+                    "min-h-[52px] border-l border-t border-line/[0.04] p-1 transition-colors [&:nth-child(7n+1)]:border-l-0 sm:min-h-[112px] sm:p-1.5",
                     !inMonth ? "bg-surface-sunken" : off && "bg-surface-control/40",
+                    isAgendaDay && "max-sm:bg-surface-control",
                     isDropTarget && "bg-surface-control ring-1 ring-inset ring-focus"
                   )}
                 >
-                  <div className="mb-1.5 flex items-center justify-between px-0.5">
+                  <div className="flex items-center justify-center px-0.5 sm:mb-1.5 sm:justify-between">
                     <span
                       className={cn(
                         "select-none font-mono text-[11px] tabular-nums",
@@ -719,17 +743,25 @@ export function ProjectCalendar({
                       {format(day, "d")}
                     </span>
                     {dayTasks.length + dayAllDay.length + dayTimed.length > 3 && (
-                      <span className="select-none font-mono text-[11px] tabular-nums text-ink-dim">
+                      <span className="hidden select-none font-mono text-[11px] tabular-nums text-ink-dim sm:inline">
                         {dayTasks.length + dayAllDay.length + dayTimed.length}
                       </span>
                     )}
                   </div>
 
+                  {dots.length > 0 && (
+                    <div aria-hidden className="mt-1.5 flex justify-center gap-[3px] sm:hidden">
+                      {dots.slice(0, 3).map((tone, i) => (
+                        <span key={i} className={cn("h-[5px] w-[5px] rounded-full", tone)} />
+                      ))}
+                    </div>
+                  )}
+
                   {holiday && (
                     <p
                       title={holiday}
                       className={cn(
-                        "mb-1.5 select-none truncate px-0.5 text-[11px] leading-tight",
+                        "mb-1.5 hidden select-none truncate px-0.5 text-[11px] leading-tight sm:block",
                         inMonth ? "text-ink-dim" : "text-ink-faint"
                       )}
                     >
@@ -744,14 +776,14 @@ export function ProjectCalendar({
                       type="button"
                       onClick={() => setOverdueOpen((v) => !v)}
                       aria-expanded={overdueOpen}
-                      className="mb-1 flex w-full items-center gap-1.5 rounded bg-orbit-red/10 ring-1 ring-inset ring-orbit-red/30 px-1.5 py-1 text-left text-[12px] font-medium text-orbit-red transition-colors hover:bg-orbit-red/[0.16] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orbit-red/50"
+                      className="mb-1 hidden w-full items-center gap-1.5 rounded bg-orbit-red/10 ring-1 ring-inset ring-orbit-red/30 px-1.5 py-1 text-left text-[12px] font-medium text-orbit-red transition-colors hover:bg-orbit-red/[0.16] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orbit-red/50 sm:flex"
                     >
                       <AlertCircle className="h-2.5 w-2.5 shrink-0" aria-hidden />
                       <span className="truncate">{overdue.length} overdue</span>
                     </button>
                   )}
 
-                  <div className="flex flex-col gap-1">
+                  <div className="hidden flex-col gap-1 sm:flex">
                     {dayAllDay.map(renderAllDayEvent)}
 
                     {/* Timed engagements collapse to a time-stamped line in
@@ -781,6 +813,65 @@ export function ProjectCalendar({
               );
             })}
           </div>
+
+          {/* Phone agenda: the tapped day, in full. */}
+          {(() => {
+            const key = agendaDayKey ?? todayKey;
+            const day = parseDateKey(key);
+            const allDay = allDayByDay.get(key) ?? [];
+            const timed = timedByDay.get(key) ?? [];
+            const dayTasks = byDay.get(key) ?? [];
+            const { holiday } = offDay(day, key);
+            const empty = allDay.length + timed.length + dayTasks.length === 0;
+
+            return (
+              <div className="border-t border-line/[0.04] p-4 sm:hidden">
+                <div className="mb-3 flex items-baseline justify-between gap-3">
+                  <h3 className="select-none text-[13px] font-medium text-ink">
+                    {key === todayKey ? "Today" : format(day, "EEEE d MMMM")}
+                  </h3>
+                  {holiday && <span className="truncate text-[12px] text-ink-dim">{holiday}</span>}
+                </div>
+
+                {key === todayKey && overdue.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setOverdueOpen((v) => !v)}
+                    aria-expanded={overdueOpen}
+                    className="mb-2 flex w-full items-center gap-2 rounded-md bg-orbit-red/10 px-3 py-2 text-left text-[13px] font-medium text-orbit-red ring-1 ring-inset ring-orbit-red/30 transition-colors active:bg-orbit-red/[0.16] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orbit-red/50"
+                  >
+                    <AlertCircle className="h-3 w-3 shrink-0" aria-hidden />
+                    {overdue.length} overdue
+                  </button>
+                )}
+
+                {empty ? (
+                  <p className="select-none text-[13px] text-ink-dim">Nothing on this day.</p>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    {allDay.map(renderAllDayEvent)}
+                    {timed.map((event) => (
+                      <button
+                        key={event.id}
+                        type="button"
+                        onClick={() => setSelectedEventId(event.id)}
+                        className={cn(bookingClass(event), "w-full items-baseline gap-2 py-2 pl-3.5 pr-2")}
+                      >
+                        {bookingBar(event)}
+                        <span className="shrink-0 font-mono text-[12px] tabular-nums opacity-60">
+                          {format(event.startAt.toDate(), "HH:mm")}
+                        </span>
+                        <span className="truncate text-[13px] font-medium leading-tight">
+                          {event.title}
+                        </span>
+                      </button>
+                    ))}
+                    {dayTasks.map((task) => renderTaskChip(task, key))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </>
       )}
 

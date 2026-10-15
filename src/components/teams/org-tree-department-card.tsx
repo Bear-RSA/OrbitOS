@@ -36,7 +36,7 @@ export function OrgTreeDepartmentCard({
   const count = members.length + (lead ? 1 : 0);
 
   return (
-    <InteractiveCard surface="fog" className="w-[260px] rounded-3xl p-6">
+    <InteractiveCard surface="fog" className="w-full rounded-3xl p-6 sm:w-[260px]">
       {/* InteractiveCard wraps its children in one div, so the stack lives here. */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
@@ -113,7 +113,7 @@ export function OrgTreeUnassignedBucket({
   canManage: boolean;
 }) {
   return (
-    <div className="flex w-[260px] flex-col gap-4 rounded-3xl border border-dashed border-line/[0.14] bg-surface-sunken/30 p-6">
+    <div className="flex w-full flex-col gap-4 rounded-3xl border border-dashed border-line/[0.14] bg-surface-sunken/30 p-6 sm:w-[260px]">
       <div className="flex items-center gap-2">
         <h3 className="min-w-0 flex-1 truncate text-[15px] font-light tracking-tight text-ink-dim">{title}</h3>
         <CountPill value={members.length} label={`${members.length} unplaced`} />
