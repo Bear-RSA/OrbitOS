@@ -555,59 +555,52 @@ export default function TeamsPage() {
           {view === "roster" && (
             <>
               {/* Roster — every seat in the org, with the load it is carrying */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-32">
+              <div className="mb-24 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {roster.map(({ workload, focus }, i) => {
                   const member = workload.member;
                   const config = statusConfig[workload.status];
                   const isSelf = member.id === user.id;
                   const removable =
                     revokeMode && !isSelf && (member.role !== "OWNER" || isAccountHolder);
+                  const { activeTasks, overdueTasks, blockedTasks, completedThisWeek } = workload.metrics;
 
                   return (
-                    <ScrollReveal key={member.id} delay={i * 100}>
+                    <ScrollReveal key={member.id} delay={Math.min(i, 6) * 60}>
                       <InteractiveCard
                         surface="fog"
                         className={cn(
-                          "p-8 group h-full",
+                          "group h-full p-5",
                           removable && "ring-1 ring-inset ring-orbit-red/25"
                         )}
                       >
-                        {removable && (
-                          <button
-                            onClick={() => setMemberToRemove(member.id)}
-                            aria-label={`Remove ${member.name}`}
-                            className="absolute right-5 top-5 z-20 rounded-full bg-orbit-red/12 p-1.5 text-orbit-red transition-colors hover:bg-orbit-red/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orbit-red/50"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-
-                        <div className="flex items-start justify-between gap-4 mb-8">
+                        {/* Identity: face, name, and the load reading as a pill */}
+                        <div className="flex items-center gap-3.5">
                           <button
                             type="button"
                             onClick={() => setProfileUid(member.id)}
                             aria-label={`View ${memberDisplayName(member)}'s profile`}
-                            className="relative shrink-0 rounded-full transition-transform duration-300 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
+                            className="relative shrink-0 rounded-xl transition-transform duration-300 hover:-translate-y-[2px] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
                           >
                             <UserAvatar
                               photoURL={member.photoURL}
                               name={member.name}
-                              size="xl"
+                              size="lg"
                               className="ring-1 ring-line/[0.08]"
                             />
                             <span
                               className={cn(
-                                "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-4 border-base z-10",
+                                "absolute -bottom-0.5 -right-0.5 z-10 h-3 w-3 rounded-full border-[2.5px] border-base",
                                 config.dot
                               )}
                               aria-hidden
                             />
                           </button>
-                          <div className="min-w-0 text-right">
-                            <h3 className="truncate text-xl font-light text-ink">
+
+                          <div className="min-w-0 flex-1">
+                            <h3 className="truncate text-[15px] font-medium tracking-tight text-ink">
                               {memberDisplayName(member)}
                             </h3>
-                            <p className="text-[12px] text-ink-dim mt-1">
+                            <p className="mt-0.5 truncate text-[12px] text-ink-dim">
                               {member.roleDescriptor ||
                                 (member.id === structure?.accountHolderId
                                   ? "Account holder"
@@ -617,55 +610,64 @@ export default function TeamsPage() {
                               {isSelf && " · You"}
                             </p>
                           </div>
+
+                          {removable ? (
+                            <button
+                              onClick={() => setMemberToRemove(member.id)}
+                              aria-label={`Remove ${member.name}`}
+                              className="z-20 shrink-0 rounded-full bg-orbit-red/12 p-1.5 text-orbit-red transition-colors hover:bg-orbit-red/25 active:bg-orbit-red/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orbit-red/50"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          ) : (
+                            <span
+                              className={cn(
+                                "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-surface-control/60 px-2 py-0.5 text-[11px] ring-1 ring-inset ring-line/[0.06]",
+                                config.text
+                              )}
+                            >
+                              <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", config.dot)} />
+                              {config.label}
+                            </span>
+                          )}
                         </div>
 
-                        <div className="mb-8">
-                          <p className="text-[12px] text-ink-dim mb-4">Focus</p>
-                          <div className="bg-base/40 rounded-xl p-4 ring-1 ring-line/[0.04]">
-                            {focus ? (
-                              <>
-                                <div className="flex justify-between items-center gap-3 mb-3">
-                                  <span className="truncate text-[13px] font-light text-ink">{focus.projectName}</span>
-                                  <span className="shrink-0 text-[11px] font-mono text-ink-strong tabular-nums">{focus.percent}%</span>
-                                </div>
-                                <div className="w-full h-1 bg-surface-control rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full bg-ink-strong rounded-full transition-all duration-1000"
-                                    style={{ width: `${focus.percent}%` }}
-                                  />
-                                </div>
-                                <p className="mt-3 text-[12px] text-ink-dim">
-                                  {focus.done} of {focus.total} closed
-                                </p>
-                              </>
-                            ) : (
-                              <p className="text-[13px] font-light text-ink-muted">No work assigned yet.</p>
+                        {/* Focus: the project carrying most of their open work */}
+                        <div className="mt-5">
+                          <div className="mb-2 flex items-baseline justify-between gap-3">
+                            <span className={cn("truncate text-[12px]", focus ? "text-ink-muted" : "text-ink-dim")}>
+                              {focus ? focus.projectName : "No work assigned yet"}
+                            </span>
+                            {focus && (
+                              <span className="shrink-0 font-mono text-[11px] tabular-nums text-ink-dim">
+                                {focus.done}/{focus.total}
+                                <span className="ml-1.5 text-ink-strong">{focus.percent}%</span>
+                              </span>
                             )}
+                          </div>
+                          <div className="h-[3px] w-full overflow-hidden rounded-full bg-surface-control">
+                            <div
+                              className="h-full rounded-full bg-ink-strong transition-all duration-1000"
+                              style={{ width: `${focus?.percent ?? 0}%` }}
+                            />
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-4 gap-3 mb-8">
+                        {/* Load: four counts in one strip */}
+                        <div className="mt-4 grid grid-cols-4 divide-x divide-line/[0.05] rounded-xl bg-base/40 py-2.5 ring-1 ring-inset ring-line/[0.04]">
                           {[
-                            { label: "Active", value: workload.metrics.activeTasks, tone: "text-ink" },
-                            { label: "Overdue", value: workload.metrics.overdueTasks, tone: workload.metrics.overdueTasks > 0 ? "text-orbit-red" : "text-ink-dim" },
-                            { label: "Blocked", value: workload.metrics.blockedTasks, tone: workload.metrics.blockedTasks > 0 ? "text-orbit-amber" : "text-ink-dim" },
-                            { label: "Wins", value: workload.metrics.completedThisWeek, tone: workload.metrics.completedThisWeek > 0 ? "text-orbit-green" : "text-ink-dim" },
+                            { label: "Active", value: activeTasks, tone: "text-ink" },
+                            { label: "Overdue", value: overdueTasks, tone: overdueTasks > 0 ? "text-orbit-red" : "text-ink-dim" },
+                            { label: "Blocked", value: blockedTasks, tone: blockedTasks > 0 ? "text-orbit-amber" : "text-ink-dim" },
+                            { label: "Wins", value: completedThisWeek, tone: completedThisWeek > 0 ? "text-orbit-green" : "text-ink-dim" },
                           ].map((metric) => (
-                            <div key={metric.label} className="flex flex-col gap-1.5">
-                              <span className={cn("text-xl font-extralight leading-none tabular-nums", metric.tone)}>
-                                {metric.value.toString().padStart(2, "0")}
+                            <div key={metric.label} className="flex flex-col items-center gap-1">
+                              <span className={cn("text-[17px] font-light leading-none tabular-nums", metric.tone)}>
+                                {metric.value}
                               </span>
-                              <span className="text-[12px] leading-none text-ink-dim">
-                                {metric.label}
-                              </span>
+                              <span className="text-[11px] leading-none text-ink-dim">{metric.label}</span>
                             </div>
                           ))}
-                        </div>
-
-                        <div className="flex items-center justify-between gap-4 pt-6 border-t border-line/[0.04]">
-                          <span className={cn("text-[12px]", config.text)}>
-                            {config.label}
-                          </span>
                         </div>
                       </InteractiveCard>
                     </ScrollReveal>
