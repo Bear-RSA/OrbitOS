@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Lock, Mic, Video } from "lucide-react";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 
 /* ------------------------------------------------------------------ */
 /*  Camera and microphone permission                                   */
@@ -109,7 +109,7 @@ export function MediaPermissionPanel({ phase, onAllow, onSkip }: MediaPermission
   if (phase === "checking") {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader />
+        <OrbitLoader />
       </div>
     );
   }

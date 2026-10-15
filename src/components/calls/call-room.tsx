@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { AlertCircle, Clock } from "lucide-react";
 import { useCall } from "@/contexts/call-context";
 import { CLOSING_WARNING_MS, closingWarning } from "@/lib/calls/closing";
@@ -304,7 +304,7 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
 
         {status === "joining" && (
           <div className="absolute inset-0 flex items-center justify-center bg-surface-card">
-            <Loader />
+            <OrbitLoader />
           </div>
         )}
 

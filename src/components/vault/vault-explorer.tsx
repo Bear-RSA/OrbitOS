@@ -22,6 +22,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils/classnames";
 import { SIGNAL } from "@/lib/utils/signal-colors";
 import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { Input } from "@/components/ui/input";
 import { DestructiveActionModal } from "@/components/ui/destructive-action-modal";
 import { VaultDocumentDialog } from "./vault-document-dialog";
@@ -296,7 +297,7 @@ export function VaultExplorer({ orgId, uid, isOwner, onPermissionDenied }: Vault
       >
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader size={22} />
+            <OrbitLoader size={56} />
           </div>
         ) : visible.length === 0 ? (
           <EmptyShelf

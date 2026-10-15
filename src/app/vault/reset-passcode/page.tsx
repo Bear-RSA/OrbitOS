@@ -40,7 +40,7 @@ function ResetPasscodeForm() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader />
+        <OrbitLoader />
       </div>
     );
   }

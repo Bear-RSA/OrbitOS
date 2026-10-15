@@ -5,6 +5,7 @@ import type { ClipboardEvent } from "react";
 import { Lock, Mail, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
 import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import {
   getVaultPasscodeStatusAction,
   requestVaultPasscodeResetAction,
@@ -62,7 +63,7 @@ export function VaultPasscodeGate({ isOwner, onUnlocked }: VaultPasscodeGateProp
   if (phase === "checking") {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader />
+        <OrbitLoader />
       </div>
     );
   }

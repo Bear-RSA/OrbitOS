@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Camera, Loader2, Trash2, X } from "lucide-react";
+import { Camera, Trash2, X } from "lucide-react";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { User } from "@/types/auth";
 import { db } from "@/lib/firebase/client";
@@ -164,7 +165,7 @@ export function ProfilePictureManager({ user }: ProfilePictureManagerProps) {
         {/* Loading Spinner */}
         {busy && (
           <div className="absolute inset-0 z-30 flex items-center justify-center">
-            <Loader2 className="h-7 w-7 animate-spin text-ink" aria-hidden />
+            <OrbitLoader size={44} />
           </div>
         )}
 

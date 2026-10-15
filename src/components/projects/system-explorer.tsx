@@ -18,6 +18,7 @@ import {
   File,
   Upload,
 } from "lucide-react";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { deleteProjectFileAction, getSignedDownloadUrlAction } from "@/app/actions/files";
 import { SIGNAL } from "@/lib/utils/signal-colors";
 import { ProjectFile } from "@/types/file";
@@ -444,7 +445,7 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
           )}
         >
           {isUploading ? (
-            <Loader2 className="w-5 h-5 text-ink-dim animate-spin" />
+            <OrbitLoader size={30} />
           ) : (
             <Upload
               className={cn(

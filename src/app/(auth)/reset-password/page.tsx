@@ -143,7 +143,7 @@ function ResetPasswordForm() {
       >
         {phase === "verifying" && (
           <div className="relative z-10 flex flex-col items-center gap-4 py-8">
-            <Loader />
+            <OrbitLoader size={56} />
             <p className="text-[13px] text-ink-muted">
               Checking your link…
             </p>

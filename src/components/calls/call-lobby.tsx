@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Clock } from "lucide-react";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { lobbyRetryDelay } from "@/lib/calls/lobby";
 import type { CallLobby } from "@/types/call";
 
@@ -42,7 +42,7 @@ export function CallLobbyNotice({ lobby }: { lobby: CallLobby }) {
 
   return (
     <div role="status" aria-live="polite" className="flex flex-col items-center gap-4 px-6 text-center">
-      {early ? <Clock className="h-5 w-5 text-ink-dim" aria-hidden /> : <Loader />}
+      {early ? <Clock className="h-5 w-5 text-ink-dim" aria-hidden /> : <OrbitLoader size={56} />}
       <div className="space-y-1.5">
         <p className="text-[15px] font-light tracking-tight text-ink">
           {early ? `The room opens at ${openingTime(lobby.opensAt)}` : "Waiting for the host"}

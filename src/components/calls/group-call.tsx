@@ -7,7 +7,7 @@ import {
 } from "@/app/actions/calls";
 import { CallRoom } from "@/components/calls/call-room";
 import { CallShell } from "@/components/calls/call-shell";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import type { CallGrant } from "@/types/call";
 
 /* ------------------------------------------------------------------ */
@@ -125,7 +125,7 @@ export function GroupCall({ conversationId, title, onClose }: GroupCallProps) {
             </p>
           ) : (
             <>
-              <Loader />
+              <OrbitLoader size={56} />
               <span className="text-[12px] text-ink-dim">
                 Opening the room
               </span>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, FileText, Vault, X } from "lucide-react";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { VaultDocumentDialog } from "@/components/vault/vault-document-dialog";
 import { depositToVault } from "@/lib/vault/deposit";
 import {
@@ -150,7 +150,7 @@ export function TranscriptOutcome({ roomId, title, onClose }: TranscriptOutcomeP
           </p>
         ) : !transcript ? (
           <div className="flex justify-center py-6">
-            <Loader />
+            <OrbitLoader size={48} />
           </div>
         ) : (
           <>
