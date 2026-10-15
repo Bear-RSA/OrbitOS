@@ -635,6 +635,30 @@
     transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
     transition-delay: 0ms;
   }
+  /* Phones get the same choreography with only compositor work in it.
+     An animated `blur()` repaints every frame on top of the glass's own
+     backdrop blur, and scaling the panel makes it re-sample its backdrop
+     at every size. The nav row is also a masked horizontal scroller, which
+     a phone composites as a layer of its own; inside a filtered, scaling
+     parent that layer fell out of step and dropped out mid-flight. So on
+     touch the capsule only slides and its contents only fade. */
+  @media (hover: none), (pointer: coarse) {
+    .chrome-bar {
+      will-change: transform;
+    }
+    .chrome-bar[data-hidden="true"]:not(:focus-within) {
+      transform: translate3d(0, calc(-100% - 36px), 0);
+    }
+    .chrome-bar [data-chrome-part] {
+      will-change: opacity;
+      transition:
+        opacity 520ms cubic-bezier(0.16, 1, 0.3, 1) var(--chrome-delay, 0ms);
+    }
+    .chrome-bar[data-hidden="true"]:not(:focus-within) [data-chrome-part] {
+      filter: none;
+      transform: none;
+    }
+  }
 
   /* Text over glass: flat grey drops out against whatever scrolls under.
      Slightly heavier, slightly more tracked, one tier brighter. */

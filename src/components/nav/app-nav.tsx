@@ -82,9 +82,12 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
         setPill(null);
         return;
       }
-      const listRect = list.getBoundingClientRect();
-      const rect = active.getBoundingClientRect();
-      setPill({ x: rect.left - listRect.left + list.scrollLeft, width: rect.width });
+      /* Layout offsets, not getBoundingClientRect: the header scales while
+         it hides on scroll, and a rect read mid-flight is scaled with it.
+         The pill was left short of its label until the next resize. The
+         list is the link's offsetParent and the pill lives in its scrolled
+         content, so offsetLeft is already the right coordinate. */
+      setPill({ x: active.offsetLeft, width: active.offsetWidth });
     };
 
     const readEdges = () => {
