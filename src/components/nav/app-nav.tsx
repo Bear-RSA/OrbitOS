@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { LayoutGrid, FolderKanban, CalendarDays, Users, MessageSquare, Lock, Settings, LucideIcon } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { cn } from "@/lib/utils/classnames";
@@ -72,6 +73,56 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
   // Which edges have destinations scrolled out of view, for the edge fades.
   const [edges, setEdges] = useState({ start: false, end: false });
 
+  /* Icons only; the name shows in a tooltip under the hovered icon.
+     Nothing in the row moves, which an inline label that pushed its
+     neighbours aside did. One tooltip is shared: the first appears after a
+     short delay, and while it is up, moving to the next icon glides it
+     across rather than fading one out and another in. It is portalled
+     because the glass bar clips anything that hangs below it. */
+  const [tip, setTip] = useState<{ label: string; x: number; y: number; glide: boolean } | null>(null);
+  const [tipVisible, setTipVisible] = useState(false);
+  const tipVisibleRef = useRef(false);
+  const showTimer = useRef<number>(0);
+  const hideTimer = useRef<number>(0);
+
+  const hideTip = useCallback(() => {
+    window.clearTimeout(showTimer.current);
+    window.clearTimeout(hideTimer.current);
+    tipVisibleRef.current = false;
+    setTipVisible(false);
+  }, []);
+
+  const showTip = useCallback((label: string, target: HTMLElement) => {
+    window.clearTimeout(showTimer.current);
+    window.clearTimeout(hideTimer.current);
+    const rect = target.getBoundingClientRect();
+    const place = (glide: boolean) => {
+      setTip({ label, x: rect.left + rect.width / 2, y: rect.bottom + 10, glide });
+      tipVisibleRef.current = true;
+      setTipVisible(true);
+    };
+    if (tipVisibleRef.current) place(true);
+    else showTimer.current = window.setTimeout(() => place(false), 250);
+  }, []);
+
+  // A short grace period, so crossing the gap between icons keeps it up.
+  const leaveTip = useCallback(() => {
+    window.clearTimeout(showTimer.current);
+    window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(hideTip, 120);
+  }, [hideTip]);
+
+  // The bar hides on scroll and routes change under the pointer.
+  useEffect(() => {
+    hideTip();
+    window.addEventListener("scroll", hideTip, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", hideTip);
+      window.clearTimeout(showTimer.current);
+      window.clearTimeout(hideTimer.current);
+    };
+  }, [pathname, hideTip]);
+
   useLayoutEffect(() => {
     const list = listRef.current;
     if (!list) return;
@@ -108,7 +159,6 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
 
     measure();
     readEdges();
-    // Labels hide below `sm`, which changes every width.
     const observer = new ResizeObserver(() => {
       measure();
       readEdges();
@@ -141,7 +191,7 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
            pill with it. Safe centring falls back to the start edge.
            The fades say there is more to scroll to on that side. */
         className={cn(
-          "relative flex items-center [justify-content:safe_center] gap-0.5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          "relative flex items-center [justify-content:safe_center] gap-1 sm:gap-2.5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
           edges.start && edges.end
             ? "[mask-image:linear-gradient(to_right,transparent,black_20px,black_calc(100%-20px),transparent)]"
             : edges.end
@@ -169,10 +219,19 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                onPointerEnter={(event) => {
+                  if (event.pointerType === "mouse") showTip(item.label, event.currentTarget);
+                }}
+                onPointerLeave={leaveTip}
+                onPointerDown={hideTip}
+                onFocus={(event) => {
+                  if (event.currentTarget.matches(":focus-visible")) showTip(item.label, event.currentTarget);
+                }}
+                onBlur={leaveTip}
                 className={cn(
                   // `relative` lifts the link above the absolutely positioned
                   // pill; without it the pill paints over the label.
-                  "group/nav relative inline-flex h-9 items-center justify-center gap-2 rounded-full px-3 sm:px-3.5",
+                  "group/nav relative inline-flex h-9 min-w-9 items-center justify-center gap-2 rounded-full px-[11px]",
                   "transition-[color,background-color,transform] duration-quick ease-spring",
                   "active:scale-[0.96] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base",
@@ -185,13 +244,13 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
                     <span className="absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full bg-orbit-red ring-2 ring-base" />
                   )}
                 </span>
-                {/* The label is the accessible name on every viewport. On
-                    small screens only the current page shows it, so the
-                    bar fits and you can still read where you are. */}
+                {/* The label is the accessible name everywhere, but only
+                    shown on touch screens for the current page: there is
+                    no hover there, so it is how you read where you are. */}
                 <span
                   className={cn(
                     "whitespace-nowrap text-[13px] font-medium tracking-normal",
-                    active ? "not-sr-only" : "sr-only sm:not-sr-only"
+                    active ? "sr-only [@media(hover:none)]:not-sr-only" : "sr-only"
                   )}
                 >
                   {item.label}
@@ -202,6 +261,22 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
           );
         })}
       </ul>
+      {tip &&
+        createPortal(
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none fixed left-0 top-0 z-50 whitespace-nowrap rounded-full bg-ink-strong px-2.5 py-1 text-[12px] font-medium tracking-normal text-on-ink shadow-raised",
+              "transition-opacity duration-quick ease-spring",
+              tip.glide && "[transition-property:opacity,transform]",
+              tipVisible ? "opacity-100" : "opacity-0"
+            )}
+            style={{ transform: `translate3d(${tip.x}px, ${tip.y}px, 0) translateX(-50%)` }}
+          >
+            {tip.label}
+          </div>,
+          document.body
+        )}
     </nav>
   );
 }
