@@ -16,6 +16,11 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      /* `screen` is the dynamic viewport, not `100vh`. On a phone `vh` is
+         the height with the URL bar collapsed, so a `min-h-screen` page
+         loaded taller than the screen and its centred card sat low. */
+      height: { screen: "100dvh" },
+      minHeight: { screen: "100dvh" },
       colors: {
         /* Every colour resolves through a CSS variable defined in
            globals.css, so a theme switch is a variable swap rather than a

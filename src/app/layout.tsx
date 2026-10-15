@@ -68,6 +68,12 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  /* Paint edge to edge, under the home indicator, and pad content back out
+     with env(safe-area-inset-*). Without this every inset reads as 0px. */
+  viewportFit: "cover",
+  /* Android: the keyboard shrinks the layout, as it does on iOS, so the
+     messages composer rides up with it instead of hiding behind it. */
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#050505" },
     { media: "(prefers-color-scheme: light)", color: "#FAF9F7" },

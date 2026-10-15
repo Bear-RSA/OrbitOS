@@ -262,7 +262,7 @@ export function IncomingCall() {
           ? `${ringing.fromName} is adding you to a call`
           : `Incoming call from ${ringing.fromName}`
       }
-      className="fixed bottom-6 right-6 z-[60] w-[300px] animate-fade-in rounded-2xl border border-line/[0.08] p-5 shadow-overlay"
+      className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] right-6 z-[60] max-w-[calc(100vw-3rem)] w-[300px] animate-fade-in rounded-2xl border border-line/[0.08] p-5 shadow-overlay"
     >
       <div className="mb-4 flex items-center gap-3">
         <span className="relative flex h-2 w-2 shrink-0">

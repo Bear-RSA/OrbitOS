@@ -69,7 +69,7 @@ export function BriefingRoom({ projectId, uid, isOpen, onClose }: BriefingRoomPr
 
       <div 
         className={cn(
-          "fixed top-0 right-0 h-[100dvh] w-full max-w-md bg-base border-l border-line/[0.1] z-50 flex flex-col transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "fixed top-0 right-0 h-[100dvh] w-full max-w-md bg-base border-l border-line/[0.1] z-50 flex flex-col pb-[env(safe-area-inset-bottom,0px)] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >

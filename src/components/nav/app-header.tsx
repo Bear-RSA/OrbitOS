@@ -83,7 +83,7 @@ export function AppHeader({ user, hide = DEFAULT_HIDE, actions, variant = "shell
         "relative h-14 rounded-[28px] px-2 ring-1 ring-inset ring-line/[0.08]",
         sticky ? "chrome-bar" : "transition-shadow duration-quick ease-spring",
         sticky && scrolled && "shadow-raised",
-        sticky ? "sticky top-3 z-40 mb-12 mt-3" : "",
+        sticky ? "sticky top-[calc(0.75rem+env(safe-area-inset-top,0px))] z-40 mb-12 mt-3" : "",
         className
       )}
     >

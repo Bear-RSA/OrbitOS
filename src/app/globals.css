@@ -232,10 +232,22 @@
     scroll-behavior: smooth;
   }
 
+  /* No page-level rubber band or pull-to-refresh. The orbit backdrop is
+     fixed, so bouncing the page past its ends tore the content away from
+     the sky behind it — the clearest sign this was a tab, not an app. */
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans), system-ui, sans-serif;
     position: relative;
+    /* viewport-fit=cover lets the page under the notch in landscape;
+       this pads it back out. Zero in portrait. */
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
     /* Body copy sits at zero tracking; the type scale tightens headings
        and loosens captions from here. */
     letter-spacing: 0;
@@ -262,6 +274,37 @@
 
   ::selection {
     background: rgb(var(--ink) / 0.14);
+  }
+
+  /* Taps fire at once: no double-tap-zoom wait on anything you press. */
+  a, button, label, summary, input, select, textarea,
+  [role="button"], [role="tab"], [role="menuitem"], [role="option"], [role="switch"] {
+    touch-action: manipulation;
+  }
+
+  /* A long press on a control selected its label or raised the iOS
+     callout. Controls only — body copy stays selectable. */
+  button, [role="button"], [role="tab"], [role="menuitem"], [role="switch"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* An inner list that hits its end stops there instead of dragging the
+     page behind it (messages, dialogs, drawers). */
+  .overflow-y-auto,
+  .overflow-y-scroll {
+    overscroll-behavior-y: contain;
+  }
+
+  /* iOS zooms into any field under 16px on focus and never zooms back.
+     The fields here are 13–14px, so on touch they go to 16px. `!important`
+     because the size is set by a class, which outranks this selector; the
+     few deliberately large fields (vault passcode) are left alone. */
+  @media (pointer: coarse) {
+    :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]), textarea, select):not([class*="text-lg"], [class*="text-xl"], [class*="text-2xl"], [class*="text-3xl"]) {
+      font-size: 16px !important;
+    }
   }
 
   /* Interaction Utils */
