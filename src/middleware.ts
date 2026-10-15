@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/session-cookie";
 import { safeRedirect } from "@/lib/utils/safe-redirect";
+import { isPublicPath } from "@/lib/auth/public-routes";
 
 /* ------------------------------------------------------------------ */
 /*  Route Gate                                                         */
 /*                                                                     */
 /*  Deny-by-default: anything not listed below requires a session      */
-/*  cookie. Adding a new marketing page means adding it here.          */
+/*  cookie. Adding a new marketing page means adding it to            */
+/*  `lib/auth/public-routes`.                                          */
 /*                                                                     */
 /*  NOTE: middleware runs on the Edge runtime, where firebase-admin    */
 /*  cannot load — so this checks that a session cookie is PRESENT, not */
@@ -16,22 +18,6 @@ import { safeRedirect } from "@/lib/utils/safe-redirect";
 /*  server actions and route handlers via `getServerSession()`.        */
 /* ------------------------------------------------------------------ */
 
-const PUBLIC_ROUTES = new Set([
-  "/",
-  "/login",
-  "/signup",
-  "/forgot-password",
-  "/reset-password",
-  "/join",
-  "/pricing",
-  "/methodology",
-  "/changelog",
-  "/privacy",
-  "/terms",
-  "/security",
-  "/contact-sales",
-]);
-
 /**
  * Screens a signed-in visitor has no business on. Deliberately excludes
  * /forgot-password and /reset-password: a user following the link from their
@@ -39,26 +25,6 @@ const PUBLIC_ROUTES = new Set([
  * dashboard would leave them unable to finish the reset.
  */
 const AUTH_ROUTES = new Set(["/login", "/signup"]);
-
-/**
- * Public routes whose path carries an argument, so they cannot be matched
- * by exact set membership.
- *
- * `/rsvp/<token>` is reachable without a session on purpose: the whole
- * point is that a guest with no OrbitOS account can answer an invitation
- * from their inbox. The signed token in the path is the credential, and
- * it is verified server-side in `actions/rsvp` — bouncing these visitors
- * to /login would break the only flow they have.
- *
- * `/call/<roomId>` is the same bargain for a scheduled call. A forwarded
- * link lands someone with no account here, and the page lets them type a
- * name and ask to be let in; whether they ARE is decided server-side in
- * `actions/calls` against the engagement's window and the plan. A member
- * arriving at the same URL is recognised by their session on the page
- * and sent into the app. Only the room-id shape is public — `/call/proof`
- * and anything else under it still needs a session.
- */
-const PUBLIC_PREFIXES = [/^\/rsvp\//, /^\/call\/r_[0-9a-f]{24}$/];
 
 /**
  * Next.js metadata routes. These are fetched by unauthenticated social and
@@ -106,7 +72,7 @@ export function middleware(request: NextRequest) {
     );
   }
 
-  if (PUBLIC_ROUTES.has(pathname) || PUBLIC_PREFIXES.some((re) => re.test(pathname))) {
+  if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
 

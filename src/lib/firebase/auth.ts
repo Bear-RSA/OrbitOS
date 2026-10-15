@@ -77,7 +77,13 @@ export function syncSession(user: FirebaseUser): Promise<void> {
   return promise;
 }
 
-async function clearSession(): Promise<void> {
+/**
+ * Expires the httpOnly session cookie. Best effort, never throws.
+ *
+ * Also used by `AuthProvider` for a cookie left with no Firebase sign-in
+ * behind it — see the note there.
+ */
+export async function clearSession(): Promise<void> {
   try {
     await fetch(SESSION_ENDPOINT, { method: "DELETE" });
   } catch (err) {

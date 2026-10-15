@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { User as FirebaseUser } from "firebase/auth";
 import { doc, onSnapshot, Unsubscribe } from "firebase/firestore";
-import { onAuthChange, syncSession } from "@/lib/firebase/auth";
+import { clearSession, onAuthChange, syncSession } from "@/lib/firebase/auth";
+import { isPublicPath } from "@/lib/auth/public-routes";
 import { db } from "@/lib/firebase/client";
 import { User } from "@/types/auth";
 
@@ -96,9 +97,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           subscribeToProfile(fbUser.uid, thisGeneration);
         })();
       } else {
-        setUser(null);
-        setSessionStatus("pending");
-        setLoading(false);
+        const signedOut = () => {
+          if (thisGeneration !== generation) return;
+          setUser(null);
+          setSessionStatus("pending");
+          setLoading(false);
+        };
+
+        // Signed out here, but standing on a page the route gate only
+        // opens for a session cookie — so there is a cookie with nobody
+        // behind it. Every page answers that by sending the visitor to
+        // /login, and middleware answers /login-with-a-cookie by sending
+        // them back: a loop that looks like a loader that never ends.
+        // Adding OrbitOS to an iPhone's Home Screen gets you exactly
+        // this, because iOS copies Safari's cookies into the new app but
+        // not Firebase's IndexedDB. Expire the cookie first, then let the
+        // page redirect.
+        if (!isPublicPath(window.location.pathname)) {
+          void clearSession().finally(signedOut);
+        } else {
+          signedOut();
+        }
       }
     });
 
