@@ -207,6 +207,8 @@ export const dailyProvider: CallProvider = {
              as "cannot join" with no clue why. */
           user_id: options.identity.slice(0, 36),
           is_owner: options.isOwner === true,
+          /* Overrides the room's `enable_prejoin_ui` for this pass only. */
+          ...(options.skipPrejoin ? { enable_prejoin_ui: false } : {}),
           exp: unix(new Date(Date.now() + options.ttlSeconds * 1000)),
           ...(options.canPublish ? {} : { permissions: { canSend: [] } }),
         },

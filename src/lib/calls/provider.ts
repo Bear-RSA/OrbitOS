@@ -64,6 +64,8 @@ export interface MintTokenOptions {
    * everyone. Members get it, guests and walk-ins never do.
    */
   isOwner?: boolean;
+  /** Go straight into the room, past the provider's camera-check screen. */
+  skipPrejoin?: boolean;
 }
 
 export interface CallProvider {

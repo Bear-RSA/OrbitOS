@@ -49,23 +49,32 @@ export async function grantFor(request: GrantRequest): Promise<CallGrant> {
 
   const provider = await getCallProvider();
 
-  const room = await provider.createRoom({
-    name: request.roomId,
-    expiresAt: capRoomExpiry(new Date(Date.now() + request.minutes * 60_000)),
-    maxParticipants: capParticipants(request.maxParticipants ?? 2),
-  });
-
   const displayName = participantName(request.displayName, !request.isMember);
   const ttlSeconds = capTokenSeconds(request.minutes * 60);
 
-  const token = await provider.mintAccessToken({
-    room: room.roomName,
-    identity: request.identity,
-    displayName,
-    canPublish: true,
-    ttlSeconds,
-    isOwner: request.isMember,
-  });
+  /* Side by side, not one after the other. A token names its room but
+     does not need the room to exist yet, so there is nothing to wait
+     for — and every round trip to the provider here is time somebody
+     spends looking at a loader after pressing Answer. */
+  const [room, token] = await Promise.all([
+    provider.createRoom({
+      name: request.roomId,
+      expiresAt: capRoomExpiry(new Date(Date.now() + request.minutes * 60_000)),
+      maxParticipants: capParticipants(request.maxParticipants ?? 2),
+    }),
+    provider.mintAccessToken({
+      room: request.roomId,
+      identity: request.identity,
+      displayName,
+      canPublish: true,
+      ttlSeconds,
+      isOwner: request.isMember,
+      /* A colleague has already chosen to take this call; a camera
+         check and a second Join button is only delay. A guest keeps it —
+         it is where they see the name they typed before others do. */
+      skipPrejoin: request.isMember,
+    }),
+  ]);
 
   return {
     provider: provider.id,

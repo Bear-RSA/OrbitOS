@@ -5,6 +5,7 @@ import { Phone, PhoneOff } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useCall } from "@/contexts/call-context";
 import { usePreferences } from "@/hooks/use-preferences";
+import { preloadCallClient } from "@/lib/calls/preload";
 import { installAudioPrimer } from "@/lib/audio/context";
 import { startIncomingRing } from "@/lib/calls/ringtone";
 import {
@@ -98,6 +99,9 @@ export function IncomingCall() {
   /* Stop showing a card the server would refuse anyway. */
   useEffect(() => {
     if (!ringing) return;
+
+    /* Fetch the call client now, so Answer opens a room rather than a download. */
+    preloadCallClient();
 
     const expiresIn = ringing.ringingExpiresAt.toMillis() - Date.now();
     if (expiresIn <= 0) {

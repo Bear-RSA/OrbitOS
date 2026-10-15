@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { listNames, othersInCall } from "@/lib/calls/party";
 import type { CallGrant, CallStatus, OrbitCall } from "@/types/call";
 import { GlassSurface } from "@/components/ui/glass-surface";
+import { preloadCallClient } from "@/lib/calls/preload";
 
 /* ------------------------------------------------------------------ */
 /*  Outgoing call                                                      */
@@ -67,6 +68,9 @@ export function OutgoingCall({ target, onClose }: OutgoingCallProps) {
      when this component mounts, and mounting IS the click. */
   useEffect(() => {
     let cancelled = false;
+
+    /* Download the call client while it rings, not after it is answered. */
+    preloadCallClient();
 
     startCallAction({ targetUid: target.uid }).then((result) => {
       if (cancelled) return;
