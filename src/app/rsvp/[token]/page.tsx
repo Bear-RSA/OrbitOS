@@ -211,8 +211,11 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
   /* In the room. The invitation card gives way to the call itself; leaving
      brings the card back, answer and all. */
   if (grant) {
+    /* A fixed height, not min-h-screen: the room fills its box with
+       h-full, and a percentage of a min-height parent is zero — the
+       guest saw a blank page with no permission prompt. */
     return (
-      <div className="flex min-h-screen flex-col bg-ground p-4">
+      <div className="flex h-dvh flex-col bg-ground p-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="truncate text-[12px] text-ink-dim">
             {context.title} · {grant.displayName}

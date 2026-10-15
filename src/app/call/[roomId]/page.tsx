@@ -142,8 +142,11 @@ export default function ScheduledCallPage() {
   }
 
   if (grant) {
+    /* A fixed height, not min-h-screen: the room fills its box with
+       h-full, and a percentage of a min-height parent is zero — the
+       guest saw a blank page with no permission prompt. */
     return (
-      <div className="flex min-h-screen flex-col bg-base p-4">
+      <div className="flex h-dvh flex-col bg-base p-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="truncate text-[12px] text-ink-dim">
             {title ?? "Call"} · {grant.displayName}
