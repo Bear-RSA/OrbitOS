@@ -59,7 +59,11 @@ export type ActivityEventType =
      clearance change is — it is the one action that can widen or narrow
      who is currently able to get in at all. */
   | "VAULT_PASSCODE_SET"
-  | "VAULT_PASSCODE_RESET";
+  | "VAULT_PASSCODE_RESET"
+  /* Who owns the workspace. Logged because an owner can do everything a
+     main owner can short of this, so a change here changes who can reach
+     billing, the Vault and every seat. */
+  | "OWNERSHIP_CHANGED";
 
 /* ------------------------------------------------------------------ */
 /*  Activity Document                                                  */

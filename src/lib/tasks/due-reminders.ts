@@ -2,6 +2,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import { Timestamp } from "firebase-admin/firestore";
 
 import { resolveTaskReminderLimit } from "@/lib/auth/permissions";
+import { resolvePrimaryOwnerId } from "@/lib/members/hierarchy";
 import { sendTaskReminder, type ReminderTask } from "@/lib/email/sendTaskReminder";
 import { dueDateKeyOf } from "@/lib/utils/dates";
 import { sastNextDayKey } from "@/lib/utils/sast";
@@ -86,20 +87,21 @@ function orderForEmail(tasks: ReminderTask[]): ReminderTask[] {
 }
 
 /**
- * The owner an unassigned task falls to.
+ * The owner an unassigned task falls to: the main owner.
  *
- * A workspace may have several owners (up to five on the top tier), so this
- * picks the earliest by `createdAt` — the person who created the workspace
- * — rather than whichever document the query happened to return first. A
- * recipient that rotates between runs makes the mail feel random, and
- * mailing every owner about one unclaimed task is noise, not redundancy.
+ * A workspace may have several owners (up to five on the top tier), and
+ * mailing every one of them about one unclaimed task is noise, not
+ * redundancy. `resolvePrimaryOwnerId` picks the organization's `ownerId`
+ * while that person is still an owner, else the earliest owner, so the
+ * recipient never rotates between runs.
  *
  * Two equality filters and no ordering, so Firestore serves this from
- * single-field indexes; the ranking happens here rather than in an
+ * single-field indexes; the ranking happens in code rather than in an
  * `orderBy` that would demand a composite index.
  */
 async function resolveFallbackOwner(
-  orgId: string
+  orgId: string,
+  storedOwnerId: string | undefined
 ): Promise<{ uid: string; data: FirebaseFirestore.DocumentData } | null> {
   const snap = await adminDb
     .collection("users")
@@ -107,16 +109,16 @@ async function resolveFallbackOwner(
     .where("role", "==", "OWNER")
     .get();
 
-  if (snap.empty) return null;
+  const primaryId = resolvePrimaryOwnerId(
+    storedOwnerId,
+    snap.docs.map((doc) => ({
+      id: doc.id,
+      createdAtMillis: doc.data().createdAt?.toMillis?.() ?? 0,
+    }))
+  );
+  const primary = snap.docs.find((doc) => doc.id === primaryId);
 
-  const ranked = [...snap.docs].sort((a, b) => {
-    const aCreated = a.data().createdAt?.toMillis?.() ?? 0;
-    const bCreated = b.data().createdAt?.toMillis?.() ?? 0;
-    if (aCreated !== bCreated) return aCreated - bCreated;
-    return a.id.localeCompare(b.id);
-  });
-
-  return { uid: ranked[0].id, data: ranked[0].data() };
+  return primary ? { uid: primary.id, data: primary.data() } : null;
 }
 
 /** Midnight-to-midnight UTC bounds of a "YYYY-MM-DD" key. */
@@ -244,7 +246,7 @@ export async function runDueTaskReminders(options?: {
 
   await Promise.all(
     [...orgsNeedingOwner].map(async (orgId) => {
-      const owner = await resolveFallbackOwner(orgId);
+      const owner = await resolveFallbackOwner(orgId, orgs.get(orgId)?.ownerId);
       if (!owner) return;
       fallbackOwners.set(orgId, owner.uid);
       // Folded into the same map so the recipient loop below has one path.

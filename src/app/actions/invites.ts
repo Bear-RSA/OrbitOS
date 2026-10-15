@@ -145,13 +145,15 @@ export async function createInviteAction(
       console.error("[INVITE_EMAIL_FAILED]", { email, projectId: orgId, error: emailResult.error });
     }
 
-    // Log activity (non-blocking)
+    // Log activity (non-blocking). No address in the metadata: every member
+    // of the workspace can read the activity feed, and an email is the
+    // invitee's to share, not the inviter's.
     await logActivity({
       eventType: "INVITE_DISPATCHED",
       orgId,
       projectId: null,
       actor: { uid: invitedBy, name: inviterName },
-      metadata: { email, emailSent, reused: txResult.reused, regenerated: txResult.regenerated },
+      metadata: { emailSent, reused: txResult.reused, regenerated: txResult.regenerated },
     });
 
     return {

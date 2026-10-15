@@ -29,6 +29,7 @@ import {
   Captions,
   Lock,
   MailQuestion,
+  Crown,
   type LucideIcon,
 } from "lucide-react";
 import type { ActivityEventType } from "@/types/activity";
@@ -434,13 +435,29 @@ export const EVENT_REGISTRY: Record<ActivityEventType, EventDescriptor> = {
   },
 
   /* ---- People ---- */
+  OWNERSHIP_CHANGED: {
+    label: "OWN",
+    icon: Crown,
+    tone: "warning",
+    describe: (m) => (
+      <>
+        {/* Handing the account over is never logged here: the feed is
+            workspace-wide, and who holds the account is kept private. */}
+        {m.change === "promote" ? "made " : "removed the owner role from "}
+        <Target val={m.memberName} />
+        {m.change === "promote" ? " an owner" : null}
+      </>
+    ),
+  },
   INVITE_DISPATCHED: {
     label: "INV",
     icon: Send,
     tone: "info",
     describe: (m) => (
       <>
-        invited <Target val={m.email || m.memberName} />
+        {/* Never the address: the feed is workspace-wide, and older
+            entries still carry one in their metadata. */}
+        invited <Target val={m.memberName || "a new member"} />
         {m.role ? (
           <>
             as <Detail val={m.role} />
@@ -455,7 +472,7 @@ export const EVENT_REGISTRY: Record<ActivityEventType, EventDescriptor> = {
     tone: "critical",
     describe: (m) => (
       <>
-        removed <Target val={m.memberName || m.email} /> from the workspace
+        removed <Target val={m.memberName || m.targetName || "a member"} /> from the workspace
       </>
     ),
   },

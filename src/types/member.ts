@@ -7,6 +7,8 @@ export interface Member {
   orgId: string;
   role: "OWNER" | "MEMBER";
   roleDescriptor?: string;
+  /** See `types/department`. Absent or null means unassigned. */
+  departmentId?: string | null;
   operationalStatus?: "available" | "focused" | "offline";
   lastActivity?: Timestamp;
   photoURL?: string | null;

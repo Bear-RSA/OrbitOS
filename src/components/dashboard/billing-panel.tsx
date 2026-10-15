@@ -222,7 +222,15 @@ export function BillingPanel() {
               </div>
 
               {/* Usage gauges */}
-              <div className="flex gap-10">
+              <div className="flex flex-wrap gap-10">
+                <UsageMeter
+                  label="Owners"
+                  icon={Crown}
+                  current={usage.owners}
+                  limit={tierDef.limits.maxOwners}
+                  accent={tierAccent}
+                  loading={loading}
+                />
                 <UsageMeter
                   label="Members"
                   icon={Users}
@@ -315,6 +323,7 @@ export function BillingPanel() {
                     <LimitRow label="Owners" value={def.limits.maxOwners} />
                     <LimitRow label="Members" value={def.limits.maxMembers} />
                     <LimitRow label="Projects" value={def.limits.maxProjects} />
+                    <LimitRow label="Departments" value={def.limits.maxDepartments} />
                   </div>
 
                   {/* Price + Action */}
@@ -471,7 +480,7 @@ function LimitRow({ label, value }: { label: string; value: number }) {
     <div className="flex items-center justify-between">
       <span className="text-[11px] font-mono text-ink-dim">{label}</span>
       <span className="text-[12px] font-mono text-ink-muted">
-        {value === -1 ? "Unlimited" : value}
+        {value === -1 ? "Unlimited" : value === 0 ? "Not included" : value}
       </span>
     </div>
   );

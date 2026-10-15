@@ -225,6 +225,17 @@ describe("runDueTaskReminders — recipients", () => {
     expect(recipients()).toEqual(["first@example.com"]);
   });
 
+  it("sends it to the main owner once the role has been handed over", async () => {
+    db.seed("organizations", "org-1", { name: "Orbit Studio", ownerId: "late" });
+    seedUser("late", { role: "OWNER", createdAt: Timestamp.fromMillis(9000) });
+    seedUser("first", { role: "OWNER", createdAt: Timestamp.fromMillis(1000) });
+    seedTask("orphan", { assignedTo: [] });
+
+    await runDueTaskReminders({ now: NOW });
+
+    expect(recipients()).toEqual(["late@example.com"]);
+  });
+
   it("reports an org with unclaimed work and nobody to escalate to", async () => {
     seedTask("orphan", { assignedTo: [] });
 

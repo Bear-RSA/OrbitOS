@@ -3,6 +3,7 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { validateOwner } from "@/lib/auth/permissions";
+import { resolvePrimaryOwnerId } from "@/lib/members/hierarchy";
 import { requireServerUid } from "@/lib/auth/session";
 import { logActivity } from "@/lib/telemetry";
 
@@ -63,8 +64,22 @@ export async function removeMemberAction(
     }
     const targetData = targetSnap.data()!;
     
+    // Owners answer only to the account holder, who may remove any of them.
     if (targetData.role === "OWNER") {
-      return { success: false, error: "Cannot remove an OWNER from the workspace." };
+      const [orgSnap, ownersSnap] = await Promise.all([
+        adminDb.collection("organizations").doc(callerOrgId).get(),
+        adminDb.collection("users").where("orgId", "==", callerOrgId).where("role", "==", "OWNER").get(),
+      ]);
+      const accountHolderId = resolvePrimaryOwnerId(
+        orgSnap.data()?.ownerId,
+        ownersSnap.docs.map((doc) => ({
+          id: doc.id,
+          createdAtMillis: doc.data().createdAt?.toMillis?.() ?? 0,
+        }))
+      );
+      if (accountHolderId !== uid) {
+        return { success: false, error: "Only the account holder can remove an owner." };
+      }
     }
 
     const targetName = targetData.name || "A former member";
@@ -89,6 +104,7 @@ export async function removeMemberAction(
       tx.update(adminDb.collection("users").doc(targetUserId), {
         orgId: FieldValue.delete(),
         role: FieldValue.delete(),
+        departmentId: FieldValue.delete(),
       });
 
       // 2. Unassign each task

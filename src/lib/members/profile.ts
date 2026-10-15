@@ -11,6 +11,17 @@ import type { Task } from "@/types/task";
 /* ------------------------------------------------------------------ */
 
 /**
+ * What to call a member on any screen another member can see.
+ *
+ * Never their email. The address someone signed up with is theirs, not
+ * the workspace's: it is shown back only to them, in their own settings.
+ * Somebody who has not set a name yet is "Unnamed member" until they do.
+ */
+export function memberDisplayName(member: { name?: string | null }): string {
+  return member.name?.trim() || "Unnamed member";
+}
+
+/**
  * Open directives that read as a full plate.
  *
  * Not a limit anybody enforces — nothing refuses a sixth task. It is the

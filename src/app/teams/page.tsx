@@ -12,16 +12,38 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { AddMemberDialog } from "@/components/members/add-member-dialog";
 import { MemberProfile } from "@/components/members/member-profile";
 import { DestructiveActionModal } from "@/components/ui/destructive-action-modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { OrgTree } from "@/components/teams/org-tree";
+import { WORKLOAD_STATUS } from "@/components/teams/workload-status";
+import { ManageMemberDialog } from "@/components/members/manage-member-dialog";
+import { DepartmentDialog } from "@/components/members/department-dialog";
 import { removeMemberAction } from "@/app/actions/members/removeMemberAction";
+import {
+  deleteDepartmentAction,
+  getTeamStructureAction,
+  type TeamStructure,
+} from "@/app/actions/team-structure";
+import { buildOrgTree } from "@/lib/members/hierarchy";
+import { memberDisplayName } from "@/lib/members/profile";
+import type { Department } from "@/types/department";
 import { getOrCreateDmAction } from "@/app/actions/messages";
 import { getMembersByOrg } from "@/lib/queries/members";
 import { getTasksByOrg } from "@/lib/queries/tasks";
 import { getProjectsByOrg } from "@/lib/queries/projects";
 import { calculateMemberWorkload } from "@/lib/utils/dashboard-logic";
-import { MemberWorkload, WorkloadStatus } from "@/types/dashboard";
+import { MemberWorkload } from "@/types/dashboard";
 import { Task } from "@/types/task";
 import { Project } from "@/types/project";
-import { UserPlus, UserMinus, RefreshCw, X, AlertTriangle } from "lucide-react";
+import {
+  UserPlus,
+  UserMinus,
+  RefreshCw,
+  X,
+  AlertTriangle,
+  FolderPlus,
+  LayoutGrid,
+  Network,
+} from "lucide-react";
 import { cn } from "@/lib/utils/classnames";
 import { GlassSurface } from "@/components/ui/glass-surface";
 
@@ -35,16 +57,14 @@ import { GlassSurface } from "@/components/ui/glass-surface";
 /*  is now the one place the org's members and their load are shown.   */
 /* ------------------------------------------------------------------ */
 
-const statusConfig: Record<
-  WorkloadStatus,
-  { label: string; text: string; dot: string; weight: number }
-> = {
-  // Ordered by how much attention the operator needs — `weight` sorts the roster.
-  "needs-attention": { label: "Critical Load", text: "text-orbit-red", dot: "bg-orbit-red", weight: 0 },
-  heavy: { label: "High Volume", text: "text-orbit-amber", dot: "bg-orbit-amber", weight: 1 },
-  balanced: { label: "Optimal Flow", text: "text-orbit-green", dot: "bg-orbit-green", weight: 2 },
-  light: { label: "Under Capacity", text: "text-orbit-blue", dot: "bg-orbit-blue", weight: 3 },
-};
+const statusConfig = WORKLOAD_STATUS;
+
+type TeamView = "roster" | "tree";
+
+const VIEWS = [
+  { id: "tree", icon: Network, label: "Tree" },
+  { id: "roster", icon: LayoutGrid, label: "Roster" },
+] as const;
 
 interface OperatorFocus {
   projectName: string;
@@ -118,24 +138,42 @@ export default function TeamsPage() {
   const [profileUid, setProfileUid] = useState<string | null>(null);
   const [messageError, setMessageError] = useState<string | null>(null);
 
+  // Who owns the workspace and how it is arranged. Null while loading, or
+  // when the read failed, in which case the roster still shows and only
+  // the tree is missing.
+  const [structure, setStructure] = useState<TeamStructure | null>(null);
+  const [manageUid, setManageUid] = useState<string | null>(null);
+  const [departmentDialog, setDepartmentDialog] = useState<{ open: boolean; department: Department | null }>({
+    open: false,
+    department: null,
+  });
+  const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
+  const [deletingDepartment, setDeletingDepartment] = useState(false);
+
+  // Two ways to look at the same roster. Not persisted: Tree is the default.
+  const [view, setView] = useState<TeamView>("tree");
+
   // Seat controls are owner-only; createInviteAction and removeMemberAction
   // both re-check the role server-side, so this is presentation, not the
   // security boundary.
   const isOwner = user?.role === "OWNER";
+  const isAccountHolder = structure?.viewerIsAccountHolder ?? false;
 
   const load = useCallback(async () => {
     if (!user?.orgId) return;
 
     try {
-      const [orgTasks, orgProjects, members] = await Promise.all([
+      const [orgTasks, orgProjects, members, structureResult] = await Promise.all([
         getTasksByOrg(user.orgId),
         getProjectsByOrg(user.orgId),
         getMembersByOrg(user.orgId),
+        getTeamStructureAction(),
       ]);
 
       setTasks(orgTasks);
       setProjects(orgProjects);
       setWorkloads(members.map((m) => calculateMemberWorkload(m, orgTasks)));
+      setStructure(structureResult.success ? structureResult.structure : null);
       setLoadError(false);
     } catch (err) {
       console.error("[Teams] Failed to resolve the roster:", err);
@@ -204,9 +242,51 @@ export default function TeamsPage() {
     };
   }, [workloads, tasks]);
 
+  const tree = useMemo(
+    () =>
+      structure
+        ? buildOrgTree(
+            workloads.map((w) => w.member),
+            structure.departments,
+            structure.accountHolderId
+          )
+        : null,
+    [workloads, structure]
+  );
+
+  const statusByUid = useMemo(
+    () => new Map(workloads.map((w) => [w.member.id, w.status])),
+    [workloads]
+  );
+
+  const deleteDepartment = async () => {
+    if (!departmentToDelete) return;
+    setDeletingDepartment(true);
+    try {
+      const result = await deleteDepartmentAction({ departmentId: departmentToDelete.id });
+      if (result.success) {
+        setDepartmentToDelete(null);
+        await load();
+      } else {
+        setDepartmentToDelete(null);
+        setMessageError(result.error);
+      }
+    } catch (err) {
+      console.error("[Teams] Could not delete the department:", err);
+      setDepartmentToDelete(null);
+      setMessageError("Could not delete the department. Try again.");
+    } finally {
+      setDeletingDepartment(false);
+    }
+  };
+
   const removableCount = useMemo(
-    () => workloads.filter((w) => w.member.role !== "OWNER" && w.member.id !== user?.id).length,
-    [workloads, user?.id]
+    () =>
+      workloads.filter(
+        // Owners are removable only by the account holder.
+        (w) => (w.member.role !== "OWNER" || isAccountHolder) && w.member.id !== user?.id
+      ).length,
+    [workloads, user?.id, isAccountHolder]
   );
 
   /**
@@ -292,11 +372,42 @@ export default function TeamsPage() {
             </span>
           </div>
 
+          {/* Same look as the project view switcher, so a switch reads as a switch. */}
+          <div
+            role="tablist"
+            aria-label="Team views"
+            className="mt-8 inline-flex items-center gap-1 rounded-xl bg-surface-card p-1 ring-1 ring-inset ring-line/[0.06]"
+          >
+            {VIEWS.map(({ id, icon: Icon, label }) => {
+              const active = view === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setView(id)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-3 py-1.5 text-[11px] tracking-[0.18em]",
+                    "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                    active
+                      ? "bg-surface-hover text-ink ring-1 ring-inset ring-line/[0.09]"
+                      : "text-ink-dim hover:bg-surface-raised hover:text-ink-muted"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Seat management sits under the roster status line, where it
               reads as an action on the team rather than page chrome. */}
           {isOwner && (
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              {removableCount > 0 && (
+              {removableCount > 0 && view === "roster" && (
                 <button
                   onClick={() => setRevokeMode(!revokeMode)}
                   className={cn(
@@ -382,154 +493,222 @@ export default function TeamsPage() {
         </GlassSurface>
       ) : (
         <>
-          {/* Roster — every seat in the org, with the load it is carrying */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-32">
-            {roster.map(({ workload, focus }, i) => {
-              const member = workload.member;
-              const config = statusConfig[workload.status];
-              const isSelf = member.id === user.id;
-              const removable = revokeMode && !isSelf && member.role !== "OWNER";
+          {/* Tree: who answers to whom */}
+          {view === "tree" && !(tree && structure) && (
+            <p className="mb-32 text-[13px] font-light text-ink-muted">
+              Could not load the team structure. The roster is unaffected. Try again in a moment.
+            </p>
+          )}
+          {view === "tree" && tree && structure && (
+            <ScrollReveal>
+              <section className="mb-32" aria-labelledby="structure-heading">
+                <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
+                  <div>
+                    <h2 id="structure-heading" className="text-2xl font-light tracking-tight text-ink">
+                      Structure
+                    </h2>
+                    <p className="mt-2 font-mono text-[13px] text-ink-dim tabular-nums">
+                      Owners {structure.ownerSeats.current} /{" "}
+                      {structure.ownerSeats.limit === -1 ? "∞" : structure.ownerSeats.limit}
+                      {" · "}
+                      {structure.departments.length}{" "}
+                      {structure.departments.length === 1 ? "department" : "departments"}
+                    </p>
+                  </div>
 
-              return (
-                <ScrollReveal key={member.id} delay={i * 100}>
-                  <InteractiveCard
-                    surface="fog"
-                    className={cn(
-                      "p-8 group h-full",
-                      removable && "ring-1 ring-inset ring-orbit-red/25"
-                    )}
-                  >
-                    {removable && (
+                  {isOwner &&
+                    structure.departments.length > 0 &&
+                    (structure.departmentLimit > 0 ? (
                       <button
-                        onClick={() => setMemberToRemove(member.id)}
-                        aria-label={`Remove ${member.name}`}
-                        className="absolute right-5 top-5 z-20 rounded-full bg-orbit-red/12 p-1.5 text-orbit-red transition-colors hover:bg-orbit-red/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orbit-red/50"
+                        onClick={() => setDepartmentDialog({ open: true, department: null })}
+                        disabled={structure.departments.length >= structure.departmentLimit}
+                        className="flex h-10 items-center justify-center gap-2.5 rounded-lg bg-surface-control px-5 text-[13px] font-bold tracking-tight text-ink transition-colors hover:bg-surface-hover disabled:opacity-50"
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <FolderPlus className="h-4 w-4" />
+                        New department
                       </button>
-                    )}
+                    ) : (
+                      <p className="max-w-xs text-[12px] leading-relaxed text-ink-dim">
+                        Departments are on the Pro and Custom plans.
+                      </p>
+                    ))}
+                </div>
 
-                    <div className="flex items-start justify-between gap-4 mb-8">
-                      <button
-                        type="button"
-                        onClick={() => setProfileUid(member.id)}
-                        aria-label={`View ${member.name || member.email}'s profile`}
-                        className="relative shrink-0 rounded-full transition-transform duration-300 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
-                      >
-                        <UserAvatar
-                          photoURL={member.photoURL}
-                          name={member.name}
-                          size="xl"
-                          className="ring-1 ring-line/[0.08]"
-                        />
-                        <span
-                          className={cn(
-                            "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-4 border-base z-10",
-                            config.dot
-                          )}
-                          aria-hidden
-                        />
-                      </button>
-                      <div className="min-w-0 text-right">
-                        <h3 className="truncate text-xl font-light text-ink">
-                          {member.name || member.email}
-                        </h3>
-                        <p className="text-[12px] text-ink-dim mt-1">
-                          {member.roleDescriptor || (member.role === "OWNER" ? "Owner" : "Member")}
-                          {isSelf && " · You"}
-                        </p>
-                      </div>
-                    </div>
+                <OrgTree
+                  tree={tree}
+                  viewerId={user.id}
+                  statusOf={(uid) => statusByUid.get(uid)}
+                  canManageDepartments={isOwner}
+                  accountHolderId={structure.accountHolderId}
+                  canManageOwners={isAccountHolder}
+                  departmentLimit={structure.departmentLimit}
+                  onOpenProfile={setProfileUid}
+                  onManage={setManageUid}
+                  onCreateDepartment={() => setDepartmentDialog({ open: true, department: null })}
+                  onRenameDepartment={(department) => setDepartmentDialog({ open: true, department })}
+                  onDeleteDepartment={setDepartmentToDelete}
+                />
+              </section>
+            </ScrollReveal>
+          )}
 
-                    <div className="mb-8">
-                      <p className="text-[12px] text-ink-dim mb-4">Focus</p>
-                      <div className="bg-base/40 rounded-xl p-4 ring-1 ring-line/[0.04]">
-                        {focus ? (
-                          <>
-                            <div className="flex justify-between items-center gap-3 mb-3">
-                              <span className="truncate text-[13px] font-light text-ink">{focus.projectName}</span>
-                              <span className="shrink-0 text-[11px] font-mono text-ink-strong tabular-nums">{focus.percent}%</span>
-                            </div>
-                            <div className="w-full h-1 bg-surface-control rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-ink-strong rounded-full transition-all duration-1000"
-                                style={{ width: `${focus.percent}%` }}
-                              />
-                            </div>
-                            <p className="mt-3 text-[12px] text-ink-dim">
-                              {focus.done} of {focus.total} closed
-                            </p>
-                          </>
-                        ) : (
-                          <p className="text-[13px] font-light text-ink-muted">No work assigned yet.</p>
+          {view === "roster" && (
+            <>
+              {/* Roster — every seat in the org, with the load it is carrying */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-32">
+                {roster.map(({ workload, focus }, i) => {
+                  const member = workload.member;
+                  const config = statusConfig[workload.status];
+                  const isSelf = member.id === user.id;
+                  const removable =
+                    revokeMode && !isSelf && (member.role !== "OWNER" || isAccountHolder);
+
+                  return (
+                    <ScrollReveal key={member.id} delay={i * 100}>
+                      <InteractiveCard
+                        surface="fog"
+                        className={cn(
+                          "p-8 group h-full",
+                          removable && "ring-1 ring-inset ring-orbit-red/25"
                         )}
-                      </div>
-                    </div>
+                      >
+                        {removable && (
+                          <button
+                            onClick={() => setMemberToRemove(member.id)}
+                            aria-label={`Remove ${member.name}`}
+                            className="absolute right-5 top-5 z-20 rounded-full bg-orbit-red/12 p-1.5 text-orbit-red transition-colors hover:bg-orbit-red/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orbit-red/50"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
 
-                    <div className="grid grid-cols-4 gap-3 mb-8">
-                      {[
-                        { label: "Active", value: workload.metrics.activeTasks, tone: "text-ink" },
-                        { label: "Overdue", value: workload.metrics.overdueTasks, tone: workload.metrics.overdueTasks > 0 ? "text-orbit-red" : "text-ink-dim" },
-                        { label: "Blocked", value: workload.metrics.blockedTasks, tone: workload.metrics.blockedTasks > 0 ? "text-orbit-amber" : "text-ink-dim" },
-                        { label: "Wins", value: workload.metrics.completedThisWeek, tone: workload.metrics.completedThisWeek > 0 ? "text-orbit-green" : "text-ink-dim" },
-                      ].map((metric) => (
-                        <div key={metric.label} className="flex flex-col gap-1.5">
-                          <span className={cn("text-xl font-extralight leading-none tabular-nums", metric.tone)}>
-                            {metric.value.toString().padStart(2, "0")}
-                          </span>
-                          <span className="text-[12px] leading-none text-ink-dim">
-                            {metric.label}
+                        <div className="flex items-start justify-between gap-4 mb-8">
+                          <button
+                            type="button"
+                            onClick={() => setProfileUid(member.id)}
+                            aria-label={`View ${memberDisplayName(member)}'s profile`}
+                            className="relative shrink-0 rounded-full transition-transform duration-300 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
+                          >
+                            <UserAvatar
+                              photoURL={member.photoURL}
+                              name={member.name}
+                              size="xl"
+                              className="ring-1 ring-line/[0.08]"
+                            />
+                            <span
+                              className={cn(
+                                "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-4 border-base z-10",
+                                config.dot
+                              )}
+                              aria-hidden
+                            />
+                          </button>
+                          <div className="min-w-0 text-right">
+                            <h3 className="truncate text-xl font-light text-ink">
+                              {memberDisplayName(member)}
+                            </h3>
+                            <p className="text-[12px] text-ink-dim mt-1">
+                              {member.roleDescriptor ||
+                                (member.id === structure?.accountHolderId
+                                  ? "Account holder"
+                                  : member.role === "OWNER"
+                                    ? "Owner"
+                                    : "Member")}
+                              {isSelf && " · You"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mb-8">
+                          <p className="text-[12px] text-ink-dim mb-4">Focus</p>
+                          <div className="bg-base/40 rounded-xl p-4 ring-1 ring-line/[0.04]">
+                            {focus ? (
+                              <>
+                                <div className="flex justify-between items-center gap-3 mb-3">
+                                  <span className="truncate text-[13px] font-light text-ink">{focus.projectName}</span>
+                                  <span className="shrink-0 text-[11px] font-mono text-ink-strong tabular-nums">{focus.percent}%</span>
+                                </div>
+                                <div className="w-full h-1 bg-surface-control rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-ink-strong rounded-full transition-all duration-1000"
+                                    style={{ width: `${focus.percent}%` }}
+                                  />
+                                </div>
+                                <p className="mt-3 text-[12px] text-ink-dim">
+                                  {focus.done} of {focus.total} closed
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-[13px] font-light text-ink-muted">No work assigned yet.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-4 gap-3 mb-8">
+                          {[
+                            { label: "Active", value: workload.metrics.activeTasks, tone: "text-ink" },
+                            { label: "Overdue", value: workload.metrics.overdueTasks, tone: workload.metrics.overdueTasks > 0 ? "text-orbit-red" : "text-ink-dim" },
+                            { label: "Blocked", value: workload.metrics.blockedTasks, tone: workload.metrics.blockedTasks > 0 ? "text-orbit-amber" : "text-ink-dim" },
+                            { label: "Wins", value: workload.metrics.completedThisWeek, tone: workload.metrics.completedThisWeek > 0 ? "text-orbit-green" : "text-ink-dim" },
+                          ].map((metric) => (
+                            <div key={metric.label} className="flex flex-col gap-1.5">
+                              <span className={cn("text-xl font-extralight leading-none tabular-nums", metric.tone)}>
+                                {metric.value.toString().padStart(2, "0")}
+                              </span>
+                              <span className="text-[12px] leading-none text-ink-dim">
+                                {metric.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center justify-between gap-4 pt-6 border-t border-line/[0.04]">
+                          <span className={cn("text-[12px]", config.text)}>
+                            {config.label}
                           </span>
                         </div>
-                      ))}
-                    </div>
+                      </InteractiveCard>
+                    </ScrollReveal>
+                  );
+                })}
+              </div>
 
-                    <div className="flex items-center justify-between gap-4 pt-6 border-t border-line/[0.04]">
-                      <span className={cn("text-[12px]", config.text)}>
-                        {config.label}
-                      </span>
-                      <span className="truncate text-[11px] font-mono text-ink-dim">{member.email}</span>
-                    </div>
-                  </InteractiveCard>
-                </ScrollReveal>
-              );
-            })}
-          </div>
-
-          {/* Stats Footer — measured off the same tasks the cards are drawn from */}
-          <ScrollReveal delay={200}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pt-16 border-t border-line/[0.04] pb-32">
-              <div>
-                <p className="text-[12px] text-ink-dim mb-3">Saturation</p>
-                <p className="text-4xl font-light tracking-tighter text-ink tabular-nums">{totals.saturation}%</p>
-                <p className="mt-2 text-[12px] text-ink-dim">People at high load</p>
-              </div>
-              <div>
-                <p className="text-[12px] text-ink-dim mb-3">Active Load</p>
-                <p className="text-4xl font-light tracking-tighter text-ink tabular-nums">{totals.active}</p>
-                <p className="mt-2 text-[12px] text-ink-dim">
-                  {totals.unassigned} unassigned
-                </p>
-              </div>
-              <div>
-                <p className="text-[12px] text-ink-dim mb-3">Overdue</p>
-                <p
-                  className={cn(
-                    "text-4xl font-light tracking-tighter tabular-nums",
-                    totals.overdue > 0 ? "text-orbit-red" : "text-ink"
-                  )}
-                >
-                  {totals.overdue}
-                </p>
-                <p className="mt-2 text-[12px] text-ink-dim">Across the roster</p>
-              </div>
-              <div>
-                <p className="text-[12px] text-ink-dim mb-3">Wins This Week</p>
-                <p className="text-4xl font-light tracking-tighter text-ink tabular-nums">{totals.wins}</p>
-                <p className="mt-2 text-[12px] text-ink-dim">Tasks closed</p>
-              </div>
-            </div>
-          </ScrollReveal>
+              {/* Stats Footer — measured off the same tasks the cards are drawn from */}
+              <ScrollReveal delay={200}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pt-16 border-t border-line/[0.04] pb-32">
+                  <div>
+                    <p className="text-[12px] text-ink-dim mb-3">Saturation</p>
+                    <p className="text-4xl font-light tracking-tighter text-ink tabular-nums">{totals.saturation}%</p>
+                    <p className="mt-2 text-[12px] text-ink-dim">People at high load</p>
+                  </div>
+                  <div>
+                    <p className="text-[12px] text-ink-dim mb-3">Active Load</p>
+                    <p className="text-4xl font-light tracking-tighter text-ink tabular-nums">{totals.active}</p>
+                    <p className="mt-2 text-[12px] text-ink-dim">
+                      {totals.unassigned} unassigned
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[12px] text-ink-dim mb-3">Overdue</p>
+                    <p
+                      className={cn(
+                        "text-4xl font-light tracking-tighter tabular-nums",
+                        totals.overdue > 0 ? "text-orbit-red" : "text-ink"
+                      )}
+                    >
+                      {totals.overdue}
+                    </p>
+                    <p className="mt-2 text-[12px] text-ink-dim">Across the roster</p>
+                  </div>
+                  <div>
+                    <p className="text-[12px] text-ink-dim mb-3">Wins This Week</p>
+                    <p className="text-4xl font-light tracking-tighter text-ink tabular-nums">{totals.wins}</p>
+                    <p className="mt-2 text-[12px] text-ink-dim">Tasks closed</p>
+                  </div>
+                </div>
+              </ScrollReveal>
+            </>
+          )}
         </>
       )}
 
@@ -565,6 +744,32 @@ export default function TeamsPage() {
             description="They lose access to this workspace straight away."
             warningMessage="Their tasks stay, but they're unassigned from them. You can invite them back later."
             actionLabel="Remove member"
+          />
+          {structure && (
+            <ManageMemberDialog
+              member={manageUid ? (workloads.find((w) => w.member.id === manageUid)?.member ?? null) : null}
+              structure={structure}
+              viewerIsAccountHolder={isAccountHolder}
+              onClose={() => setManageUid(null)}
+              onChanged={load}
+              onRemove={setMemberToRemove}
+            />
+          )}
+          <DepartmentDialog
+            open={departmentDialog.open}
+            department={departmentDialog.department}
+            onClose={() => setDepartmentDialog({ open: false, department: null })}
+            onSaved={load}
+          />
+          <ConfirmDialog
+            open={!!departmentToDelete}
+            onOpenChange={(open) => !open && setDepartmentToDelete(null)}
+            title={`Delete ${departmentToDelete?.name ?? "department"}?`}
+            description="The people in it stay in the workspace and move to Not in a department."
+            confirmText="Delete department"
+            variant="destructive"
+            loading={deletingDepartment}
+            onConfirm={deleteDepartment}
           />
         </>
       )}
