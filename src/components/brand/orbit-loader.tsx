@@ -40,7 +40,7 @@ export function OrbitLoader({ size = 80, className }: { size?: number; className
           place instead, so the screen still reads as busy. */}
       <div
         aria-hidden
-        className="absolute inset-0 rounded-full motion-safe:animate-spin motion-safe:[animation-duration:1.4s] motion-reduce:animate-pulse"
+        className="absolute inset-0 rounded-full motion-safe:animate-spin motion-safe:[animation-duration:2.4s] motion-reduce:animate-pulse"
         style={{
           background: "conic-gradient(from 0deg, transparent 0deg, rgb(var(--ink) / 0) 140deg, rgb(var(--ink) / 0.95) 360deg)",
           WebkitMask: RING_MASK,
