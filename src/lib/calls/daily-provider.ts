@@ -163,6 +163,11 @@ export const dailyProvider: CallProvider = {
           enable_prejoin_ui: true,
           enable_screenshare: true,
           enable_chat: true,
+          /* Prebuilt's picture-in-picture button: the call keeps floating
+             over other apps when someone leaves the tab. A toggle in the
+             room's own controls, so it is never forced on anyone. Not a
+             paid-plan property. Only rooms created from here on carry it. */
+          enable_pip_ui: true,
         },
       },
     });

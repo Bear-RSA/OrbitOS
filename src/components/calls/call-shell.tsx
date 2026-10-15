@@ -33,8 +33,8 @@ import { cn } from "@/lib/utils/classnames";
 /*  the middle of a sentence. So there is one header, one slot, one    */
 /*  wrapper, and only their styling has an opinion about size.         */
 /*                                                                     */
-/*  Minimized, the room keeps a corner of the screen and the app is    */
-/*  usable around it. The provider's own controls are unreachable at   */
+/*  Minimized, the room starts in a corner of the screen and can be    */
+/*  dragged anywhere by its header, with the app usable around it. The provider's own controls are unreachable at   */
 /*  that size, so the two that matter — the microphone and the way out */
 /*  — are painted here and driven through the provider handle.         */
 /* ------------------------------------------------------------------ */
@@ -138,6 +138,8 @@ export function CallShell({
     };
   }, [frame]);
 
+  const { tileRef, offset, dragHandlers } = useDraggableTile(minimized);
+
   const toggleMic = useCallback(() => {
     if (!frame) return;
     try {
@@ -150,6 +152,10 @@ export function CallShell({
 
   return (
     <div
+      ref={tileRef}
+      /* A transform rather than new top/left classes, so dragging touches
+         one inline style and never the DOM the room lives in. */
+      style={minimized ? { transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` } : undefined}
       className={cn(
         "fixed z-[60] flex flex-col",
         minimized
@@ -158,9 +164,10 @@ export function CallShell({
       )}
     >
       <div
+        {...(minimized ? dragHandlers : {})}
         className={cn(
           "flex shrink-0 items-center justify-between gap-2",
-          minimized ? "px-3 pb-2 pt-2.5" : "mb-3"
+          minimized ? "cursor-grab touch-none select-none px-3 pb-2 pt-2.5 active:cursor-grabbing" : "mb-3"
         )}
       >
         <p className="truncate text-[12px] text-ink-dim">
@@ -249,4 +256,86 @@ export function CallShell({
       <TranscriptConsentDialog state={transcription} />
     </div>
   );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Dragging the parked tile                                           */
+/*                                                                     */
+/*  The tile is anchored bottom-right and moved with a transform, so   */
+/*  the offset is always zero or negative. It is clamped to the        */
+/*  viewport on every move and on every resize — a window that shrinks */
+/*  under the tile must not strand it, and its hang-up button with it, */
+/*  off screen. Pointer capture keeps the drag alive when the pointer  */
+/*  crosses the room's iframe, which would otherwise swallow it.       */
+/* ------------------------------------------------------------------ */
+
+/** The tile's resting gap from the viewport edge: Tailwind's 4. */
+const EDGE = 16;
+
+interface Offset {
+  x: number;
+  y: number;
+}
+
+function useDraggableTile(minimized: boolean) {
+  const tileRef = useRef<HTMLDivElement | null>(null);
+  const [offset, setOffset] = useState<Offset>({ x: 0, y: 0 });
+  const drag = useRef<{ pointerId: number; startX: number; startY: number; from: Offset } | null>(null);
+
+  const clamp = useCallback((next: Offset): Offset => {
+    const tile = tileRef.current;
+    if (!tile) return next;
+    const maxLeft = Math.max(0, window.innerWidth - tile.offsetWidth - EDGE * 2);
+    const maxUp = Math.max(0, window.innerHeight - tile.offsetHeight - EDGE * 2);
+    return {
+      x: Math.min(0, Math.max(-maxLeft, next.x)),
+      y: Math.min(0, Math.max(-maxUp, next.y)),
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!minimized) return;
+    const reclamp = () => setOffset((current) => clamp(current));
+    reclamp();
+    window.addEventListener("resize", reclamp);
+    return () => window.removeEventListener("resize", reclamp);
+  }, [minimized, clamp]);
+
+  const onPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      // The buttons in the header are buttons, not handles.
+      if (event.button !== 0 || (event.target as HTMLElement).closest("button")) return;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      drag.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, from: offset };
+    },
+    [offset]
+  );
+
+  const onPointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const current = drag.current;
+      if (!current || current.pointerId !== event.pointerId) return;
+      setOffset(
+        clamp({
+          x: current.from.x + event.clientX - current.startX,
+          y: current.from.y + event.clientY - current.startY,
+        })
+      );
+    },
+    [clamp]
+  );
+
+  const onPointerEnd = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (drag.current?.pointerId !== event.pointerId) return;
+    drag.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }, []);
+
+  return {
+    tileRef,
+    offset,
+    dragHandlers: { onPointerDown, onPointerMove, onPointerUp: onPointerEnd, onPointerCancel: onPointerEnd },
+  };
 }
