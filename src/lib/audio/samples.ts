@@ -169,7 +169,9 @@ export function playSample(
     else void decoding.then(run, () => run(null));
   };
 
-  if (ctx.state === "suspended") {
+  /* Not only "suspended": iOS also reports "interrupted" after the app
+     was backgrounded, and notes scheduled into either are silent. */
+  if (ctx.state !== "running") {
     void ctx
       .resume()
       .then(go)

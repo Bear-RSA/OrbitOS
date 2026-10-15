@@ -99,7 +99,9 @@ function playSynthChime(): void {
   const ctx = getAudioContext();
   if (!ctx) return;
 
-  if (ctx.state === "suspended") {
+  /* Not only "suspended": iOS also reports "interrupted" after the app
+     was backgrounded, and notes scheduled into either are silent. */
+  if (ctx.state !== "running") {
     void ctx
       .resume()
       .then(() => ring(ctx))

@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { createHash, randomBytes } from "crypto";
 import { FieldValue, Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
@@ -445,16 +446,22 @@ export async function startCallAction(input: unknown): Promise<CallActionResult>
     /* Ring the callee's registered devices, for the case no listener can
        cover: a browser that is closed.
 
-       NOT awaited, and that is the design. The `calls` document is
-       already written, so the call is already ringing on every client
-       that has OrbitOS open — a push service having a slow morning must
-       not hold up the caller's screen behind it. `sendCallPush`
-       swallows its own failures for the same reason. */
-    void sendCallPush({
-      toUid: targetUid,
-      fromName: caller.name,
-      callId: ref.id,
-    });
+       Sent from `after()`, and that is the design. The `calls` document
+       is already written, so the call is already ringing on every
+       client that has OrbitOS open — a push service having a slow
+       morning must not hold up the caller's screen behind it. But a
+       bare un-awaited promise is not enough on Vercel: the function is
+       frozen as soon as the response goes out, and the push dies with
+       it, which is how a phone with OrbitOS closed never rang.
+       `after()` keeps the function alive until the push is handed over.
+       `sendCallPush` swallows its own failures. */
+    after(() =>
+      sendCallPush({
+        toUid: targetUid,
+        fromName: caller.name,
+        callId: ref.id,
+      })
+    );
 
     return { success: true, callId: ref.id };
   } catch (err: any) {
@@ -837,12 +844,14 @@ export async function addToCallAction(input: unknown): Promise<CallActionResult>
       },
     });
 
-    // Same bargain as `startCallAction`: not awaited, swallows its own failures.
-    void sendCallPush({
-      toUid: targetUid,
-      fromName: caller.name,
-      callId: ref.id,
-    });
+    // Same bargain as `startCallAction`: after the response, never blocking it.
+    after(() =>
+      sendCallPush({
+        toUid: targetUid,
+        fromName: caller.name,
+        callId: ref.id,
+      })
+    );
 
     return { success: true, callId: ref.id };
   } catch (err: any) {

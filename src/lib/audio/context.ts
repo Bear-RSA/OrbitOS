@@ -45,49 +45,50 @@ export function getAudioContext(): AudioContext | null {
  */
 export function primeAudio(): void {
   const ctx = getAudioContext();
-  if (!ctx || ctx.state !== "suspended") return;
+  if (!ctx || ctx.state === "running") return;
   void ctx.resume().catch(() => {});
 }
 
 let primerInstalled = false;
 
 /**
- * Arms the session's first interaction to open the audio context.
+ * Events that count as a gesture for audio on every browser we serve.
+ *
+ * iOS Safari is the narrow one: it does NOT unlock audio on `pointerdown`
+ * or `touchstart`, only once the finger lifts — `touchend`, `pointerup`,
+ * `click`. Listening for `pointerdown` alone is how a phone stayed
+ * silent through a whole session of taps.
+ */
+const GESTURES = ["pointerdown", "pointerup", "touchend", "click", "keydown"] as const;
+
+/**
+ * Arms every interaction to wake the audio context if it is not running.
  *
  * Module-guarded, so every feature that needs to make a sound can call
  * this on mount without any of them having to know the others exist —
  * the incoming-call ring must not be silent merely because it happens to
  * be mounted next to the message notifier.
  *
- * The listeners are deliberately not `{ once: true }`: that removes them
- * on the first event even when the resume was refused, spending the
- * session's only attempt on the one gesture that did not work. These
- * unhook themselves once a resume has actually resolved.
+ * The listeners stay for the life of the tab rather than unhooking once
+ * the context runs. iOS puts a running context into "interrupted" when
+ * the app goes to the background, a call comes in or the screen locks,
+ * and only another gesture brings it back; a primer that had already
+ * removed itself would leave every ring after that silent. Each event is
+ * one property read when the context is already running.
  */
 export function installAudioPrimer(): void {
   if (typeof window === "undefined" || primerInstalled) return;
   primerInstalled = true;
 
-  const remove = () => {
-    window.removeEventListener("pointerdown", prime);
-    window.removeEventListener("keydown", prime);
-  };
-
   const prime = () => {
     const ctx = getAudioContext();
-    if (!ctx) {
-      remove();
-      return;
-    }
-    if (ctx.state === "running") {
-      remove();
-      return;
-    }
-    void ctx.resume().then(remove).catch(() => {});
+    if (!ctx || ctx.state === "running") return;
+    void ctx.resume().catch(() => {});
   };
 
-  window.addEventListener("pointerdown", prime);
-  window.addEventListener("keydown", prime);
+  for (const gesture of GESTURES) {
+    window.addEventListener(gesture, prime, { passive: true });
+  }
 }
 
 /* ------------------------------------------------------------------ */

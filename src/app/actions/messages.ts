@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { cloudinary } from "@/lib/cloudinary";
@@ -462,7 +463,9 @@ export async function forwardTaskAction(input: unknown): Promise<ConversationRes
     });
 
     await batch.commit();
-    void pushNewMessage(conversationId, conversation, caller, taskForwardPreview(taskRef.title, note));
+    after(() =>
+      pushNewMessage(conversationId, conversation, caller, taskForwardPreview(taskRef.title, note))
+    );
 
     return { success: true, conversationId };
   } catch (err: any) {
@@ -603,11 +606,15 @@ export async function sendImageMessageAction(input: unknown): Promise<Conversati
     });
 
     if (refused) return { success: false, error: refused };
-    void pushNewMessage(
-      conversationId,
-      conversation,
-      caller,
-      text ? messagePreview(text) : attachmentPreview("image")
+    /* After the response, so the sender is not held up — and not a bare
+       un-awaited promise, which Vercel freezes along with the function. */
+    after(() =>
+      pushNewMessage(
+        conversationId,
+        conversation,
+        caller,
+        text ? messagePreview(text) : attachmentPreview("image")
+      )
     );
 
     return { success: true, conversationId };
