@@ -18,10 +18,10 @@ import { GlassSurface } from "@/components/ui/glass-surface";
 /*  mb-10 to mb-24. One component now owns all of that; a page         */
 /*  contributes only the controls that are actually its own.           */
 /*                                                                     */
-/*  The bar is a material, not a strip: translucent, with content      */
-/*  scrolling under it. Where the two meet there is a short fade       */
-/*  instead of a rule, and only once something has actually scrolled   */
-/*  underneath — at the top of the page the bar and the page are one.  */
+/*  The bar is a floating capsule, not a strip: translucent glass      */
+/*  inset from the page edges, with content scrolling under it. It     */
+/*  lifts with a shadow only once something has actually scrolled      */
+/*  underneath — at the top of the page it sits flat on the page.      */
 /* ------------------------------------------------------------------ */
 
 /**
@@ -57,68 +57,76 @@ export function AppHeader({ user, hide = DEFAULT_HIDE, actions, variant = "shell
   const scrolled = useScrolledPast(sentinelRef);
   const sticky = variant === "shell";
 
-  return (
-    <>
-      {/* Zero-height marker just above the bar. When it leaves the
-          viewport, the bar is stuck and content is under it. */}
-      {sticky && <div ref={sentinelRef} aria-hidden className="h-px w-px -mb-px" />}
-      <GlassSurface
-        role="banner"
-        weight="chrome"
-        tint="base"
-        fallback="material-chrome"
-        data-scrolled={sticky && scrolled ? "true" : undefined}
-        className={cn(
-          "scroll-edge relative px-5 sm:px-8 lg:px-10",
-          sticky ? "sticky top-0 z-40 -mx-5 mb-12 sm:-mx-8 lg:-mx-10" : "shrink-0",
-          className
-        )}
-      >
-        {/* Three tracks so the nav sits on the page's centre line rather
-            than wherever the two side clusters happen to leave it. */}
-        <div
+  const bar = (
+    <GlassSurface
+      role="banner"
+      weight="chrome"
+      tint="base"
+      fallback="material-chrome"
+      data-scrolled={sticky && scrolled ? "true" : undefined}
+      className={cn(
+        /* A fixed radius of half the height, not `rounded-full`: the glass
+           engine reads the computed radius in px and 9999px is no shape. */
+        "relative h-14 rounded-[28px] px-2.5 ring-1 ring-inset ring-line/[0.08]",
+        "transition-shadow duration-quick ease-spring",
+        sticky && scrolled && "shadow-raised",
+        sticky ? "sticky top-3 z-40 mb-12 mt-3" : "",
+        className
+      )}
+    >
+      {/* Three tracks so the nav sits on the page's centre line rather
+          than wherever the two side clusters happen to leave it. */}
+      <div className="grid h-14 grid-cols-[1fr_auto_1fr] items-center gap-4 tracking-tight">
+        <Link
+          href="/dashboard"
+          aria-label="OrbitOS home"
           className={cn(
-            "grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-4 tracking-tight",
-            variant === "flush" && "mx-auto w-full max-w-6xl"
-          )}
-        >
-          <Link
-            href="/dashboard"
-            aria-label="OrbitOS home"
-            className={cn(
-              /* No `min-w-0`: it let this grid track collapse to nothing on
+            /* No `min-w-0`: it let this grid track collapse to nothing on
                  a phone, and the nav — which grows to fill whatever it is
                  given — then started under the logo. Holding the logo's
                  width makes the nav the track that gives way, and it
                  scrolls. */
-              "group flex shrink-0 items-center gap-3.5 justify-self-start rounded-lg",
-              "transition-transform duration-quick ease-spring active:scale-[0.97] active:duration-press active:ease-press",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
-            )}
-          >
-            <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[10px] bg-surface-control shadow-raised">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-b from-sheen/[0.04] to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-              />
-              <div className="relative z-10 flex h-full w-full items-center justify-center">
-                <OrbitMark className="h-[64%] w-[64%] text-ink-strong" />
-              </div>
+            "group flex shrink-0 items-center gap-3.5 justify-self-start rounded-lg",
+            "transition-transform duration-quick ease-spring active:scale-[0.97] active:duration-press active:ease-press",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
+          )}
+        >
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[10px] bg-surface-control shadow-raised">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-b from-sheen/[0.04] to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+            />
+            <div className="relative z-10 flex h-full w-full items-center justify-center">
+              <OrbitMark className="h-[64%] w-[64%] text-ink-strong" />
             </div>
-            {/* The wordmark yields to the nav on small screens. */}
-            <span className="vibrant hidden text-[15px] tracking-tight transition-colors group-hover:text-ink-strong md:inline">
-              OrbitOS
-            </span>
-          </Link>
-
-          <AppNav uid={user.id} orgId={user.orgId} hide={hide} />
-
-          <div className="flex shrink-0 items-center justify-end gap-2">
-            {actions}
-            <ProfileLink photoURL={user.photoURL} name={user.name} className="ml-1" />
           </div>
+          {/* The wordmark yields to the nav on small screens. */}
+          <span className="vibrant hidden text-[15px] tracking-tight transition-colors group-hover:text-ink-strong md:inline">
+            OrbitOS
+          </span>
+        </Link>
+
+        <AppNav uid={user.id} orgId={user.orgId} hide={hide} />
+
+        <div className="flex shrink-0 items-center justify-end gap-2">
+          {actions}
+          <ProfileLink photoURL={user.photoURL} name={user.name} className="ml-1" />
         </div>
-      </GlassSurface>
+      </div>
+    </GlassSurface>
+  );
+
+  if (!sticky) {
+    // Matches the page's own column so the capsule lines up with it.
+    return <div className="mx-auto w-full max-w-6xl shrink-0 px-5 pt-3 sm:px-8 lg:px-10">{bar}</div>;
+  }
+
+  return (
+    <>
+      {/* Zero-height marker just above the bar. When it leaves the
+          viewport, the bar is stuck and content is under it. */}
+      <div ref={sentinelRef} aria-hidden className="h-px w-px -mb-px" />
+      {bar}
     </>
   );
 }
