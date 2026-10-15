@@ -150,7 +150,7 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
           <li
             aria-hidden
             className={cn(
-              "pointer-events-none absolute left-0 top-0 h-9 rounded-lg bg-surface-control ring-1 ring-inset ring-line/[0.08]",
+              "pointer-events-none absolute left-0 top-0 h-9 rounded-full bg-surface-control ring-1 ring-inset ring-line/[0.08]",
               placed && "transition-[transform,width] duration-spring ease-spring"
             )}
             style={{ transform: `translate3d(${pill.x}px, 0, 0)`, width: pill.width }}
@@ -169,7 +169,7 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
                 className={cn(
                   // `relative` lifts the link above the absolutely positioned
                   // pill; without it the pill paints over the label.
-                  "group/nav relative inline-flex h-9 items-center justify-center gap-2 rounded-lg px-2.5 sm:px-3",
+                  "group/nav relative inline-flex h-9 items-center justify-center gap-2 rounded-full px-3 sm:px-3.5",
                   "transition-[color,background-color,transform] duration-quick ease-spring",
                   "active:scale-[0.96] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base",

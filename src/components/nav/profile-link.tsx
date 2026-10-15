@@ -30,7 +30,9 @@ export function ProfileLink({ photoURL, name, className }: ProfileLinkProps) {
         className
       )}
     >
-      <UserAvatar photoURL={photoURL} name={name ?? ""} size="md" />
+      {/* Round, not the avatar's usual rounded square: it sits at the end
+          of the pill-shaped header and has to follow its curve. */}
+      <UserAvatar photoURL={photoURL} name={name ?? ""} size="md" className="rounded-full [&>div]:rounded-full" />
     </Link>
   );
 }

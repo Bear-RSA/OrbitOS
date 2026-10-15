@@ -67,7 +67,7 @@ export function AppHeader({ user, hide = DEFAULT_HIDE, actions, variant = "shell
       className={cn(
         /* A fixed radius of half the height, not `rounded-full`: the glass
            engine reads the computed radius in px and 9999px is no shape. */
-        "relative h-14 rounded-[28px] px-2.5 ring-1 ring-inset ring-line/[0.08]",
+        "relative h-14 rounded-[28px] px-2 ring-1 ring-inset ring-line/[0.08]",
         "transition-shadow duration-quick ease-spring",
         sticky && scrolled && "shadow-raised",
         sticky ? "sticky top-3 z-40 mb-12 mt-3" : "",
@@ -86,12 +86,14 @@ export function AppHeader({ user, hide = DEFAULT_HIDE, actions, variant = "shell
                  given — then started under the logo. Holding the logo's
                  width makes the nav the track that gives way, and it
                  scrolls. */
-            "group flex shrink-0 items-center gap-3.5 justify-self-start rounded-lg",
+            "group flex shrink-0 items-center gap-3.5 justify-self-start rounded-full",
             "transition-transform duration-quick ease-spring active:scale-[0.97] active:duration-press active:ease-press",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
           )}
         >
-          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[10px] bg-surface-control shadow-raised">
+          {/* A circle the avatar's size, so both ends of the pill sit 8px
+                inside its curve. */}
+            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-surface-control shadow-raised">
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-b from-sheen/[0.04] to-transparent opacity-0 transition-opacity group-hover:opacity-100"
