@@ -20,8 +20,8 @@ vi.mock("@/lib/firebase/admin", () => ({ adminDb: db }));
 const { recordRunOutcome, recordRunCrash, readRecentRunFailures, statusOf } =
   await import("@/lib/tasks/run-log");
 
-/** 06:00 SAST on the 21st — the moment the morning cron fires. */
-const NOW = new Date("2026-08-21T04:00:00Z");
+/** 09:00 SAST on the 21st — the moment the morning cron fires. */
+const NOW = new Date("2026-08-21T07:00:00Z");
 const DAY = "2026-08-21";
 
 beforeEach(() => {

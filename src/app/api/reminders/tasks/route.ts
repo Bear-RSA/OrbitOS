@@ -6,7 +6,8 @@ import { recordRunCrash, recordRunOutcome } from "@/lib/tasks/run-log";
 /* ------------------------------------------------------------------ */
 /*  Task due-soon reminder                                             */
 /*                                                                     */
-/*  Scheduled directly in vercel.json at 04:00 UTC — 06:00 SAST.       */
+/*  Scheduled directly in vercel.json at 07:00 UTC — 09:00 SAST,       */
+/*  the time Settings -> Notifications tells people to expect it.      */
 /*                                                                     */
 /*  This used to run at 12:00 UTC, chosen so that a due date stored at */
 /*  midday UTC was exactly 24 hours away. That precision was never     */
