@@ -207,6 +207,13 @@ export const dailyProvider: CallProvider = {
              as "cannot join" with no clue why. */
           user_id: options.identity.slice(0, 36),
           is_owner: options.isOwner === true,
+          /* Everyone arrives heard but not seen. The camera is the thing
+             people get caught out by — in a kitchen, mid-commute — and
+             turning it on is one tap away; turning it off after the room
+             has already seen you is too late. Set on the pass so it holds
+             on every path into a room, prejoin screen or not. */
+          start_video_off: true,
+          start_audio_off: false,
           /* Overrides the room's `enable_prejoin_ui` for this pass only. */
           ...(options.skipPrejoin ? { enable_prejoin_ui: false } : {}),
           exp: unix(new Date(Date.now() + options.ttlSeconds * 1000)),

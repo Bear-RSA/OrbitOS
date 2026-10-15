@@ -255,6 +255,10 @@ export function CallRoom({ grant, onLeave, className }: CallRoomProps) {
           url: grant.roomUrl,
           token: grant.token,
           userName: grant.displayName,
+          /* Camera off, mic on — the pass says the same; this covers a
+             pass minted before that rule existed. */
+          startVideoOff: true,
+          startAudioOff: false,
         });
 
         /* Belt-and-suspenders: if `loaded` never arrived, a resolved join
