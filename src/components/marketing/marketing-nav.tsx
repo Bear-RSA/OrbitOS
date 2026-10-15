@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRef } from "react";
 import { OrbitLockup } from "@/components/marketing/brand";
+import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useScrolledPast } from "@/hooks/use-scrolled-past";
 import { cn } from "@/lib/utils/classnames";
 import { GlassSurface } from "@/components/ui/glass-surface";
@@ -17,7 +19,8 @@ import { GlassSurface } from "@/components/ui/glass-surface";
  *
  * It is a floating glass capsule the page scrolls under, the same shape
  * as the app header. It lifts with a shadow once content is actually
- * passing beneath it.
+ * passing beneath it. Like the app header it leaves on scroll down and
+ * returns on any scroll up; the motion is `.chrome-bar` in globals.css.
  */
 
 type NavKey = "features" | "methodology" | "pricing" | "changelog";
@@ -35,6 +38,8 @@ const PRESS =
 export function MarketingNav({ active }: { active?: NavKey }) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrolled = useScrolledPast(sentinelRef);
+  const reducedMotion = useReducedMotion();
+  const hidden = useHideOnScroll(!reducedMotion);
 
   return (
     <>
@@ -48,24 +53,29 @@ export function MarketingNav({ active }: { active?: NavKey }) {
           tint="base"
           fallback="material-chrome"
           data-scrolled={scrolled ? "true" : undefined}
+          data-hidden={hidden ? "true" : undefined}
           className={cn(
             /* Half the height, not `rounded-full`: the glass engine reads the
                computed radius in px and 9999px is no shape. */
             "pointer-events-auto relative mx-auto h-14 max-w-7xl rounded-[28px] ring-1 ring-inset ring-line/[0.08]",
-            "transition-shadow duration-quick ease-spring",
+            "chrome-bar",
             scrolled && "shadow-raised"
           )}
         >
           <div className="flex h-14 items-center justify-between pl-5 pr-2">
-            <Link
-              href="/"
-              aria-label="OrbitOS home"
-              className={cn("rounded-lg", PRESS)}
-            >
-              <OrbitLockup />
-            </Link>
+            {/* Wrapped so the reveal can fade it without overriding the
+                press transition the link already carries. */}
+            <div data-chrome-part="side">
+              <Link
+                href="/"
+                aria-label="OrbitOS home"
+                className={cn("rounded-lg", PRESS)}
+              >
+                <OrbitLockup />
+              </Link>
+            </div>
 
-            <div className="hidden items-center gap-8 md:flex">
+            <div data-chrome-part="centre" className="hidden items-center gap-8 md:flex">
               {LINKS.map(({ key, label, href }) => (
                 <Link
                   key={key}
@@ -84,7 +94,7 @@ export function MarketingNav({ active }: { active?: NavKey }) {
               ))}
             </div>
 
-            <div className="flex items-center gap-4 sm:gap-6">
+            <div data-chrome-part="side" className="flex items-center gap-4 sm:gap-6">
               <Link
                 href="/login"
                 className={cn("rounded-lg font-sans text-sm font-medium text-ink-muted hover:text-ink", PRESS)}

@@ -591,6 +591,51 @@
     opacity: 1;
   }
 
+  /* ── App header: away on scroll down, back on scroll up ──
+     (components/nav/app-header.tsx, components/marketing/marketing-nav.tsx,
+     hooks/use-hide-on-scroll.ts)
+
+     Leaving, the contents go first: they blur and fade in 180ms, and the
+     glass follows a beat later, shrinking a touch and accelerating up off
+     the top edge, so what lifts away is an empty lens rather than a slab
+     of UI. Returning reverses the order and takes its time: the capsule
+     glides down over 760ms on a long ease-out with no overshoot (a bounce
+     stretched that slow reads as wobble), then its contents resolve out
+     of the blur as it lands, the nav first and the two sides after,
+     centre out. Leaving stays quick; arriving is the part you watch.
+
+     The capsule itself only ever moves. The liquid-glass lens dies under
+     `opacity` or `filter` on the panel, so both live on the cells. */
+  .chrome-bar {
+    transform-origin: 50% 0;
+    transition:
+      transform 760ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow var(--t-quick) var(--ease-spring);
+  }
+  .chrome-bar[data-hidden="true"]:not(:focus-within) {
+    /* Clears the 12px inset above it (sticky or fixed) plus the shadow. */
+    transform: translate3d(0, calc(-100% - 36px), 0) scale(0.94);
+    transition:
+      transform 360ms cubic-bezier(0.5, 0, 0.75, 0) 40ms,
+      box-shadow var(--t-quick) var(--ease-spring);
+  }
+  .chrome-bar [data-chrome-part] {
+    transition:
+      opacity 520ms cubic-bezier(0.16, 1, 0.3, 1) var(--chrome-delay, 0ms),
+      filter 640ms cubic-bezier(0.16, 1, 0.3, 1) var(--chrome-delay, 0ms),
+      transform 640ms cubic-bezier(0.16, 1, 0.3, 1) var(--chrome-delay, 0ms);
+  }
+  .chrome-bar [data-chrome-part="centre"] { --chrome-delay: 200ms; }
+  .chrome-bar [data-chrome-part="side"] { --chrome-delay: 300ms; }
+  .chrome-bar[data-hidden="true"]:not(:focus-within) [data-chrome-part] {
+    opacity: 0;
+    filter: blur(6px);
+    transform: scale(0.97);
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+    transition-delay: 0ms;
+  }
+
   /* Text over glass: flat grey drops out against whatever scrolls under.
      Slightly heavier, slightly more tracked, one tier brighter. */
   .vibrant {
