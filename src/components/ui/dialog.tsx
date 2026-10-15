@@ -102,13 +102,16 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
           {...props}
           asChild
         >
-          {/* Glass on the centred panel only. The engine pins the panel's
-              overflow to hidden, so there the scroll lives on the content
-              inside it; a sheet keeps its own scroll and its fog, because
-              the pull gesture is built around the sheet scrolling. */}
+          {/* Fog, never the lens, on both presentations. The lens dies under
+              `opacity`, so it could only switch on once the fade had ended
+              and switch off the moment the exit began; and it loads after
+              mount, swapping material mid-entrance. Each of those read as a
+              jolt. Behind the scrim the bend was barely visible anyway. On
+              the centred panel the scroll lives on the content inside, so
+              the panel clips to its rounded corners. */}
           <GlassSurface
             weight="overlay"
-            disabled={isSheet}
+            disabled
             /* The calendar's fog, weighted for a panel over the page. */
             fallback="material-fog-modal"
             className={cn(
@@ -126,14 +129,16 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
                  with translate grows off both edges when its content is
                  taller than the window, taking the footer's buttons with it. */
               "sm:left-1/2 sm:top-1/2 sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[32px]",
-              "sm:max-h-[calc(100dvh-3rem)]",
+              "sm:max-h-[calc(100dvh-3rem)] sm:overflow-hidden",
               /* Slim house scrollbar, inset so it clears the rounded corners. */
               "custom-scrollbar [&::-webkit-scrollbar-track]:my-8",
-              /* A small rise and a near-1 scale, no blur. A `filter` on the
-                 panel walls the glass lens off from the page, so a blur-in
-                 left the lens dark for the whole entrance and it snapped on
-                 at the end — the visible jolt. The keyframe's `from` replaces
-                 the centring transform, hence -50% plus a few pixels. */
+              /* A small rise and a near-1 scale, no blur: a blurred panel is
+                 a full-panel filter every frame. The keyframe's `from`
+                 replaces the centring transform, hence -50% plus a few
+                 pixels. `will-change` keeps the panel on one layer from first
+                 frame to last, so it is not re-rasterised (a visible snap in
+                 the text) as the animation hands back to the static style. */
+              "sm:will-change-[transform,opacity]",
               "sm:data-[state=open]:animate-in sm:data-[state=open]:fade-in-0 sm:data-[state=open]:zoom-in-98 sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[calc(50%_-_8px)]",
               "sm:data-[state=closed]:animate-out sm:data-[state=closed]:fade-out-0 sm:data-[state=closed]:zoom-out-98 sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[calc(50%_-_4px)]",
 
