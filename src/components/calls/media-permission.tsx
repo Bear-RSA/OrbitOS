@@ -57,6 +57,37 @@ async function requestDevices(): Promise<"granted" | "denied"> {
   }
 }
 
+/**
+ * This device has said yes before.
+ *
+ * Needed because Safari cannot be asked. On an iPhone `permissions.query`
+ * answers "prompt" for camera and microphone no matter how many times
+ * they were allowed — iOS forgets the answer whenever a Home Screen app
+ * closes, and asks again itself. Going by the query alone, this screen
+ * stood in front of every single call; going by this, it appears once,
+ * and after that only the system's own prompt is left. A per-device
+ * convenience, so local storage is the right home, and it reads as
+ * "never said yes" wherever storage is unavailable.
+ */
+const GRANTED_KEY = "orbit:media-granted";
+
+function rememberedGrant(): boolean {
+  try {
+    return window.localStorage.getItem(GRANTED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberGrant(granted: boolean): void {
+  try {
+    if (granted) window.localStorage.setItem(GRANTED_KEY, "1");
+    else window.localStorage.removeItem(GRANTED_KEY);
+  } catch {
+    /* Private mode or blocked storage: the screen just shows next time. */
+  }
+}
+
 export function useMediaPermission() {
   const [phase, setPhase] = useState<MediaPermissionPhase>("checking");
 
@@ -79,6 +110,7 @@ export function useMediaPermission() {
 
       if (camera === "granted" && mic === "granted") setPhase("ready");
       else if (mic === "denied") setPhase("blocked");
+      else if (rememberedGrant()) setPhase("ready");
       else setPhase("ask");
     })();
 
@@ -90,6 +122,7 @@ export function useMediaPermission() {
   const request = useCallback(async () => {
     setPhase("requesting");
     const result = await requestDevices();
+    rememberGrant(result === "granted");
     setPhase(result === "granted" ? "ready" : "blocked");
   }, []);
 
