@@ -5,7 +5,8 @@ import { Bell, Mail } from "lucide-react";
 import { User } from "@/types/auth";
 import { usePreferences } from "@/hooks/use-preferences";
 import { playMessageChime } from "@/lib/messages/chime";
-import { RING_CYCLE_MS, startIncomingRing } from "@/lib/calls/ringtone";
+import { startIncomingRing } from "@/lib/calls/ringtone";
+import { RING_SOUND_MS } from "@/lib/audio/samples";
 import {
   DashboardCard,
   CardHeader,
@@ -32,10 +33,10 @@ export function NotificationsSection({ user }: { user: User }) {
 
   /* The ring loops until something stops it, so a test button that only
      started it would be a way to make the settings page ring forever.
-     One cycle, then silence. */
+     One play of the ringtone, then silence. */
   const testRing = () => {
     const stop = startIncomingRing();
-    setTimeout(stop, RING_CYCLE_MS);
+    setTimeout(stop, RING_SOUND_MS);
   };
 
   return (

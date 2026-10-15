@@ -7,6 +7,7 @@ import {
   type Partial,
   type ScheduledTone,
 } from "@/lib/audio/context";
+import { playSample, prefetchSample, RING_SOUND } from "@/lib/audio/samples";
 
 /* ------------------------------------------------------------------ */
 /*  Call ringtone                                                      */
@@ -16,9 +17,10 @@ import {
 /*                                                                     */
 /*  Split the way `access.ts` is — the schedule is pure and tested,    */
 /*  the part that touches the hardware is thin enough to read in one   */
-/*  sitting. Synthesized for the same reason the message chime is: a   */
-/*  ringtone fetched over the network is a phone that stops ringing on */
-/*  a bad connection, and does it quietly.                             */
+/*  sitting. The ring itself is `public/sounds/ring.mp3`, looped; the  */
+/*  synthesized phrase below is what plays when that file cannot be    */
+/*  had, because a phone that stops ringing on a bad connection does   */
+/*  it quietly. The ringback is synth only.                            */
 /*                                                                     */
 /*  UNLIKE THE CHIME, THIS LOOPS, and a loop needs a way out that      */
 /*  cannot be forgotten. Both starters return a stop function, both    */
@@ -207,8 +209,15 @@ function loop(notes: RingNote[], cycleMs: number, label: string): () => void {
  * needs to remember to, so none of them can forget.
  */
 export function startIncomingRing(): () => void {
-  return loop(ringCycle(), RING_CYCLE_MS, "Ringtone");
+  return playSample(RING_SOUND, { gain: RING_SOUND_GAIN, loop: true, label: "Ringtone" }, () =>
+    loop(ringCycle(), RING_CYCLE_MS, "Ringtone")
+  );
 }
+
+/** Level for `ring.mp3`. Louder than the chime, for the reason `RING_PEAK_GAIN` is. */
+const RING_SOUND_GAIN = 0.8;
+
+prefetchSample(RING_SOUND);
 
 /** Starts the caller's ringback. Returns the stop. */
 export function startRingback(): () => void {

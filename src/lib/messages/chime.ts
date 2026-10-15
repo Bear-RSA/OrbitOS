@@ -4,15 +4,15 @@ import {
   primeAudio,
   tone,
 } from "@/lib/audio/context";
+import { MESSAGE_SOUND, playSample, prefetchSample } from "@/lib/audio/samples";
 
 /* ------------------------------------------------------------------ */
 /*  Message chime                                                      */
 /*                                                                     */
-/*  Synthesized rather than a file, deliberately. An mp3 would be a    */
-/*  network request that has to land BEFORE the sound is due, which is */
-/*  the one moment it cannot be late — and a request that fails on a   */
-/*  bad connection is a notification that silently stops working. Two  */
-/*  oscillators cost nothing, are instant, and work offline.           */
+/*  `public/sounds/message.mp3`, fetched as soon as this module loads. */
+/*  The synthesized bell below is the fallback: a recording that has   */
+/*  not arrived, or will not decode, must not mean a notification that */
+/*  silently stops working. Two oscillators are instant and offline.   */
 /*                                                                     */
 /*  TWO THINGS MAKE A CHIME LIKE THIS INAUDIBLE, and the first build   */
 /*  of this file had both.                                             */
@@ -71,14 +71,31 @@ function ring(ctx: AudioContext): void {
 }
 
 /**
- * Plays the arrival chime. Never throws.
+ * The recording sits around -7dB at its peak, a little hotter than the
+ * synth. Taken down to match, so switching between them on a flaky
+ * connection does not change how loud a message is.
+ */
+const MESSAGE_SOUND_GAIN = 0.6;
+
+prefetchSample(MESSAGE_SOUND);
+
+/** Plays the arrival chime — the recording, or the synth if it is unavailable. Never throws. */
+export function playMessageChime(): void {
+  playSample(MESSAGE_SOUND, { gain: MESSAGE_SOUND_GAIN, label: "Chime" }, () => {
+    playSynthChime();
+    return () => {};
+  });
+}
+
+/**
+ * The synthesized chime. Never throws.
  *
  * When the browser refuses — a tab restored from history that has never
  * been clicked — it says so once in the console rather than failing
  * silently. A notification you cannot hear and cannot diagnose is worse
  * than one that is simply off.
  */
-export function playMessageChime(): void {
+function playSynthChime(): void {
   const ctx = getAudioContext();
   if (!ctx) return;
 
