@@ -95,6 +95,13 @@ export const sendMessageSchema = z.object({
   text: messageTextSchema,
 });
 
+/** The message a sender's browser just wrote, named for its push. */
+export const notifyMessageSchema = z.object({
+  conversationId: conversationIdSchema,
+  /* Firestore's auto ids: twenty letters and digits. */
+  messageId: z.string().regex(/^[A-Za-z0-9]{20}$/),
+});
+
 /**
  * What the browser reports back after uploading a picture to Cloudinary.
  *

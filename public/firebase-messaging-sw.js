@@ -23,8 +23,9 @@
 importScripts("https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js");
 
-/* Written by `registerPushWorker`, which puts the same config the page
-   booted with onto the registration URL. */
+/* Written by `registerNotificationWorker` (lib/notifications/worker),
+   which puts the same config the page booted with onto the
+   registration URL. */
 var params = new URLSearchParams(self.location.search);
 
 firebase.initializeApp({
@@ -46,43 +47,60 @@ var messaging = firebase.messaging();
  * browser itself before this handler runs, which would show a second
  * card on top of the one the page already painted for anyone who does
  * have OrbitOS open. Sending data and drawing it here means exactly one
- * notification per call, wherever the call was received.
+ * notification per call or thread, wherever it was received.
  */
 messaging.onBackgroundMessage(function (payload) {
   var data = payload.data || {};
+  var tag = data.tag || "orbit-call";
+  var isCall = tag.indexOf("orbit-call") === 0;
 
-  self.registration.showNotification(data.title || "Incoming call", {
+  return self.registration.showNotification(data.title || "OrbitOS", {
     body: data.body || "",
-    icon: "/logo.png",
-    badge: "/logo.png",
-    /* One card per call, replaced rather than stacked if anything about
-       it is sent twice. */
-    tag: data.tag || "orbit-call",
-    requireInteraction: true,
+    icon: "/icons/icon-192.png",
+    badge: "/icons/badge-96.png",
+    /* One card per call or per thread, replaced rather than stacked. */
+    tag: tag,
+    /* A ring holds the screen until it is answered; a message may fade. */
+    requireInteraction: isCall,
+    /* A replaced card is silent unless told otherwise, and the fifth
+       message in a thread is as much news as the first. */
+    renotify: !isCall,
     data: { url: data.url || "/dashboard" },
   });
 });
 
 /**
- * Taking the call.
+ * Tapping a card.
  *
  * Focus a window that already has OrbitOS open rather than opening a
- * second one — the ring card is live in that tab, and a fresh window
- * would load the app from scratch while the phone is still ringing.
+ * second one — for a call, the ring card is live in that tab, and a
+ * fresh window would load the app from scratch while the phone is still
+ * ringing. A message card also takes that window to its thread; a
+ * window this worker does not control refuses `navigate`, and then
+ * being brought forward is the most that can be done.
  */
 self.addEventListener("notificationclick", function (event) {
   event.notification.close();
 
   var target = (event.notification.data && event.notification.data.url) || "/dashboard";
+  var isThread = (event.notification.tag || "").indexOf("orbit-thread-") === 0;
 
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then(function (windows) {
         for (var i = 0; i < windows.length; i++) {
-          if (windows[i].url.indexOf(self.location.origin) === 0 && "focus" in windows[i]) {
-            return windows[i].focus();
-          }
+          var win = windows[i];
+          if (win.url.indexOf(self.location.origin) !== 0 || !("focus" in win)) continue;
+          if (!isThread) return win.focus();
+          return win
+            .navigate(target)
+            .then(function (navigated) {
+              return (navigated || win).focus();
+            })
+            .catch(function () {
+              return win.focus();
+            });
         }
         return self.clients.openWindow(target);
       })

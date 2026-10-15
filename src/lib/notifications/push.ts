@@ -2,6 +2,7 @@
 
 import { getMessaging, getToken, deleteToken, isSupported } from "firebase/messaging";
 import app from "@/lib/firebase/client";
+import { registerNotificationWorker } from "@/lib/notifications/worker";
 
 /* ------------------------------------------------------------------ */
 /*  Web push                                                           */
@@ -25,9 +26,6 @@ import app from "@/lib/firebase/client";
 /*  so it is written through a server action and never readable by a   */
 /*  client.                                                            */
 /* ------------------------------------------------------------------ */
-
-/** Where the worker is served from. Must be at the origin root. */
-const WORKER_PATH = "/firebase-messaging-sw.js";
 
 /**
  * The public half of the VAPID key pair, from the Firebase console
@@ -69,37 +67,6 @@ export function pushConfigured(): boolean {
 }
 
 /**
- * Registers the worker, handing it the config on the query string.
- *
- * The worker cannot read `process.env` — it is served raw from
- * `public/` — and the same values are already in the client bundle, so
- * passing them here duplicates nothing that was private. The path stays
- * distinct per config, which means a project id changing between
- * environments registers a new worker rather than reusing one pointed
- * at the old project.
- */
-async function registerPushWorker(): Promise<ServiceWorkerRegistration> {
-  const config = new URLSearchParams({
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "",
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "",
-  });
-
-  const registration = await navigator.serviceWorker.register(
-    `${WORKER_PATH}?${config.toString()}`,
-    { scope: "/" }
-  );
-
-  /* getToken against a worker that is still installing fails with an
-     opaque error, so wait for it to be usable first. */
-  await navigator.serviceWorker.ready;
-  return registration;
-}
-
-/**
  * Turns push on for THIS device and returns the token to register.
  *
  * Must be called from a click: it asks for the notification permission,
@@ -138,7 +105,7 @@ export async function enablePush(): Promise<PushOutcome> {
   }
 
   try {
-    const registration = await registerPushWorker();
+    const registration = await registerNotificationWorker();
     const token = await getToken(getMessaging(app), {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration,

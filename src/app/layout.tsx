@@ -53,12 +53,25 @@ export const metadata: Metadata = {
     description: "The dashboard small studios need when work starts slipping.",
     creator: "@orbitos",
   },
+  /* Installed to an iPhone's Home Screen, OrbitOS opens as its own app
+     rather than a Safari tab — the condition iOS sets for push. */
+  appleWebApp: {
+    capable: true,
+    title: "OrbitOS",
+    /* A solid bar, not "black-translucent": nothing in the layout pads
+       for the notch, so a see-through bar would sit on the header. */
+    statusBarStyle: "black",
+  },
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#050505" },
+    { media: "(prefers-color-scheme: light)", color: "#FAF9F7" },
+  ],
 };
 
 export default function RootLayout({

@@ -210,7 +210,7 @@ export async function sendMessage(
   senderId: string,
   rawText: string,
   attachment: MessageAttachment | null = null
-): Promise<void> {
+): Promise<string> {
   const text = rawText.trim();
 
   /* A picture may travel with no words, and words with no picture, but
@@ -251,6 +251,7 @@ export async function sendMessage(
   });
 
   await batch.commit();
+  return messageRef.id;
 }
 
 /**

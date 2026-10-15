@@ -19,6 +19,8 @@
 /*  ringing.                                                           */
 /* ------------------------------------------------------------------ */
 
+import { notificationWorker } from "@/lib/notifications/worker";
+
 export type NotificationAccess = "granted" | "denied" | "default" | "unsupported";
 
 /**
@@ -123,22 +125,26 @@ export function showDesktopNotification(notice: DesktopNotice): () => void {
     return () => {};
   }
 
+  const options: NotificationOptions = {
+    body: notice.body,
+    tag: notice.tag,
+    icon: "/icons/icon-192.png",
+    badge: "/icons/badge-96.png",
+    /* A ring survives until it is acted on or withdrawn — a call is
+       the one thing in this product worth holding the screen for.
+       Everything else is allowed to fade. */
+    requireInteraction: !notice.transient,
+  };
+
   let notification: Notification;
   try {
-    notification = new Notification(notice.title, {
-      body: notice.body,
-      tag: notice.tag,
-      icon: "/logo.png",
-      /* A ring survives until it is acted on or withdrawn — a call is
-         the one thing in this product worth holding the screen for.
-         Everything else is allowed to fade. */
-      requireInteraction: !notice.transient,
-    });
+    notification = new Notification(notice.title, options);
   } catch {
-    /* Some browsers throw here when the API exists but is only usable
-       through a service worker registration. Nothing to do but let the
-       in-app card carry the call on its own. */
-    return () => {};
+    /* Android Chrome throws here: the API exists, but a phone will only
+       draw a notification through a service worker. The worker's own
+       click handler brings OrbitOS forward, so the card still does its
+       job — only `onClick` is lost, and focusing is what it was for. */
+    return showThroughWorker(notice.title, options);
   }
 
   notification.onclick = () => {
@@ -151,4 +157,27 @@ export function showDesktopNotification(notice: DesktopNotice): () => void {
   };
 
   return () => notification.close();
+}
+
+/**
+ * The phone path. Asynchronous where the caller wants a closer now, so the
+ * closer it hands back may run before the card exists — in which case the
+ * card is withdrawn as soon as it lands rather than left behind.
+ */
+function showThroughWorker(title: string, options: NotificationOptions): () => void {
+  let withdrawn = false;
+  const shown = notificationWorker().then(async (registration) => {
+    if (!registration || withdrawn) return null;
+    await registration.showNotification(title, { ...options, data: { url: window.location.pathname } });
+    return registration;
+  }).catch(() => null);
+
+  return () => {
+    withdrawn = true;
+    void shown.then(async (registration) => {
+      if (!registration) return;
+      const open = await registration.getNotifications({ tag: options.tag });
+      open.forEach((card) => card.close());
+    });
+  };
 }

@@ -35,6 +35,8 @@ import {
   sendMessage,
   subscribeToMessages,
 } from "@/lib/queries/messages";
+import { notifyMessageAction } from "@/app/actions/messages";
+import { withdrawNotifications } from "@/lib/notifications/worker";
 import { canPostToConversation } from "@/lib/messages/access";
 import { groupCallLive } from "@/lib/calls/access";
 import { TASK_STATUS_LABEL, isValidTaskRef } from "@/lib/messages/task-ref";
@@ -259,6 +261,9 @@ export function MessageThread({
     const lastRead = conversation.lastReadAt?.[viewer.id]?.toMillis?.() ?? 0;
     if (lastMessage === 0 || lastRead >= lastMessage) return;
 
+    /* Read here means read on the phone too: the push card for this
+       thread has said all it had to. */
+    void withdrawNotifications(`orbit-thread-${conversation.id}`);
     void markConversationRead(conversation.id, viewer.id).catch((err) =>
       console.error("[MessageThread] Could not mark read:", err)
     );
@@ -369,7 +374,10 @@ export function MessageThread({
           await sendImageMessage(conversationId, image, text);
           clearImage();
         } else {
-          await sendMessage(conversationId, viewer.id, text, attachment);
+          const messageId = await sendMessage(conversationId, viewer.id, text, attachment);
+          /* Not awaited: the line is already in the thread, and a push
+             to everybody else's phone is no reason to hold the composer. */
+          void notifyMessageAction({ conversationId, messageId });
         }
         setDraft("");
       } catch (err) {

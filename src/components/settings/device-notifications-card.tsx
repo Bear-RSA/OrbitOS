@@ -59,6 +59,22 @@ const ACCESS_NOTE: Record<NotificationAccess, string | null> = {
   unsupported: "This browser cannot show desktop notifications.",
 };
 
+/**
+ * An iPhone or iPad looking at OrbitOS in Safari rather than as an
+ * installed app. iOS only grants push to a site on the Home Screen, so
+ * here the push row cannot appear — and without a word about why, it
+ * just looks missing.
+ */
+function iosOutsideHomeScreen(): boolean {
+  const ios =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const installed =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  return ios && !installed;
+}
+
 export function DeviceNotificationsCard() {
   const { preferences, update, pending } = usePreferences();
 
@@ -67,12 +83,14 @@ export function DeviceNotificationsCard() {
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [needsInstall, setNeedsInstall] = useState(false);
 
   /* Read the browser once mounted, never during render: `Notification`
      does not exist on the server, and a value read during render would
      make the first paint disagree with the second. */
   useEffect(() => {
     setAccess(notificationAccess());
+    setNeedsInstall(iosOutsideHomeScreen());
 
     let cancelled = false;
     void (async () => {
@@ -138,7 +156,7 @@ export function DeviceNotificationsCard() {
 
           setPushOn(true);
           setAccess(notificationAccess());
-          setNotice("This device will ring even when OrbitOS is closed.");
+          setNotice("This device will get calls and messages even when OrbitOS is closed.");
           return;
         }
 
@@ -147,7 +165,7 @@ export function DeviceNotificationsCard() {
         const token = await disablePush();
         if (token) await unregisterPushTokenAction({ token });
         setPushOn(false);
-        setNotice("This device will no longer ring while OrbitOS is closed.");
+        setNotice("This device will no longer get calls or messages while OrbitOS is closed.");
       } finally {
         setPushBusy(false);
       }
@@ -189,8 +207,8 @@ export function DeviceNotificationsCard() {
         {pushAvailable && (
           <ToggleRow
             id="pref-push-notifications"
-            title="Ring this device when OrbitOS is closed"
-            description="Registers this browser so an incoming call reaches you with no OrbitOS tab open. Set per device — turning it on here does nothing for your phone."
+            title="Notify this device when OrbitOS is closed"
+            description="Registers this browser so calls and new messages reach you with no OrbitOS tab open. Town Hall posts stay in the app. Set per device — turn it on separately on each phone and computer."
             checked={pushOn}
             busy={pushBusy}
             disabled={access === "denied"}
@@ -211,6 +229,13 @@ export function DeviceNotificationsCard() {
             {accessNote}
           </p>
         ))}
+
+      {needsInstall && (
+        <p className="mt-4 text-[12px] font-light leading-relaxed text-ink-dim">
+          On iPhone, notifications need OrbitOS on your Home Screen. In Safari, tap Share, then
+          Add to Home Screen, and open OrbitOS from that icon to switch them on here.
+        </p>
+      )}
 
       {notice && <FormNotice tone="success">{notice}</FormNotice>}
 

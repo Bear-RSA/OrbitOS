@@ -23,9 +23,11 @@ import {
   createGroupSchema,
   forwardTaskSchema,
   messagePreview,
+  notifyMessageSchema,
   openDmSchema,
   sendImageMessageSchema,
 } from "@/lib/validations/messages";
+import { sendMessagePush } from "@/lib/notifications/push-sender";
 import { TOWN_HALL_NAME, type ImageAttachment } from "@/types/message";
 
 /* ------------------------------------------------------------------ */
@@ -52,6 +54,8 @@ import { TOWN_HALL_NAME, type ImageAttachment } from "@/types/message";
 
 const CONVERSATIONS = "conversations";
 const MESSAGES = "messages";
+/** Once-only markers for `notifyMessageAction`. Server-only, like `pushTokens`. */
+const PUSH_RECEIPTS = "pushReceipts";
 
 export type ConversationResult =
   | { success: true; conversationId: string }
@@ -458,6 +462,7 @@ export async function forwardTaskAction(input: unknown): Promise<ConversationRes
     });
 
     await batch.commit();
+    void pushNewMessage(conversationId, conversation, caller, taskForwardPreview(taskRef.title, note));
 
     return { success: true, conversationId };
   } catch (err: any) {
@@ -598,10 +603,113 @@ export async function sendImageMessageAction(input: unknown): Promise<Conversati
     });
 
     if (refused) return { success: false, error: refused };
+    void pushNewMessage(
+      conversationId,
+      conversation,
+      caller,
+      text ? messagePreview(text) : attachmentPreview("image")
+    );
 
     return { success: true, conversationId };
   } catch (err: any) {
     console.error("[MessageAction] Failed to send picture:", err);
     return { success: false, error: "Could not send that picture." };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Telling the others                                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Pushes a new line to everybody else in the thread.
+ *
+ * Town Hall is left out. Its membership is the whole workspace, and a
+ * notice board that buzzed every phone in the company on every post
+ * would be muted by lunchtime — taking calls and dms down with it, since
+ * a browser's notification permission is all or nothing.
+ */
+function pushNewMessage(
+  conversationId: string,
+  conversation: FirebaseFirestore.DocumentData,
+  caller: { uid: string; name: string },
+  preview: string
+): Promise<void> {
+  if (conversation.type === "townhall") return Promise.resolve();
+
+  const toUids = ((conversation.participantIds as string[]) ?? []).filter(
+    (uid) => uid !== caller.uid
+  );
+  const title =
+    conversation.type === "group" && conversation.name
+      ? `${caller.name} · ${conversation.name as string}`
+      : caller.name;
+
+  return sendMessagePush({ toUids, title, body: preview, conversationId });
+}
+
+/** A message older than this is history, not news, and is never pushed. */
+const PUSH_WINDOW_MS = 2 * 60 * 1000;
+
+/**
+ * Pushes a text message the browser has just written.
+ *
+ * Text goes straight from the composer to Firestore (`queries/messages`),
+ * so the server never saw it — the sender's browser calls this after the
+ * write lands. Nothing is taken on trust from that call: the message is
+ * read back, it must be the caller's own, it must be minutes old at
+ * most, and a receipt makes the push once-only, so a script replaying
+ * this cannot turn one message into a stream of buzzes on somebody's
+ * phone.
+ */
+export async function notifyMessageAction(input: unknown): Promise<void> {
+  try {
+    const parsed = notifyMessageSchema.safeParse(input);
+    if (!parsed.success) return;
+    const { conversationId, messageId } = parsed.data;
+
+    const caller = await requireCaller();
+    if (!caller.ok) return;
+
+    const conversationRef = adminDb.collection(CONVERSATIONS).doc(conversationId);
+    const [conversationSnap, messageSnap] = await Promise.all([
+      conversationRef.get(),
+      conversationRef.collection(MESSAGES).doc(messageId).get(),
+    ]);
+    if (!conversationSnap.exists || !messageSnap.exists) return;
+
+    const conversation = conversationSnap.data()!;
+    const message = messageSnap.data()!;
+
+    if (conversation.orgId !== caller.orgId) return;
+    if (message.senderId !== caller.uid || message.deletedAt) return;
+
+    const sentAt = (message.createdAt as AdminTimestamp | null)?.toMillis() ?? 0;
+    if (Date.now() - sentAt > PUSH_WINDOW_MS) return;
+
+    /* `create` fails if the receipt exists, which is the once-only. */
+    try {
+      await adminDb
+        .collection(PUSH_RECEIPTS)
+        .doc(`${conversationId}_${messageId}`)
+        .create({
+          at: AdminTimestamp.now(),
+          /* Worthless after the push window; a Firestore TTL policy on
+             this field clears them, and without one they are a few
+             bytes each. */
+          expireAt: AdminTimestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000),
+        });
+    } catch {
+      return;
+    }
+
+    const text = typeof message.text === "string" ? message.text : "";
+    const preview = text
+      ? messagePreview(text)
+      : attachmentPreview(message.attachment?.kind ?? "gif");
+
+    await pushNewMessage(conversationId, conversation, caller, preview);
+  } catch (err) {
+    console.error("[MessageAction] Failed to push message:", err);
   }
 }
