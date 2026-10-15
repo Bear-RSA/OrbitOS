@@ -1,5 +1,12 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  getAuth,
+  indexedDBLocalPersistence,
+  initializeAuth,
+  type Auth,
+} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -13,6 +20,30 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-export const auth = getAuth(app);
+/**
+ * Auth without the popup/redirect resolver.
+ *
+ * `getAuth` wires one in, and on start-up it loads a hidden iframe from
+ * the project's firebaseapp.com domain before reporting who is signed
+ * in. On an iPhone running OrbitOS from the Home Screen that cross-site
+ * frame can stall, and every screen waits on the answer — the login
+ * page sits on its loader indefinitely. OrbitOS signs in with email and
+ * password only, so the resolver bought nothing.
+ *
+ * `initializeAuth` throws if called twice (hot reload, a second import
+ * path), so a repeat falls back to the instance that already exists.
+ */
+function createAuth(): Auth {
+  if (typeof window === "undefined") return getAuth(app);
+  try {
+    return initializeAuth(app, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
+    });
+  } catch {
+    return getAuth(app);
+  }
+}
+
+export const auth = createAuth();
 export const db = getFirestore(app);
 export default app;
