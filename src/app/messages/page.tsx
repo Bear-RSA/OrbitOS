@@ -20,7 +20,7 @@ import {
   ConversationList,
   type ConversationTab,
 } from "@/components/messages/conversation-list";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { conversationTitle } from "@/lib/messages/summary";
 import { TOWN_HALL_NAME, type Conversation } from "@/types/message";
@@ -55,7 +55,7 @@ export default function MessagesPage() {
 function OpeningChannels() {
   return (
     <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground">
-      <Loader />
+      <OrbitLoader />
       <span className="text-[12px] text-ink-dim">
         Opening Channels
       </span>

@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { getProjectsByOrg } from "@/lib/queries/projects";
 import { AppHeader } from "@/components/nav/app-header";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { WorkspaceProjects } from "@/components/dashboard/workspace-projects";
 import { Project } from "@/types/project";
 
@@ -41,7 +41,7 @@ export default function ProjectsPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6">
-        <Loader />
+        <OrbitLoader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
             Loading projects…

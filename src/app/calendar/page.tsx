@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { AppHeader } from "@/components/nav/app-header";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { ProjectCalendar } from "@/components/projects/project-calendar";
 import { subscribeToEventsForAttendee } from "@/lib/queries/events";
@@ -70,7 +70,7 @@ export default function CalendarPage() {
   if (authLoading || !user || !user.orgId || !ready) {
     return (
       <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground">
-        <Loader />
+        <OrbitLoader />
       </div>
     );
   }

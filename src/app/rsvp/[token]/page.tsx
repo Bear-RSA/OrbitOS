@@ -4,7 +4,7 @@ import { use, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { CallLobbyNotice, useLobbyRetry } from "@/components/calls/call-lobby";
 import { CallRoom } from "@/components/calls/call-room";
 import { AlertCircle, Calendar, Check, Clock, Link2, MapPin, Video, X } from "lucide-react";
@@ -177,7 +177,7 @@ export default function RsvpPage({ params }: { params: Promise<{ token: string }
   if (loading) {
     return (
       <div className="min-h-screen bg-ground flex items-center justify-center p-4">
-        <Loader />
+        <OrbitLoader />
       </div>
     );
   }

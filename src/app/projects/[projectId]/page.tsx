@@ -12,7 +12,7 @@ import { subscribeToTasksByProject } from "@/lib/queries/tasks";
 import { subscribeToMembersByOrg } from "@/lib/queries/members";
 import { subscribeToEventsByProject } from "@/lib/queries/events";
 import { OrbitEvent } from "@/types/event";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { TasksTable } from "@/components/dashboard/tasks-table";
 import { ProjectSettingsMenu } from "@/components/projects/project-settings";
 import { ArrowLeft, RefreshCw, Folder, Archive } from "lucide-react";
@@ -98,7 +98,7 @@ export default function ProjectDashboardPage({ params }: { params: Promise<{ pro
   if (authLoading || loading) {
     return (
       <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground">
-        <Loader />
+        <OrbitLoader />
       </div>
     );
   }

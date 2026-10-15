@@ -21,6 +21,56 @@ export default function ChangelogPage() {
   }[] = [
     {
       month: "October 2026",
+      version: "v5.8",
+      entries: [
+        {
+          title: "New Plans",
+          desc: "OrbitOS now has four plans: Free, Standard at R299 a month, Pro at R699 a month, and Custom for studios of 16 or more, priced with our team. The pricing page lists exactly what each plan includes, from members and projects to call size, transcripts and vault storage."
+        },
+        {
+          title: "More Room on Pro",
+          desc: "Pro now holds 3 owners, 15 members and 25 active projects, up from 10 members and 10 projects."
+        },
+        {
+          title: "Plan Limits Now Apply",
+          desc: "Each workspace now works within its plan's limits. Nothing you already have is removed: a limit only stops you adding more, and the message tells you which limit you hit. Owners no longer count against member seats, so Free really is one owner plus two members."
+        },
+        {
+          title: "Upgrading for Now",
+          desc: "We're choosing the best payment gateway for South African studios. Until it's connected, owners can tap Request upgrade in Settings, Billing, or contact sales, and we'll move the workspace across and invoice directly."
+        },
+        {
+          title: "Safer Checkout",
+          desc: "A plan is only switched on once Payfast confirms the full price was paid. Seat limits are checked again when someone accepts an invite, and restoring an archived project counts towards the project limit."
+        },
+        {
+          title: "Drag and Float Calls",
+          desc: "Drag a minimized call anywhere on the screen by its header. New rooms also have a picture-in-picture button, so the call can float over other apps."
+        },
+        {
+          title: "Floating Header",
+          desc: "The app header and the website's navigation now float at the top of the page as a rounded glass bar, with the logo, avatar and selected tab rounded to match."
+        },
+        {
+          title: "Liquid Glass",
+          desc: "Cards, panels, dialogs, menus and the header bend the light behind them in Chrome and other Chromium browsers, on desktop and Android. Safari, Firefox, iPhones and anyone who asks for less transparency keep the frosted panels."
+        },
+        {
+          title: "Messages on Phones",
+          desc: "On a phone, Messages opens on your list of conversations. Pick one to open it full screen, and use the back arrow to return to the list."
+        },
+        {
+          title: "Smoother Scrolling on Phones",
+          desc: "The background now moves with the page without slowing scrolling down, and the planet no longer jumps when the address bar hides. The tab bar no longer slides under the logo, and it scrolls to show the tab you're on."
+        },
+        {
+          title: "Guest Calls Fixed",
+          desc: "Guests joining a call from an invite link saw a blank page and were never asked for their camera and microphone. The call room now loads for them."
+        }
+      ]
+    },
+    {
+      month: "October 2026",
       version: "v5.7",
       entries: [
         {
@@ -378,7 +428,7 @@ export default function ChangelogPage() {
       {/* Changelog Content */}
       <section className="pb-48 px-8 max-w-3xl mx-auto">
         {releases.map((release) => (
-          <ScrollReveal key={release.month}>
+          <ScrollReveal key={`${release.month}-${release.version ?? ""}`}>
             <div className="mb-32">
               <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-dim mb-12 flex items-center gap-4">
                 {release.month}

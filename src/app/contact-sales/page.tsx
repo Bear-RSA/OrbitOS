@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { Eyebrow, OrbitMark } from "@/components/marketing/brand";
+import { SALES_EMAIL, SELF_SERVE_CHECKOUT } from "@/lib/billing/checkout";
 
 export const metadata: Metadata = {
   title: "Contact Sales · OrbitOS",
@@ -28,21 +29,27 @@ export default function ContactSalesPage() {
           Contact Sales
         </h1>
 
-        {/* Placeholder message */}
         <p className="text-sm text-ink-dim leading-relaxed max-w-sm mx-auto mb-4">
-          Our sales team will be in touch.
+          Email us with your workspace name and the plan you want.
         </p>
-        <p className="text-[11px] text-ink-dim leading-relaxed max-w-sm mx-auto mb-12">
+        <p className="text-[11px] text-ink-dim leading-relaxed max-w-sm mx-auto mb-4">
           The Custom plan is for studios of 16 or more. Tell us your team size
           and how you work, and we&apos;ll quote limits and a price that fit.
         </p>
+        {!SELF_SERVE_CHECKOUT && (
+          <p className="text-[11px] text-ink-dim leading-relaxed max-w-sm mx-auto mb-4">
+            We&apos;re choosing the best payment gateway for South African
+            studios. Until it&apos;s connected, Standard and Pro are set up
+            through us too, and we invoice you directly.
+          </p>
+        )}
 
-        {/* Placeholder email */}
-        <div
-          className="inline-block px-6 py-3 rounded-xl text-[12px] text-ink-dim tracking-widest uppercase mb-12 ring-1 ring-line/[0.06]"
+        <a
+          href={`mailto:${SALES_EMAIL}?subject=${encodeURIComponent("OrbitOS plan enquiry")}`}
+          className="inline-block mt-8 px-6 py-3 rounded-xl text-[12px] text-ink tracking-wide mb-12 ring-1 ring-line/[0.06] hover:bg-surface-card transition-colors"
         >
-          sales@orbitos.dev
-        </div>
+          {SALES_EMAIL}
+        </a>
 
         {/* Divider */}
         <div className="w-16 h-px bg-surface-control mx-auto mb-12" />

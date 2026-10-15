@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase/client";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { Users, ArrowRight, ChevronRight, AlertCircle } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import type { User } from "@/types/auth";
@@ -93,7 +94,7 @@ export default function MemberOnboardingPage() {
   if (authLoading || profileLoading) {
     return (
       <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
-        <Loader />
+        <OrbitLoader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
             Preparing Workspace

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { getDashboardData } from "@/lib/services/dashboard-service";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { MailHealthBanner } from "@/components/dashboard/mail-health-banner";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
@@ -101,7 +101,7 @@ export default function DashboardPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6">
-        <Loader />
+        <OrbitLoader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
             Loading your workspace…

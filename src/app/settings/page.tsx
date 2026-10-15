@@ -13,7 +13,7 @@ import {
 
 import { useAuth } from "@/contexts/auth-context";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { BillingPanel } from "@/components/dashboard/billing-panel";
 import { GeneralSection } from "@/components/settings/general-section";
@@ -90,7 +90,7 @@ function isTabId(value: string | null): value is TabId {
 function SettingsLoader() {
   return (
     <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground">
-      <Loader />
+      <OrbitLoader />
       <div className="flex flex-col items-center gap-2">
         <span className="text-[12px] text-ink-dim">
           Loading Settings

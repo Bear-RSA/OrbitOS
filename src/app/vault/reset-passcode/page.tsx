@@ -8,6 +8,7 @@ import { ShieldAlert } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { resetVaultPasscodeAction } from "@/app/actions/vault-passcode";
 import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
@@ -240,7 +241,7 @@ export default function ResetVaultPasscodePage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen w-full items-center justify-center bg-ground">
-          <Loader />
+          <OrbitLoader />
         </div>
       }
     >

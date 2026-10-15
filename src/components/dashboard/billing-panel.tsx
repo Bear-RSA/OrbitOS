@@ -25,6 +25,8 @@ import {
   type OrgSubscription,
 } from "@/types/subscription";
 import { themeColor } from "@/lib/theme/colors";
+import { SELF_SERVE_CHECKOUT, CHECKOUT_PAUSED_NOTE } from "@/lib/billing/checkout";
+import { getUpgradeRequestAction, requestUpgradeAction } from "@/app/actions/billing";
 
 /* ------------------------------------------------------------------ */
 /*  Billing Panel — OWNER-only subscription management                 */
@@ -58,8 +60,31 @@ export function BillingPanel() {
   const [subscription, setSubscription] = useState<Partial<OrgSubscription> | null>(null);
   const [usage, setUsage] = useState<UsageData>({ members: 0, projects: 0, owners: 0 });
   const [loading, setLoading] = useState(true);
+  const [pendingTier, setPendingTier] = useState<SubscriptionTier | null>(null);
+  const [requesting, setRequesting] = useState<SubscriptionTier | null>(null);
+  const [requestError, setRequestError] = useState<{ tier: SubscriptionTier; message: string } | null>(null);
 
   const orgId = user?.orgId;
+
+  // While checkout is paused, show which plan this workspace already asked for.
+  useEffect(() => {
+    if (!orgId || SELF_SERVE_CHECKOUT) return;
+    getUpgradeRequestAction().then((res) => {
+      if (res.success) setPendingTier(res.pendingTier ?? null);
+    });
+  }, [orgId, subscription?.tier]);
+
+  async function requestUpgrade(tier: SubscriptionTier) {
+    setRequesting(tier);
+    setRequestError(null);
+    const res = await requestUpgradeAction(tier);
+    setRequesting(null);
+    if (res.success) {
+      setPendingTier(tier);
+    } else {
+      setRequestError({ tier, message: res.error || "Couldn't send your request. Try again." });
+    }
+  }
 
   // Subscribe to org subscription state
   useEffect(() => {
@@ -325,6 +350,24 @@ export function BillingPanel() {
                         Contact Sales
                         <ArrowUpRight className="w-3 h-3 opacity-60" />
                       </Link>
+                    ) : !SELF_SERVE_CHECKOUT ? (
+                      /* Paid tiers while checkout is paused: ask sales */
+                      pendingTier === def.id ? (
+                        <span className="flex items-center gap-2 text-[12px] text-ink-dim">
+                          <CheckCircle2 className="w-3.5 h-3.5" style={{ color: accent }} />
+                          Requested
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => requestUpgrade(def.id)}
+                          disabled={requesting !== null}
+                          className="flex items-center gap-2 h-9 px-5 rounded-xl text-[12px] transition-all duration-300 bg-surface-control hover:bg-surface-hover text-ink ring-1 ring-line/[0.04] hover:ring-line/[0.08] cursor-pointer disabled:opacity-50 disabled:cursor-default"
+                        >
+                          {requesting === def.id ? "Sending…" : "Request upgrade"}
+                          <ArrowUpRight className="w-3 h-3 opacity-60" />
+                        </button>
+                      )
                     ) : (
                       /* Paid tiers (Standard, Pro) — Payfast POST form */
                       <form method="POST" action={payfastBaseUrl}>
@@ -341,6 +384,14 @@ export function BillingPanel() {
                       </form>
                     )}
                   </div>
+                  {requestError?.tier === def.id && (
+                    <p role="alert" className="mt-3 text-[11px] text-orbit-red">{requestError.message}</p>
+                  )}
+                  {pendingTier === def.id && (
+                    <p className="mt-3 text-[11px] text-ink-dim">
+                      We&apos;ve got your request and will be in touch by email to move you across.
+                    </p>
+                  )}
                 </div>
               );
             })}
@@ -353,8 +404,9 @@ export function BillingPanel() {
         <div className="flex items-center gap-4 px-6 py-4 rounded-xl bg-surface-sunken ring-1 ring-line/[0.03]">
           <Shield className="w-4 h-4 text-ink-faint flex-shrink-0" />
           <p className="text-[11px] font-mono text-ink-dim leading-relaxed">
-            Payments are processed securely via Payfast. All subscriptions are billed monthly in ZAR.
-            Downgrade to Free at any time.
+            {SELF_SERVE_CHECKOUT
+              ? "Payments are processed securely via Payfast. All subscriptions are billed monthly in ZAR. Downgrade to Free at any time."
+              : CHECKOUT_PAUSED_NOTE}
           </p>
         </div>
       </ScrollReveal>

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { GlassSurface } from "@/components/ui/glass-surface";
 
 function ForgotPasswordForm() {
@@ -190,7 +191,7 @@ export default function ForgotPasswordPage() {
   return (
     <Suspense fallback={
       <div className="fixed inset-0 min-h-[100dvh] w-full bg-base flex flex-col items-center justify-center gap-6 z-[100]">
-        <Loader />
+        <OrbitLoader />
       </div>
     }>
       <ForgotPasswordForm />

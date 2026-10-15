@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader } from "@/components/ui/loader";
-import { themeColor } from "@/lib/theme/colors";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 
 /**
  * Full-screen hold shown while auth resolves and the session cookie is minted.
@@ -26,7 +25,7 @@ export function AuthTransition({ label = "Signing you in" }: { label?: string })
       role="status"
       aria-live="polite"
     >
-      <Loader color={themeColor.pink} />
+      <OrbitLoader />
       <div className="flex flex-col items-center gap-3 px-6 text-center">
         <span className="text-[14px] text-ink">{label}…</span>
         <div className="h-px w-24 bg-gradient-to-r from-transparent via-line/10 to-transparent" />

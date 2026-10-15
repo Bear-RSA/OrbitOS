@@ -10,7 +10,7 @@ import type { MemberInvite } from "@/types/member";
 import { signOut as firebaseSignOut } from "@/lib/firebase/auth";
 
 import { Button } from "@/components/ui/button";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, UserPlus } from "lucide-react";
 import { GlassSurface } from "@/components/ui/glass-surface";
@@ -250,7 +250,7 @@ function JoinForm() {
         ) : (
           /* Fallback: Catch All for loading profiles or edge cases */
           <div className="flex flex-col items-center gap-6">
-             <Loader />
+             <OrbitLoader />
              <div className="flex flex-col items-center gap-2">
                <p role="status" className="text-[14px] text-ink-muted">
                  {syncTimedOut ? "This is taking longer than usual" : "Setting up your account…"}
@@ -273,7 +273,7 @@ function JoinForm() {
   if (loading || status === "loading") {
     return (
       <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
-        <Loader />
+        <OrbitLoader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
             Verifying Link
@@ -302,7 +302,7 @@ export default function JoinPage() {
   return (
     <Suspense fallback={
       <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000">
-        <Loader />
+        <OrbitLoader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
             Loading…

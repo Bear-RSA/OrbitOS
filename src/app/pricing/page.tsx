@@ -6,6 +6,7 @@ import { InteractiveCard } from "@/components/ui/interactive-card";
 import { MarketingNav } from "@/components/marketing/marketing-nav";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
 import { Eyebrow } from "@/components/marketing/brand";
+import { SELF_SERVE_CHECKOUT, CHECKOUT_PAUSED_NOTE } from "@/lib/billing/checkout";
 
 export const metadata: Metadata = {
   title: "Pricing · OrbitOS",
@@ -171,6 +172,14 @@ export default function PricingPage() {
             </InteractiveCard>
           </ScrollReveal>
         </div>
+        {!SELF_SERVE_CHECKOUT && (
+          <p className="mt-10 mx-auto max-w-2xl text-center text-sm text-ink-muted font-light leading-relaxed">
+            {CHECKOUT_PAUSED_NOTE}{" "}
+            <Link href="/contact-sales" className="text-ink underline underline-offset-4 decoration-white/20 hover:decoration-white/60 transition-colors">
+              Contact sales
+            </Link>
+          </p>
+        )}
       </section>
 
       {/* Included Capabilities Section */}
@@ -266,7 +275,8 @@ export default function PricingPage() {
               { q: "Can I move between tiers?", a: "Yes. Larger teams can move to higher tiers as they grow, ensuring their operational infrastructure scales with their output." },
               { q: "Is OrbitOS built for agencies only?", a: "While we specialize in digital agencies and studios, any team that requires high-precision project movement can benefit from OrbitOS." },
               { q: "What happens if we reach our project limit?", a: "OrbitOS is designed to grow with you. When your studio reaches its active capacity, you can transition to a higher tier for expanded throughput." },
-              { q: "Is there a long-term commitment?", a: "No. OrbitOS is billed on a month-to-month basis. We believe our operational leverage should earn your trust every single month." }
+              { q: "Is there a long-term commitment?", a: "No. OrbitOS is billed on a month-to-month basis. We believe our operational leverage should earn your trust every single month." },
+              { q: "How do I pay for a plan right now?", a: "We're choosing the best payment gateway for South African studios. Until it's connected, contact sales or request an upgrade from Settings, Billing, and we'll move your workspace across and invoice you directly." }
             ].map((faq, i) => (
               <ScrollReveal key={i} delay={i * 50}>
                 <div>

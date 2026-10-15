@@ -6,7 +6,7 @@ import { ShieldCheck } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { AppHeader } from "@/components/nav/app-header";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { VaultExplorer } from "@/components/vault/vault-explorer";
 import { VaultPasscodeGate } from "@/components/vault/vault-passcode-gate";
@@ -46,7 +46,7 @@ export default function VaultPage() {
   if (loading) {
     return (
       <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground">
-        <Loader />
+        <OrbitLoader />
       </div>
     );
   }

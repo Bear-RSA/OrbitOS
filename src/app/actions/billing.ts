@@ -10,6 +10,8 @@ import {
 } from "@/types/subscription";
 import type { SubscriptionTier } from "@/types/subscription";
 import { Timestamp as AdminTimestamp } from "firebase-admin/firestore";
+import { SALES_EMAIL } from "@/lib/billing/checkout";
+import { sendUpgradeRequest } from "@/lib/email/sendUpgradeRequest";
 
 /* ------------------------------------------------------------------ */
 /*  Billing Server Actions                                             */
@@ -167,5 +169,135 @@ export async function cancelSubscriptionAction(): Promise<{
   } catch (error) {
     console.error("[CancelSubscription] Failed:", error);
     return { success: false, error: "Cancellation failed. Please try again or contact support." };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Upgrade requests (while checkout is paused)                        */
+/*                                                                     */
+/*  One document per org at `upgradeRequests/{orgId}`, written only    */
+/*  here on the Admin SDK (the rules' catch-all denies clients). A     */
+/*  second click for the same plan returns the existing request and    */
+/*  sends no second email, so the button cannot be used to spam sales. */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The plan this workspace is waiting on, if any. A request for the plan
+ * the workspace is already on counts as done, so once sales moves an
+ * org across the panel stops showing it as pending.
+ */
+export async function getUpgradeRequestAction(): Promise<{
+  success: boolean;
+  pendingTier?: SubscriptionTier | null;
+  error?: string;
+}> {
+  try {
+    const uid = await requireServerUid();
+    const auth = await validateOwner(uid);
+    if (!auth.isOwner) {
+      return { success: false, error: auth.error || "Unauthorized." };
+    }
+    const orgId = auth.orgId!;
+
+    const [reqSnap, orgSnap] = await Promise.all([
+      adminDb.collection("upgradeRequests").doc(orgId).get(),
+      adminDb.collection("organizations").doc(orgId).get(),
+    ]);
+    const req = reqSnap.data();
+    const currentTier = orgSnap.data()?.subscription?.tier || DEFAULT_SUBSCRIPTION_TIER;
+
+    const pending =
+      req?.status === "pending" && req.tier !== currentTier && req.tier in TIER_DEFINITIONS
+        ? (req.tier as SubscriptionTier)
+        : null;
+    return { success: true, pendingTier: pending };
+  } catch (error) {
+    console.error("[GetUpgradeRequest] Failed:", error);
+    return { success: false, error: "Couldn't load your upgrade request." };
+  }
+}
+
+/**
+ * Asks sales to move this workspace onto a paid plan. OWNER-only.
+ */
+export async function requestUpgradeAction(tier: SubscriptionTier): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const uid = await requireServerUid();
+    const auth = await validateOwner(uid);
+    if (!auth.isOwner) {
+      return { success: false, error: auth.error || "Only the workspace owner can change the plan." };
+    }
+    const orgId = auth.orgId!;
+
+    const tierDef = Object.prototype.hasOwnProperty.call(TIER_DEFINITIONS, tier)
+      ? TIER_DEFINITIONS[tier]
+      : null;
+    if (!tierDef || tierDef.id === DEFAULT_SUBSCRIPTION_TIER) {
+      return { success: false, error: "Choose a paid plan to request." };
+    }
+
+    const reqRef = adminDb.collection("upgradeRequests").doc(orgId);
+    const [orgSnap, userSnap, reqSnap] = await Promise.all([
+      adminDb.collection("organizations").doc(orgId).get(),
+      adminDb.collection("users").doc(uid).get(),
+      reqRef.get(),
+    ]);
+
+    const currentTier: SubscriptionTier =
+      orgSnap.data()?.subscription?.tier || DEFAULT_SUBSCRIPTION_TIER;
+    if (currentTier === tier) {
+      return { success: false, error: `You're already on ${tierDef.name}.` };
+    }
+
+    const existing = reqSnap.data();
+    if (existing?.status === "pending" && existing.tier === tier) {
+      return { success: true };
+    }
+
+    const orgName: string = orgSnap.data()?.name || "";
+    const ownerName: string = userSnap.data()?.name || "";
+    const ownerEmail: string = userSnap.data()?.email || "";
+
+    await reqRef.set({
+      orgId,
+      orgName,
+      tier,
+      currentTier,
+      status: "pending",
+      requestedBy: uid,
+      ownerName,
+      ownerEmail,
+      requestedAt: AdminTimestamp.now(),
+    });
+
+    // The saved request is the record; the email is a nudge. A failed
+    // send is logged and never turns a saved request into an error.
+    const sent = await sendUpgradeRequest({
+      to: SALES_EMAIL,
+      orgId,
+      orgName,
+      currentPlan: TIER_DEFINITIONS[currentTier]?.name || currentTier,
+      requestedPlan: tierDef.name,
+      owner: { name: ownerName, email: ownerEmail },
+    });
+    if (!sent.success) {
+      console.error("[RequestUpgrade] Email failed:", { orgId, error: sent.error });
+    }
+
+    await logActivity({
+      eventType: "SUBSCRIPTION_UPDATED" as any,
+      orgId,
+      projectId: null,
+      actor: { uid, name: ownerName || "System" },
+      metadata: { previousTier: currentTier, requestedTier: tier, action: "upgrade_requested" },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("[RequestUpgrade] Failed:", error);
+    return { success: false, error: "Couldn't send your request. Try again in a minute." };
   }
 }

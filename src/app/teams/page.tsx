@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { InteractiveCard } from "@/components/ui/interactive-card";
 import { AppHeader } from "@/components/nav/app-header";
@@ -267,7 +267,7 @@ export default function TeamsPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6">
-        <Loader />
+        <OrbitLoader />
       </div>
     );
   }

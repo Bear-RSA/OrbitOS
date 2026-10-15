@@ -121,12 +121,19 @@ async function main() {
   if (!APPLY || !missing.length) return;
 
   const now = admin.firestore.Timestamp.now();
-  for (let i = 0; i < missing.length; i += 400) {
+  for (let i = 0; i < missing.length; i += 200) {
     const batch = db.batch();
-    for (const ref of missing.slice(i, i + 400)) {
+    for (const ref of missing.slice(i, i + 200)) {
       batch.update(ref, {
         subscription: { tier: TIER, status: "active", updatedAt: now },
       });
+      // Close any pending "Request upgrade" from the billing panel, so it
+      // stops showing as Requested. set+merge: most orgs never had one.
+      batch.set(
+        db.collection("upgradeRequests").doc(ref.id),
+        { status: "done", resolvedTier: TIER, resolvedAt: now },
+        { merge: true }
+      );
     }
     await batch.commit();
   }

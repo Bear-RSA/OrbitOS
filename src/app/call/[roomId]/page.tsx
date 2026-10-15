@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { CallLobbyNotice, useLobbyRetry } from "@/components/calls/call-lobby";
 import { CallRoom } from "@/components/calls/call-room";
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { useAuth } from "@/contexts/auth-context";
 import { useCall } from "@/contexts/call-context";
 import { walkInToScheduledCallAction } from "@/app/actions/calls";
@@ -133,7 +133,7 @@ export default function ScheduledCallPage() {
   if (loading || isMember) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-base">
-        <Loader />
+        <OrbitLoader />
         <span className="text-[12px] text-ink-dim">
           Opening the room
         </span>

@@ -14,6 +14,7 @@ import {
   ActionButton,
 } from "@/components/dashboard/dashboard-card";
 import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { getTasksByOrg } from "@/lib/queries/tasks";
 import { getProjectsByOrg } from "@/lib/queries/projects";
@@ -261,7 +262,7 @@ export default function ProfilePage() {
   if (authLoading || dataLoading) {
     return (
       <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground">
-        <Loader />
+        <OrbitLoader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
             Resolving Profile

@@ -1,0 +1,3 @@
+- Pricing has 4 tiers: Free, Standard, Pro, and Custom ("Contact sales"). (2026-10-15, /founder:pricing-strategy)
+- Prices are in ZAR. (2026-10-15, /founder:pricing-strategy)
+- Billing runs through Payfast. (2026-10-15, /founder:pricing-strategy, from the codebase)

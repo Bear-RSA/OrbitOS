@@ -1,4 +1,4 @@
-import { Loader } from "@/components/ui/loader";
+import { OrbitLoader } from "@/components/brand/orbit-loader";
 
 /**
  * Route-transition fallback for the whole app.
@@ -12,7 +12,7 @@ import { Loader } from "@/components/ui/loader";
 export default function Loading() {
   return (
     <div className="animate-in fade-in flex min-h-[100dvh] w-full flex-col items-center justify-center gap-6 bg-ground duration-1000">
-      <Loader />
+      <OrbitLoader />
 
       <div className="flex flex-col items-center gap-2">
         <span className="text-[12px] text-ink-dim">
