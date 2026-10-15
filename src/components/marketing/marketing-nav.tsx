@@ -15,9 +15,9 @@ import { GlassSurface } from "@/components/ui/glass-surface";
  * `div + next/image` block, and the wordmark linked home on some pages but
  * not others. One component, one active-state treatment.
  *
- * It is a translucent material the page scrolls under. The hairline rule
- * it used to carry is gone; a short fade appears at its lower edge once
- * content is actually passing beneath it.
+ * It is a floating glass capsule the page scrolls under, the same shape
+ * as the app header. It lifts with a shadow once content is actually
+ * passing beneath it.
  */
 
 type NavKey = "features" | "methodology" | "pricing" | "changelog";
@@ -39,61 +39,71 @@ export function MarketingNav({ active }: { active?: NavKey }) {
   return (
     <>
       <div ref={sentinelRef} aria-hidden className="absolute left-0 top-0 h-px w-px" />
-      <GlassSurface
-        role="navigation"
-        weight="chrome"
-        tint="base"
-        fallback="material-chrome"
-        data-scrolled={scrolled ? "true" : undefined}
-        className="scroll-edge fixed top-0 z-50 w-full"
-      >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 md:px-8">
-          <Link
-            href="/"
-            aria-label="OrbitOS home"
-            className={cn("rounded-lg", PRESS)}
-          >
-            <OrbitLockup />
-          </Link>
+      {/* The strip only positions the capsule; it lets clicks through to
+          the page on either side of it. */}
+      <div className="pointer-events-none fixed inset-x-0 top-3 z-50 px-4 md:px-6">
+        <GlassSurface
+          role="navigation"
+          weight="chrome"
+          tint="base"
+          fallback="material-chrome"
+          data-scrolled={scrolled ? "true" : undefined}
+          className={cn(
+            /* Half the height, not `rounded-full`: the glass engine reads the
+               computed radius in px and 9999px is no shape. */
+            "pointer-events-auto relative mx-auto h-14 max-w-7xl rounded-[28px] ring-1 ring-inset ring-line/[0.08]",
+            "transition-shadow duration-quick ease-spring",
+            scrolled && "shadow-raised"
+          )}
+        >
+          <div className="flex h-14 items-center justify-between pl-5 pr-2">
+            <Link
+              href="/"
+              aria-label="OrbitOS home"
+              className={cn("rounded-lg", PRESS)}
+            >
+              <OrbitLockup />
+            </Link>
 
-          <div className="hidden items-center gap-8 md:flex">
-            {LINKS.map(({ key, label, href }) => (
+            <div className="hidden items-center gap-8 md:flex">
+              {LINKS.map(({ key, label, href }) => (
+                <Link
+                  key={key}
+                  href={href}
+                  aria-current={active === key ? "page" : undefined}
+                  className={cn(
+                    "relative font-sans tracking-tight transition-colors duration-quick ease-spring",
+                    "after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-left after:bg-ink after:transition-transform after:duration-quick after:ease-spring",
+                    active === key
+                      ? "vibrant after:scale-x-100"
+                      : "font-light text-ink-muted hover:text-ink after:scale-x-0"
+                  )}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-4 sm:gap-6">
               <Link
-                key={key}
-                href={href}
-                aria-current={active === key ? "page" : undefined}
+                href="/login"
+                className={cn("rounded-lg font-sans text-sm font-medium text-ink-muted hover:text-ink", PRESS)}
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
                 className={cn(
-                  "relative font-sans tracking-tight transition-colors duration-quick ease-spring",
-                  "after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-left after:bg-ink after:transition-transform after:duration-quick after:ease-spring",
-                  active === key
-                    ? "vibrant after:scale-x-100"
-                    : "font-light text-ink-muted hover:text-ink after:scale-x-0"
+                  "rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-on-ink hover:bg-white hover:shadow-[0_0_24px_rgba(255,255,255,0.12)]",
+                  PRESS
                 )}
               >
-                {label}
+                Get Started
               </Link>
-            ))}
+            </div>
           </div>
-
-          <div className="flex items-center gap-4 sm:gap-6">
-            <Link
-              href="/login"
-              className={cn("rounded-lg font-sans text-sm font-medium text-ink-muted hover:text-ink", PRESS)}
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/signup"
-              className={cn(
-                "rounded-lg bg-ink px-5 py-2 text-sm font-medium text-on-ink hover:bg-white hover:shadow-[0_0_24px_rgba(255,255,255,0.12)]",
-                PRESS
-              )}
-            >
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </GlassSurface>
+        </GlassSurface>
+      </div>
     </>
   );
 }
