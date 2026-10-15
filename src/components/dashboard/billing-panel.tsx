@@ -87,10 +87,11 @@ export function BillingPanel() {
         const membersSnap = await getDocs(
           query(collection(db, "users"), where("orgId", "==", orgId))
         );
-        const members = membersSnap.size;
         const owners = membersSnap.docs.filter(
           (d) => d.data().role?.toUpperCase() === "OWNER"
         ).length;
+        // Members exclude owners, matching `validateTierQuota`.
+        const members = membersSnap.size - owners;
 
         // Count active projects
         const projectsSnap = await getDocs(
@@ -183,7 +184,7 @@ export function BillingPanel() {
                 <div>
                   <h4 className="text-xl font-light text-ink tracking-tight">{tierDef.name}</h4>
                   <p className="text-[12px] text-ink-dim font-mono mt-1">
-                    {tierDef.priceZAR === 0 ? "FREE" : `R${tierDef.priceZAR}/mo`}
+                    {tierDef.contactSales ? "CUSTOM" : tierDef.priceZAR === 0 ? "FREE" : `R${tierDef.priceZAR}/mo`}
                     <span className="text-ink-dim ml-3">•</span>
                     <span
                       className="ml-3 uppercase tracking-widest text-[11px]"
@@ -295,9 +296,9 @@ export function BillingPanel() {
                   <div className="flex items-center justify-between pt-6 border-t border-line/[0.04]">
                     <div>
                       <span className="text-xl font-light text-ink tracking-tight">
-                        {def.priceZAR === 0 ? "Free" : `R${def.priceZAR}`}
+                        {def.contactSales ? "Custom" : def.priceZAR === 0 ? "Free" : `R${def.priceZAR}`}
                       </span>
-                      {def.priceZAR > 0 && (
+                      {!def.contactSales && def.priceZAR > 0 && (
                         <span className="text-[11px] font-mono text-ink-dim ml-1.5">/mo</span>
                       )}
                     </div>
@@ -315,8 +316,8 @@ export function BillingPanel() {
                         Get Started
                         <ArrowUpRight className="w-3 h-3 opacity-60" />
                       </Link>
-                    ) : def.id === "total_visibility" ? (
-                      /* Growth tier — route to contact sales */
+                    ) : def.contactSales ? (
+                      /* Custom tier — route to contact sales */
                       <Link
                         href="/contact-sales"
                         className="flex items-center gap-2 h-9 px-5 rounded-xl text-[12px] transition-all duration-300 bg-surface-control hover:bg-surface-hover text-ink ring-1 ring-line/[0.04] hover:ring-line/[0.08]"
@@ -325,7 +326,7 @@ export function BillingPanel() {
                         <ArrowUpRight className="w-3 h-3 opacity-60" />
                       </Link>
                     ) : (
-                      /* Paid tiers (Foundational, Studio Core) — Payfast POST form */
+                      /* Paid tiers (Standard, Pro) — Payfast POST form */
                       <form method="POST" action={payfastBaseUrl}>
                         {Object.entries(buildPayfastFields(def.id)).map(([key, value]) => (
                           <input key={key} type="hidden" name={key} value={value} />
@@ -353,7 +354,7 @@ export function BillingPanel() {
           <Shield className="w-4 h-4 text-ink-faint flex-shrink-0" />
           <p className="text-[11px] font-mono text-ink-dim leading-relaxed">
             Payments are processed securely via Payfast. All subscriptions are billed monthly in ZAR.
-            Downgrade to Exploration at any time.
+            Downgrade to Free at any time.
           </p>
         </div>
       </ScrollReveal>

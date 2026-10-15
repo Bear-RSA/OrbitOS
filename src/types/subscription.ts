@@ -162,7 +162,21 @@ export interface TierDefinition {
   name: string;
   description: string;
   limits: TierLimits;
-  priceZAR: number; // Monthly price in ZAR (0 = free)
+  /**
+   * Monthly price in ZAR (0 = free, or priced per agreement when
+   * `contactSales` is set).
+   *
+   * The Payfast webhook refuses any payment below this, so raising it
+   * would also stop renewals from customers still on the old price.
+   * Grandfathering a price rise means accepting the old amount there too.
+   */
+  priceZAR: number;
+  /**
+   * Sold through a sales conversation rather than self-serve checkout.
+   * Never activated by a Payfast payment: the tier is set on the
+   * organization by hand once the agreement is signed.
+   */
+  contactSales: boolean;
 }
 
 /**
@@ -189,31 +203,37 @@ export type QuotaResource = "members" | "projects" | "owners";
 export const TIER_DEFINITIONS: Record<SubscriptionTier, TierDefinition> = {
   exploration: {
     id: "exploration",
-    name: "Exploration",
-    description: "Free — for solo operators testing the waters.",
+    name: "Free",
+    description: "For solo operators trying OrbitOS.",
     limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10, maxGuestsPerEngagement: 0, maxCallParticipants: 2, maxCallGuests: 0, maxVaultStorageMb: 100, maxVaultDocuments: 25, maxTranscriptsPerMonth: 0, maxChatImagesPerMonth: 100 },
     priceZAR: 0,
+    contactSales: false,
   },
   foundational: {
     id: "foundational",
-    name: "Foundational",
-    description: "Starter — for small teams building momentum.",
+    name: "Standard",
+    description: "For small teams building structure.",
     limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30, maxGuestsPerEngagement: 3, maxCallParticipants: 4, maxCallGuests: 0, maxVaultStorageMb: 1024, maxVaultDocuments: 200, maxTranscriptsPerMonth: 20, maxChatImagesPerMonth: 1000 },
     priceZAR: 299,
+    contactSales: false,
   },
   studio_core: {
     id: "studio_core",
-    name: "Studio Core",
-    description: "Team — for growing studios scaling operations.",
-    limits: { maxOwners: 3, maxMembers: 10, maxProjects: 10, maxLiveStreams: 4, maxTaskRemindersPerDay: 75, maxGuestsPerEngagement: 10, maxCallParticipants: 10, maxCallGuests: 5, maxVaultStorageMb: 5120, maxVaultDocuments: 1000, maxTranscriptsPerMonth: 100, maxChatImagesPerMonth: 5000 },
+    name: "Pro",
+    description: "For studios running client delivery.",
+    limits: { maxOwners: 3, maxMembers: 15, maxProjects: 25, maxLiveStreams: 4, maxTaskRemindersPerDay: 75, maxGuestsPerEngagement: 10, maxCallParticipants: 10, maxCallGuests: 5, maxVaultStorageMb: 5120, maxVaultDocuments: 1000, maxTranscriptsPerMonth: 100, maxChatImagesPerMonth: 3000 },
     priceZAR: 699,
+    contactSales: false,
   },
   total_visibility: {
     id: "total_visibility",
-    name: "Total Visibility",
-    description: "Growth — full operational command. No limits.",
+    name: "Custom",
+    description: "For studios of 16 or more, priced with our team.",
+    // -1 here means "set by the agreement, up to the hard ceilings", not
+    // unlimited: every ceiling in lib/*/ceiling still applies on top.
     limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1, maxGuestsPerEngagement: -1, maxCallParticipants: -1, maxCallGuests: -1, maxVaultStorageMb: -1, maxVaultDocuments: -1, maxTranscriptsPerMonth: -1, maxChatImagesPerMonth: -1 },
-    priceZAR: 1499,
+    priceZAR: 0,
+    contactSales: true,
   },
 };
 

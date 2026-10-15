@@ -33,9 +33,8 @@ export default function ContactSalesPage() {
           Our sales team will be in touch.
         </p>
         <p className="text-[11px] text-ink-dim leading-relaxed max-w-sm mx-auto mb-12">
-          The Total Visibility plan is tailored to studios that need deeper
-          operational control. Reach out and we&apos;ll scope a plan that fits
-          your team.
+          The Custom plan is for studios of 16 or more. Tell us your team size
+          and how you work, and we&apos;ll quote limits and a price that fit.
         </p>
 
         {/* Placeholder email */}

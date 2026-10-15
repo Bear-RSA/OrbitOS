@@ -80,10 +80,11 @@ export async function getSubscriptionAction(): Promise<{
       adminDb.collection("projects").where("orgId", "==", orgId).get(),
     ]);
 
-    const members = usersSnap.size;
     const owners = usersSnap.docs.filter(
       (doc) => doc.data().role === "OWNER"
     ).length;
+    // Members exclude owners, matching `validateTierQuota`.
+    const members = usersSnap.size - owners;
     const projects = projectsSnap.docs.filter(
       (doc) => !doc.data().archived
     ).length;
@@ -134,7 +135,7 @@ export async function cancelSubscriptionAction(): Promise<{
     const currentTier = sub?.tier || DEFAULT_SUBSCRIPTION_TIER;
 
     if (currentTier === "exploration") {
-      return { success: false, error: "Already on the Exploration (free) plan." };
+      return { success: false, error: "Already on the Free plan." };
     }
 
     // 3. Downgrade to exploration

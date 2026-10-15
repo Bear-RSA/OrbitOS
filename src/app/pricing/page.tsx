@@ -38,7 +38,7 @@ export default function PricingPage() {
           <ScrollReveal delay={100}>
             <InteractiveCard className="p-8 xl:p-10 h-full flex flex-col border border-white/[0.02]">
               <div className="mb-8">
-                <span className="text-[12px] text-ink-dim">Exploration</span>
+                <span className="text-[12px] text-ink-dim">Solo</span>
                 <h3 className="text-2xl font-light text-ink mt-2 mb-4 tracking-tight">Free</h3>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-light text-ink">R0</span>
@@ -48,12 +48,12 @@ export default function PricingPage() {
               </div>
               <ul className="space-y-4 mb-12 flex-grow">
                 {[
-                  '1 Owner + 2 Members',
-                  'Core Dashboard',
-                  'Task Management',
-                  'Team Invites',
-                  'Basic Visibility',
-                  '3 Active Projects'
+                  '1 owner + 2 members',
+                  '3 active projects',
+                  'Calls with 2 people',
+                  '100 MB vault',
+                  '100 chat images a month',
+                  'Task reminders by email'
                 ].map((feature, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-ink/50 font-light">
                     <CheckCircle2 className="w-4 h-4 text-ink/20" />
@@ -71,8 +71,8 @@ export default function PricingPage() {
           <ScrollReveal delay={200}>
             <InteractiveCard className="p-8 xl:p-10 h-full flex flex-col border border-white/[0.02]">
               <div className="mb-8">
-                <span className="text-[12px] text-ink-dim">Foundational</span>
-                <h3 className="text-2xl font-light text-ink mt-2 mb-4 tracking-tight">Starter</h3>
+                <span className="text-[12px] text-ink-dim">Small teams</span>
+                <h3 className="text-2xl font-light text-ink mt-2 mb-4 tracking-tight">Standard</h3>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-light text-ink">R299</span>
                   <span className="text-ink-dim font-light text-sm">/mo</span>
@@ -81,12 +81,12 @@ export default function PricingPage() {
               </div>
               <ul className="space-y-4 mb-12 flex-grow">
                 {[
-                  '1 Owner + 5 Members',
-                  '5 Active Projects',
-                  'Core visibility layer',
-                  'Simple status signals',
-                  'Email notifications',
-                  'Standard support'
+                  '1 owner + 5 members',
+                  '5 active projects',
+                  'Calls with up to 4 people',
+                  '3 client guests per meeting',
+                  '20 call transcripts a month',
+                  '1 GB vault'
                 ].map((feature, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-ink/70 font-light">
                     <CheckCircle2 className="w-4 h-4 text-ink/30" />
@@ -108,10 +108,10 @@ export default function PricingPage() {
                     edge: the card clips its own corners, so a pinned badge
                     landed on top of the label instead of above the card. */}
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[12px] text-ink">Studio Core</span>
+                  <span className="text-[12px] text-ink">Studios</span>
                   <span className="bg-ink text-on-ink text-[12px] px-3 py-1 rounded-full font-semibold">Recommended</span>
                 </div>
-                <h3 className="text-2xl font-light text-ink mt-2 mb-4 tracking-tight">Team</h3>
+                <h3 className="text-2xl font-light text-ink mt-2 mb-4 tracking-tight">Pro</h3>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-light text-ink">R699</span>
                   <span className="text-ink-dim font-light text-sm">/mo</span>
@@ -120,12 +120,12 @@ export default function PricingPage() {
               </div>
               <ul className="space-y-4 mb-12 flex-grow">
                 {[
-                  '3 Owners + 10 Members',
-                  '10 Active Projects',
-                  'Full operational dashboard',
-                  'Team workload awareness',
-                  'Execution insights',
-                  'Priority support'
+                  '3 owners + 15 members',
+                  '25 active projects',
+                  'Calls with up to 10 people',
+                  '5 outside guests per call',
+                  '100 call transcripts a month',
+                  '5 GB vault'
                 ].map((feature, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-ink font-light">
                     <CheckCircle2 className="w-4 h-4 text-ink/60" />
@@ -143,22 +143,21 @@ export default function PricingPage() {
           <ScrollReveal delay={400}>
             <InteractiveCard className="p-8 xl:p-10 h-full flex flex-col border border-white/[0.02]">
               <div className="mb-8">
-                <span className="text-[12px] text-ink-dim">Total Visibility</span>
-                <h3 className="text-2xl font-light text-ink mt-2 mb-4 tracking-tight">Growth</h3>
+                <span className="text-[12px] text-ink-dim">Larger studios</span>
+                <h3 className="text-2xl font-light text-ink mt-2 mb-4 tracking-tight">Custom</h3>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-light text-ink">R1,499</span>
-                  <span className="text-ink-dim font-light text-sm">/mo</span>
+                  <span className="text-4xl font-light text-ink">Let&apos;s talk</span>
                 </div>
-                <p className="text-ink-muted text-sm mt-4 font-light leading-relaxed">For scaling teams that need deeper control.</p>
+                <p className="text-ink-muted text-sm mt-4 font-light leading-relaxed">For studios of 16 or more. Priced to your team.</p>
               </div>
               <ul className="space-y-4 mb-12 flex-grow">
                 {[
-                  '5 Owners + Unlimited Members',
-                  'Unlimited Active Projects',
-                  'Workload intelligence',
-                  'Sophisticated reporting layer',
-                  'Advanced permissions',
-                  'Premium support'
+                  '5 owners + 16 or more members',
+                  'Project count set to your studio',
+                  'Calls with up to 12 people',
+                  'Vault up to 20 GB',
+                  'Up to 500 call transcripts a month',
+                  'Annual invoice, paid by EFT'
                 ].map((feature, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-ink/70 font-light">
                     <CheckCircle2 className="w-4 h-4 text-ink/30" />
@@ -223,18 +222,24 @@ export default function PricingPage() {
                 <tr className="border-b border-white/[0.04]">
                   <th className="py-6 text-[12px] text-ink-dim">Capabilities</th>
                   <th className="py-6 text-[12px] text-ink-dim w-1/5">Free</th>
-                  <th className="py-6 text-[12px] text-ink-dim w-1/5">Starter</th>
-                  <th className="py-6 text-[12px] text-ink-dim w-1/5 text-ink">Team</th>
-                  <th className="py-6 text-[12px] text-ink-dim w-1/5">Growth</th>
+                  <th className="py-6 text-[12px] text-ink-dim w-1/5">Standard</th>
+                  <th className="py-6 text-[12px] text-ink-dim w-1/5 text-ink">Pro</th>
+                  <th className="py-6 text-[12px] text-ink-dim w-1/5">Custom</th>
                 </tr>
               </thead>
               <tbody className="text-sm font-light text-ink-muted">
                 {[
-                  { label: "Owners Included", values: ["1", "1", "3", "5"] },
-                  { label: "Members Included", values: ["2", "5", "10", "Unlimited"] },
-                  { label: "Active Projects", values: ["3", "5", "10", "Unlimited"] },
-                  { label: "Visibility & Insights", values: ["Basic", "Core", "Full", "Intelligence"] },
-                  { label: "Support Level", values: ["Community", "Standard", "Priority", "Premium"] }
+                  { label: "Price", values: ["R0", "R299/mo", "R699/mo", "Contact sales"] },
+                  { label: "Owners", values: ["1", "1", "3", "5"] },
+                  { label: "Members", values: ["2", "5", "15", "16+"] },
+                  { label: "Active projects", values: ["3", "5", "25", "Agreed"] },
+                  { label: "People per call", values: ["2", "4", "10", "Up to 12"] },
+                  { label: "Outside guests per call", values: ["None", "None", "5", "Agreed"] },
+                  { label: "Client guests per meeting", values: ["None", "3", "10", "Agreed"] },
+                  { label: "Call transcripts a month", values: ["None", "20", "100", "Up to 500"] },
+                  { label: "Vault storage", values: ["100 MB", "1 GB", "5 GB", "Up to 20 GB"] },
+                  { label: "Vault documents", values: ["25", "200", "1,000", "Up to 2,000"] },
+                  { label: "Chat images a month", values: ["100", "1,000", "3,000", "3,000"] }
                 ].map((row, i) => (
                   <tr key={i} className="border-b border-white/[0.04] group hover:bg-white/[0.01] transition-colors">
                     <td className="py-6 text-ink/70">{row.label}</td>

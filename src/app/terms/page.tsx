@@ -64,10 +64,10 @@ export default function TermsPage() {
               <h2 className="text-2xl mb-6">5. Subscription Plans and Billing</h2>
               <p className="mb-4">We offer tiered monthly subscriptions enforced by server-side quota limits:</p>
               <ul className="list-disc list-inside space-y-2 mb-4">
-                <li>Exploration (Free): R0/month</li>
-                <li>Foundational (Starter): R299/month</li>
-                <li>Studio Core (Team): R699/month</li>
-                <li>Total Visibility (Growth): R1,499/month</li>
+                <li>Free: R0/month</li>
+                <li>Standard: R299/month</li>
+                <li>Pro: R699/month</li>
+                <li>Custom: priced per written agreement</li>
               </ul>
               <p>Payments are processed securely via Payfast.</p>
             </section>
@@ -82,7 +82,7 @@ export default function TermsPage() {
             <section>
               <h2 className="text-2xl mb-6">7. Cancellation Policy</h2>
               <p>
-                Workspace Owners may cancel their OrbitOS subscription at any time through the billing panel. Upon cancellation, the workspace will not be immediately downgraded. The organization retains full access to its premium features until the conclusion of the active billing cycle, after which it will revert to the free Exploration tier limits.
+                Workspace Owners may cancel their OrbitOS subscription at any time through the billing panel. Upon cancellation, the workspace will not be immediately downgraded. The organization retains full access to its premium features until the conclusion of the active billing cycle, after which it will revert to the Free plan limits.
               </p>
             </section>
 
