@@ -172,6 +172,15 @@ Both are dry runs unless given `--apply`, and both read `.env.local`.
 | See why an email did not arrive | Resend dashboard, Emails. Owners also get a banner on the dashboard when delivery is failing |
 | A call will not connect | Check the Daily dashboard for usage and the room, then the Vercel function logs |
 
+### Transcript search
+
+Firestore cannot search text, so when a call's transcript ends the server
+writes two extra documents: `transcript_search/{roomId}` (who may read it and
+its word list) and `transcript_text/{roomId}` (the lines). Search reads the
+first for everyone, and the second only for transcripts that matched. Older
+transcripts are indexed five at a time when someone opens `/transcripts`.
+Code: `src/lib/transcripts/search.ts` and `search-index.ts`.
+
 ## 8. Known loose ends
 
 - Self-serve checkout is off while a payment gateway is chosen.

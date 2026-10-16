@@ -48,6 +48,10 @@ export default function ChangelogPage() {
           desc: "On the 1st of each month, owners on paid plans get an email about the month that just ended: what got done, how much landed on time, what is still overdue, which projects slipped and who did the most work. It compares each month with the one before, and can be turned off under Settings, Notifications."
         },
         {
+          title: "Search Your Transcripts",
+          desc: "A new Transcripts page lists every transcribed call you were in. Search across all of them for a word or phrase and see the lines where it was said, then open the transcript to read, download or file it in the Vault. You only ever see calls you were asked to agree to."
+        },
+        {
           title: "Call Transcripts",
           desc: "A call can be transcribed if more than half the people in it agree, so in a two-person call both must say yes. Speech is turned into text in each person's own browser, and a finished transcript can be filed in the Vault."
         }

@@ -26,6 +26,7 @@ import {
   transcriptSessionAllowance,
 } from "@/lib/transcripts/ceiling";
 import { renderTranscript, transcriptFileName } from "@/lib/transcripts/render";
+import { indexTranscript } from "@/lib/transcripts/search-index";
 import {
   transcriptDecisionSchema,
   transcriptFilingSchema,
@@ -595,6 +596,9 @@ export async function endTranscriptAction(input: unknown): Promise<ActionResult>
 
     if (outcome.closed) {
       const record = outcome.closed;
+      // Lines stop being accepted once the status leaves `recording`, so
+      // the index built here is the whole transcript.
+      await indexTranscript(parsed.data.roomId);
       await logActivity({
         eventType: "MEETING_TRANSCRIBED",
         orgId: caller.orgId,

@@ -1,17 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { Download, FileText, Vault, X } from "lucide-react";
 import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { VaultDocumentDialog } from "@/components/vault/vault-document-dialog";
-import { depositToVault } from "@/lib/vault/deposit";
-import {
-  attachTranscriptVaultDocumentAction,
-  getTranscriptAction,
-  type TranscriptPayload,
-} from "@/app/actions/transcripts";
+import { useTranscript } from "@/hooks/use-transcript";
 import { durationLabel } from "@/lib/transcripts/render";
-import type { VaultCategory, VaultClearance } from "@/types/vault";
 import { GlassSurface } from "@/components/ui/glass-surface";
 
 /* ------------------------------------------------------------------ */
@@ -38,80 +32,8 @@ interface TranscriptOutcomeProps {
 }
 
 export function TranscriptOutcome({ roomId, title, onClose }: TranscriptOutcomeProps) {
-  const [transcript, setTranscript] = useState<TranscriptPayload | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { transcript, error, filed, download, file, presetFile } = useTranscript(roomId);
   const [filing, setFiling] = useState(false);
-  const [filed, setFiled] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    getTranscriptAction({ roomId }).then((result) => {
-      if (cancelled) return;
-      if (result.success) {
-        setTranscript(result.transcript);
-        setFiled(Boolean(result.transcript.vaultDocumentId));
-      } else {
-        setError(result.error);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [roomId]);
-
-  /* A blob and a detached anchor, the same way the Vault hands over a
-     signed download. Nothing about this file exists on a server that
-     could serve it directly — it is rendered on request. */
-  const download = useCallback(() => {
-    if (!transcript) return;
-
-    const blob = new Blob([transcript.text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = window.document.createElement("a");
-    anchor.href = url;
-    anchor.download = transcript.fileName;
-    window.document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(url);
-  }, [transcript]);
-
-  const file = useCallback(
-    async (input: {
-      file: File | null;
-      name: string;
-      note: string;
-      category: VaultCategory;
-      clearance: VaultClearance;
-    }) => {
-      if (!input.file) throw new Error("Nothing to file.");
-
-      const { documentId } = await depositToVault({ ...input, file: input.file });
-
-      /* Recorded on the transcript so a second visit to this card knows
-         it already has a home. A failure here leaves a filed document
-         the transcript does not know about, which is untidy rather than
-         wrong — so it does not undo the filing. */
-      await attachTranscriptVaultDocumentAction({ roomId, documentId });
-      setFiled(true);
-    },
-    [roomId]
-  );
-
-  /* Memoized, and it has to be. The dialog reseeds its form whenever the
-     file it was handed changes, so a fresh File on every render would
-     wipe the label the operator is halfway through typing. */
-  const presetFile = useMemo(
-    () =>
-      transcript
-        ? new File([transcript.text], transcript.fileName, {
-            type: "text/plain;charset=utf-8",
-          })
-        : null,
-    [transcript]
-  );
 
   return (
     <>
