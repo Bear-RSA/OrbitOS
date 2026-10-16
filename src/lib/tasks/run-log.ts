@@ -29,7 +29,7 @@ const LOOKBACK_DAYS = 3;
 
 export type RunStatus = "ok" | "degraded" | "failed";
 
-export type ScheduledJob = "due-tomorrow";
+export type ScheduledJob = "due-tomorrow" | "monthly-health";
 
 /** What every scheduled mail is expected to say about itself. */
 export interface RunOutcome {

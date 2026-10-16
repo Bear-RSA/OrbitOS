@@ -76,6 +76,19 @@ export function NotificationsSection({ user }: { user: User }) {
             onChange={(next) => update({ rsvpNotifications: next })}
           />
 
+          {/* Owners only: the report is never sent to anyone else, so a
+              member would be toggling something that does nothing. */}
+          {isOwner && (
+            <ToggleRow
+              id="pref-monthly-report"
+              title="Monthly health report"
+              description="A 09:00 email on the 1st of each month: what got done, what slipped, and how it compares with the month before. Included on paid plans."
+              checked={preferences.monthlyReport}
+              busy={pending === "monthlyReport"}
+              onChange={(next) => update({ monthlyReport: next })}
+            />
+          )}
+
           <ReadonlyRow
             title="Delivered to"
             description="Email always goes to your sign-in address."

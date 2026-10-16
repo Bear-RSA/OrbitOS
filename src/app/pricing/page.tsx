@@ -248,7 +248,8 @@ export default function PricingPage() {
                   { label: "Call transcripts a month", values: ["None", "20", "100", "Up to 500"] },
                   { label: "Vault storage", values: ["100 MB", "1 GB", "5 GB", "Up to 20 GB"] },
                   { label: "Vault documents", values: ["25", "200", "1,000", "Up to 2,000"] },
-                  { label: "Chat images a month", values: ["100", "1,000", "3,000", "3,000"] }
+                  { label: "Chat images a month", values: ["100", "1,000", "3,000", "3,000"] },
+                  { label: "Monthly health report", values: ["None", "1 owner", "All 3 owners", "All 5 owners"] }
                 ].map((row, i) => (
                   <tr key={i} className="border-b border-white/[0.04] group hover:bg-white/[0.01] transition-colors">
                     <td className="py-6 text-ink/70">{row.label}</td>

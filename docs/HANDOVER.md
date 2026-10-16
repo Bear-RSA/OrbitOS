@@ -96,11 +96,24 @@ firebase deploy --only firestore:rules,firestore:indexes
 This needs the Firebase CLI (`npm install -g firebase-tools`) and
 `firebase login`. The project is set in `.firebaserc`.
 
-### Scheduled job
+### Scheduled jobs
 
-`vercel.json` runs `/api/reminders/tasks` every day at 07:00 UTC, which is
-09:00 SAST. It emails each assignee the tasks due tomorrow. Vercel sends
-`CRON_SECRET` with the request, and the route refuses anything without it.
+`vercel.json` runs two jobs. Vercel sends `CRON_SECRET` with each request,
+and the routes refuse anything without it.
+
+| Route | When | What it does |
+|---|---|---|
+| `/api/reminders/tasks` | Every day, 07:00 UTC (09:00 SAST) | Emails each assignee the tasks due tomorrow |
+| `/api/reports/monthly` | The 1st of each month, 07:00 UTC (09:00 SAST) | Emails owners on paid plans the health report for the month that ended. Each report is stored at `health_reports/{orgId}-{YYYY-MM}`, which also stops a second send |
+
+Both take `?dryRun=1` to show what a run would send without sending it, and
+`?asOf=YYYY-MM-DD` with it to test another day. For example:
+
+```
+curl -H "Authorization: Bearer <CRON_SECRET>" "https://www.orbit-os.co.za/api/reports/monthly?dryRun=1"
+```
+
+A failed run shows as a banner on owners' dashboards.
 
 ### Webhooks registered in other dashboards
 

@@ -33,6 +33,12 @@ export interface UserPreferences {
   /** Email when someone RSVPs to an engagement you organize. */
   rsvpNotifications: boolean;
   /**
+   * The health report emailed to owners on the 1st of each month. Read
+   * only for owners; a member's value is ignored because they are never
+   * sent one.
+   */
+  monthlyReport: boolean;
+  /**
    * A short chime when a message arrives from a colleague.
    *
    * On by default, because a message you are not told about is a message
@@ -92,6 +98,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   presence: "auto",
   taskReminders: true,
   rsvpNotifications: true,
+  monthlyReport: true,
   messageSounds: true,
   callSounds: true,
   desktopNotifications: true,

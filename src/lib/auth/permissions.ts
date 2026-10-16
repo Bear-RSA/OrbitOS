@@ -184,6 +184,20 @@ export async function resolveTaskReminderLimit(orgId: string): Promise<number> {
 }
 
 /**
+ * Owners this organization's monthly health report may go to.
+ *
+ * Same contract as the reminder limit: -1 means "the tier does not narrow
+ * it", and the hard ceiling in `lib/reports/monthly-run` governs regardless.
+ */
+export async function resolveMonthlyReportLimit(orgId: string): Promise<number> {
+  if (!GUARDRAILS_ENABLED) return -1;
+  if (!orgId) return -1;
+
+  const tier = await resolveOrgTier(orgId);
+  return TIER_DEFINITIONS[tier].limits.maxMonthlyReportRecipients;
+}
+
+/**
  * Off-platform guests one engagement may carry for this organization.
  *
  * Same contract as the two above: -1 means "the tier does not narrow the

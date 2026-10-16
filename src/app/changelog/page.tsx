@@ -44,6 +44,10 @@ export default function ChangelogPage() {
           desc: "Vault documents are now Internal, visible to the workspace, or Restricted, visible only to owners and the person who uploaded them. Restricted files never reach anyone else's browser. The Vault locks again every time the page loads."
         },
         {
+          title: "Monthly Health Report",
+          desc: "On the 1st of each month, owners on paid plans get an email about the month that just ended: what got done, how much landed on time, what is still overdue, which projects slipped and who did the most work. It compares each month with the one before, and can be turned off under Settings, Notifications."
+        },
+        {
           title: "Call Transcripts",
           desc: "A call can be transcribed if more than half the people in it agree, so in a two-person call both must say yes. Speech is turned into text in each person's own browser, and a finished transcript can be filed in the Vault."
         }

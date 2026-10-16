@@ -52,6 +52,7 @@ interface DeliveryFailure {
 /** The job names are internal; these are what they are to a reader. */
 const JOB_LABELS: Record<string, string> = {
   "due-tomorrow": "Due-tomorrow reminders",
+  "monthly-health": "Monthly health report",
 };
 
 /**
