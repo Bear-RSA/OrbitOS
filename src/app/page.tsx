@@ -115,7 +115,7 @@ export default function LandingPage() {
             </div>
             
             {/* Data Stream */}
-            <div className="md:col-span-12bg-surface-control rounded-[24px] p-10 flex flex-col justify-end overflow-hidden relative shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-white/[0.02]">
+            <div className="md:col-span-12 bg-surface-control rounded-[24px] p-10 flex flex-col justify-end overflow-hidden relative shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-white/[0.02]">
               <div className="absolute inset-0 opacity-[0.03] flex flex-col justify-between py-6">
                 {[...Array(16)].map((_, i) => (
                    <div key={i} className="w-full h-px bg-gradient-to-r from-transparent via-ink to-transparent"></div>
