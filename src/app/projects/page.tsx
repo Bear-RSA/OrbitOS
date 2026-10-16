@@ -4,25 +4,34 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { getProjectsByOrg } from "@/lib/queries/projects";
+import { getTasksByOrg } from "@/lib/queries/tasks";
+import { calculateProjectHealth } from "@/lib/utils/dashboard-logic";
+import { ProjectHealth } from "@/types/dashboard";
 import { AppHeader } from "@/components/nav/app-header";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { WorkspaceProjects } from "@/components/dashboard/workspace-projects";
-import { Project } from "@/types/project";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import Link from "next/link";
 
 export default function ProjectsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectsHealth, setProjectsHealth] = useState<ProjectHealth[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadProjects = useCallback(async () => {
     if (!user?.orgId) return;
     try {
-      const data = await getProjectsByOrg(user.orgId);
-      setProjects(data);
+      // Graded from real tasks, the same way the dashboard grades them.
+      // These cards used to print "Healthy 100%" for every project.
+      const [projects, tasks] = await Promise.all([
+        getProjectsByOrg(user.orgId),
+        getTasksByOrg(user.orgId),
+      ]);
+      setProjectsHealth(
+        projects.map(p => calculateProjectHealth(p, tasks.filter(t => t.projectId === p.id)))
+      );
     } catch (err) {
       console.error("Operational breach: Failed to fetch projects", err);
     } finally {
@@ -64,7 +73,7 @@ export default function ProjectsPage() {
       </div>
 
       <WorkspaceProjects
-        projects={projects}
+        projectsHealth={projectsHealth}
         orgId={user?.orgId}
         userId={user?.id}
         isOwner={user?.role === "OWNER"}

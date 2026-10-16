@@ -18,6 +18,22 @@ import {
 } from "date-fns";
 import { dueDateKeyOf, parseDateKey } from "@/lib/utils/dates";
 
+export type HealthTone = "healthy" | "watch" | "critical";
+
+/**
+ * The verdict printed beside a health score.
+ *
+ * One function for every surface that shows the score. The project page
+ * graded the number while the dashboard and projects cards printed the
+ * overdue-based `status` (or a hardcoded "Healthy"), so one project read
+ * "63% Watch" inside and "Healthy" outside.
+ */
+export function healthVerdict(score: number): { tone: HealthTone; label: string } {
+  if (score >= 75) return { tone: "healthy", label: "Healthy" };
+  if (score >= 40) return { tone: "watch", label: "Watch" };
+  return { tone: "critical", label: "At Risk" };
+}
+
 /**
  * Project Health Processor
  * Centralized business logic for determining project risk/health.

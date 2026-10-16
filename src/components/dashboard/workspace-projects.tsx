@@ -13,10 +13,10 @@ import { updateProjectPriorityAction, unarchiveProjectAction } from "@/app/actio
 import { getArchivedProjectsByOrg } from "@/lib/queries/projects";
 import { ActionButton, MeterBar } from "./dashboard-card";
 import { themeColor } from "@/lib/theme/colors";
+import { healthVerdict } from "@/lib/utils/dashboard-logic";
 
 interface WorkspaceProjectsProps {
-  projectsHealth?: ProjectHealth[];
-  projects?: Project[];
+  projectsHealth: ProjectHealth[];
   orgId?: string;
   userId?: string;
   isOwner?: boolean;
@@ -42,7 +42,6 @@ interface WorkspaceProjectsProps {
 
 export function WorkspaceProjects({
   projectsHealth,
-  projects,
   orgId,
   userId,
   isOwner,
@@ -57,25 +56,16 @@ export function WorkspaceProjects({
   const [reordering, setReordering] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Handle both owner view (projectsHealth) and member view (projects array)
-  // Reconstruct a unified interface for rendering
-  const initialDisplayProjects = projectsHealth 
-    ? projectsHealth.map(ph => ({
-        id: ph.project.id,
-        name: ph.project.name,
-        description: ph.project.description || "Project execution environment.",
-        status: ph.status === "healthy" ? "Healthy" : ph.status === "watch" ? "Watch" : "At Risk",
-        progress: ph.healthScore, // Aligning with project pulse health score
-        priority: ph.project.priority,
-      }))
-    : projects?.map(p => ({
-        id: p.id,
-        name: p.name,
-        description: p.description || "Project execution environment.",
-        status: "Healthy",
-        progress: 100,
-        priority: p.priority,
-      })) || [];
+  // The label comes from the same grader as the project page's pulse panel,
+  // so a card and the project it opens always print the same verdict.
+  const initialDisplayProjects = projectsHealth.map(ph => ({
+    id: ph.project.id,
+    name: ph.project.name,
+    description: ph.project.description || "Project execution environment.",
+    status: healthVerdict(ph.healthScore).label,
+    progress: ph.healthScore,
+    priority: ph.project.priority,
+  }));
 
   const [orderedProjects, setOrderedProjects] = useState(initialDisplayProjects);
 

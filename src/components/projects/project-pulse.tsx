@@ -10,6 +10,7 @@ import { Member } from "@/types/member";
 import { CardEyebrow } from "@/components/dashboard/dashboard-card";
 import { ScrambleText } from "@/components/ui/scramble-text";
 import { roleLabel } from "@/lib/members/rank";
+import { healthVerdict } from "@/lib/utils/dashboard-logic";
 
 interface PulseData {
   healthScore: number;
@@ -19,16 +20,16 @@ interface PulseData {
   earliestDue: string | null;
 }
 
-/**
- * Health verdict derived from the score.
- *
- * This used to render a hardcoded "NOMINAL" chip regardless of the number
- * beside it, so a project at 12% health still reported itself as healthy.
- */
-function healthVerdict(score: number) {
-  if (score >= 75) return { label: "Nominal", text: "text-orbit-green", fill: "bg-orbit-green" };
-  if (score >= 40) return { label: "Watch", text: "text-orbit-amber", fill: "bg-orbit-amber" };
-  return { label: "Critical", text: "text-orbit-red", fill: "bg-orbit-red" };
+const TONE_CLASSES = {
+  healthy: { text: "text-orbit-green", fill: "bg-orbit-green" },
+  watch: { text: "text-orbit-amber", fill: "bg-orbit-amber" },
+  critical: { text: "text-orbit-red", fill: "bg-orbit-red" },
+} as const;
+
+/** Verdict from the shared grader, so the project cards agree with this panel. */
+function verdictFor(score: number) {
+  const { tone, label } = healthVerdict(score);
+  return { label, ...TONE_CLASSES[tone] };
 }
 
 /** Panel header: icon + eyebrow, one treatment for all four cells. */
@@ -92,7 +93,7 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
 
   const barLength = 20;
   const filledCount = Math.round((pulse.healthScore / 100) * barLength);
-  const verdict = healthVerdict(pulse.healthScore);
+  const verdict = verdictFor(pulse.healthScore);
 
   // Horizon Calculation
   let horizonDisplay = "No horizon";
