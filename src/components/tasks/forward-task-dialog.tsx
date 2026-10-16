@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils/classnames";
 import { TOWN_HALL_NAME, type Conversation } from "@/types/message";
 import type { Member } from "@/types/member";
 import type { Task } from "@/types/task";
+import { compareRoles, roleLabel } from "@/lib/members/rank";
 
 /* ------------------------------------------------------------------ */
 /*  Forward a task                                                     */
@@ -156,7 +157,7 @@ export function ForwardTaskDialog({
       .filter((m) => m.id !== viewer.id && !withDm.has(m.id))
       .filter((m) => !needle || m.name.toLowerCase().includes(needle))
       .sort((a, b) => {
-        if (a.role !== b.role) return a.role === "OWNER" ? -1 : 1;
+        if (a.role !== b.role) return compareRoles(a.role, b.role);
         return a.name.localeCompare(b.name);
       });
   }, [members, threads, viewer.id, needle]);
@@ -371,7 +372,7 @@ export function ForwardTaskDialog({
                           conversation.type === "group"
                             ? `${conversation.participantIds?.length ?? 0} people`
                             : partner?.roleDescriptor ||
-                              (partner?.role === "OWNER" ? "Owner" : "Member")
+                              roleLabel(partner?.role)
                         }
                       />
                     );

@@ -1,12 +1,9 @@
 "use client";
 
-import { FolderPlus } from "lucide-react";
-
 import type { OrgTree as OrgTreeData } from "@/lib/members/hierarchy";
-import type { Department } from "@/types/department";
 import type { Member } from "@/types/member";
 
-import { OrgTreeConnectors } from "./org-tree-connectors";
+import { OrgTreeConnectors, type Branch } from "./org-tree-connectors";
 import { OrgTreeDepartmentCard, OrgTreeUnassignedBucket } from "./org-tree-department-card";
 import { OrgTreeOwnerCard, OWNER_CARD_WIDTH } from "./org-tree-owner-card";
 import type { TreeNodeContext } from "./org-tree-person";
@@ -14,16 +11,21 @@ import type { TreeNodeContext } from "./org-tree-person";
 /* ------------------------------------------------------------------ */
 /*  Org tree: the Tree view on /teams                                  */
 /*                                                                     */
-/*    owner   owner   owner     one row of equals                      */
-/*        ●   branch node                                              */
-/*    ╭───┼────────╮                                                   */
-/*    dept  dept   not in a department                                 */
+/*    owner        owner        owner      one row of equals           */
+/*      ●            ●                     a node under each owner     */
+/*    ╭─┴──╮         │                                                 */
+/*    dept dept     dept                   each under its own owner    */
 /*                                                                     */
-/*  Desktop: the diagram is a fixed width (260px columns, 48px        */
-/*  gutters) centred on the page, and its wrapper scrolls sideways     */
-/*  below that width rather than squeezing the cards illegible. Fixed  */
-/*  columns are also what let the connectors be drawn by arithmetic.   */
-/*  Phones get one stacked column instead.                             */
+/*  Which Owner a department hangs from is wired by Internal           */
+/*  Management on the chart in Admin Tools; this view only draws it.   */
+/*  Columns are ordered by owner, so each owner's departments sit      */
+/*  beneath them. Unwired departments and the "not in a department"    */
+/*  bucket come last, hanging from one shared node.                    */
+/*                                                                     */
+/*  Desktop: a fixed-width diagram (260px columns, 48px gutters)       */
+/*  centred on the page, scrolling sideways rather than squeezing the  */
+/*  cards. Fixed widths are what let the connectors be drawn by        */
+/*  arithmetic. Phones get one stacked column instead.                 */
 /*                                                                     */
 /*  Presentational. The page owns the data and every action.           */
 /* ------------------------------------------------------------------ */
@@ -35,85 +37,90 @@ const BAND_HEIGHT = 112;
 
 interface OrgTreeProps extends TreeNodeContext {
   tree: OrgTreeData<Member>;
-  /** Set only on the account holder's own screen. */
-  accountHolderId: string | null;
-  /** The viewer is an owner: departments and members can be managed. */
-  canManageDepartments: boolean;
-  /** The viewer is the account holder: other owners can be managed too. */
+  /** The viewer's own id when they are in Internal Management, otherwise null. */
+  selfInInternalManagement: string | null;
+  /** The viewer can open the Manage dialog on people in departments. */
+  canManagePeople: boolean;
+  /** The viewer is in Internal Management: owners open the Manage dialog too. */
   canManageOwners: boolean;
+  /** The Owner a department is wired under in Admin Tools, or null. */
+  ownerOf: (departmentId: string) => string | null;
   /** 0 when the plan does not include departments. */
   departmentLimit: number;
-  onCreateDepartment: () => void;
-  onRenameDepartment: (department: Department) => void;
-  onDeleteDepartment: (department: Department) => void;
 }
 
-function NoDepartments({
-  canCreate,
-  available,
-  onCreate,
-}: {
-  canCreate: boolean;
-  available: boolean;
-  onCreate: () => void;
-}) {
+function NoDepartments({ available }: { available: boolean }) {
   return (
     <div className="flex w-full flex-col gap-4 rounded-3xl bg-surface-sunken/50 p-6 ring-1 ring-inset ring-line/[0.06] sm:w-[260px]">
       <h3 className="text-[15px] font-light tracking-tight text-ink">No departments yet</h3>
       <p className="text-[13px] font-light leading-relaxed text-ink-muted">
-        {!available
-          ? "Departments are on the Pro and Custom plans."
-          : canCreate
-            ? "Group people under a lead, and the tree fills in beneath you."
-            : "An owner can group people into departments."}
+        {available
+          ? "Internal Management builds departments in Admin Tools, and the tree fills in here."
+          : "Departments are on the Pro and Custom plans."}
       </p>
-      {canCreate && available && (
-        <button
-          type="button"
-          onClick={onCreate}
-          className="flex h-10 items-center justify-center gap-2.5 rounded-lg bg-surface-control px-5 text-[13px] font-bold tracking-tight text-ink transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-        >
-          <FolderPlus className="h-4 w-4" />
-          New department
-        </button>
-      )}
     </div>
   );
 }
 
 export function OrgTree({
   tree,
-  accountHolderId,
-  canManageDepartments,
+  selfInInternalManagement,
+  canManagePeople,
   canManageOwners,
+  ownerOf,
   departmentLimit,
-  onCreateDepartment,
-  onRenameDepartment,
-  onDeleteDepartment,
   ...context
 }: OrgTreeProps) {
-  const hasDepartments = tree.departments.length > 0;
+  const ownerIndex = new Map(tree.owners.map((o, i) => [o.id, i]));
+
+  // Each owner's departments together, in owner order; unwired ones last.
+  const departments = [...tree.departments].sort((a, b) => {
+    const ia = ownerIndex.get(ownerOf(a.department.id) ?? "") ?? Infinity;
+    const ib = ownerIndex.get(ownerOf(b.department.id) ?? "") ?? Infinity;
+    return ia - ib || a.department.name.localeCompare(b.department.name);
+  });
+
+  const hasDepartments = departments.length > 0;
   const hasUnassigned = tree.unassigned.length > 0;
 
-  // One column per department, or the invitation to make one, then the
-  // unassigned bucket when somebody is in it.
-  const columnCount = (hasDepartments ? tree.departments.length : 1) + (hasUnassigned ? 1 : 0);
+  // One column per department, or the empty state, then the bucket.
+  const columnCount = (hasDepartments ? departments.length : 1) + (hasUnassigned ? 1 : 0);
   const columnsWidth = columnCount * COLUMN + (columnCount - 1) * GUTTER;
   const ownersWidth =
     tree.owners.length * OWNER_CARD_WIDTH + Math.max(0, tree.owners.length - 1) * OWNER_GAP;
   const width = Math.max(columnsWidth, ownersWidth);
 
-  const offset = (width - columnsWidth) / 2;
-  const columnCenters = Array.from(
-    { length: columnCount },
-    (_, i) => offset + i * (COLUMN + GUTTER) + COLUMN / 2
-  );
+  const columnsStart = (width - columnsWidth) / 2;
+  const columnCenter = (i: number) => columnsStart + i * (COLUMN + GUTTER) + COLUMN / 2;
+  const ownersStart = (width - ownersWidth) / 2;
+  const ownerCenter = (i: number) => ownersStart + i * (OWNER_CARD_WIDTH + OWNER_GAP) + OWNER_CARD_WIDTH / 2;
+
+  // Who each column hangs from: its owner's card, or the shared node.
+  const branches: Branch[] = [];
+  const byOwner = new Map<number, number[]>();
+  const shared: { x: number; dashed: boolean }[] = [];
+
+  if (hasDepartments) {
+    departments.forEach((branch, i) => {
+      const owner = ownerIndex.get(ownerOf(branch.department.id) ?? "");
+      if (owner === undefined) shared.push({ x: columnCenter(i), dashed: false });
+      else byOwner.set(owner, [...(byOwner.get(owner) ?? []), columnCenter(i)]);
+    });
+  } else {
+    shared.push({ x: columnCenter(0), dashed: false });
+  }
+  if (hasUnassigned) shared.push({ x: columnCenter(columnCount - 1), dashed: true });
+
+  for (const [owner, toX] of byOwner) branches.push({ fromX: ownerCenter(owner), toX });
+  if (shared.length > 0) {
+    branches.push({ fromX: width / 2, toX: shared.map((s) => s.x), dashed: shared.map((s) => s.dashed) });
+  }
 
   const owners = tree.owners.map((owner) => (
     <OrgTreeOwnerCard
       key={owner.id}
       member={owner}
-      isAccountHolder={owner.id === accountHolderId}
+      inInternalManagement={owner.id === selfInInternalManagement}
       context={context}
       manageable={canManageOwners && owner.id !== context.viewerId}
     />
@@ -122,22 +129,16 @@ export function OrgTree({
   const columns = (
     <>
       {hasDepartments ? (
-        tree.departments.map((branch) => (
+        departments.map((branch) => (
           <OrgTreeDepartmentCard
             key={branch.department.id}
             branch={branch}
             context={context}
-            canManage={canManageDepartments}
-            onRename={onRenameDepartment}
-            onDelete={onDeleteDepartment}
+            canManagePeople={canManagePeople}
           />
         ))
       ) : (
-        <NoDepartments
-          canCreate={canManageDepartments}
-          available={departmentLimit > 0}
-          onCreate={onCreateDepartment}
-        />
+        <NoDepartments available={departmentLimit > 0} />
       )}
 
       {hasUnassigned && (
@@ -145,7 +146,7 @@ export function OrgTree({
           members={tree.unassigned}
           title={hasDepartments ? "Not in a department" : "Members"}
           context={context}
-          canManage={canManageDepartments}
+          canManage={canManagePeople}
         />
       )}
     </>
@@ -153,9 +154,7 @@ export function OrgTree({
 
   return (
     <>
-      {/* Phones: the diagram is wider than the screen and opened scrolled
-          to its left edge, with the owner card cut off on the right. One
-          full-width column instead, owners over their departments. */}
+      {/* Phones: one full-width column, owners over their departments. */}
       <div className="flex flex-col pb-6 sm:hidden">
         <div className="flex flex-col gap-3">{owners}</div>
         <div aria-hidden className="mx-auto my-2 flex flex-col items-center">
@@ -173,12 +172,7 @@ export function OrgTree({
             {owners}
           </div>
 
-          <OrgTreeConnectors
-            width={width}
-            height={BAND_HEIGHT}
-            columnCenters={columnCenters}
-            dashedFrom={hasUnassigned ? columnCount - 1 : -1}
-          />
+          <OrgTreeConnectors width={width} height={BAND_HEIGHT} branches={branches} />
 
           {/* Columns */}
           <div className="flex items-start justify-center" style={{ gap: GUTTER }}>

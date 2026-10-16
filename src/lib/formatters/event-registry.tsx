@@ -7,6 +7,7 @@ import {
   Trash2,
   UserPlus,
   UserMinus,
+  UserCheck,
   Radio,
   Pencil,
   Ban,
@@ -29,6 +30,7 @@ import {
   Captions,
   Lock,
   MailQuestion,
+  Award,
   Crown,
   type LucideIcon,
 } from "lucide-react";
@@ -449,6 +451,24 @@ export const EVENT_REGISTRY: Record<ActivityEventType, EventDescriptor> = {
       </>
     ),
   },
+  RANK_CHANGED: {
+    label: "RNK",
+    icon: Award,
+    tone: "info",
+    describe: (m) => (
+      <>
+        {m.rank === "MEMBER" ? "moved " : "made "}
+        <Target val={m.memberName} />
+        {m.rank === "MEMBER"
+          ? " back to Member"
+          : m.rank === "EXECUTIVE"
+            ? " an Executive"
+            : m.rank === "TEAM_LEAD"
+              ? " a Team Lead"
+              : " a Manager"}
+      </>
+    ),
+  },
   INVITE_DISPATCHED: {
     label: "INV",
     icon: Send,
@@ -465,6 +485,12 @@ export const EVENT_REGISTRY: Record<ActivityEventType, EventDescriptor> = {
         ) : null}
       </>
     ),
+  },
+  MEMBER_JOINED: {
+    label: "NEW",
+    icon: UserCheck,
+    tone: "info",
+    describe: () => <>joined the workspace</>,
   },
   MEMBER_REMOVED: {
     label: "RVK",

@@ -380,10 +380,10 @@ export interface ConversationSummary extends Conversation {
 }
 
 /**
- * One change to a message, as the account holder's history view gets it.
+ * One change to a message, as Internal Management's history view gets it.
  *
- * Kept in `conversations/{id}/history`, which no client can read — the
- * account holder reaches it through `getMessageHistoryAction`, and
+ * Kept in `conversations/{id}/history`, which no client can read.
+ * Internal Management reaches it through `getMessageHistoryAction`, and
  * everyone else never learns it exists. That is what lets an edit carry
  * no "edited" mark and a delete leave no placeholder: the record of the
  * change lives somewhere only one person can open.

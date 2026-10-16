@@ -1,10 +1,7 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
-
 import { InteractiveCard } from "@/components/ui/interactive-card";
 import type { DepartmentBranch } from "@/lib/members/hierarchy";
-import type { Department } from "@/types/department";
 import type { Member } from "@/types/member";
 
 import { CountPill, Eyebrow, PersonRow, type TreeNodeContext } from "./org-tree-person";
@@ -12,28 +9,30 @@ import { CountPill, Eyebrow, PersonRow, type TreeNodeContext } from "./org-tree-
 /* ------------------------------------------------------------------ */
 /*  Department card and the unassigned bucket                          */
 /*                                                                     */
+/*  Top down: the Executive and Manager over the department when       */
+/*  Internal Management has named them, then the lead, then members.   */
 /*  The lead row keeps its height when there is no lead, so cards      */
-/*  standing side by side line their member lists up.                  */
+/*  standing side by side line their member lists up. Departments are  */
+/*  created and changed in Admin Tools, so there are no edit buttons.  */
 /* ------------------------------------------------------------------ */
-
-const iconButton =
-  "relative z-10 rounded-lg p-2 text-ink-faint transition-colors focus-visible:outline-none focus-visible:ring-2";
 
 export function OrgTreeDepartmentCard({
   branch,
   context,
-  canManage,
-  onRename,
-  onDelete,
+  canManagePeople,
 }: {
   branch: DepartmentBranch<Member>;
   context: TreeNodeContext;
-  canManage: boolean;
-  onRename: (department: Department) => void;
-  onDelete: (department: Department) => void;
+  /** Open the Manage dialog on the people in it. */
+  canManagePeople: boolean;
 }) {
-  const { department, lead, members } = branch;
+  const { department, lead } = branch;
+  const executive = department.executiveId ? context.personById(department.executiveId) : undefined;
+  const manager = department.managerId ? context.personById(department.managerId) : undefined;
+  // Someone named over the department shows there, not again in the list.
+  const members = branch.members.filter((m) => m.id !== executive?.id && m.id !== manager?.id);
   const count = members.length + (lead ? 1 : 0);
+  const manageable = (member: Member) => canManagePeople && member.id !== context.viewerId;
 
   return (
     <InteractiveCard surface="fog" className="w-full rounded-3xl p-6 sm:w-[260px]">
@@ -44,32 +43,30 @@ export function OrgTreeDepartmentCard({
             {department.name}
           </h3>
           <CountPill value={count} label={`${count} ${count === 1 ? "person" : "people"}`} />
-          {canManage && (
-            <div className="-mr-2 flex items-center">
-              <button
-                type="button"
-                onClick={() => onRename(department)}
-                aria-label={`Rename ${department.name}`}
-                className={`${iconButton} hover:bg-surface-hover hover:text-ink focus-visible:ring-focus`}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete(department)}
-                aria-label={`Delete ${department.name}`}
-                className={`${iconButton} hover:bg-orbit-red/10 hover:text-orbit-red focus-visible:ring-orbit-red/50`}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
         </div>
 
+        {/* Over the department, when Internal Management has named them. */}
+        {(executive || manager) && (
+          <div className="space-y-2">
+            {executive && (
+              <div className="space-y-1">
+                <Eyebrow className="text-orbit-violet">Executive</Eyebrow>
+                <PersonRow member={executive} tier="member" context={context} manageable={manageable(executive)} />
+              </div>
+            )}
+            {manager && (
+              <div className="space-y-1">
+                <Eyebrow className="text-orbit-blue">Manager</Eyebrow>
+                <PersonRow member={manager} tier="member" context={context} manageable={manageable(manager)} />
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="space-y-2">
-          <Eyebrow>{department.leadTitle}</Eyebrow>
+          <Eyebrow className="text-orbit-teal">{department.leadTitle}</Eyebrow>
           {lead ? (
-            <PersonRow member={lead} tier="lead" context={context} manageable={canManage} />
+            <PersonRow member={lead} tier="lead" context={context} manageable={manageable(lead)} />
           ) : (
             <div className="flex items-center gap-3 p-1">
               <span className="h-10 w-10 shrink-0 rounded-full border border-dashed border-line/[0.2]" aria-hidden />
@@ -88,7 +85,7 @@ export function OrgTreeDepartmentCard({
                 member={member}
                 tier="member"
                 context={context}
-                manageable={canManage}
+                manageable={manageable(member)}
               />
             ))}
           </div>

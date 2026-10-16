@@ -7,6 +7,7 @@ import { clearSession, onAuthChange, syncSession } from "@/lib/firebase/auth";
 import { isPublicPath } from "@/lib/auth/public-routes";
 import { db } from "@/lib/firebase/client";
 import { User } from "@/types/auth";
+import { normaliseRole } from "@/lib/members/rank";
 
 /**
  * Whether the httpOnly `__session` cookie backing this client session has
@@ -128,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (thisGeneration !== generation) return;
           if (snap.exists()) {
             const data = snap.data();
-            const normalizedRole = data?.role?.toUpperCase() === "OWNER" ? "OWNER" : "MEMBER";
+            const normalizedRole = normaliseRole(data?.role);
             setUser({ id: snap.id, ...data, role: normalizedRole } as User);
           } else {
             setUser(null);

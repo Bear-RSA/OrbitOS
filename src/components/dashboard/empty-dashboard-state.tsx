@@ -9,10 +9,9 @@ interface EmptyDashboardStateProps {
   type: "no_projects" | "no_tasks" | "no_team" | "no_assigned_work";
   isOwner: boolean;
   onCreateProject?: () => void;
-  onInviteMember?: () => void;
 }
 
-export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMember }: EmptyDashboardStateProps) {
+export function EmptyDashboardState({ type, isOwner, onCreateProject }: EmptyDashboardStateProps) {
   const configs = {
     /* One empty state for the whole org. The copy used to split on role
        and tell a member to sit and wait, even though creating a project
@@ -53,17 +52,10 @@ export function EmptyDashboardState({ type, isOwner, onCreateProject, onInviteMe
     },
     no_team: {
       title: "It's just you so far",
-      description: "Invite your team to see who's working on what and who has room for more.",
+      // No invite button: invites are sent from Admin Tools only.
+      description: "Your team shows up here once Internal Management invites them from Admin Tools.",
       icon: UserPlus,
-      action: isOwner ? (
-        <button 
-          onClick={onInviteMember}
-          className="group inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-surface-hover px-8 text-[12px] text-ink ring-1 ring-inset ring-line/[0.1] transition-[transform,background-color,box-shadow] duration-quick ease-spring hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.97] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent] hover:bg-surface-active hover:ring-line/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-        >
-          <UserPlus className="h-4 w-4 text-ink-muted transition-colors group-hover:text-ink" aria-hidden />
-          Invite team
-        </button>
-      ) : null
+      action: null
     }
   };
 

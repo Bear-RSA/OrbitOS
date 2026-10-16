@@ -12,6 +12,8 @@ import { presenceTone, resolvePresence } from "@/lib/members/presence";
 import { groupCallLive } from "@/lib/calls/access";
 import { useNow } from "@/hooks/use-now";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { useMemberRank } from "@/hooks/use-member-rank";
+import { RANK_LABEL, type Rank } from "@/lib/members/rank";
 import { cn } from "@/lib/utils/classnames";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import { TOWN_HALL_NAME, type Conversation } from "@/types/message";
@@ -109,6 +111,7 @@ export function ConversationList({
   );
 
   const directory = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+  const rankOf = useMemberRank();
 
   const needle = search.trim().toLowerCase();
 
@@ -260,7 +263,7 @@ export function ConversationList({
                       selected={selectedId === conversation.id}
                       unread={conversationUnread(conversation, viewerUid)}
                       onClick={() => onSelect(conversation.id)}
-                      avatar={{ name: title, photoURL: partner?.photoURL }}
+                      avatar={{ name: title, photoURL: partner?.photoURL, rank: rankOf(partner) }}
                       presence={toneFor(partner)}
                       onAvatarClick={
                         partnerUid ? () => onOpenProfile(partnerUid) : undefined
@@ -305,14 +308,14 @@ export function ConversationList({
                   title={member.name}
                   preview={
                     member.roleDescriptor ||
-                    (member.role === "OWNER" ? "Owner" : "Member")
+                    RANK_LABEL[rankOf(member)]
                   }
                   selected={false}
                   unread={false}
                   busy={opening === member.id}
                   onClick={() => onOpenDm(member.id)}
                   onAvatarClick={() => onOpenProfile(member.id)}
-                  avatar={{ name: member.name, photoURL: member.photoURL }}
+                  avatar={{ name: member.name, photoURL: member.photoURL, rank: rankOf(member) }}
                   presence={toneFor(member)}
                 />
               ))}
@@ -363,7 +366,7 @@ interface ConversationRowProps {
   icon?: React.ReactNode;
   /** Drawn in place of the icon tile, when the row has a picture of its own. */
   picture?: React.ReactNode;
-  avatar?: { name: string; photoURL?: string | null };
+  avatar?: { name: string; photoURL?: string | null; rank?: Rank };
   /** Tailwind background class for the presence dot, or null for none. */
   presence?: string | null;
   /** A call is running in this thread right now. */
@@ -409,7 +412,7 @@ function ConversationRow({
   const face = (
     <span className="relative block">
       {avatar ? (
-        <UserAvatar size="sm" name={avatar.name} photoURL={avatar.photoURL} />
+        <UserAvatar size="sm" name={avatar.name} photoURL={avatar.photoURL} rank={avatar.rank} />
       ) : picture ? (
         picture
       ) : (

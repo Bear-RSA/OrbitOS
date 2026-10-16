@@ -26,6 +26,7 @@ import { conversationTitle } from "@/lib/messages/summary";
 import { TOWN_HALL_NAME, type Conversation } from "@/types/message";
 import type { Member } from "@/types/member";
 import { cn } from "@/lib/utils/classnames";
+import { compareRoles, roleLabel } from "@/lib/members/rank";
 
 /* ------------------------------------------------------------------ */
 /*  Messages                                                           */
@@ -221,7 +222,7 @@ function MessagesScreen() {
       members
         .filter((m) => m.id !== uid)
         .sort((a, b) => {
-          if (a.role !== b.role) return a.role === "OWNER" ? -1 : 1;
+          if (a.role !== b.role) return compareRoles(a.role, b.role);
           return a.name.localeCompare(b.name);
         }),
     [members, uid]
@@ -255,7 +256,7 @@ function MessagesScreen() {
 
     const partnerUid = conversation.participantIds?.find((id) => id !== user.id);
     const partner = partnerUid ? directory.get(partnerUid) : undefined;
-    return partner?.roleDescriptor || (partner?.role === "OWNER" ? "Owner" : "Member");
+    return partner?.roleDescriptor || roleLabel(partner?.role);
   };
 
   /* Viewport minus the h-10 site credit below it and its home-indicator pad. */

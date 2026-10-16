@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -9,23 +10,21 @@ import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { InteractiveCard } from "@/components/ui/interactive-card";
 import { AppHeader } from "@/components/nav/app-header";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { AddMemberDialog } from "@/components/members/add-member-dialog";
 import { MemberProfile } from "@/components/members/member-profile";
 import { DestructiveActionModal } from "@/components/ui/destructive-action-modal";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { OrgTree } from "@/components/teams/org-tree";
+import { buildOrgTree } from "@/lib/members/hierarchy";
+import { getOrgChartAction, type OrgChart } from "@/app/actions/org-chart";
 import { WORKLOAD_STATUS } from "@/components/teams/workload-status";
 import { ManageMemberDialog } from "@/components/members/manage-member-dialog";
-import { DepartmentDialog } from "@/components/members/department-dialog";
 import { removeMemberAction } from "@/app/actions/members/removeMemberAction";
 import {
-  deleteDepartmentAction,
   getTeamStructureAction,
   type TeamStructure,
 } from "@/app/actions/team-structure";
-import { buildOrgTree } from "@/lib/members/hierarchy";
+import { RANK_LABEL, rankLevel, rankOf } from "@/lib/members/rank";
+import type { Member } from "@/types/member";
 import { memberDisplayName } from "@/lib/members/profile";
-import type { Department } from "@/types/department";
 import { getOrCreateDmAction } from "@/app/actions/messages";
 import { getMembersByOrg } from "@/lib/queries/members";
 import { getTasksByOrg } from "@/lib/queries/tasks";
@@ -35,12 +34,10 @@ import { MemberWorkload } from "@/types/dashboard";
 import { Task } from "@/types/task";
 import { Project } from "@/types/project";
 import {
-  UserPlus,
   UserMinus,
   RefreshCw,
   X,
   AlertTriangle,
-  FolderPlus,
   LayoutGrid,
   Network,
 } from "lucide-react";
@@ -129,7 +126,6 @@ export default function TeamsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [revokeMode, setRevokeMode] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
 
@@ -143,37 +139,49 @@ export default function TeamsPage() {
   // the tree is missing.
   const [structure, setStructure] = useState<TeamStructure | null>(null);
   const [manageUid, setManageUid] = useState<string | null>(null);
-  const [departmentDialog, setDepartmentDialog] = useState<{ open: boolean; department: Department | null }>({
-    open: false,
-    department: null,
-  });
-  const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
-  const [deletingDepartment, setDeletingDepartment] = useState(false);
+  // The org chart Internal Management wires up in Admin Tools.
+  const [chart, setChart] = useState<OrgChart | null>(null);
 
   // Two ways to look at the same roster. Not persisted: Tree is the default.
   const [view, setView] = useState<TeamView>("tree");
 
-  // Seat controls are owner-only; createInviteAction and removeMemberAction
-  // both re-check the role server-side, so this is presentation, not the
-  // security boundary.
+  // Removing members is for owners; inviting happens only in Admin Tools.
+  // removeMemberAction re-checks on the server, so this is presentation,
+  // not the security boundary.
   const isOwner = user?.role === "OWNER";
-  const isAccountHolder = structure?.viewerIsAccountHolder ?? false;
+  // Only ever about the viewer: the page is never told who else is in it.
+  const isInternalManagement = structure?.viewerIsInternalManagement ?? false;
+  // Their own roster card says so, and only on their own screen.
+  const selfInInternalManagement = isInternalManagement ? (user?.id ?? null) : null;
+  // Managers name leads and Executives give ranks, so they open the Manage
+  // dialog too. It shows each viewer only what they can change, and every
+  // action re-checks on the server.
+  const canManagePeople =
+    isOwner || (structure?.viewerCanAppointLeads ?? false) || (structure?.assignableRanks.length ?? 0) > 0;
+
+  const leadIds = useMemo(
+    () => new Set(structure?.departments.flatMap((d) => (d.leadId ? [d.leadId] : [])) ?? []),
+    [structure]
+  );
+  const rankOfMember = useCallback((member: Member) => rankOf(member.role, leadIds.has(member.id)), [leadIds]);
 
   const load = useCallback(async () => {
     if (!user?.orgId) return;
 
     try {
-      const [orgTasks, orgProjects, members, structureResult] = await Promise.all([
+      const [orgTasks, orgProjects, members, structureResult, chartResult] = await Promise.all([
         getTasksByOrg(user.orgId),
         getProjectsByOrg(user.orgId),
         getMembersByOrg(user.orgId),
         getTeamStructureAction(),
+        getOrgChartAction(),
       ]);
 
       setTasks(orgTasks);
       setProjects(orgProjects);
       setWorkloads(members.map((m) => calculateMemberWorkload(m, orgTasks)));
       setStructure(structureResult.success ? structureResult.structure : null);
+      setChart(chartResult.success ? chartResult.chart : null);
       setLoadError(false);
     } catch (err) {
       console.error("[Teams] Failed to resolve the roster:", err);
@@ -192,6 +200,22 @@ export default function TeamsPage() {
     }
     load();
   }, [authLoading, user, router, load]);
+
+  /* The structure is changed in Admin Tools, usually in another tab.
+     Coming back to this one picks up whatever Internal Management did
+     there, rather than showing the tree as it was when Teams first opened. */
+  useEffect(() => {
+    if (!user?.orgId) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [user?.orgId, load]);
 
   const refresh = useCallback(() => {
     setRefreshing(true);
@@ -213,10 +237,10 @@ export default function TeamsPage() {
           focus: focusFor(workload.member.id, tasks, projectNames),
         }))
         .sort((a, b) => {
-          // Owner first, then whoever is carrying the most pressure.
-          const aOwner = a.workload.member.role === "OWNER";
-          const bOwner = b.workload.member.role === "OWNER";
-          if (aOwner !== bOwner) return aOwner ? -1 : 1;
+          // Highest rank first, then whoever is carrying the most pressure.
+          const byRank =
+            rankLevel(rankOfMember(b.workload.member)) - rankLevel(rankOfMember(a.workload.member));
+          if (byRank !== 0) return byRank;
 
           const byPressure =
             statusConfig[a.workload.status].weight - statusConfig[b.workload.status].weight;
@@ -224,7 +248,7 @@ export default function TeamsPage() {
 
           return (a.workload.member.name || "").localeCompare(b.workload.member.name || "");
         }),
-    [workloads, tasks, projectNames]
+    [workloads, tasks, projectNames, rankOfMember]
   );
 
   const totals = useMemo(() => {
@@ -244,16 +268,9 @@ export default function TeamsPage() {
     };
   }, [workloads, tasks]);
 
-  const tree = useMemo(
-    () =>
-      structure
-        ? buildOrgTree(
-            workloads.map((w) => w.member),
-            structure.departments,
-            structure.accountHolderId
-          )
-        : null,
-    [workloads, structure]
+  const memberById = useMemo(
+    () => new Map(workloads.map((w) => [w.member.id, w.member])),
+    [workloads]
   );
 
   const statusByUid = useMemo(
@@ -261,34 +278,44 @@ export default function TeamsPage() {
     [workloads]
   );
 
-  const deleteDepartment = async () => {
-    if (!departmentToDelete) return;
-    setDeletingDepartment(true);
-    try {
-      const result = await deleteDepartmentAction({ departmentId: departmentToDelete.id });
-      if (result.success) {
-        setDepartmentToDelete(null);
-        await load();
-      } else {
-        setDepartmentToDelete(null);
-        setMessageError(result.error);
-      }
-    } catch (err) {
-      console.error("[Teams] Could not delete the department:", err);
-      setDepartmentToDelete(null);
-      setMessageError("Could not delete the department. Try again.");
-    } finally {
-      setDeletingDepartment(false);
-    }
-  };
+  /* The Owner each department is wired under on the Admin Tools chart. */
+  const ownerOf = useCallback(
+    (departmentId: string) => {
+      const parent = chart?.parents[`d:${departmentId}`];
+      return parent?.startsWith("p:") ? parent.slice(2) : null;
+    },
+    [chart]
+  );
+
+  /* The old tree, fed by the chart: departments carry the Executive and
+     Manager Internal Management named, already checked against their
+     current rank, and anyone named over a department isn't listed again
+     as "not in a department". */
+  const tree = useMemo(() => {
+    if (!structure) return null;
+    const slots = new Map(chart?.departments.map((d) => [d.id, d]) ?? []);
+    const departments = structure.departments.map((d) => ({
+      ...d,
+      executiveId: slots.get(d.id)?.executiveId ?? null,
+      managerId: slots.get(d.id)?.managerId ?? null,
+    }));
+    const named = new Set(departments.flatMap((d) => [d.executiveId, d.managerId].filter(Boolean)));
+
+    const built = buildOrgTree(
+      workloads.map((w) => w.member),
+      departments,
+      selfInInternalManagement
+    );
+    return { ...built, unassigned: built.unassigned.filter((m) => !named.has(m.id)) };
+  }, [workloads, structure, chart, selfInInternalManagement]);
 
   const removableCount = useMemo(
     () =>
       workloads.filter(
-        // Owners are removable only by the account holder.
-        (w) => (w.member.role !== "OWNER" || isAccountHolder) && w.member.id !== user?.id
+        // Owners are removable only by Internal Management.
+        (w) => (w.member.role !== "OWNER" || isInternalManagement) && w.member.id !== user?.id
       ).length,
-    [workloads, user?.id, isAccountHolder]
+    [workloads, user?.id, isInternalManagement]
   );
 
   /**
@@ -406,10 +433,11 @@ export default function TeamsPage() {
           </div>
 
           {/* Seat management sits under the roster status line, where it
-              reads as an action on the team rather than page chrome. */}
+              reads as an action on the team rather than page chrome.
+              Owners remove members. Invites are sent from Admin Tools only. */}
           {isOwner && (
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              {removableCount > 0 && view === "roster" && (
+              {isOwner && removableCount > 0 && view === "roster" && (
                 <button
                   onClick={() => setRevokeMode(!revokeMode)}
                   className={cn(
@@ -423,14 +451,6 @@ export default function TeamsPage() {
                   {revokeMode ? "Done" : "Remove members"}
                 </button>
               )}
-
-              <button
-                onClick={() => setAddMemberOpen(true)}
-                className="gap-2.5 flex items-center justify-center bg-ink hover:bg-ink-strong hover:-translate-y-[2px] text-on-ink shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06),0_8px_24px_rgb(var(--scrim)_/_0.3)] hover:shadow-[0_4px_20px_rgb(var(--ink-strong)_/_0.12),0_12px_32px_rgb(var(--scrim)_/_0.4)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-0 rounded-lg px-6 h-10 text-[13px] font-bold tracking-tight focus:outline-none ring-0"
-              >
-                <UserPlus className="w-4 h-4" />
-                Invite Member
-              </button>
             </div>
           )}
         </div>
@@ -490,9 +510,17 @@ export default function TeamsPage() {
         >
           <p className="text-[15px] font-medium text-ink">Your team will be in here</p>
           <p className="max-w-prose text-[13px] font-light leading-relaxed text-ink-muted">
-            {isOwner
-              ? "Use Invite Member above. People show up here, with their workload, as soon as they join."
-              : "People show up here, with their workload, once they're invited."}
+            {isInternalManagement ? (
+              <>
+                Invite people from{" "}
+                <Link href="/admin" className="text-ink underline underline-offset-4 hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded-sm">
+                  Admin Tools
+                </Link>
+                . They show up here, with their workload, as soon as they join.
+              </>
+            ) : (
+              "People show up here, with their workload, once Internal Management invites them."
+            )}
           </p>
         </GlassSurface>
       ) : (
@@ -508,22 +536,30 @@ export default function TeamsPage() {
         >
           <p className="text-[15px] font-medium text-ink">Your team will be in here</p>
           <p className="max-w-prose text-[13px] font-light leading-relaxed text-ink-muted">
-            {isOwner
-              ? "Use Invite Member above. People show up here, with their workload, as soon as they join."
-              : "People show up here, with their workload, once they're invited."}
+            {isInternalManagement ? (
+              <>
+                Invite people from{" "}
+                <Link href="/admin" className="text-ink underline underline-offset-4 hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded-sm">
+                  Admin Tools
+                </Link>
+                . They show up here, with their workload, as soon as they join.
+              </>
+            ) : (
+              "People show up here, with their workload, once Internal Management invites them."
+            )}
           </p>
         </GlassSurface>
           )}
-          {/* Tree: who answers to whom */}
-          {view === "tree" && !(tree && structure) && (
+          {/* Tree: who answers to whom, as wired in Admin Tools */}
+          {view === "tree" && !structure && (
             <p className="mb-32 text-[13px] font-light text-ink-muted">
               Could not load the team structure. The roster is unaffected. Try again in a moment.
             </p>
           )}
-          {view === "tree" && tree && structure && (
+          {view === "tree" && structure && (
             <ScrollReveal>
               <section className="mb-32" aria-labelledby="structure-heading">
-                <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
+                <div className="mb-8 flex flex-wrap items-end justify-between gap-6">
                   <div>
                     <h2 id="structure-heading" className="text-2xl font-light tracking-tight text-ink">
                       Structure
@@ -536,39 +572,29 @@ export default function TeamsPage() {
                       {structure.departments.length === 1 ? "department" : "departments"}
                     </p>
                   </div>
-
-                  {isOwner &&
-                    structure.departments.length > 0 &&
-                    (structure.departmentLimit > 0 ? (
-                      <button
-                        onClick={() => setDepartmentDialog({ open: true, department: null })}
-                        disabled={structure.departments.length >= structure.departmentLimit}
-                        className="flex h-10 items-center justify-center gap-2.5 rounded-lg bg-surface-control px-5 text-[13px] font-bold tracking-tight text-ink transition-colors hover:bg-surface-hover disabled:opacity-50"
-                      >
-                        <FolderPlus className="h-4 w-4" />
-                        New department
-                      </button>
-                    ) : (
-                      <p className="max-w-xs text-[12px] leading-relaxed text-ink-dim">
-                        Departments are on the Pro and Custom plans.
-                      </p>
-                    ))}
+                  {isInternalManagement && (
+                    <p className="max-w-xs text-[12px] leading-relaxed text-ink-dim">
+                      Change the structure in Admin Tools.
+                    </p>
+                  )}
                 </div>
 
-                <OrgTree
-                  tree={tree}
-                  viewerId={user.id}
-                  statusOf={(uid) => statusByUid.get(uid)}
-                  canManageDepartments={isOwner}
-                  accountHolderId={structure.accountHolderId}
-                  canManageOwners={isAccountHolder}
-                  departmentLimit={structure.departmentLimit}
-                  onOpenProfile={setProfileUid}
-                  onManage={setManageUid}
-                  onCreateDepartment={() => setDepartmentDialog({ open: true, department: null })}
-                  onRenameDepartment={(department) => setDepartmentDialog({ open: true, department })}
-                  onDeleteDepartment={setDepartmentToDelete}
-                />
+                {tree && (
+                  <OrgTree
+                    tree={tree}
+                    viewerId={user.id}
+                    statusOf={(uid) => statusByUid.get(uid)}
+                    rankOf={rankOfMember}
+                    personById={(uid) => memberById.get(uid)}
+                    selfInInternalManagement={selfInInternalManagement}
+                    canManagePeople={canManagePeople}
+                    canManageOwners={isInternalManagement}
+                    ownerOf={ownerOf}
+                    departmentLimit={structure.departmentLimit}
+                    onOpenProfile={setProfileUid}
+                    onManage={setManageUid}
+                  />
+                )}
               </section>
             </ScrollReveal>
           )}
@@ -582,7 +608,7 @@ export default function TeamsPage() {
                   const config = statusConfig[workload.status];
                   const isSelf = member.id === user.id;
                   const removable =
-                    revokeMode && !isSelf && (member.role !== "OWNER" || isAccountHolder);
+                    revokeMode && !isSelf && (member.role !== "OWNER" || isInternalManagement);
                   const { activeTasks, overdueTasks, blockedTasks, completedThisWeek } = workload.metrics;
 
                   return (
@@ -606,7 +632,9 @@ export default function TeamsPage() {
                               photoURL={member.photoURL}
                               name={member.name}
                               size="lg"
-                              className="ring-1 ring-line/[0.08]"
+                              rank={rankOfMember(member)}
+                              uid={member.id}
+                              className={rankOfMember(member) === "MEMBER" ? "ring-1 ring-line/[0.08]" : undefined}
                             />
                             <span
                               className={cn(
@@ -623,11 +651,9 @@ export default function TeamsPage() {
                             </h3>
                             <p className="mt-0.5 truncate text-[12px] text-ink-dim">
                               {member.roleDescriptor ||
-                                (member.id === structure?.accountHolderId
-                                  ? "Account holder"
-                                  : member.role === "OWNER"
-                                    ? "Owner"
-                                    : "Member")}
+                                (member.id === selfInInternalManagement
+                                  ? "Internal Management"
+                                  : RANK_LABEL[rankOfMember(member)])}
                               {isSelf && " · You"}
                             </p>
                           </div>
@@ -750,14 +776,19 @@ export default function TeamsPage() {
       )}
 
       {/* Modals */}
+      {structure && canManagePeople && (
+        <ManageMemberDialog
+          member={manageUid ? (workloads.find((w) => w.member.id === manageUid)?.member ?? null) : null}
+          structure={structure}
+          viewerRole={user.role}
+          viewerIsInternalManagement={isInternalManagement}
+          onClose={() => setManageUid(null)}
+          onChanged={load}
+          onRemove={setMemberToRemove}
+        />
+      )}
       {isOwner && (
         <>
-          <AddMemberDialog
-            open={addMemberOpen}
-            onOpenChange={setAddMemberOpen}
-            orgId={user.orgId || ""}
-            invitedBy={user.id}
-          />
           <DestructiveActionModal
             isOpen={!!memberToRemove}
             onClose={() => setMemberToRemove(null)}
@@ -767,32 +798,6 @@ export default function TeamsPage() {
             description="They lose access to this workspace straight away."
             warningMessage="Their tasks stay, but they're unassigned from them. You can invite them back later."
             actionLabel="Remove member"
-          />
-          {structure && (
-            <ManageMemberDialog
-              member={manageUid ? (workloads.find((w) => w.member.id === manageUid)?.member ?? null) : null}
-              structure={structure}
-              viewerIsAccountHolder={isAccountHolder}
-              onClose={() => setManageUid(null)}
-              onChanged={load}
-              onRemove={setMemberToRemove}
-            />
-          )}
-          <DepartmentDialog
-            open={departmentDialog.open}
-            department={departmentDialog.department}
-            onClose={() => setDepartmentDialog({ open: false, department: null })}
-            onSaved={load}
-          />
-          <ConfirmDialog
-            open={!!departmentToDelete}
-            onOpenChange={(open) => !open && setDepartmentToDelete(null)}
-            title={`Delete ${departmentToDelete?.name ?? "department"}?`}
-            description="The people in it stay in the workspace and move to Not in a department."
-            confirmText="Delete department"
-            variant="destructive"
-            loading={deletingDepartment}
-            onConfirm={deleteDepartment}
           />
         </>
       )}

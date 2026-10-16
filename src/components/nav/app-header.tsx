@@ -5,6 +5,7 @@ import { ReactNode, useRef } from "react";
 import { OrbitMark } from "@/components/brand/orbit-mark";
 import { AppNav } from "@/components/nav/app-nav";
 import { ProfileLink } from "@/components/nav/profile-link";
+import { SettingsLink } from "@/components/nav/settings-link";
 import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useScrolledPast } from "@/hooks/use-scrolled-past";
@@ -33,7 +34,7 @@ import { GlassSurface } from "@/components/ui/glass-surface";
 /* ------------------------------------------------------------------ */
 
 /**
- * Settings is reachable from the avatar, so it does not earn a nav slot.
+ * Settings has its own gear beside the avatar, so it does not earn a nav slot.
  * Dashboard stays: the logo also goes there, but nobody should have to
  * know that to find home. Pass `hide` explicitly (or `[]`) to opt out.
  */
@@ -131,6 +132,7 @@ export function AppHeader({ user, hide = DEFAULT_HIDE, actions, variant = "shell
 
         <div data-chrome-part="side" className="flex shrink-0 items-center justify-end gap-2">
           {actions}
+          <SettingsLink />
           <ProfileLink photoURL={user.photoURL} name={user.name} className="ml-1" />
         </div>
       </div>

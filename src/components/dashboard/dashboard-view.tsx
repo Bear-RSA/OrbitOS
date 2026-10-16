@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown } from "lucide-react";
+import { Ban, CalendarClock, ChevronDown } from "lucide-react";
 import { DashboardData } from "@/types/dashboard";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { useTodayEvents } from "@/hooks/use-today-events";
@@ -12,7 +12,10 @@ import { PersonalMetricsCard } from "./personal-metrics-card";
 import { UrgencyBucketsCard } from "./urgency-buckets-card";
 import { WorkspaceProjects } from "./workspace-projects";
 import { TodayScheduleCard } from "./today-schedule-card";
-import { TeamPresenceCard } from "./team-presence-card";
+import { TeamLoadCard } from "./team-load-card";
+import { NeedsYouCard } from "./needs-you-card";
+import { ProjectsAtRiskCard } from "./projects-at-risk-card";
+import { RecentActivityCard } from "./recent-activity-card";
 import { BlockedWorkCard } from "./blocked-work-card";
 import { WeeklyProgressCard } from "./weekly-progress-card";
 import { RecentWinsCard } from "./recent-wins-card";
@@ -95,6 +98,11 @@ export function DashboardView({
   // (which needs it to tell whether someone is currently in a room).
   const { events, failed: eventsFailed } = useTodayEvents(orgId, refreshKey);
 
+  // Same test the schedule card applies, so the fold and the card agree.
+  const hasBlocked = data.blockedWork.length > 0;
+  const hasToday = (events ?? []).some((event) => event.status !== "cancelled");
+  const secondRowCount = 1 + (hasBlocked ? 1 : 0) + (hasToday ? 1 : 0);
+
   // The overview is reference, not triage, so it starts folded. Whoever
   // opens it keeps it open: remembered per browser, never required.
   const [overviewOpen, setOverviewOpen] = useState(false);
@@ -155,26 +163,86 @@ export function DashboardView({
         />
       </ScrollReveal>
 
-      {/* Right Now Layer — what is stuck, what the day holds, and who is
-          actually here to deal with it. Schedule and presence read the
-          same engagement window. */}
+      {/* Workspace numbers — the whole org's percentages, always in view.
+          They used to sit folded inside the Overview, so the dashboard
+          opened with no sense of how the workspace as a whole was doing. */}
+      <ScrollReveal delay={40}>
+        <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
+          <SystemHealthCard tasks={tasks} hasProject={hasProject} />
+          <WorkspaceAttentionCard metrics={data.metrics} hasProject={hasProject} />
+        </div>
+      </ScrollReveal>
+
+      {/* Right Now Layer — what is waiting on you, who has room to take
+          more, and which projects are slipping. These three replaced
+          Blocked / Today / Presence as the lead row: on a normal day two
+          of those were empty and the third read "0 online", so the row
+          meant to say what needs attention mostly said nothing. */}
       <ScrollReveal delay={60}>
         <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-3">
-          <BlockedWorkCard items={data.blockedWork} />
-          <TodayScheduleCard
-            events={events}
-            failed={eventsFailed}
+          <NeedsYouCard
             uid={userId}
+            orgId={orgId}
             members={members}
-            scope="org"
-            clock24h={clock24h}
+            buckets={data.myUrgencyBuckets}
+            projects={data.projects}
           />
-          <TeamPresenceCard
+          <TeamLoadCard
             members={members}
+            tasks={tasks}
             events={events}
             viewerId={userId}
             clock24h={clock24h}
           />
+          <ProjectsAtRiskCard projectsHealth={data.projectsHealth} />
+        </div>
+      </ScrollReveal>
+
+      {/* Blocked and Today earn a full card only when they hold something.
+          Empty, they fold into one line, so a quiet day costs a sentence
+          rather than two panels of empty state. Activity fills the row. */}
+      <ScrollReveal delay={80}>
+        <div className="flex flex-col gap-4">
+          {(!hasBlocked || !hasToday) && (
+            <p className="flex flex-wrap items-center gap-x-5 gap-y-1 px-1 text-[13px] text-ink-dim">
+              {!hasBlocked && (
+                <span className="inline-flex items-center gap-2">
+                  <Ban className="h-3.5 w-3.5 text-ink-faint" aria-hidden />
+                  Nothing is blocked
+                </span>
+              )}
+              {!hasToday && (
+                <span className="inline-flex items-center gap-2">
+                  <CalendarClock className="h-3.5 w-3.5 text-ink-faint" aria-hidden />
+                  {events === null && !eventsFailed
+                    ? "Loading today's schedule"
+                    : eventsFailed
+                      ? "Today's schedule could not load"
+                      : "Nothing scheduled today"}
+                </span>
+              )}
+            </p>
+          )}
+          <div
+            className={cn(
+              "grid grid-cols-1 items-stretch gap-6",
+              secondRowCount === 2 && "lg:grid-cols-2",
+              secondRowCount === 3 && "lg:grid-cols-3"
+            )}
+          >
+            {hasBlocked && <BlockedWorkCard items={data.blockedWork} />}
+            {hasToday && (
+              <TodayScheduleCard
+                events={events}
+                failed={eventsFailed}
+                uid={userId}
+                members={members}
+                scope="org"
+                clock24h={clock24h}
+              />
+            )}
+            <RecentActivityCard refreshKey={refreshKey} />
+          </div>
         </div>
       </ScrollReveal>
 
@@ -193,7 +261,7 @@ export function DashboardView({
               Overview
             </span>
             <span className="mt-0.5 block text-[13px] text-ink-muted">
-              Workspace health, your week, and recent wins
+              Your numbers, the week, and recent wins
             </span>
           </span>
           <ChevronDown
@@ -207,10 +275,6 @@ export function DashboardView({
 
         {overviewOpen && (
           <div id="dashboard-overview" className="mt-4 flex flex-col gap-6 animate-fade-in">
-            <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
-              <WorkspaceAttentionCard metrics={data.metrics} hasProject={hasProject} />
-              <SystemHealthCard tasks={tasks} hasProject={hasProject} />
-            </div>
             <PersonalMetricsCard metrics={data.personal} />
             <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
               <WeeklyProgressCard

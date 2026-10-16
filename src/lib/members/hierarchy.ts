@@ -1,21 +1,22 @@
 import type { Department } from "@/types/department";
+import type { StoredRole } from "@/lib/members/rank";
 
 /* ------------------------------------------------------------------ */
 /*  Workspace hierarchy                                                */
 /*                                                                     */
 /*  Two tiers of people, top down:                                     */
 /*                                                                     */
-/*    owners       role OWNER, drawn side by side as equals. One of    */
-/*                 them is the ACCOUNT HOLDER (`organizations/{id}.    */
-/*                 ownerId`): created the workspace or was handed it,  */
-/*                 and alone decides who else is an owner, including   */
-/*                 removing them. Nobody else is told which owner that */
-/*                 is; it shows only to the account holder.            */
-/*    members      role MEMBER, each filed in at most one department,  */
+/*    owners       role OWNER, drawn side by side as equals. Who is an */
+/*                 owner is decided in Admin Tools, by Internal        */
+/*                 Management (`lib/internal-management`).             */
+/*    members      every other rank (`lib/members/rank`), each filed   */
+/*                 in at most one department,                          */
 /*                 one of whom may lead it under whatever title the    */
 /*                 department gives its lead.                          */
 /*                                                                     */
-/*  In code the account holder is the "primary owner".                 */
+/*  The old single account holder, the "primary owner" in code, is     */
+/*  still resolved below: it seeds Internal Management in a workspace  */
+/*  that has never saved its list.                                     */
 /*                                                                     */
 /*  The rules live here as pure functions so the server actions and    */
 /*  the Teams tree cannot disagree about them, and so they can be      */
@@ -36,7 +37,7 @@ export const MAX_LEAD_TITLE_LENGTH = 40;
 /** What a department calls its lead when nobody has said otherwise. */
 export const DEFAULT_LEAD_TITLE = "Lead";
 
-type Role = "OWNER" | "MEMBER";
+type Role = StoredRole;
 
 export interface OwnerCandidate {
   id: string;
@@ -68,58 +69,6 @@ export function resolvePrimaryOwnerId(
   });
 
   return ranked[0]?.id ?? null;
-}
-
-export type OwnershipChange = "promote" | "demote" | "transfer";
-
-export type Verdict = { ok: true } | { ok: false; error: string };
-
-/**
- * Whether the caller may make this change to the target's ownership.
- *
- * Seat limits are NOT checked here: they depend on the plan, and the
- * action asks `validateTierQuota` for that separately.
- */
-export function checkOwnershipChange(params: {
-  change: OwnershipChange;
-  callerId: string;
-  callerOrgId: string;
-  primaryOwnerId: string | null;
-  target: { id: string; orgId: string | null | undefined; role: Role } | null;
-}): Verdict {
-  const { change, callerId, callerOrgId, primaryOwnerId, target } = params;
-
-  if (callerId !== primaryOwnerId) {
-    return { ok: false, error: "Only the account holder can change who owns this workspace." };
-  }
-
-  if (!target || target.orgId !== callerOrgId) {
-    return { ok: false, error: "That person isn't in your workspace." };
-  }
-
-  if (target.id === callerId) {
-    return {
-      ok: false,
-      error:
-        change === "transfer"
-          ? "You're already the account holder."
-          : "You can't change your own role. Make someone else the account holder first.",
-    };
-  }
-
-  if (change === "promote" && target.role === "OWNER") {
-    return { ok: false, error: "They're already an owner." };
-  }
-
-  if (change === "demote" && target.role !== "OWNER") {
-    return { ok: false, error: "They aren't an owner." };
-  }
-
-  if (change === "transfer" && target.role !== "OWNER") {
-    return { ok: false, error: "Make them an owner first, then hand the account over." };
-  }
-
-  return { ok: true };
 }
 
 /** Trims and collapses whitespace, then checks the length. */

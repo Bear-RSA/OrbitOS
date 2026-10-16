@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildOrgTree,
-  checkOwnershipChange,
   DEFAULT_LEAD_TITLE,
   effectiveDepartmentLimit,
   HARD_MAX_DEPARTMENTS,
@@ -42,55 +41,6 @@ describe("resolvePrimaryOwnerId", () => {
 
 /* ------------------------------------------------------------------ */
 /*  Ownership changes                                                  */
-/* ------------------------------------------------------------------ */
-
-describe("checkOwnershipChange", () => {
-  const base = { callerId: "main", callerOrgId: "org-1", primaryOwnerId: "main" };
-  const member = { id: "m1", orgId: "org-1", role: "MEMBER" as const };
-  const coOwner = { id: "o2", orgId: "org-1", role: "OWNER" as const };
-
-  it("lets the main owner promote a member", () => {
-    expect(checkOwnershipChange({ ...base, change: "promote", target: member })).toEqual({ ok: true });
-  });
-
-  it("refuses a co-owner, so nobody can demote the main owner", () => {
-    const verdict = checkOwnershipChange({
-      ...base,
-      callerId: "o2",
-      change: "demote",
-      target: { id: "main", orgId: "org-1", role: "OWNER" },
-    });
-    expect(verdict.ok).toBe(false);
-  });
-
-  it("refuses a target from another workspace", () => {
-    const verdict = checkOwnershipChange({
-      ...base,
-      change: "promote",
-      target: { ...member, orgId: "org-2" },
-    });
-    expect(verdict.ok).toBe(false);
-  });
-
-  it("refuses the main owner changing their own role", () => {
-    const self = { id: "main", orgId: "org-1", role: "OWNER" as const };
-    expect(checkOwnershipChange({ ...base, change: "demote", target: self }).ok).toBe(false);
-    expect(checkOwnershipChange({ ...base, change: "transfer", target: self }).ok).toBe(false);
-  });
-
-  it("only hands the main-owner role to an existing owner", () => {
-    expect(checkOwnershipChange({ ...base, change: "transfer", target: member }).ok).toBe(false);
-    expect(checkOwnershipChange({ ...base, change: "transfer", target: coOwner })).toEqual({ ok: true });
-  });
-
-  it("refuses promoting an owner or demoting a member", () => {
-    expect(checkOwnershipChange({ ...base, change: "promote", target: coOwner }).ok).toBe(false);
-    expect(checkOwnershipChange({ ...base, change: "demote", target: member }).ok).toBe(false);
-  });
-});
-
-/* ------------------------------------------------------------------ */
-/*  Departments                                                        */
 /* ------------------------------------------------------------------ */
 
 describe("normaliseDepartmentName", () => {

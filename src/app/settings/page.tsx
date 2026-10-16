@@ -8,14 +8,15 @@ import {
   CalendarClock,
   Shield,
   SlidersHorizontal,
-  Wallet,
+  KeyRound,
 } from "lucide-react";
+import Link from "next/link";
 
 import { useAuth } from "@/contexts/auth-context";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
-import { BillingPanel } from "@/components/dashboard/billing-panel";
+import { getAdminToolsStatusAction } from "@/app/actions/admin-tools";
 import { GeneralSection } from "@/components/settings/general-section";
 import { NotificationsSection } from "@/components/settings/notifications-section";
 import { CalendarSection } from "@/components/settings/calendar-section";
@@ -29,17 +30,20 @@ import { cn } from "@/lib/utils/classnames";
 /*                                                                     */
 /*  Reached from the profile page. Every tab here is backed by real    */
 /*  state: preferences persist to `users/{uid}.preferences`, workspace */
-/*  identity to `organizations/{orgId}`, and billing to the existing   */
-/*  subscription panel.                                                */
+/*  identity to `organizations/{orgId}`. Billing lives in Admin Tools; */
+/*  the Admin Tools tab here is only a door to it, shown to Internal   */
+/*  Management.                                                        */
 /* ------------------------------------------------------------------ */
 
-type TabId = "general" | "notifications" | "calendar" | "security" | "workspace" | "billing";
+type TabId = "general" | "notifications" | "calendar" | "security" | "workspace" | "admin";
 
 const TABS: {
   id: TabId;
   label: string;
   icon: typeof Shield;
   ownerOnly?: boolean;
+  /** Shown only to Internal Management. */
+  internalOnly?: boolean;
   blurb: string;
 }[] = [
   {
@@ -74,11 +78,11 @@ const TABS: {
     blurb: "Organization identity and team composition.",
   },
   {
-    id: "billing",
-    label: "Billing",
-    icon: Wallet,
-    ownerOnly: true,
-    blurb: "Plan, usage, and upgrades.",
+    id: "admin",
+    label: "Admin Tools",
+    icon: KeyRound,
+    internalOnly: true,
+    blurb: "Ranks, Internal Management and billing, behind their own passcode.",
   },
 ];
 
@@ -109,20 +113,39 @@ function SettingsView() {
   const [activeTab, setActiveTab] = useState<TabId>("general");
 
   const isOwner = user?.role === "OWNER";
+  // null until the server answers, so a `?tab=admin` link isn't bounced
+  // to General before we know.
+  const [isInternalManagement, setIsInternalManagement] = useState<boolean | null>(null);
   const visibleTabs = useMemo(
-    () => TABS.filter((tab) => !tab.ownerOnly || isOwner),
-    [isOwner]
+    () =>
+      TABS.filter(
+        (tab) => (!tab.ownerOnly || isOwner) && (!tab.internalOnly || isInternalManagement === true)
+      ),
+    [isOwner, isInternalManagement]
   );
+
+  useEffect(() => {
+    if (!user?.orgId) return;
+    let live = true;
+    getAdminToolsStatusAction().then((result) => {
+      if (live) setIsInternalManagement(result.success && result.status.member);
+    });
+    return () => {
+      live = false;
+    };
+  }, [user?.orgId]);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
   }, [loading, user, router]);
 
-  // `?tab=billing` is how the PayFast return URL and the profile shortcut
-  // land the user directly on a section.
+  // `?tab=` lands the user directly on a section. Billing moved into Admin
+  // Tools, so old `?tab=billing` links (the profile shortcut, past PayFast
+  // returns) go to the door to it.
   useEffect(() => {
     const requested = searchParams.get("tab");
-    if (isTabId(requested)) setActiveTab(requested);
+    if (requested === "billing") setActiveTab("admin");
+    else if (isTabId(requested)) setActiveTab(requested);
   }, [searchParams]);
 
   // A member who lands on an owner-only tab — by URL, or by being demoted
@@ -130,7 +153,8 @@ function SettingsView() {
   useEffect(() => {
     const tab = TABS.find((t) => t.id === activeTab);
     if (tab?.ownerOnly && !isOwner) setActiveTab("general");
-  }, [activeTab, isOwner]);
+    if (tab?.internalOnly && isInternalManagement === false) setActiveTab("general");
+  }, [activeTab, isOwner, isInternalManagement]);
 
   if (loading) return <SettingsLoader />;
 
@@ -200,11 +224,30 @@ function SettingsView() {
             {activeTab === "calendar" && <CalendarSection user={user} />}
             {activeTab === "security" && <SecuritySection />}
             {activeTab === "workspace" && isOwner && <WorkspaceSection user={user} />}
-            {activeTab === "billing" && isOwner && <BillingPanel />}
+            {activeTab === "admin" && isInternalManagement && <AdminToolsDoor />}
           </ScrollReveal>
         </div>
       </div>
     </DashboardShell>
+  );
+}
+
+/** Settings only points the way: Admin Tools has its own page and passcode. */
+function AdminToolsDoor() {
+  return (
+    <div className="flex max-w-xl flex-col gap-4 rounded-[28px] bg-surface-raised/40 p-6 ring-1 ring-inset ring-line/[0.05]">
+      <p className="text-[14px] leading-relaxed text-ink-muted">
+        You&apos;re in Internal Management. Admin Tools is where you change anyone&apos;s rank, choose who else is in
+        Internal Management, and manage the plan and billing. It asks for its own 6-digit passcode.
+      </p>
+      <Link
+        href="/admin"
+        className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-ink px-5 text-[13px] font-medium text-on-ink transition-colors hover:bg-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
+      >
+        <KeyRound className="h-3.5 w-3.5" aria-hidden />
+        Open Admin Tools
+      </Link>
+    </div>
   );
 }
 

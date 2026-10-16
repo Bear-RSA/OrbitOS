@@ -4,6 +4,7 @@ import { Settings2 } from "lucide-react";
 
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { memberDisplayName } from "@/lib/members/profile";
+import type { Rank } from "@/lib/members/rank";
 import { cn } from "@/lib/utils/classnames";
 import type { WorkloadStatus } from "@/types/dashboard";
 import type { Member } from "@/types/member";
@@ -18,6 +19,10 @@ import { WORKLOAD_STATUS } from "./workload-status";
 export interface TreeNodeContext {
   viewerId: string;
   statusOf: (uid: string) => WorkloadStatus | undefined;
+  /** The rank whose halo this person's avatar wears. */
+  rankOf: (member: Member) => Rank;
+  /** Anyone in the workspace, for a department's Executive and Manager. */
+  personById: (uid: string) => Member | undefined;
   onOpenProfile: (uid: string) => void;
   onManage: (uid: string) => void;
 }
@@ -39,10 +44,12 @@ export function TreeAvatar({
   member,
   tier,
   status,
+  rank,
 }: {
   member: Member;
   tier: keyof typeof AVATAR;
   status: WorkloadStatus | undefined;
+  rank?: Rank;
 }) {
   return (
     <span className="relative inline-flex shrink-0">
@@ -51,6 +58,7 @@ export function TreeAvatar({
         name={memberDisplayName(member)}
         size={AVATAR[tier].size}
         className={AVATAR[tier].className}
+        rank={rank}
       />
       {status && (
         <span
@@ -126,7 +134,12 @@ export function PersonRow({
         aria-label={`View ${name}'s profile`}
         className="relative z-10 flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1 text-left transition-colors hover:bg-surface-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
-        <TreeAvatar member={member} tier={tier} status={context.statusOf(member.id)} />
+        <TreeAvatar
+          member={member}
+          tier={tier}
+          status={context.statusOf(member.id)}
+          rank={context.rankOf(member)}
+        />
         <span className="min-w-0">
           <span
             className={cn(

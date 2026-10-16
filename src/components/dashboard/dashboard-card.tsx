@@ -161,6 +161,7 @@ export function ActionButton({
   onClick,
   disabled,
   collapsed = false,
+  iconOnly = false,
   variant = "default",
   badge = false,
   badgeLabel,
@@ -172,6 +173,8 @@ export function ActionButton({
   disabled?: boolean;
   /** Renders icon-only until hover/focus, expanding to reveal the label. */
   collapsed?: boolean;
+  /** Icon only, always. The label stays as the accessible name and the tooltip. */
+  iconOnly?: boolean;
   variant?: "default" | "danger" | "ghost";
   /** Draws an attention dot on the icon. A boolean, never a count. */
   badge?: boolean;
@@ -197,9 +200,11 @@ export function ActionButton({
           "bg-transparent text-ink-muted hover:bg-surface-control hover:text-ink",
         variant === "danger" &&
           "bg-orbit-red/10 text-orbit-red ring-1 ring-inset ring-orbit-red/25 hover:bg-orbit-red/[0.16]",
-        collapsed
-          ? "w-9 overflow-hidden focus-visible:w-auto hover:w-auto"
-          : "gap-2 px-3.5",
+        iconOnly
+          ? "w-9 justify-center"
+          : collapsed
+            ? "w-9 overflow-hidden focus-visible:w-auto hover:w-auto"
+            : "gap-2 px-3.5",
         className
       )}
     >
@@ -218,15 +223,17 @@ export function ActionButton({
         </span>
       </span>
       {badge && badgeLabel && <span className="sr-only">{badgeLabel}</span>}
-      <span
-        className={cn(
-          "whitespace-nowrap text-[13px] font-medium",
-          collapsed &&
-            "max-w-0 opacity-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-focus-visible/btn:max-w-[12rem] group-focus-visible/btn:pr-3.5 group-focus-visible/btn:opacity-100 group-hover/btn:max-w-[12rem] group-hover/btn:pr-3.5 group-hover/btn:opacity-100"
-        )}
-      >
-        {label}
-      </span>
+      {!iconOnly && (
+        <span
+          className={cn(
+            "whitespace-nowrap text-[13px] font-medium",
+            collapsed &&
+              "max-w-0 opacity-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-focus-visible/btn:max-w-[12rem] group-focus-visible/btn:pr-3.5 group-focus-visible/btn:opacity-100 group-hover/btn:max-w-[12rem] group-hover/btn:pr-3.5 group-hover/btn:opacity-100"
+          )}
+        >
+          {label}
+        </span>
+      )}
     </button>
   );
 }

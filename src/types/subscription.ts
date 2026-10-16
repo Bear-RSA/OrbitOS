@@ -164,6 +164,35 @@ export interface TierLimits {
    * never widened by this value: -1 means "the tier does not narrow it".
    */
   maxDepartments: number;
+
+  /**
+   * Managers one organization may name. 0 is the plan gate (Free has
+   * none); there is no count above that on any plan, because every
+   * Manager already takes a member seat.
+   *
+   * Not a cost. Ranks are what a growing team upgrades for, so plans
+   * unlock them rather than meter them. See `lib/members/rank`.
+   */
+  maxManagers: number;
+
+  /**
+   * Executives one organization may name. Counted, unlike every other
+   * rank, because an Executive carries Owner powers: unlimited
+   * Executives on Pro would make `maxOwners` meaningless. -1 means "set
+   * by the agreement" on Custom.
+   */
+  maxExecutives: number;
+
+  /**
+   * People in Internal Management, who hold the key to Admin Tools. See
+   * `lib/internal-management/rules`.
+   *
+   * Never above 3 on any plan. FOR FUTURE BEAR: a Custom client can buy
+   * more, priced at whatever the rate is when the deal is made. Sell it by
+   * setting `seatOverride` on `internal_management/{orgId}`; nothing here
+   * changes.
+   */
+  maxInternalManagement: number;
 }
 
 /**
@@ -217,7 +246,7 @@ export const TIER_DEFINITIONS: Record<SubscriptionTier, TierDefinition> = {
     id: "exploration",
     name: "Free",
     description: "For solo operators trying OrbitOS.",
-    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10, maxGuestsPerEngagement: 0, maxCallParticipants: 2, maxCallGuests: 0, maxVaultStorageMb: 100, maxVaultDocuments: 25, maxTranscriptsPerMonth: 0, maxChatImagesPerMonth: 100, maxDepartments: 0 },
+    limits: { maxOwners: 1, maxMembers: 2, maxProjects: 3, maxLiveStreams: 1, maxTaskRemindersPerDay: 10, maxGuestsPerEngagement: 0, maxCallParticipants: 2, maxCallGuests: 0, maxVaultStorageMb: 100, maxVaultDocuments: 25, maxTranscriptsPerMonth: 0, maxChatImagesPerMonth: 100, maxDepartments: 0, maxManagers: 0, maxExecutives: 0, maxInternalManagement: 1 },
     priceZAR: 0,
     contactSales: false,
   },
@@ -225,7 +254,7 @@ export const TIER_DEFINITIONS: Record<SubscriptionTier, TierDefinition> = {
     id: "foundational",
     name: "Standard",
     description: "For small teams building structure.",
-    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30, maxGuestsPerEngagement: 3, maxCallParticipants: 4, maxCallGuests: 0, maxVaultStorageMb: 1024, maxVaultDocuments: 200, maxTranscriptsPerMonth: 20, maxChatImagesPerMonth: 1000, maxDepartments: 0 },
+    limits: { maxOwners: 1, maxMembers: 5, maxProjects: 5, maxLiveStreams: 2, maxTaskRemindersPerDay: 30, maxGuestsPerEngagement: 3, maxCallParticipants: 4, maxCallGuests: 0, maxVaultStorageMb: 1024, maxVaultDocuments: 200, maxTranscriptsPerMonth: 20, maxChatImagesPerMonth: 1000, maxDepartments: 0, maxManagers: -1, maxExecutives: 0, maxInternalManagement: 1 },
     priceZAR: 299,
     contactSales: false,
   },
@@ -233,7 +262,7 @@ export const TIER_DEFINITIONS: Record<SubscriptionTier, TierDefinition> = {
     id: "studio_core",
     name: "Pro",
     description: "For studios running client delivery.",
-    limits: { maxOwners: 3, maxMembers: 15, maxProjects: 25, maxLiveStreams: 4, maxTaskRemindersPerDay: 75, maxGuestsPerEngagement: 10, maxCallParticipants: 10, maxCallGuests: 5, maxVaultStorageMb: 5120, maxVaultDocuments: 1000, maxTranscriptsPerMonth: 100, maxChatImagesPerMonth: 3000, maxDepartments: 10 },
+    limits: { maxOwners: 3, maxMembers: 15, maxProjects: 25, maxLiveStreams: 4, maxTaskRemindersPerDay: 75, maxGuestsPerEngagement: 10, maxCallParticipants: 10, maxCallGuests: 5, maxVaultStorageMb: 5120, maxVaultDocuments: 1000, maxTranscriptsPerMonth: 100, maxChatImagesPerMonth: 3000, maxDepartments: 10, maxManagers: -1, maxExecutives: 3, maxInternalManagement: 2 },
     priceZAR: 699,
     contactSales: false,
   },
@@ -243,7 +272,7 @@ export const TIER_DEFINITIONS: Record<SubscriptionTier, TierDefinition> = {
     description: "For studios of 16 or more, priced with our team.",
     // -1 here means "set by the agreement, up to the hard ceilings", not
     // unlimited: every ceiling in lib/*/ceiling still applies on top.
-    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1, maxGuestsPerEngagement: -1, maxCallParticipants: -1, maxCallGuests: -1, maxVaultStorageMb: -1, maxVaultDocuments: -1, maxTranscriptsPerMonth: -1, maxChatImagesPerMonth: -1, maxDepartments: -1 },
+    limits: { maxOwners: 5, maxMembers: -1, maxProjects: -1, maxLiveStreams: -1, maxTaskRemindersPerDay: -1, maxGuestsPerEngagement: -1, maxCallParticipants: -1, maxCallGuests: -1, maxVaultStorageMb: -1, maxVaultDocuments: -1, maxTranscriptsPerMonth: -1, maxChatImagesPerMonth: -1, maxDepartments: -1, maxManagers: -1, maxExecutives: -1, maxInternalManagement: 3 },
     priceZAR: 0,
     contactSales: true,
   },

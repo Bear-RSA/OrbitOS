@@ -12,9 +12,9 @@ import { Eyebrow, ManageButton, TreeAvatar, type TreeNodeContext } from "./org-t
 /*  Owner card                                                         */
 /*                                                                     */
 /*  Every owner gets the same gold card, side by side in one row: to   */
-/*  the workspace they are equals. Only the account holder's own card  */
-/*  says "Account holder", and only on their screen, because nobody    */
-/*  else is ever told which owner that is.                             */
+/*  the workspace they are equals. An owner in Internal Management     */
+/*  sees it on their own card, on their own screen only: nobody else   */
+/*  is told who is in it.                                              */
 /* ------------------------------------------------------------------ */
 
 /** Matches `sm:w-[300px]` below; the desktop tree lays out by it. */
@@ -22,13 +22,13 @@ export const OWNER_CARD_WIDTH = 300;
 
 export function OrgTreeOwnerCard({
   member,
-  isAccountHolder,
+  inInternalManagement,
   context,
   manageable,
 }: {
   member: Member;
-  /** True only on the account holder's own screen, for their own card. */
-  isAccountHolder: boolean;
+  /** True only on the viewer's own card, when they are in Internal Management. */
+  inInternalManagement: boolean;
   context: TreeNodeContext;
   manageable: boolean;
 }) {
@@ -44,11 +44,11 @@ export function OrgTreeOwnerCard({
           aria-label={`View ${name}'s profile`}
           className="relative z-10 flex min-w-0 flex-1 items-center gap-4 rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
-          <TreeAvatar member={member} tier="owner" status={context.statusOf(member.id)} />
+          <TreeAvatar member={member} tier="owner" status={context.statusOf(member.id)} rank="OWNER" />
           <span className="min-w-0">
             <span className="flex items-center gap-1.5">
               <Crown className="h-3 w-3 shrink-0 text-orbit-gold" aria-hidden />
-              <Eyebrow className="text-orbit-gold">{isAccountHolder ? "Account holder" : "Owner"}</Eyebrow>
+              <Eyebrow className="text-orbit-gold">{inInternalManagement ? "Owner · Internal Management" : "Owner"}</Eyebrow>
             </span>
             <span className="mt-1 block truncate text-xl font-light tracking-tight text-ink">{name}</span>
             {(member.roleDescriptor || isSelf) && (

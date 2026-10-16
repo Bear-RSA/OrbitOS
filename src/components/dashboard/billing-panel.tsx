@@ -29,10 +29,10 @@ import { SELF_SERVE_CHECKOUT, CHECKOUT_PAUSED_NOTE } from "@/lib/billing/checkou
 import { getUpgradeRequestAction, requestUpgradeAction } from "@/app/actions/billing";
 
 /* ------------------------------------------------------------------ */
-/*  Billing Panel — OWNER-only subscription management                 */
+/*  Billing Panel — subscription management, inside Admin Tools        */
 /*                                                                     */
 /*  Displays current plan, usage meters, and available tiers.          */
-/*  Restricted to OWNER role via parent guard in settings/page.tsx.    */
+/*  Shown only in Admin Tools; the actions re-check on the server.     */
 /* ------------------------------------------------------------------ */
 
 const TIER_ICONS: Record<SubscriptionTier, React.ElementType> = {
@@ -168,8 +168,8 @@ export function BillingPanel() {
       recurring_amount: def.priceZAR.toFixed(2),
       frequency: "3",
       cycles: "0",
-      return_url: `${origin}/settings?tab=billing`,
-      cancel_url: `${origin}/settings?tab=billing`,
+      return_url: `${origin}/admin`,
+      cancel_url: `${origin}/admin`,
       notify_url: `${origin}/api/payfast/webhook`,
     };
   }

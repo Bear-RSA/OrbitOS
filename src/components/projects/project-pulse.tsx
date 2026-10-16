@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils/classnames";
 import { Member } from "@/types/member";
 import { CardEyebrow } from "@/components/dashboard/dashboard-card";
 import { ScrambleText } from "@/components/ui/scramble-text";
+import { roleLabel } from "@/lib/members/rank";
 
 interface PulseData {
   healthScore: number;
@@ -181,7 +182,7 @@ export function ProjectPulse({ projectId, members = [] }: { projectId: string; m
                 {pulse.activeUsers.map((user) => {
                   const m = members.find((x) => x.id === user.uid);
                   const isOwner = m?.role === "OWNER";
-                  const roleAlias = m?.roleDescriptor ?? (isOwner ? "Owner" : "Member");
+                  const roleAlias = m?.roleDescriptor ?? roleLabel(m?.role);
                   return (
                     <li
                       key={user.uid}

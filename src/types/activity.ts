@@ -63,7 +63,14 @@ export type ActivityEventType =
   /* Who owns the workspace. Logged because an owner can do everything a
      main owner can short of this, so a change here changes who can reach
      billing, the Vault and every seat. */
-  | "OWNERSHIP_CHANGED";
+  | "OWNERSHIP_CHANGED"
+  /* Someone made Executive or Manager, or taken back to Member. Logged
+     for the same reason: an Executive carries Owner powers. */
+  | "RANK_CHANGED"
+  /* Someone accepted an invite. Logged so the workspace sees a new face
+     arrive, and so Internal Management, who sent the invite, knows it
+     landed. */
+  | "MEMBER_JOINED";
 
 /* ------------------------------------------------------------------ */
 /*  Activity Document                                                  */
@@ -77,7 +84,7 @@ export interface ActivityEvent {
   actor: {
     uid: string;
     name: string;
-    role?: "OWNER" | "MEMBER" | string;
+    role?: string;
   };
   metadata: {
     fileName?: string;

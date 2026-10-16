@@ -1,22 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Crown, Network, UserMinus } from "lucide-react";
+import Link from "next/link";
+import { Award, Crown, KeyRound, Network, UserMinus } from "lucide-react";
 
 import {
-  assignDepartmentAction,
-  promoteToOwnerAction,
-  removeOwnerRoleAction,
   setDepartmentLeadAction,
-  transferMainOwnerAction,
+  setMemberRankAction,
 } from "@/app/actions/team-structure";
 import type { TeamStructure } from "@/app/actions/team-structure";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DialogHeading, DialogNotice } from "@/components/ui/dialog-parts";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RANK_TEXT } from "@/components/ui/rank-styles";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { invalidateTeamLeads } from "@/hooks/use-member-rank";
 import { memberDisplayName } from "@/lib/members/profile";
+import {
+  normaliseRole,
+  RANK_LABEL,
+  rankLevel,
+  rankOf,
+  type AssignableRank,
+  type StoredRole,
+} from "@/lib/members/rank";
 import { cn } from "@/lib/utils/classnames";
 import type { Member } from "@/types/member";
 
@@ -24,14 +31,14 @@ import type { Member } from "@/types/member";
 /*  Manage one person's place in the workspace                         */
 /*                                                                     */
 /*  What shows depends on who is looking:                              */
-/*    any owner     a member's department, and whether they lead it    */
-/*    account holder  also make owner / remove owner / hand over the   */
+/*    manager+      whether they lead their department                 */
+/*    executive+    their rank, for people below the viewer            */
+/*    any owner     removing a member from the workspace               */
+/*    Internal Management  a link to Admin Tools, where owners change  */
 /*                                                                     */
 /*  Every button re-checks on the server; hiding them here only keeps  */
 /*  the dialog from offering something that would be refused.         */
 /* ------------------------------------------------------------------ */
-
-const NO_DEPARTMENT = "__none__";
 
 /* Each concern sits on its own quiet card, so the dialog scans as blocks. */
 const SECTION_CLASS = "space-y-3 rounded-2xl bg-surface-raised/40 p-4 ring-1 ring-inset ring-line/[0.05]";
@@ -39,10 +46,20 @@ const SECTION_LABEL_CLASS = "flex items-center gap-2 text-[12px] font-medium tex
 
 type ActionResult = { success: true } | { success: false; error: string };
 
+/* What each rank means, in the words the picker shows under it. */
+const RANK_HINT: Record<AssignableRank, string> = {
+  EXECUTIVE: "Same powers as an Owner. Counts against your plan's Executive seats.",
+  MANAGER: "Can invite outside guests to meetings and choose department leads.",
+  TEAM_LEAD: "Can lead a department and start group calls.",
+  MEMBER: "No rank. Calls and meetings with people in the workspace.",
+};
+
 interface ManageMemberDialogProps {
   member: Member | null;
   structure: TeamStructure;
-  viewerIsAccountHolder: boolean;
+  viewerRole: StoredRole;
+  /** The viewer is in Internal Management, who decide who is an Owner. */
+  viewerIsInternalManagement: boolean;
   onClose: () => void;
   /** Called after any change lands, so the page can reload the tree. */
   onChanged: () => Promise<void> | void;
@@ -53,19 +70,18 @@ interface ManageMemberDialogProps {
 export function ManageMemberDialog({
   member,
   structure,
-  viewerIsAccountHolder,
+  viewerRole,
+  viewerIsInternalManagement,
   onClose,
   onChanged,
   onRemove,
 }: ManageMemberDialogProps) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [confirmTransfer, setConfirmTransfer] = useState(false);
 
   // A fresh dialog per person: no stale error or half-made confirmation.
   useEffect(() => {
     setError(null);
-    setConfirmTransfer(false);
     setBusy(null);
   }, [member?.id]);
 
@@ -75,10 +91,17 @@ export function ManageMemberDialog({
   const isOwner = member.role === "OWNER";
   const department = structure.departments.find((d) => d.id === member.departmentId) ?? null;
   const isLead = department?.leadId === member.id;
+  const rank = rankOf(member.role, isLead);
 
-  const { current, limit } = structure.ownerSeats;
-  const seatsFull = limit !== -1 && current >= limit;
-  const promoteBlocked = structure.limitsEnforced && seatsFull;
+  const viewerIsOwner = viewerRole === "OWNER";
+  // The picker offers ranks below the viewer, to people below the viewer.
+  const rankOptions: AssignableRank[] =
+    structure.assignableRanks.length > 0 &&
+    !isOwner &&
+    rankLevel(normaliseRole(member.role)) < rankLevel(viewerRole)
+      ? [...structure.assignableRanks, "MEMBER"]
+      : [];
+  const showDepartment = !isOwner && structure.viewerCanAppointLeads;
 
   const run = async (key: string, action: () => Promise<ActionResult>, closeAfter = false) => {
     setBusy(key);
@@ -103,20 +126,18 @@ export function ManageMemberDialog({
     <Dialog open={!!member} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeading
-          leading={<UserAvatar photoURL={member.photoURL} name={member.name} size="lg" />}
+          leading={<UserAvatar photoURL={member.photoURL} name={member.name} size="lg" rank={rank} uid={member.id} />}
           title={<span className="block truncate">{name}</span>}
           description={
             <span className="flex flex-wrap items-center gap-2">
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-normal ring-1 ring-inset",
-                  isOwner
-                    ? "bg-orbit-amber/10 text-orbit-amber ring-orbit-amber/20"
-                    : "bg-surface-control text-ink-muted ring-line/[0.08]"
+                  "inline-flex items-center gap-1 rounded-full bg-surface-control px-2 py-0.5 text-[11px] font-normal ring-1 ring-inset ring-line/[0.08]",
+                  rank === "MEMBER" ? "text-ink-muted" : RANK_TEXT[rank]
                 )}
               >
                 {isOwner && <Crown className="h-3 w-3" aria-hidden />}
-                {isOwner ? "Owner" : isLead && department ? department.leadTitle : "Member"}
+                {rank === "TEAM_LEAD" && department ? department.leadTitle : RANK_LABEL[rank]}
               </span>
               {!isOwner && <span className="truncate">{department ? department.name : "No department"}</span>}
             </span>
@@ -126,57 +147,74 @@ export function ManageMemberDialog({
         <div className="space-y-3">
           {error && <DialogNotice tone="red">{error}</DialogNotice>}
 
+          {/* Rank: Executive, Manager or Member. Owner has its own section. */}
+          {rankOptions.length > 0 && (
+            <section className={SECTION_CLASS}>
+              <h4 className={SECTION_LABEL_CLASS}>
+                <Award className="h-3.5 w-3.5" aria-hidden />
+                Rank
+              </h4>
+              <div className="grid gap-2" role="radiogroup" aria-label={`${name}'s rank`}>
+                {rankOptions.map((option) => {
+                  const selected = normaliseRole(member.role) === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      disabled={busy !== null || selected}
+                      onClick={() =>
+                        run(`rank-${option}`, () => setMemberRankAction({ targetUid: member.id, rank: option }))
+                      }
+                      className={cn(
+                        "flex flex-col items-start gap-0.5 rounded-xl px-3.5 py-2.5 text-left ring-1 ring-inset transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-default",
+                        selected
+                          ? "bg-surface-control ring-line/[0.14]"
+                          : "ring-line/[0.06] hover:bg-surface-hover/60 disabled:opacity-60"
+                      )}
+                    >
+                      <span className={cn("text-[13px]", option === "MEMBER" ? "text-ink" : RANK_TEXT[option])}>
+                        {busy === `rank-${option}` ? "Saving…" : RANK_LABEL[option]}
+                        {selected && <span className="text-ink-dim"> · current</span>}
+                      </span>
+                      <span className="text-[12px] leading-relaxed text-ink-dim">{RANK_HINT[option]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {/* Department: members only. Owners sit above departments. */}
-          {!isOwner && (
+          {showDepartment && (
             <section className={SECTION_CLASS}>
               <h4 className={SECTION_LABEL_CLASS}>
                 <Network className="h-3.5 w-3.5" aria-hidden />
                 Department
               </h4>
-              {structure.departments.length === 0 ? (
-                <p className="text-[13px] text-ink-muted">
-                  No departments yet. Create one from the Structure section on Teams.
-                </p>
-              ) : (
-                <Select
-                  value={member.departmentId ?? NO_DEPARTMENT}
-                  disabled={busy !== null}
-                  onValueChange={(value) =>
-                    run("department", () =>
-                      assignDepartmentAction({
-                        memberUid: member.id,
-                        departmentId: value === NO_DEPARTMENT ? null : value,
-                      })
-                    )
-                  }
-                >
-                  <SelectTrigger aria-label="Department">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NO_DEPARTMENT}>No department</SelectItem>
-                    {structure.departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              {/* Who is in which department is arranged on the chart in Admin Tools. */}
+              <p className="text-[13px] text-ink-muted">
+                {department ? department.name : "Not in a department"}
+                <span className="block text-[12px] text-ink-dim">Departments are arranged in Admin Tools.</span>
+              </p>
 
-              {department && (
+              {department && structure.viewerCanAppointLeads && (
                 <Button
                   variant="outline"
                   className="w-full"
                   disabled={busy !== null}
                   isLoading={busy === "lead"}
                   onClick={() =>
-                    run("lead", () =>
-                      setDepartmentLeadAction({
+                    run("lead", async () => {
+                      const result = await setDepartmentLeadAction({
                         departmentId: department.id,
                         memberUid: isLead ? null : member.id,
-                      })
-                    )
+                      });
+                      // Their Team Lead halo changes everywhere else too.
+                      if (result.success) invalidateTeamLeads();
+                      return result;
+                    })
                   }
                 >
                   {isLead
@@ -187,104 +225,29 @@ export function ManageMemberDialog({
             </section>
           )}
 
-          {/* Ownership: the account holder's alone. */}
-          {viewerIsAccountHolder && (
+          {/* Owners are changed in Admin Tools, behind its passcode. */}
+          {viewerIsInternalManagement && (
             <section className={SECTION_CLASS}>
-              <div className="flex items-center justify-between gap-3">
-                <h4 className={SECTION_LABEL_CLASS}>
-                  <Crown className="h-3.5 w-3.5" aria-hidden />
-                  Ownership
-                </h4>
-                <span className="font-mono text-[11px] text-ink-muted tabular-nums">
-                  {current} / {limit === -1 ? "∞" : limit} seats
-                </span>
-              </div>
-              {limit !== -1 && (
-                <div
-                  className="h-1 overflow-hidden rounded-full bg-surface-control"
-                  role="meter"
-                  aria-label="Owner seats used"
-                  aria-valuenow={current}
-                  aria-valuemin={0}
-                  aria-valuemax={limit}
-                >
-                  <div
-                    className={cn("h-full rounded-full", seatsFull ? "bg-orbit-amber" : "bg-ink/40")}
-                    style={{ width: `${Math.min(100, (current / Math.max(limit, 1)) * 100)}%` }}
-                  />
-                </div>
-              )}
-
-              {!isOwner ? (
-                <>
-                  <Button
-                    className="w-full"
-                    disabled={busy !== null || promoteBlocked}
-                    isLoading={busy === "promote"}
-                    onClick={() => run("promote", () => promoteToOwnerAction({ targetUid: member.id }))}
-                  >
-                    <Crown className="h-3.5 w-3.5" />
-                    Make owner
-                  </Button>
-                  <p className="text-[12px] leading-relaxed text-ink-dim">
-                    {promoteBlocked
-                      ? "Every owner seat on your plan is taken. Upgrade in Settings → Billing to add more."
-                      : "Owners get the yellow card and the same access as you: billing, the Vault, departments and every seat. Only you can change who is an owner."}
-                  </p>
-                </>
-              ) : confirmTransfer ? (
-                <div className="space-y-3 rounded-xl bg-orbit-amber/[0.07] p-4 ring-1 ring-inset ring-orbit-amber/15">
-                  <p className="text-[13px] leading-relaxed text-ink">
-                    Make {name} the account holder? You stay an owner, but they decide who else is an
-                    owner from now on, including you.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      disabled={busy !== null}
-                      onClick={() => setConfirmTransfer(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      className="flex-1"
-                      disabled={busy !== null}
-                      isLoading={busy === "transfer"}
-                      onClick={() =>
-                        run("transfer", () => transferMainOwnerAction({ targetUid: member.id }), true)
-                      }
-                    >
-                      Hand it over
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    disabled={busy !== null}
-                    onClick={() => setConfirmTransfer(true)}
-                  >
-                    Make account holder
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    disabled={busy !== null}
-                    isLoading={busy === "demote"}
-                    onClick={() => run("demote", () => removeOwnerRoleAction({ targetUid: member.id }))}
-                  >
-                    Remove owner role
-                  </Button>
-                </div>
-              )}
+              <h4 className={SECTION_LABEL_CLASS}>
+                <Crown className="h-3.5 w-3.5" aria-hidden />
+                Ownership
+              </h4>
+              <p className="text-[13px] leading-relaxed text-ink-muted">
+                {isOwner ? "Taking away" : "Giving"} the Owner rank happens in Admin Tools, where you&apos;ll
+                need the Admin Tools passcode.
+              </p>
+              <Link
+                href="/admin"
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-surface-control text-[13px] text-ink ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              >
+                <KeyRound className="h-3.5 w-3.5" aria-hidden />
+                Open Admin Tools
+              </Link>
             </section>
           )}
 
-          {/* Any owner can remove a member; only the account holder can remove an owner. */}
-          {(!isOwner || viewerIsAccountHolder) && (
+          {/* Any owner can remove a member; only Internal Management can remove an owner. */}
+          {viewerIsOwner && (!isOwner || viewerIsInternalManagement) && (
             <section className="!mt-6 border-t border-line/[0.06] pt-5">
               <Button
                 variant="ghost"

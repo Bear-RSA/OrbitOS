@@ -1,4 +1,5 @@
 import { adminDb } from "@/lib/firebase/admin";
+import { isWorkspaceRole, type RankLimits } from "@/lib/members/rank";
 
 /**
  * Verifies if a user has access to a project.
@@ -22,7 +23,7 @@ export async function verifyProjectAccess(userId: string, projectId: string) {
     const userData = userDoc.data();
     const userOrgId = userData?.orgId;
 
-    if (!userData || !["OWNER", "MEMBER"].includes(userData.role)) {
+    if (!userData || !isWorkspaceRole(userData.role)) {
       return { hasAccess: false, error: "Access denied. Valid operational role required." };
     }
 
@@ -307,6 +308,17 @@ export async function resolveDepartmentLimit(orgId: string): Promise<number> {
 
   const tier = await resolveOrgTier(orgId);
   return TIER_DEFINITIONS[tier].limits.maxDepartments;
+}
+
+/**
+ * Which ranks this organization's plan unlocks. Same contract as the
+ * resolvers above: -1 means "the tier does not narrow it", 0 is the gate.
+ */
+export async function resolveRankLimits(orgId: string): Promise<RankLimits> {
+  if (!GUARDRAILS_ENABLED || !orgId) return { maxManagers: -1, maxExecutives: -1, maxTeamLeads: -1 };
+
+  const { maxManagers, maxExecutives, maxDepartments } = TIER_DEFINITIONS[await resolveOrgTier(orgId)].limits;
+  return { maxManagers, maxExecutives, maxTeamLeads: maxDepartments === 0 ? 0 : -1 };
 }
 
 /** Whether tier limits are enforced yet. For display only; checks use the resolvers. */

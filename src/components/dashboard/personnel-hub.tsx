@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useCall } from "@/contexts/call-context";
 import { MemberProfile } from "@/components/members/member-profile";
 import { GlassSurface } from "@/components/ui/glass-surface";
+import { compareRoles, normaliseRole } from "@/lib/members/rank";
 
 interface PersonnelHubProps {
   projectId: string;
@@ -103,7 +104,7 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
       bio: (member as any).bio
     };
   }).sort((a, b) => {
-    if (a.role !== b.role) return a.role === "OWNER" ? -1 : 1;
+    if (a.role !== b.role) return compareRoles(a.role, b.role);
     return b.loadPercentage - a.loadPercentage;
   });
 
@@ -137,7 +138,7 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
            const statusWord = t.presence ? "in meeting" : t.operationalStatus;
 
            // Role formatting
-           const displayDescriptor = t.roleDescriptor || (t.role === "OWNER" ? "[OWNER]" : "[MEMBER]");
+           const displayDescriptor = t.roleDescriptor || `[${normaliseRole(t.role)}]`;
            const roleColor = t.role === "OWNER" ? "text-orbit-red" : "text-ink-muted";
 
            // Load bar

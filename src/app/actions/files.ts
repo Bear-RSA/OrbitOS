@@ -5,6 +5,7 @@ import { cloudinary } from "@/lib/cloudinary";
 import { logActivity } from "@/lib/telemetry";
 import { verifyProjectAccess } from "@/lib/auth/permissions";
 import { requireCaller } from "@/lib/auth/caller";
+import { isWorkspaceRole } from "@/lib/members/rank";
 
 /* ------------------------------------------------------------------ */
 /*  Asset actions                                                      */
@@ -211,7 +212,7 @@ export async function deleteProjectFileAction(
 
     console.log("[DeleteFile] Deleting asset:", { projectId, fileId, publicId, resourceType, uid });
 
-    if (!["OWNER", "MEMBER"].includes(caller.role)) {
+    if (!isWorkspaceRole(caller.role)) {
       console.error("[DeleteFile] Unauthorized attempted file deletion:", uid, caller.role);
       return { success: false, error: "Only workspace members can delete files." };
     }

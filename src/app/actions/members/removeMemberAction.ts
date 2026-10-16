@@ -1,11 +1,11 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase/admin";
-import { FieldValue } from "firebase-admin/firestore";
 import { validateOwner } from "@/lib/auth/permissions";
-import { resolvePrimaryOwnerId } from "@/lib/members/hierarchy";
+import { loadInternalManagementIds } from "@/lib/internal-management/store";
+import { normaliseRole } from "@/lib/members/rank";
+import { removeFromWorkspace } from "@/lib/members/remove";
 import { requireServerUid } from "@/lib/auth/session";
-import { logActivity } from "@/lib/telemetry";
 
 /* ------------------------------------------------------------------ */
 /*  Remove Member — server action                                      */
@@ -54,7 +54,7 @@ export async function removeMemberAction(
 
     // 2. Prevent owner from removing themselves
     if (targetUserId === uid) {
-      return { success: false, error: "Cannot remove yourself. Transfer ownership first." };
+      return { success: false, error: "You can't remove yourself from the workspace." };
     }
 
     // 3. Fetch target user to prevent removing another OWNER
@@ -64,65 +64,38 @@ export async function removeMemberAction(
     }
     const targetData = targetSnap.data()!;
     
-    // Owners answer only to the account holder, who may remove any of them.
-    if (targetData.role === "OWNER") {
-      const [orgSnap, ownersSnap] = await Promise.all([
-        adminDb.collection("organizations").doc(callerOrgId).get(),
-        adminDb.collection("users").where("orgId", "==", callerOrgId).where("role", "==", "OWNER").get(),
-      ]);
-      const accountHolderId = resolvePrimaryOwnerId(
-        orgSnap.data()?.ownerId,
-        ownersSnap.docs.map((doc) => ({
-          id: doc.id,
-          createdAtMillis: doc.data().createdAt?.toMillis?.() ?? 0,
-        }))
-      );
-      if (accountHolderId !== uid) {
-        return { success: false, error: "Only the account holder can remove an owner." };
-      }
+    // Owners, and anyone in Internal Management, answer only to Internal
+    // Management. The last one of it can't be removed at all.
+    const imIds = await loadInternalManagementIds(callerOrgId);
+    const targetIsOwner = normaliseRole(targetData.role) === "OWNER";
+    const targetInIm = imIds.includes(targetUserId);
+    if ((targetIsOwner || targetInIm) && !imIds.includes(uid)) {
+      return {
+        success: false,
+        error: targetIsOwner
+          ? "Only Internal Management can remove an owner."
+          : "Only Internal Management can remove this person.",
+      };
+    }
+    if (targetInIm && imIds.length <= 1) {
+      return {
+        success: false,
+        error: "They're the last person in Internal Management. Add someone else first.",
+      };
     }
 
     const targetName = targetData.name || "A former member";
-
-    // 4. Atomic transaction: remove membership + unassign tasks
-    await adminDb.runTransaction(async (tx) => {
-      // Find all tasks assigned to this user in the project (or org if no project)
-      let tasksQuery = adminDb.collection("tasks")
-        .where("assignedTo", "array-contains", targetUserId);
-      
-      if (projectId) {
-        tasksQuery = tasksQuery.where("projectId", "==", projectId);
-      } else {
-        tasksQuery = tasksQuery.where("orgId", "==", callerOrgId);
-      }
-
-      // Execute ALL reads first
-      const tasksSnap = await tx.get(tasksQuery);
-
-      // Execute ALL writes after reads
-      // 1. Remove org membership from user
-      tx.update(adminDb.collection("users").doc(targetUserId), {
-        orgId: FieldValue.delete(),
-        role: FieldValue.delete(),
-        departmentId: FieldValue.delete(),
-      });
-
-      // 2. Unassign each task
-      tasksSnap.forEach((taskDoc) => {
-        tx.update(taskDoc.ref, { assignedTo: FieldValue.arrayRemove(targetUserId) });
-      });
-    });
-
-    // 7. Log activity (after transaction succeeds)
     const callerSnap = await adminDb.collection("users").doc(uid).get();
     const callerName = callerSnap.exists ? callerSnap.data()!.name || "Unnamed member" : "System";
 
-    await logActivity({
-      eventType: "MEMBER_REMOVED",
+    // 4. Remove membership, unassign their tasks, log it
+    await removeFromWorkspace({
       orgId: callerOrgId,
-      projectId: projectId || null,
+      targetUid: targetUserId,
+      targetName,
+      targetInInternalManagement: targetInIm,
       actor: { uid, name: callerName },
-      metadata: { targetUserId, targetName },
+      projectId,
     });
 
     return { success: true };

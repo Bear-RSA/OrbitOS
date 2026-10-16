@@ -1,8 +1,7 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase/admin";
-import { validateOwner } from "@/lib/auth/permissions";
-import { requireServerUid } from "@/lib/auth/session";
+import { requireAdminTools } from "@/lib/internal-management/store";
 import { logActivity } from "@/lib/telemetry";
 import {
   TIER_DEFINITIONS,
@@ -16,12 +15,14 @@ import { sendUpgradeRequest } from "@/lib/email/sendUpgradeRequest";
 /* ------------------------------------------------------------------ */
 /*  Billing Server Actions                                             */
 /*                                                                     */
-/*  All actions are OWNER-gated via validateOwner.                     */
+/*  Every action is for Internal Management with Admin Tools unlocked, */
+/*  via `requireAdminTools`. Billing lives in Admin Tools, and the     */
+/*  passcode gate there is checked again here on the server.           */
 /*  Reads/writes target the `organizations/{orgId}.subscription` path. */
 /*                                                                     */
-/*  The OWNER check runs against the session, never against a uid from */
-/*  the caller. It used to take one as an argument, and owner uids are */
-/*  not secret — they appear in member lists and activity logs — so a  */
+/*  The check runs against the session, never against a uid from the  */
+/*  caller. It used to take one as an argument, and owner uids are not */
+/*  secret — they appear in member lists and activity logs — so a      */
 /*  signed-in user could read any workspace's plan and usage, or       */
 /*  cancel its paid subscription outright, by naming that owner.       */
 /* ------------------------------------------------------------------ */
@@ -38,7 +39,7 @@ interface SubscriptionInfo {
 
 /**
  * Retrieves the organization's current subscription state and resource usage.
- * OWNER-only — validates the caller holds the OWNER role before proceeding.
+ * Internal Management only, with Admin Tools unlocked.
  */
 export async function getSubscriptionAction(): Promise<{
   success: boolean;
@@ -46,14 +47,9 @@ export async function getSubscriptionAction(): Promise<{
   error?: string;
 }> {
   try {
-    const uid = await requireServerUid();
-
-    // 1. Validate OWNER
-    const auth = await validateOwner(uid);
-    if (!auth.isOwner) {
-      return { success: false, error: auth.error || "Unauthorized." };
-    }
-    const orgId = auth.orgId!;
+    const caller = await requireAdminTools();
+    if (!caller.ok) return { success: false, error: caller.error };
+    const { orgId } = caller;
 
     // 2. Read org subscription
     const orgDoc = await adminDb.collection("organizations").doc(orgId).get();
@@ -111,21 +107,16 @@ export async function getSubscriptionAction(): Promise<{
 
 /**
  * Cancels the organization's paid subscription and downgrades to Exploration.
- * OWNER-only — validates the caller holds the OWNER role before proceeding.
+ * Internal Management only, with Admin Tools unlocked.
  */
 export async function cancelSubscriptionAction(): Promise<{
   success: boolean;
   error?: string;
 }> {
   try {
-    const uid = await requireServerUid();
-
-    // 1. Validate OWNER
-    const auth = await validateOwner(uid);
-    if (!auth.isOwner) {
-      return { success: false, error: auth.error || "Unauthorized." };
-    }
-    const orgId = auth.orgId!;
+    const caller = await requireAdminTools();
+    if (!caller.ok) return { success: false, error: caller.error };
+    const { uid, orgId } = caller;
 
     // 2. Read current subscription state
     const orgDoc = await adminDb.collection("organizations").doc(orgId).get();
@@ -192,12 +183,9 @@ export async function getUpgradeRequestAction(): Promise<{
   error?: string;
 }> {
   try {
-    const uid = await requireServerUid();
-    const auth = await validateOwner(uid);
-    if (!auth.isOwner) {
-      return { success: false, error: auth.error || "Unauthorized." };
-    }
-    const orgId = auth.orgId!;
+    const caller = await requireAdminTools();
+    if (!caller.ok) return { success: false, error: caller.error };
+    const { orgId } = caller;
 
     const [reqSnap, orgSnap] = await Promise.all([
       adminDb.collection("upgradeRequests").doc(orgId).get(),
@@ -218,19 +206,16 @@ export async function getUpgradeRequestAction(): Promise<{
 }
 
 /**
- * Asks sales to move this workspace onto a paid plan. OWNER-only.
+ * Asks sales to move this workspace onto a paid plan. Internal Management only.
  */
 export async function requestUpgradeAction(tier: SubscriptionTier): Promise<{
   success: boolean;
   error?: string;
 }> {
   try {
-    const uid = await requireServerUid();
-    const auth = await validateOwner(uid);
-    if (!auth.isOwner) {
-      return { success: false, error: auth.error || "Only the workspace owner can change the plan." };
-    }
-    const orgId = auth.orgId!;
+    const caller = await requireAdminTools();
+    if (!caller.ok) return { success: false, error: caller.error };
+    const { uid, orgId } = caller;
 
     const tierDef = Object.prototype.hasOwnProperty.call(TIER_DEFINITIONS, tier)
       ? TIER_DEFINITIONS[tier]

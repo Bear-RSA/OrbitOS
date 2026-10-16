@@ -68,6 +68,7 @@ import { useNow } from "@/hooks/use-now";
 import { parseDateKey } from "@/lib/utils/dates";
 import { MAX_MESSAGE_LENGTH, MAX_PINNED_NOTICES } from "@/lib/validations/messages";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { useMemberRank } from "@/hooks/use-member-rank";
 import { cn } from "@/lib/utils/classnames";
 import type { Member } from "@/types/member";
 import {
@@ -179,7 +180,7 @@ export function MessageThread({
   const [pendingDelete, setPendingDelete] = useState<Message | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  /* The account holder's view of edits and deletes. Asked of the server
+  /* Internal Management's view of edits and deletes. Asked of the server
      once, because who holds the account is not something the client is
      ever told about anybody else. */
   const [mayViewHistory, setMayViewHistory] = useState(false);
@@ -228,6 +229,7 @@ export function MessageThread({
   const now = useNow();
 
   const directory = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+  const rankOf = useMemberRank();
   const liveNames = useMemo(
     () => Object.fromEntries(members.map((m) => [m.id, m.name])),
     [members]
@@ -676,7 +678,7 @@ export function MessageThread({
   /* A full first page means there is probably more behind it. */
   const mayHaveHistory = !exhausted && live.length >= MESSAGE_PAGE_SIZE;
 
-  /* For the account holder: deleted messages back in place, and each
+  /* For Internal Management: deleted messages back in place, and each
      edited one's earlier wordings. Ghosts stop at the oldest message
      loaded, so history does not run ahead of "Load earlier". */
   const folded = useMemo(() => {
@@ -718,7 +720,7 @@ export function MessageThread({
               aria-label={`View ${title}`}
               className="relative shrink-0 rounded-xl transition-transform duration-200 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
-              <UserAvatar size="lg" name={title} photoURL={partner?.photoURL} />
+              <UserAvatar size="lg" name={title} photoURL={partner?.photoURL} rank={rankOf(partner)} />
               {partnerTone && (
                 <span
                   className={cn(
@@ -729,7 +731,7 @@ export function MessageThread({
               )}
             </button>
           ) : (
-            <UserAvatar size="lg" name={title} photoURL={partner?.photoURL} />
+            <UserAvatar size="lg" name={title} photoURL={partner?.photoURL} rank={rankOf(partner)} />
           )
         ) : conversation?.type === "group" ? (
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-control shadow-card ring-1 ring-line/[0.06]">
@@ -813,6 +815,7 @@ export function MessageThread({
                     size="sm"
                     name={person?.name ?? "?"}
                     photoURL={person?.photoURL}
+                    rank={rankOf(person)}
                   />
                 </button>
               );
@@ -1055,6 +1058,7 @@ export function MessageThread({
                                 size="sm"
                                 name={sender?.name ?? "Unknown member"}
                                 photoURL={sender?.photoURL}
+                                rank={rankOf(sender)}
                               />
                             </button>
                           ) : (
@@ -1062,6 +1066,7 @@ export function MessageThread({
                               size="sm"
                               name={sender?.name ?? "Unknown member"}
                               photoURL={sender?.photoURL}
+                              rank={rankOf(sender)}
                             />
                           ))}
                       </div>
@@ -1579,7 +1584,7 @@ function EditBox({
   );
 }
 
-/* The account holder's view of how a message read before. */
+/* Internal Management's view of how a message read before. */
 function EditTrail({
   entries,
   open,

@@ -1128,3 +1128,78 @@ html:has(.orbit-backdrop[data-mode="app"]) .bg-ground { background-color: transp
   .orbit-move { transition: none; }
   .orbit-stars[data-layer="twinkle"] { animation: none; }
 }
+
+/* ------------------------------------------------------------------ */
+/*  Org chart canvas (React Flow)                                      */
+/*                                                                     */
+/*  React Flow ships light-theme colours; these hand it the app's      */
+/*  tokens instead, so the canvas follows the theme switch like every  */
+/*  other surface. The cards themselves are styled in their own        */
+/*  components; this is only the chrome around them.                   */
+/* ------------------------------------------------------------------ */
+.org-chart .react-flow {
+  --xy-background-color: transparent;
+  --xy-background-pattern-color: rgb(var(--line) / 0.16);
+  --xy-edge-stroke: rgb(var(--ink-dim) / 0.7);
+  --xy-edge-stroke-selected: rgb(var(--ink-strong));
+  --xy-edge-stroke-width: 1.5;
+  --xy-connectionline-stroke: rgb(var(--ink-muted));
+  --xy-connectionline-stroke-width: 1.5;
+  --xy-handle-background-color: rgb(var(--surface-control));
+  --xy-handle-border-color: rgb(var(--ink-dim));
+  --xy-node-background-color: transparent;
+  --xy-node-border: none;
+  --xy-node-boxshadow-hover: none;
+  --xy-node-boxshadow-selected: none;
+  --xy-controls-button-background-color: rgb(var(--surface-control));
+  --xy-controls-button-background-color-hover: rgb(var(--surface-hover));
+  --xy-controls-button-color: rgb(var(--ink-muted));
+  --xy-controls-button-color-hover: rgb(var(--ink));
+  --xy-controls-button-border-color: rgb(var(--line) / 0.08);
+  --xy-controls-box-shadow: none;
+  --xy-selection-background-color: rgb(var(--focus) / 0.08);
+  --xy-selection-border: 1px dashed rgb(var(--focus) / 0.5);
+  --xy-attribution-background-color: transparent;
+}
+
+.org-chart .react-flow__node {
+  /* The cards draw their own surface; React Flow's padding and width
+     would put a box around a box. */
+  padding: 0;
+  width: auto;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+}
+
+.org-chart .react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border-width: 1.5px;
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms;
+}
+
+.org-chart .react-flow__handle.connectingfrom,
+.org-chart .react-flow__handle:hover {
+  transform: translate(-50%, var(--org-handle-shift, 0)) scale(1.35);
+  background: rgb(var(--ink-strong));
+}
+
+.org-chart .react-flow__handle-top {
+  --org-handle-shift: -50%;
+}
+.org-chart .react-flow__handle-bottom {
+  --org-handle-shift: 50%;
+}
+
+/* A wire dragged onto a plug that refuses it. */
+.org-chart .react-flow__handle.connectingto:not(.valid) {
+  background: rgb(var(--orbit-red));
+  border-color: rgb(var(--orbit-red));
+}
+
+.org-chart .react-flow__controls {
+  border-radius: 12px;
+  overflow: hidden;
+}

@@ -114,7 +114,6 @@ const WORKLOAD_CONFIG: Record<
 
 const OWNER_CAPABILITIES = [
   { label: "Create & Delete Projects", granted: true },
-  { label: "Invite Team Members", granted: true },
   { label: "Manage All Org Tasks", granted: true },
   { label: "View Team Workload", granted: true },
   { label: "Edit Own Profile", granted: true },
@@ -123,7 +122,6 @@ const OWNER_CAPABILITIES = [
 
 const MEMBER_CAPABILITIES = [
   { label: "Create & Delete Projects", granted: false },
-  { label: "Invite Team Members", granted: false },
   { label: "Manage Assigned Tasks", granted: true },
   { label: "View Team Workload", granted: false },
   { label: "Edit Own Profile", granted: true },

@@ -9,6 +9,7 @@ import {
   vaultStorageAllowance,
 } from "@/lib/vault/ceiling";
 import { isVaultCategory, DEFAULT_VAULT_CATEGORY } from "@/types/vault";
+import { isWorkspaceRole } from "@/lib/members/rank";
 
 /* ------------------------------------------------------------------ */
 /*  Vault upload signature                                             */
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!["OWNER", "MEMBER"].includes(role.toUpperCase())) {
+    if (!isWorkspaceRole(role)) {
       return NextResponse.json(
         { error: "Only workspace members can upload to the vault." },
         { status: 403 }

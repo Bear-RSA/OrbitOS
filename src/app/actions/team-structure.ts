@@ -2,34 +2,41 @@
 
 import { adminDb } from "@/lib/firebase/admin";
 
-import { requireCaller, requireOwner, type Caller } from "@/lib/auth/caller";
+import { requireCaller, type Caller } from "@/lib/auth/caller";
 import {
   billingGuardrailsEnabled,
   resolveDepartmentLimit,
   resolveOrgTier,
-  validateTierQuota,
+  resolveRankLimits,
 } from "@/lib/auth/permissions";
+import { isInternalManagement, loadAdminUnlockedUntil, requireAdminTools } from "@/lib/internal-management/store";
 import {
-  checkOwnershipChange,
   DEFAULT_LEAD_TITLE,
   effectiveDepartmentLimit,
   normaliseDepartmentName,
   normaliseLeadTitle,
-  resolvePrimaryOwnerId,
-  type OwnershipChange,
 } from "@/lib/members/hierarchy";
 import { memberDisplayName } from "@/lib/members/profile";
+import {
+  assignableRanksFor,
+  canAppointTeamLeads,
+  checkRankChange,
+  normaliseRole,
+  type AssignableRank,
+} from "@/lib/members/rank";
 import { logActivity } from "@/lib/telemetry";
 import type { Department } from "@/types/department";
 import { TIER_DEFINITIONS } from "@/types/subscription";
 
 /* ------------------------------------------------------------------ */
-/*  Team structure: who owns the workspace, and how it is arranged    */
+/*  Team structure: ranks below Owner, and how the workspace is laid   */
+/*  out in departments                                                 */
 /*                                                                     */
-/*  Ownership changes are the main owner's alone. Departments are any  */
-/*  owner's, the same as every other seat control. The rules behind    */
-/*  both live in `lib/members/hierarchy`; these actions load what      */
-/*  those rules need, ask them, and write the answer.                  */
+/*  Who is an Owner, and every department, is decided in Admin Tools   */
+/*  by Internal Management. Managers choose their department's lead.   */
+/*  The rules live in `lib/members/hierarchy` and `lib/members/rank`;  */
+/*  these actions load what those rules need, ask them, and write the  */
+/*  answer.                                                            */
 /*                                                                     */
 /*  Departments are never read or written by a client. The catch-all   */
 /*  in firestore.rules covers the collection, so this file is the only */
@@ -45,12 +52,10 @@ const DEPARTMENTS = "departments";
 
 export interface TeamStructure {
   /**
-   * The account holder's uid, sent ONLY to the account holder. Every other
-   * viewer gets null and sees all owners as equals: who holds the account
-   * is the account holder's business.
+   * The viewer is in Internal Management. Only ever about the viewer: who
+   * else is in it is never sent here, so every other owner looks equal.
    */
-  accountHolderId: string | null;
-  viewerIsAccountHolder: boolean;
+  viewerIsInternalManagement: boolean;
   departments: Department[];
   /** Owners now, and the plan's allowance (-1 = no limit on this plan). */
   ownerSeats: { current: number; limit: number };
@@ -58,6 +63,10 @@ export interface TeamStructure {
   limitsEnforced: boolean;
   /** Departments this workspace may hold. 0 means the plan does not include them. */
   departmentLimit: number;
+  /** Ranks the viewer may give in the rank picker, highest first. Empty for most people. */
+  assignableRanks: AssignableRank[];
+  /** The viewer may name department leads, which is what makes a Team Lead. */
+  viewerCanAppointLeads: boolean;
 }
 
 function toDepartment(id: string, data: FirebaseFirestore.DocumentData): Department {
@@ -68,6 +77,8 @@ function toDepartment(id: string, data: FirebaseFirestore.DocumentData): Departm
     leadId: typeof data.leadId === "string" ? data.leadId : null,
     leadTitle:
       typeof data.leadTitle === "string" && data.leadTitle ? data.leadTitle : DEFAULT_LEAD_TITLE,
+    executiveId: typeof data.executiveId === "string" ? data.executiveId : null,
+    managerId: typeof data.managerId === "string" ? data.managerId : null,
     createdAt: data.createdAt?.toMillis?.() ?? 0,
   };
 }
@@ -85,16 +96,8 @@ async function loadOwners(orgId: string) {
   }));
 }
 
-async function loadPrimaryOwnerId(orgId: string): Promise<{ primaryOwnerId: string | null; ownerCount: number }> {
-  const [orgSnap, owners] = await Promise.all([
-    adminDb.collection("organizations").doc(orgId).get(),
-    loadOwners(orgId),
-  ]);
-
-  return {
-    primaryOwnerId: resolvePrimaryOwnerId(orgSnap.data()?.ownerId, owners),
-    ownerCount: owners.length,
-  };
+async function countOwners(orgId: string): Promise<number> {
+  return (await loadOwners(orgId)).length;
 }
 
 async function loadDepartments(orgId: string): Promise<Department[]> {
@@ -120,7 +123,7 @@ async function loadOwnMember(caller: OwnerCaller, uid: unknown) {
     id: snap.id,
     // Goes into the workspace-wide activity feed, so never the email.
     name: memberDisplayName({ name: data.name as string | undefined }),
-    role: data.role === "OWNER" ? ("OWNER" as const) : ("MEMBER" as const),
+    role: normaliseRole(data.role),
     departmentId: typeof data.departmentId === "string" ? data.departmentId : null,
   };
 }
@@ -137,25 +140,25 @@ export async function getTeamStructureAction(): Promise<
   if (!caller.ok) return { success: false, error: caller.error };
 
   try {
-    const [{ primaryOwnerId, ownerCount }, departments, tier, tierDepartmentLimit] =
+    const [ownerCount, departments, tier, tierDepartmentLimit, viewerIsInternalManagement] =
       await Promise.all([
-        loadPrimaryOwnerId(caller.orgId),
+        countOwners(caller.orgId),
         loadDepartments(caller.orgId),
         resolveOrgTier(caller.orgId),
         resolveDepartmentLimit(caller.orgId),
+        isInternalManagement(caller.orgId, caller.uid),
       ]);
-
-    const viewerIsAccountHolder = primaryOwnerId === caller.uid;
 
     return {
       success: true,
       structure: {
-        accountHolderId: viewerIsAccountHolder ? primaryOwnerId : null,
-        viewerIsAccountHolder,
+        viewerIsInternalManagement,
         departments,
         ownerSeats: { current: ownerCount, limit: TIER_DEFINITIONS[tier].limits.maxOwners },
         limitsEnforced: billingGuardrailsEnabled(),
         departmentLimit: effectiveDepartmentLimit(tierDepartmentLimit),
+        assignableRanks: assignableRanksFor(caller.role).filter((r) => r !== "MEMBER"),
+        viewerCanAppointLeads: canAppointTeamLeads(caller.role),
       },
     };
   } catch (err) {
@@ -164,95 +167,92 @@ export async function getTeamStructureAction(): Promise<
   }
 }
 
-/* ------------------------------------------------------------------ */
-/*  Ownership: main owner only                                         */
-/* ------------------------------------------------------------------ */
-
-async function changeOwnership(change: OwnershipChange, targetUid: string): Promise<Result> {
-  const caller = await requireOwner();
+/**
+ * Who leads a department, for the Team Lead halo. Any member may read it:
+ * the Teams tree already shows every lead to everyone.
+ */
+export async function getTeamLeadIdsAction(): Promise<
+  { success: true; leadIds: string[] } | { success: false; error: string }
+> {
+  const caller = await requireCaller();
   if (!caller.ok) return { success: false, error: caller.error };
 
   try {
-    const [{ primaryOwnerId }, target] = await Promise.all([
-      loadPrimaryOwnerId(caller.orgId),
-      loadOwnMember(caller, targetUid),
+    const departments = await loadDepartments(caller.orgId);
+    return {
+      success: true,
+      leadIds: departments.flatMap((d) => (d.leadId ? [d.leadId] : [])),
+    };
+  } catch (err) {
+    console.error("[TeamStructure] Could not load team leads:", err);
+    return { success: false, error: "Could not load team leads." };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Ranks: Executive, Manager, Member                                  */
+/*                                                                     */
+/*  Owner has its own flow below. Team Lead is set by naming a         */
+/*  department's lead. Everything else goes through here, and the      */
+/*  rules for it are in `lib/members/rank`.                            */
+/* ------------------------------------------------------------------ */
+
+const ASSIGNABLE: readonly string[] = ["EXECUTIVE", "MANAGER", "TEAM_LEAD", "MEMBER"];
+
+export async function setMemberRankAction(input: {
+  targetUid: string;
+  rank: AssignableRank;
+}): Promise<Result> {
+  const caller = await requireCaller();
+  if (!caller.ok) return { success: false, error: caller.error };
+  if (!ASSIGNABLE.includes(input.rank)) return { success: false, error: "That isn't a rank." };
+
+  try {
+    const [target, limits, executives] = await Promise.all([
+      loadOwnMember(caller, input.targetUid),
+      resolveRankLimits(caller.orgId),
+      adminDb
+        .collection(USERS)
+        .where("orgId", "==", caller.orgId)
+        .where("role", "==", "EXECUTIVE")
+        .get(),
     ]);
 
-    const verdict = checkOwnershipChange({
-      change,
+    const verdict = checkRankChange({
       callerId: caller.uid,
-      callerOrgId: caller.orgId,
-      primaryOwnerId,
-      target: target && { id: target.id, orgId: caller.orgId, role: target.role },
+      callerRole: caller.role,
+      target: target && { id: target.id, role: target.role },
+      next: input.rank,
+      limits,
+      executiveCount: executives.docs.filter((doc) => doc.id !== input.targetUid).length,
     });
     if (!verdict.ok) return { success: false, error: verdict.error };
-    // checkOwnershipChange refuses a null target, so this is for the compiler.
     if (!target) return { success: false, error: "That person isn't in your workspace." };
 
-    if (change === "promote") {
-      const quota = await validateTierQuota(caller.orgId, "owners");
-      if (!quota.allowed) return { success: false, error: quota.error ?? "No owner seat is free." };
-
-      // Owners sit above departments, so a promotion takes them out of
-      // theirs, and out of leading it.
-      const batch = adminDb.batch();
-      batch.update(adminDb.collection(USERS).doc(target.id), { role: "OWNER", departmentId: null });
-
-      const led = await adminDb
-        .collection(DEPARTMENTS)
-        .where("orgId", "==", caller.orgId)
-        .where("leadId", "==", target.id)
-        .get();
-      for (const doc of led.docs) batch.update(doc.ref, { leadId: null });
-
-      await batch.commit();
-    } else if (change === "demote") {
-      // They go back to taking up a member seat, so there has to be one.
-      const quota = await validateTierQuota(caller.orgId, "members");
-      if (!quota.allowed) {
-        return {
-          success: false,
-          error: quota.error ?? "There's no member seat free for them on this plan.",
-        };
-      }
-      await adminDb.collection(USERS).doc(target.id).update({ role: "MEMBER" });
-    } else {
-      await adminDb.collection("organizations").doc(caller.orgId).update({ ownerId: target.id });
-      // Not posted to the activity feed: the whole workspace reads it, and
-      // who holds the account is kept from everyone but the holder.
-      console.log(`[TeamStructure] ${caller.orgId}: account handed from ${caller.uid} to ${target.id}`);
-      return { success: true };
-    }
+    await adminDb.collection(USERS).doc(target.id).update({ role: input.rank });
 
     await logActivity({
-      eventType: "OWNERSHIP_CHANGED",
+      eventType: "RANK_CHANGED",
       orgId: caller.orgId,
       projectId: null,
       actor: { uid: caller.uid, name: caller.name },
-      metadata: { change, targetUserId: target.id, memberName: target.name },
+      metadata: {
+        rank: input.rank,
+        previousRank: target.role,
+        targetUserId: target.id,
+        memberName: target.name,
+      },
     });
 
     return { success: true };
   } catch (err) {
-    console.error(`[TeamStructure] Ownership ${change} failed:`, err);
-    return { success: false, error: "Could not change ownership. Try again." };
+    console.error("[TeamStructure] Rank change failed:", err);
+    return { success: false, error: "Could not change their rank. Try again." };
   }
 }
 
-export async function promoteToOwnerAction(input: { targetUid: string }): Promise<Result> {
-  return changeOwnership("promote", input.targetUid);
-}
-
-export async function removeOwnerRoleAction(input: { targetUid: string }): Promise<Result> {
-  return changeOwnership("demote", input.targetUid);
-}
-
-export async function transferMainOwnerAction(input: { targetUid: string }): Promise<Result> {
-  return changeOwnership("transfer", input.targetUid);
-}
-
 /* ------------------------------------------------------------------ */
-/*  Departments: any owner                                             */
+/*  Departments: Internal Management, from Admin Tools                 */
 /* ------------------------------------------------------------------ */
 
 function nameTaken(departments: Department[], name: string, exceptId?: string) {
@@ -264,7 +264,7 @@ export async function createDepartmentAction(input: {
   name: string;
   leadTitle?: string;
 }): Promise<Result> {
-  const caller = await requireOwner();
+  const caller = await requireAdminTools();
   if (!caller.ok) return { success: false, error: caller.error };
 
   const parsed = normaliseDepartmentName(input.name);
@@ -293,6 +293,8 @@ export async function createDepartmentAction(input: {
       orgId: caller.orgId,
       name: parsed.name,
       leadId: null,
+      executiveId: null,
+      managerId: null,
       leadTitle: title.title,
       createdAt: new Date(),
       createdBy: caller.uid,
@@ -311,7 +313,7 @@ export async function renameDepartmentAction(input: {
   name: string;
   leadTitle?: string;
 }): Promise<Result> {
-  const caller = await requireOwner();
+  const caller = await requireAdminTools();
   if (!caller.ok) return { success: false, error: caller.error };
 
   const parsed = normaliseDepartmentName(input.name);
@@ -338,7 +340,7 @@ export async function renameDepartmentAction(input: {
 
 /** Deletes the department. Its people stay in the workspace, unassigned. */
 export async function deleteDepartmentAction(input: { departmentId: string }): Promise<Result> {
-  const caller = await requireOwner();
+  const caller = await requireAdminTools();
   if (!caller.ok) return { success: false, error: caller.error };
 
   try {
@@ -370,7 +372,7 @@ export async function assignDepartmentAction(input: {
   memberUid: string;
   departmentId: string | null;
 }): Promise<Result> {
-  const caller = await requireOwner();
+  const caller = await requireAdminTools();
   if (!caller.ok) return { success: false, error: caller.error };
 
   try {
@@ -406,13 +408,21 @@ export async function assignDepartmentAction(input: {
   }
 }
 
-/** Makes a member of the department its lead, or clears the lead with `memberUid: null`. */
+/**
+ * Makes a member of the department its lead, or clears the lead with
+ * `memberUid: null`. Managers and up, because naming a lead is what makes
+ * someone a Team Lead.
+ */
 export async function setDepartmentLeadAction(input: {
   departmentId: string;
   memberUid: string | null;
 }): Promise<Result> {
-  const caller = await requireOwner();
+  const caller = await requireCaller();
   if (!caller.ok) return { success: false, error: caller.error };
+  // Managers and up from Teams, or Internal Management from Admin Tools.
+  if (!canAppointTeamLeads(caller.role) && !(await loadAdminUnlockedUntil(caller.orgId, caller.uid))) {
+    return { success: false, error: "Only Managers and above can choose a department's lead." };
+  }
 
   try {
     const found = await loadOwnDepartment(caller, input.departmentId);

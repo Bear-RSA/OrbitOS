@@ -17,6 +17,7 @@ import { Task } from "@/types/task";
 import { startOfWeek, isAfter, addDays, format, differenceInCalendarDays } from "date-fns";
 import { Project } from "@/types/project";
 import { sortProjectsByPriority } from "@/lib/utils/project-order";
+import { normaliseRole } from "@/lib/members/rank";
 
 /**
  * Dashboard Data Orchestration Service
@@ -205,7 +206,7 @@ function assembleDashboard(
   );
 
   return {
-    role: viewer.role === "OWNER" ? "OWNER" : "MEMBER",
+    role: normaliseRole(viewer.role),
     metrics,
     personal,
     projects: sortedProjects,

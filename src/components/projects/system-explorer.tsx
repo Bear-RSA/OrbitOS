@@ -432,10 +432,10 @@ export function SystemExplorer({ projectId, members, isOwner, uid }: SystemExplo
           "group/drop relative mb-6 rounded-2xl border-2 border-dashed px-6 py-10 flex flex-col items-center justify-center text-center transition-all duration-300 outline-none",
           "focus-visible:ring-2 focus-visible:ring-ink/30",
           isUploading
-            ? "border-line/[0.12] bg-surface-card cursor-wait"
+            ? "border-transparent bg-transparent cursor-wait"
             : isDragging
               ? "border-ink/50 bg-surface-control cursor-copy scale-[1.005]"
-              : "border-line/[0.12] bg-surface-card hover:border-ink/30 hover:bg-surface-sunken cursor-pointer"
+              : "border-transparent bg-transparent cursor-pointer"
         )}
       >
         <div

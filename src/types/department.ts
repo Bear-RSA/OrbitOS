@@ -18,6 +18,13 @@ export interface Department {
   leadId: string | null;
   /** What this department calls its lead: "Team lead", "Head of Design". */
   leadTitle: string;
+  /**
+   * The Executive and Manager over this department, chosen on the org
+   * chart in Admin Tools. Either may be absent. One person can hold the
+   * same slot in several departments; neither has to be filed in it.
+   */
+  executiveId?: string | null;
+  managerId?: string | null;
   /** Millis, so the shape survives the server-action boundary. */
   createdAt: number;
 }

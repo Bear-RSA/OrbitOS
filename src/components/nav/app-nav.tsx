@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { LayoutGrid, FolderKanban, CalendarDays, Users, MessageSquare, Lock, Settings, LucideIcon } from "lucide-react";
+import { LayoutGrid, FolderKanban, CalendarDays, Users, MessageSquare, Ticket, Lock, Settings, LucideIcon } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { cn } from "@/lib/utils/classnames";
 
@@ -35,6 +35,7 @@ const ITEMS: NavItem[] = [
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/teams", label: "Teams", icon: Users },
   { href: "/messages", label: "Messages", icon: MessageSquare },
+  { href: "/tickets", label: "Tickets", icon: Ticket },
   /* Sits after the day-to-day destinations and before Settings: the
      Vault is something you go to on purpose, not somewhere you live. */
   { href: "/vault", label: "Vault", icon: Lock },
@@ -46,7 +47,7 @@ interface AppNavProps {
   orgId?: string;
   className?: string;
   /**
-   * Destinations to leave out on this page — a page does not need to
+   * Destinations to leave out on this page â€” a page does not need to
    * advertise itself, and Settings is reachable from the profile menu.
    */
   hide?: string[];
@@ -150,13 +151,13 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
 
   return (
     <nav aria-label="Primary" className={cn("min-w-0", className)}>
-      {/* Scrolls rather than wraps on a narrow viewport — a nav that
+      {/* Scrolls rather than wraps on a narrow viewport â€” a nav that
           reflows to two rows changes the header height on every route. */}
       <ul
         ref={listRef}
         /* `safe center`, not `center`: a centred row wider than its box
            overflows on both sides, and the left half cannot be scrolled
-           to — on a phone it slid under the logo. Safe centring falls back to the start edge.
+           to â€” on a phone it slid under the logo. Safe centring falls back to the start edge.
            The fades say there is more to scroll to on that side. */
         className={cn(
           "relative flex items-center [justify-content:safe_center] gap-0.5 sm:gap-1.5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
@@ -196,7 +197,7 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
               >
                 <span className="relative flex shrink-0 items-center justify-center">
                   {/* CSS `stroke-width` outranks Lucide's attribute and, unlike
-                      it, animates — so the icon thickens rather than snaps. */}
+                      it, animates â€” so the icon thickens rather than snaps. */}
                   <Icon
                     className={cn(
                       "h-4 w-4 transition-[stroke-width] duration-quick ease-spring",

@@ -1,6 +1,7 @@
 import { Task } from "./task";
 import { Project } from "./project";
 import { Member } from "./member";
+import type { StoredRole } from "@/lib/members/rank";
 
 export type ProjectHealthStatus = "healthy" | "watch" | "at-risk";
 export type WorkloadStatus = "light" | "balanced" | "heavy" | "needs-attention";
@@ -91,7 +92,7 @@ export interface PersonalMetrics {
  * It changes which buttons render, never which data does.
  */
 export interface DashboardData {
-  role: "OWNER" | "MEMBER";
+  role: StoredRole;
   /** Org-wide. Identical for every seat in the workspace. */
   metrics: {
     activeProjects: number;

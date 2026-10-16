@@ -36,11 +36,18 @@ service cloud.firestore {
         (userRole() == 'OWNER' || userRole() == 'owner');
     }
 
+    /* Every rank is a member of the workspace. The ranks themselves are
+       in `lib/members/rank`.
+       A rank missing from this list loses all access, so this must deploy
+       before anyone is given a new one. */
     function isMember(orgId) {
       return isInOrg(orgId) &&
         (
           userRole() == 'OWNER' ||
           userRole() == 'owner' ||
+          userRole() == 'EXECUTIVE' ||
+          userRole() == 'MANAGER' ||
+          userRole() == 'TEAM_LEAD' ||
           userRole() == 'MEMBER' ||
           userRole() == 'member'
         );

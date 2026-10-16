@@ -22,14 +22,14 @@ import { Label } from "@/components/ui/label";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils/classnames";
 import type { Member } from "@/types/member";
+import { roleLabel } from "@/lib/members/rank";
 
 /* ------------------------------------------------------------------ */
 /*  Create group                                                       */
 /*                                                                     */
-/*  A name and a multi-select over the org directory, the same shape   */
-/*  as `members/add-member-dialog`.                                    */
+/*  A name and a multi-select over the org directory.                  */
 /*                                                                     */
-/*  One difference from that dialog: no react-hook-form. The           */
+/*  No react-hook-form, unlike most dialogs here. The                  */
 /*  participant picker is not an input element, so the form library    */
 /*  has nothing to register and nothing to validate — the payload goes */
 /*  through `createGroupSchema` directly instead, which is the exact   */
@@ -185,7 +185,7 @@ export function CreateGroupDialog({
                           </span>
                           <span className="block truncate text-[12px] text-ink-dim">
                             {member.roleDescriptor ||
-                              (member.role === "OWNER" ? "Owner" : "Member")}
+                              roleLabel(member.role)}
                           </span>
                         </span>
                         <span

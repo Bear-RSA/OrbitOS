@@ -43,6 +43,11 @@ function JoinForm() {
         setErrorMsg("We couldn't find this invite. Check that you opened the whole link from the email, or ask for a new invite.");
         return;
       }
+      if (invite.status === "revoked") {
+        setStatus("error");
+        setErrorMsg("This invite was withdrawn. Ask whoever invited you for a new one.");
+        return;
+      }
       if (invite.status === "accepted") {
         setStatus("error");
         setErrorMsg("This invite has already been used. If you accepted it, sign in to open your workspace.");

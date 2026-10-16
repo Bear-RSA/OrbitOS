@@ -18,7 +18,6 @@ import { DashboardData } from "@/types/dashboard";
 import { resolvePreferences } from "@/types/preferences";
 import { RefreshCw, Plus, AlertTriangle } from "lucide-react";
 import { ActionButton } from "@/components/dashboard/dashboard-card";
-import { cn } from "@/lib/utils/classnames";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -129,24 +128,7 @@ export default function DashboardPage() {
       <AppHeader
         user={user}
         actions={
-          <>
-            <ActionButton
-              icon={RefreshCw}
-              label="Refresh"
-              variant="ghost"
-              collapsed
-              disabled={refreshing}
-              onClick={refresh}
-              className={cn(refreshing && "[&_svg]:animate-spin")}
-            />
-
-            <ActionButton
-              icon={Plus}
-              label="Create Project"
-              collapsed
-              onClick={() => setCreateProjectOpen(true)}
-            />
-          </>
+          <ActionButton icon={Plus} label="Create project" iconOnly onClick={() => setCreateProjectOpen(true)} />
         }
       />
 

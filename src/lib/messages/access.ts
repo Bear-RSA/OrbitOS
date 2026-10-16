@@ -114,7 +114,7 @@ export function canPostToConversation(facts: ConversationFacts): MessageDecision
  * Whether this person may speak for the company in Town Hall: rename
  * it, change its picture, pin notices, and post under its name.
  *
- * Every owner, not only the account holder — Town Hall is the
+ * Every owner, not only Internal Management — Town Hall is the
  * company's, and the owners run the company between them.
  */
 export function canManageTownHall(facts: ConversationFacts): MessageDecision {
@@ -148,7 +148,7 @@ export interface MessageFacts extends ConversationFacts {
  * Owners only, in any thread they can read. The message leaves the
  * thread entirely — no "withdrawn" placeholder — so nobody reading it
  * afterwards can tell anything was there. The one exception is the
- * account holder's history view, which is not decided here.
+ * Internal Management's history view, which is not decided here.
  */
 export function canDeleteMessage(facts: MessageFacts): MessageDecision {
   const canRead = canReadConversation(facts);

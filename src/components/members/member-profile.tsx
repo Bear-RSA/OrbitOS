@@ -16,6 +16,7 @@ import type { Member } from "@/types/member";
 import type { OrbitEvent } from "@/types/event";
 import type { Task } from "@/types/task";
 import type { Conversation } from "@/types/message";
+import { roleLabel } from "@/lib/members/rank";
 
 /* ------------------------------------------------------------------ */
 /*  Member profile                                                     */
@@ -150,7 +151,7 @@ export function MemberProfile({
   const statusTone = presence ? "bg-orbit-amber" : presenceTone(heartbeat);
 
   const descriptor =
-    member.roleDescriptor || (member.role === "OWNER" ? "Owner" : "Member");
+    member.roleDescriptor || roleLabel(member.role);
 
   /* Calling yourself is the one thing that is not a call, so it is the
      one thing still refused here — and the server refuses it too.
@@ -184,7 +185,7 @@ export function MemberProfile({
           {/* ── Banner ─────────────────────────────────────────── */}
           <div className="-mx-6 -mt-6 mb-5 border-b border-line/[0.07] bg-surface-hover/60 px-6 pb-5 pt-6">
             <div className="flex items-start gap-4">
-              <UserAvatar size="xl" name={member.name} photoURL={member.photoURL} />
+              <UserAvatar size="xl" name={member.name} photoURL={member.photoURL} uid={member.id} />
 
               <div className="min-w-0 flex-1 pr-10 pt-1">
                 <DialogTitle className="truncate text-[18px] font-medium tracking-tight text-ink-strong">

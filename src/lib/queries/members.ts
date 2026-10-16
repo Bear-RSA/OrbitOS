@@ -5,14 +5,12 @@ import {
   getDocs,
   doc,
   getDoc,
-  addDoc,
   updateDoc,
-  Timestamp,
   onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import { Member, MemberInvite } from "@/types/member";
-import { nanoid } from "../utils/nanoid";
+import { Member } from "@/types/member";
+import { normaliseRole } from "@/lib/members/rank";
 
 const USERS_COLLECTION = "users";
 
@@ -28,7 +26,7 @@ export function subscribeToMembersByOrg(
   return onSnapshot(q, (snapshot) => {
     const members = snapshot.docs.map((doc) => {
       const data = doc.data();
-      const normalizedRole = data.role?.toUpperCase() === "OWNER" ? "OWNER" : "MEMBER";
+      const normalizedRole = normaliseRole(data.role);
       return { id: doc.id, ...data, role: normalizedRole } as Member;
     });
     callback(members);
@@ -37,7 +35,6 @@ export function subscribeToMembersByOrg(
     callback([]);
   });
 }
-const INVITES_COLLECTION = "memberInvites";
 
 export async function getMembersByOrg(orgId: string): Promise<Member[]> {
   const q = query(
@@ -47,7 +44,7 @@ export async function getMembersByOrg(orgId: string): Promise<Member[]> {
   const snapshot = await getDocs(q);
   return snapshot.docs.map((doc) => {
     const data = doc.data();
-    const normalizedRole = data.role?.toUpperCase() === "OWNER" ? "OWNER" : "MEMBER";
+    const normalizedRole = normaliseRole(data.role);
     return { id: doc.id, ...data, role: normalizedRole } as Member;
   });
 }
@@ -57,43 +54,8 @@ export async function getUserById(userId: string): Promise<Member | null> {
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
   const data = snap.data();
-  const normalizedRole = data.role?.toUpperCase() === "OWNER" ? "OWNER" : "MEMBER";
+  const normalizedRole = normaliseRole(data.role);
   return { id: snap.id, ...data, role: normalizedRole } as Member;
-}
-
-export async function createInvite(
-  orgId: string,
-  email: string,
-  invitedBy: string
-): Promise<MemberInvite> {
-  const token = nanoid(32);
-  const now = new Date();
-  const expires = new Date();
-  expires.setDate(now.getDate() + 7);
-
-  const invite: Omit<MemberInvite, "id"> = {
-    orgId,
-    email: email.toLowerCase().trim(),
-    invitedBy,
-    role: "MEMBER",
-    status: "pending",
-    token,
-    createdAt: Timestamp.fromDate(now),
-    expiresAt: Timestamp.fromDate(expires),
-  };
-  const ref = await addDoc(collection(db, INVITES_COLLECTION), invite);
-  return { id: ref.id, ...invite };
-}
-
-export async function getInviteByToken(token: string): Promise<MemberInvite | null> {
-  const q = query(
-    collection(db, INVITES_COLLECTION),
-    where("token", "==", token)
-  );
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) return null;
-  const doc = snapshot.docs[0];
-  return { id: doc.id, ...doc.data() } as MemberInvite;
 }
 
 

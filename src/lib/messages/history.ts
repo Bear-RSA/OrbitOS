@@ -4,9 +4,9 @@ import type { Message, MessageHistoryEntry } from "@/types/message";
 /* ------------------------------------------------------------------ */
 /*  Message history                                                    */
 /*                                                                     */
-/*  Edits and deletes leave nothing behind in the thread itself. The   */
-/*  account holder is the one person who can see what changed, and     */
-/*  this folds that history back into a transcript for them.           */
+/*  Edits and deletes leave nothing behind in the thread itself.       */
+/*  Internal Management are the only people who can see what changed, */
+/*  and this folds that history back into a transcript for them.       */
 /* ------------------------------------------------------------------ */
 
 export interface FoldedHistory {

@@ -29,7 +29,7 @@ const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 export const HARD_MAX_RESETS_PER_DAY = 3;
 const RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-function keyFor(kind: "attempt" | "reset", value: string): string {
+function keyFor(kind: "attempt" | "reset" | "admin-attempt" | "admin-reset", value: string): string {
   const digest = createHash("sha256").update(`${kind}:${value}`).digest("hex");
   return `${kind}_${digest.slice(0, 40)}`;
 }
@@ -139,6 +139,53 @@ export async function claimPasscodeResetRequest(
     return allowed ? "allowed" : "locked";
   } catch (err) {
     console.error("[VaultPasscode] Could not claim a reset request:", err);
+    return "unavailable";
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Admin Tools passcode                                               */
+/*                                                                     */
+/*  The same two ceilings, under their own keys, so a wrong guess at   */
+/*  one passcode never spends an attempt on the other.                 */
+/* ------------------------------------------------------------------ */
+
+export async function claimAdminPasscodeAttempt(
+  uid: string,
+  orgId: string,
+  now: Date = new Date()
+): Promise<ThrottleVerdict> {
+  try {
+    const allowed = await claim(
+      keyFor("admin-attempt", `${orgId}:${uid}`),
+      HARD_MAX_ATTEMPTS_PER_WINDOW,
+      ATTEMPT_WINDOW_MS,
+      now
+    );
+    return allowed ? "allowed" : "locked";
+  } catch (err) {
+    console.error("[AdminPasscode] Could not claim an attempt:", err);
+    return "unavailable";
+  }
+}
+
+export async function clearAdminPasscodeAttempts(uid: string, orgId: string): Promise<void> {
+  try {
+    await adminDb.collection(COLLECTION).doc(keyFor("admin-attempt", `${orgId}:${uid}`)).delete();
+  } catch (err) {
+    console.error("[AdminPasscode] Could not clear the attempt counter:", err);
+  }
+}
+
+export async function claimAdminPasscodeResetRequest(
+  orgId: string,
+  now: Date = new Date()
+): Promise<ThrottleVerdict> {
+  try {
+    const allowed = await claim(keyFor("admin-reset", orgId), HARD_MAX_RESETS_PER_DAY, RESET_WINDOW_MS, now);
+    return allowed ? "allowed" : "locked";
+  } catch (err) {
+    console.error("[AdminPasscode] Could not claim a reset request:", err);
     return "unavailable";
   }
 }

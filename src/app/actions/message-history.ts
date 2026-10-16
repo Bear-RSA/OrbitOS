@@ -5,7 +5,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import { requireCaller, type Caller } from "@/lib/auth/caller";
 import { canDeleteMessage, canEditMessage, canReadConversation } from "@/lib/messages/access";
 import { railPreview } from "@/lib/messages/rail-preview";
-import { loadAccountHolderId } from "@/lib/members/account-holder";
+import { isInternalManagement } from "@/lib/internal-management/store";
 import {
   conversationIdSchema,
   editMessageSchema,
@@ -21,10 +21,10 @@ import type { MessageHistoryEntry } from "@/types/message";
 /*  reader sees only what is there now.                                */
 /*                                                                     */
 /*  The record of the change goes to `conversations/{id}/history`,     */
-/*  which `firestore.rules` closes to every client. The account holder */
-/*  reads it through `getMessageHistoryAction`, and is the only person */
-/*  who can. That is why these are server actions rather than client   */
-/*  writes: the change and its record have to land together, and a    */
+/*  which `firestore.rules` closes to every client. Internal           */
+/*  Management reads it through `getMessageHistoryAction`, and nobody  */
+/*  else can. That is why these are server actions rather than client  */
+/*  writes: the change and its record have to land together, and a     */
 /*  browser must not be able to make one without the other.            */
 /* ------------------------------------------------------------------ */
 
@@ -32,7 +32,7 @@ const CONVERSATIONS = "conversations";
 const MESSAGES = "messages";
 const HISTORY = "history";
 
-/** How much history the account holder's view loads for one thread. */
+/** How much history Internal Management's view loads for one thread. */
 const HISTORY_LIMIT = 300;
 
 type Result = { success: true } | { success: false; error: string };
@@ -94,7 +94,7 @@ async function refreshRail(conversationRef: FirebaseFirestore.DocumentReference)
 /*  Edit                                                               */
 /* ------------------------------------------------------------------ */
 
-/** Rewrites the caller's own message. Nobody but the account holder sees it changed. */
+/** Rewrites the caller's own message. Nobody but Internal Management sees it changed. */
 export async function editMessageAction(input: unknown): Promise<Result> {
   try {
     const parsed = editMessageSchema.safeParse(input);
@@ -210,15 +210,15 @@ export async function deleteMessageAction(input: unknown): Promise<Result> {
 }
 
 /* ------------------------------------------------------------------ */
-/*  The account holder's view                                          */
+/*  Internal Management's view                                         */
 /* ------------------------------------------------------------------ */
 
-/** Whether the caller holds the account, and so may open message history. */
+/** Whether the caller is in Internal Management, and so may open message history. */
 export async function canViewMessageHistoryAction(): Promise<boolean> {
   try {
     const caller = await requireCaller();
     if (!caller.ok) return false;
-    return (await loadAccountHolderId(caller.orgId)) === caller.uid;
+    return await isInternalManagement(caller.orgId, caller.uid);
   } catch (err) {
     console.error("[MessageHistory] Could not check access:", err);
     return false;
@@ -228,8 +228,8 @@ export async function canViewMessageHistoryAction(): Promise<boolean> {
 /**
  * Every edit and delete in one thread, newest first.
  *
- * The account holder only, and only in threads they can read — holding
- * the account does not open a dm between two colleagues.
+ * Internal Management only, and only in threads they can read: being in
+ * it does not open a dm between two colleagues.
  */
 export async function getMessageHistoryAction(
   conversationId: unknown
@@ -242,13 +242,13 @@ export async function getMessageHistoryAction(
     if (!caller.ok) return { success: false, error: caller.error };
 
     const conversationRef = adminDb.collection(CONVERSATIONS).doc(parsedId.data);
-    const [holderId, conversationSnap] = await Promise.all([
-      loadAccountHolderId(caller.orgId),
+    const [allowed, conversationSnap] = await Promise.all([
+      isInternalManagement(caller.orgId, caller.uid),
       conversationRef.get(),
     ]);
 
-    if (holderId !== caller.uid) {
-      return { success: false, error: "Only the account holder can see message history." };
+    if (!allowed) {
+      return { success: false, error: "Only Internal Management can see message history." };
     }
     if (!conversationSnap.exists) return { success: false, error: "That conversation no longer exists." };
 

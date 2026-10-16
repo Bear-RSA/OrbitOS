@@ -1,11 +1,12 @@
 import { Timestamp } from "firebase/firestore";
+import type { StoredRole } from "@/lib/members/rank";
 
 export interface Member {
   id: string;
   email: string;
   name: string;
   orgId: string;
-  role: "OWNER" | "MEMBER";
+  role: StoredRole;
   roleDescriptor?: string;
   /** See `types/department`. Absent or null means unassigned. */
   departmentId?: string | null;
@@ -22,10 +23,13 @@ export interface MemberInvite {
   email: string;
   invitedBy: string;
   role: "MEMBER";
-  status: "pending" | "accepted" | "expired";
+  /** "revoked": withdrawn from Admin Tools before anyone used it. */
+  status: "pending" | "accepted" | "expired" | "revoked";
   token: string;
   createdAt: Timestamp;
   expiresAt: Timestamp;
   acceptedBy?: string;
   acceptedAt?: Timestamp;
+  revokedBy?: string;
+  revokedAt?: Timestamp;
 }
