@@ -188,7 +188,7 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
                 }}
                 onBlur={leaveTip}
                 className={cn(
-                  "group/nav relative inline-flex h-9 min-w-9 items-center justify-center gap-2 rounded-full px-4",
+                  "group/nav relative inline-flex h-9 min-w-9 items-center justify-center rounded-full px-4",
                   "transition-[color,background-color,transform] duration-quick ease-spring",
                   "active:scale-[0.96] active:duration-press active:ease-press [-webkit-tap-highlight-color:transparent]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base",
@@ -209,17 +209,9 @@ export function AppNav({ uid, orgId, className, hide }: AppNavProps) {
                     <span className="absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full bg-orbit-red ring-2 ring-base" />
                   )}
                 </span>
-                {/* The label is the accessible name everywhere, but only
-                    shown on touch screens for the current page: there is
-                    no hover there, so it is how you read where you are. */}
-                <span
-                  className={cn(
-                    "whitespace-nowrap text-[13px] font-medium tracking-normal",
-                    active ? "sr-only [@media(hover:none)]:not-sr-only" : "sr-only"
-                  )}
-                >
-                  {item.label}
-                </span>
+                {/* Icons only, on every screen. The label is the accessible
+                    name; the heavier stroke says which page you're on. */}
+                <span className="sr-only">{item.label}</span>
                 {showBadge && <span className="sr-only">Unread messages</span>}
               </Link>
             </li>

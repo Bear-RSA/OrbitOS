@@ -103,7 +103,7 @@ export function AppHeader({ user, hide = DEFAULT_HIDE, actions, variant = "shell
                    given — then started under the logo. Holding the logo's
                    width makes the nav the track that gives way, and it
                    scrolls. */
-              "group flex shrink-0 items-center gap-3.5 justify-self-start rounded-full",
+              "group flex shrink-0 items-center justify-self-start rounded-full",
               "transition-transform duration-quick ease-spring active:scale-[0.97] active:duration-press active:ease-press",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
             )}
@@ -119,10 +119,6 @@ export function AppHeader({ user, hide = DEFAULT_HIDE, actions, variant = "shell
                 <OrbitMark className="h-[64%] w-[64%] text-ink-strong" />
               </div>
             </div>
-            {/* The wordmark yields to the nav on small screens. */}
-            <span className="vibrant hidden text-[15px] tracking-tight transition-colors group-hover:text-ink-strong md:inline">
-              OrbitOS
-            </span>
           </Link>
         </div>
 
