@@ -27,6 +27,9 @@ import { TOWN_HALL_NAME, type Conversation } from "@/types/message";
 import type { Member } from "@/types/member";
 import { cn } from "@/lib/utils/classnames";
 import { compareRoles, roleLabel } from "@/lib/members/rank";
+import { getOrgChartAction, type OrgChart } from "@/app/actions/org-chart";
+import { tintsByPerson } from "@/lib/members/chart-layout";
+import type { DepartmentTint } from "@/lib/members/department-tint";
 
 /* ------------------------------------------------------------------ */
 /*  Messages                                                           */
@@ -114,6 +117,25 @@ function MessagesScreen() {
     if (!orgId) return;
     return subscribeToMembersByOrg(orgId, setMembers);
   }, [orgId]);
+
+  /* Each person's department shade, read once from the org chart so a
+     face in the rail wears the same colour it does on Teams. A chart that
+     fails to load just leaves the rows plain. */
+  const [chart, setChart] = useState<OrgChart | null>(null);
+  useEffect(() => {
+    if (!orgId) return;
+    let cancelled = false;
+    getOrgChartAction().then((result) => {
+      if (!cancelled && result.success) setChart(result.chart);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
+  const shades = useMemo(
+    () => (chart ? tintsByPerson(chart) : new Map<string, DepartmentTint>()),
+    [chart]
+  );
 
   /* Town Hall's id is derivable, so the listener opens immediately and
      does not wait on the round trip that materializes the document —
@@ -269,6 +291,7 @@ function MessagesScreen() {
           viewerUid={user.id}
           members={members}
           people={people}
+          shades={shades}
           townHallId={townHallId}
           townHall={townHall}
           threads={threads}
@@ -343,6 +366,7 @@ function MessagesScreen() {
               ) ?? null)
             : null
         }
+        chart={chart}
       />
 
       {/* Worth a confirmation: it is undoable in the sense that a new

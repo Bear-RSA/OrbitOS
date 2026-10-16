@@ -7,6 +7,7 @@ import { getOrgChartAction, type ChartPerson, type OrgChart } from "@/app/action
 import { RANK_TEXT } from "@/components/ui/rank-styles";
 import { tintStyle } from "@/components/ui/department-glass";
 import { tintOf } from "@/lib/members/department-tint";
+import { tintsByPerson } from "@/lib/members/chart-layout";
 import { WORKLOAD_STATUS } from "@/components/teams/workload-status";
 import { standingOf } from "@/lib/members/standing";
 import { calculateMemberWorkload } from "@/lib/utils/dashboard-logic";
@@ -165,6 +166,12 @@ export function MemberProfile({
     };
   }, [memberId, providedChart]);
 
+  /* Their department shade, the one their Teams card and Messages row wear. */
+  const shade = useMemo(
+    () => (memberId && chart ? tintsByPerson(chart).get(memberId) ?? null : null),
+    [memberId, chart]
+  );
+
   const standing = useMemo(
     () => (memberId && chart ? standingOf<ChartPerson, OrgChart["departments"][number]>(memberId, chart) : null),
     [memberId, chart]
@@ -264,14 +271,26 @@ export function MemberProfile({
         <DialogContent
           /* Near-solid rather than the dialogs' usual fog: this card is
              read closely, and the tree behind it showed through as blur. */
-          className="max-h-[88vh] gap-0 overflow-y-auto rounded-[28px] p-6 [&.material-fog-modal]:[--fog-alpha:0.97] sm:max-w-lg"
+          className={cn(
+            "max-h-[88vh] gap-0 overflow-y-auto rounded-[28px] p-6 [&.material-fog-modal]:[--fog-alpha:0.97] sm:max-w-lg",
+            /* The rim in their department's colour, as on their Teams card. */
+            shade && "ring-[rgb(var(--tint)/0.22)]"
+          )}
+          style={shade ? tintStyle(shade) : undefined}
           /* The banner bleeds to the edges by exactly this padding, so the
              desktop layer has to use it too rather than the default 48px. */
           contentClassName="sm:p-6"
           id="member-profile"
         >
           {/* ── Banner ─────────────────────────────────────────── */}
-          <div className="-mx-6 -mt-6 mb-5 border-b border-line/[0.07] bg-surface-hover/60 px-6 pb-5 pt-6">
+          <div
+            className={cn(
+              "-mx-6 -mt-6 mb-5 border-b px-6 pb-5 pt-6",
+              shade
+                ? "border-[rgb(var(--tint)/0.18)] bg-[linear-gradient(180deg,rgb(var(--tint)/0.16)_0%,rgb(var(--tint)/0.06)_100%)]"
+                : "border-line/[0.07] bg-surface-hover/60"
+            )}
+          >
             <div className="flex items-start gap-4">
               <UserAvatar size="xl" name={member.name} photoURL={member.photoURL} uid={member.id} rank={rank} />
 

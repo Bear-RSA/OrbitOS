@@ -153,6 +153,26 @@ export function layOutChart<P extends Person, D extends Department>(chart: Chart
 }
 
 /**
+ * Each person's department shade, the same one the chart gives them:
+ * their card's tint where they're on it, otherwise the department
+ * they're filed in. People in no department are left out.
+ */
+export function tintsByPerson<P extends Person & { departmentId?: string | null }, D extends Department>(
+  chart: ChartInput<P, D>
+): Map<string, DepartmentTint> {
+  const tints = new Map<string, DepartmentTint>();
+  for (const card of layOutChart(chart)) {
+    if (card.kind !== "DEPARTMENT" && card.tint) tints.set(card.person.id, card.tint);
+  }
+  const departments = new Map(chart.departments.map((d) => [d.id, d]));
+  for (const person of chart.people) {
+    const filed = person.departmentId ? departments.get(person.departmentId) : undefined;
+    if (!tints.has(person.id) && filed) tints.set(person.id, tintOf(filed));
+  }
+  return tints;
+}
+
+/**
  * Who `id` reports to, in words. Under a department they report to its
  * head, the person wired directly above it.
  */

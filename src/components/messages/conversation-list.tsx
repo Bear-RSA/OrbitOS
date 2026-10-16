@@ -16,6 +16,8 @@ import { useMemberRank } from "@/hooks/use-member-rank";
 import { RANK_LABEL, type Rank } from "@/lib/members/rank";
 import { cn } from "@/lib/utils/classnames";
 import { GlassSurface } from "@/components/ui/glass-surface";
+import { departmentShade } from "@/components/ui/department-glass";
+import type { DepartmentTint } from "@/lib/members/department-tint";
 import { TOWN_HALL_NAME, type Conversation } from "@/types/message";
 import type { Member } from "@/types/member";
 
@@ -47,6 +49,8 @@ interface ConversationListProps {
   members: Member[];
   /** The directory without the viewer, in the order People should show. */
   people: Member[];
+  /** Each person's department shade, by uid. Anyone missing is in no department. */
+  shades: ReadonlyMap<string, DepartmentTint>;
   townHallId: string | null;
   townHall: Conversation | null;
   /** Dms and groups, newest activity first. */
@@ -72,6 +76,7 @@ export function ConversationList({
   viewerUid,
   members,
   people,
+  shades,
   townHallId,
   townHall,
   threads,
@@ -257,6 +262,7 @@ export function ConversationList({
                       onClick={() => onSelect(conversation.id)}
                       avatar={{ name: title, photoURL: partner?.photoURL, rank: rankOf(partner) }}
                       presence={presenceFor(partner)}
+                      shade={partnerUid ? shades.get(partnerUid) : undefined}
                       onAvatarClick={
                         partnerUid ? () => onOpenProfile(partnerUid) : undefined
                       }
@@ -309,6 +315,7 @@ export function ConversationList({
                   onAvatarClick={() => onOpenProfile(member.id)}
                   avatar={{ name: member.name, photoURL: member.photoURL, rank: rankOf(member) }}
                   presence={presenceFor(member)}
+                  shade={shades.get(member.id)}
                 />
               ))}
             </Section>
@@ -369,6 +376,8 @@ interface ConversationRowProps {
   presence?: RowPresence | null;
   /** A call is running in this thread right now. */
   live?: boolean;
+  /** The person's department colour, worn as the same light shade their Teams card has. */
+  shade?: DepartmentTint | null;
   /**
    * `label` is the mono-uppercase treatment the rest of the app uses for
    * system text — right for a role descriptor. A message preview is
@@ -403,10 +412,13 @@ function ConversationRow({
   avatar,
   presence,
   live = false,
+  shade = null,
   previewStyle = "label",
   onAvatarClick,
   onClear,
 }: ConversationRowProps) {
+  const tinted = departmentShade(shade);
+
   const face = (
     <span className="relative block">
       {avatar ? (
@@ -437,12 +449,15 @@ function ConversationRow({
        a control is invalid, and the picture and the row do different
        things. */
     <li
+      style={tinted.style}
       className={cn(
         "group/row relative flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition-all duration-200",
         busy && "opacity-50",
         selected
           ? "bg-surface-control shadow-card ring-1 ring-inset ring-line/[0.08]"
-          : "hover:bg-surface-card"
+          : "hover:bg-surface-card",
+        /* After the selected ring, so the department's colour wins the rim. */
+        shade && cn("ring-1 ring-inset", tinted.className)
       )}
     >
       {onAvatarClick ? (

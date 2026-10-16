@@ -14,8 +14,8 @@ import { MemberProfile } from "@/components/members/member-profile";
 import { DestructiveActionModal } from "@/components/ui/destructive-action-modal";
 import { OrgChartMirror } from "@/components/teams/org-chart-mirror";
 import { departmentShade } from "@/components/ui/department-glass";
-import { layOutChart } from "@/lib/members/chart-layout";
-import { tintOf, type DepartmentTint } from "@/lib/members/department-tint";
+import { tintsByPerson } from "@/lib/members/chart-layout";
+import type { DepartmentTint } from "@/lib/members/department-tint";
 import { getOrgChartAction, type OrgChart } from "@/app/actions/org-chart";
 import { WORKLOAD_STATUS } from "@/components/teams/workload-status";
 import { ManageMemberDialog } from "@/components/members/manage-member-dialog";
@@ -241,19 +241,10 @@ export default function TeamsPage() {
   /* Each person's department shade, the same one the chart gives them:
      their card's tint where they're on it, otherwise the department
      they're filed in. */
-  const tintByPerson = useMemo(() => {
-    const tints = new Map<string, DepartmentTint>();
-    if (!chart) return tints;
-    for (const card of layOutChart(chart)) {
-      if (card.kind !== "DEPARTMENT" && card.tint) tints.set(card.person.id, card.tint);
-    }
-    const departments = new Map(chart.departments.map((d) => [d.id, d]));
-    for (const person of chart.people) {
-      const filed = person.departmentId ? departments.get(person.departmentId) : undefined;
-      if (!tints.has(person.id) && filed) tints.set(person.id, tintOf(filed));
-    }
-    return tints;
-  }, [chart]);
+  const tintByPerson = useMemo(
+    () => (chart ? tintsByPerson(chart) : new Map<string, DepartmentTint>()),
+    [chart]
+  );
 
   const roster = useMemo(
     () =>
