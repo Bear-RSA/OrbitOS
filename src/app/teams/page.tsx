@@ -394,7 +394,7 @@ export default function TeamsPage() {
 
       {/* Header */}
       <ScrollReveal>
-        <div className="mb-24">
+        <div className="mb-12">
           <h1 className="text-5xl font-light tracking-tighter text-ink mb-6">Team</h1>
           <div className="flex flex-wrap items-center gap-4">
             <div className="px-3 py-1 bg-surface-control rounded-full ring-1 ring-line/[0.04] flex items-center gap-2">
@@ -439,22 +439,20 @@ export default function TeamsPage() {
           {/* Seat management sits under the roster status line, where it
               reads as an action on the team rather than page chrome.
               Owners remove members. Invites are sent from Admin Tools only. */}
-          {isOwner && (
+          {isOwner && removableCount > 0 && view === "roster" && (
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              {isOwner && removableCount > 0 && view === "roster" && (
-                <button
-                  onClick={() => setRevokeMode(!revokeMode)}
-                  className={cn(
-                    "gap-2.5 flex items-center justify-center rounded-lg px-5 h-10 text-[13px] font-bold tracking-tight transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] focus:outline-none ring-0",
-                    revokeMode
-                      ? "bg-orbit-red/12 text-orbit-red ring-1 ring-inset ring-orbit-red/25 hover:bg-orbit-red/20"
-                      : "bg-surface-control text-ink-muted hover:bg-surface-hover hover:text-ink"
-                  )}
-                >
-                  <UserMinus className="w-4 h-4" />
-                  {revokeMode ? "Done" : "Remove members"}
-                </button>
-              )}
+              <button
+                onClick={() => setRevokeMode(!revokeMode)}
+                className={cn(
+                  "gap-2.5 flex items-center justify-center rounded-lg px-5 h-10 text-[13px] font-bold tracking-tight transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] focus:outline-none ring-0",
+                  revokeMode
+                    ? "bg-orbit-red/12 text-orbit-red ring-1 ring-inset ring-orbit-red/25 hover:bg-orbit-red/20"
+                    : "bg-surface-control text-ink-muted hover:bg-surface-hover hover:text-ink"
+                )}
+              >
+                <UserMinus className="w-4 h-4" />
+                {revokeMode ? "Done" : "Remove members"}
+              </button>
             </div>
           )}
         </div>
