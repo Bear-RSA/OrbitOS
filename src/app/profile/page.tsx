@@ -41,7 +41,6 @@ import {
   Crown,
   Users,
   HardDriveUpload,
-  Settings as SettingsIcon,
 } from "lucide-react";
 import { AppHeader } from "@/components/nav/app-header";
 import { cn } from "@/lib/utils/classnames";
@@ -349,21 +348,13 @@ export default function ProfilePage() {
               className={cn(refreshing && "[&_svg]:animate-spin")}
             />
 
-            {/* Settings lives off the profile: it is account-scoped, and this
-                is the only page every role reaches it from. */}
-            <ActionButton
-              icon={SettingsIcon}
-              label="Settings"
-              collapsed
-              onClick={() => router.push("/settings")}
-            />
-
             <button
               onClick={handleSave}
               disabled={isSaving || !hasChanges || !name.trim()}
-              aria-label="Save profile changes"
+              aria-label={isSaving ? "Saving" : saveSuccess ? "Saved" : "Save profile changes"}
+              title={isSaving ? "Saving" : saveSuccess ? "Saved" : "Save"}
               className={cn(
-                "inline-flex h-9 items-center gap-2 rounded-lg bg-ink px-3.5 text-on-ink",
+                "inline-flex h-9 w-9 items-center justify-center rounded-lg bg-ink text-on-ink",
                 "shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06)]",
                 "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
                 "hover:-translate-y-px hover:bg-ink-strong",
@@ -379,9 +370,6 @@ export default function ProfilePage() {
                 ) : (
                   <HardDriveUpload className="h-3.5 w-3.5" aria-hidden />
                 )}
-              </span>
-              <span className="text-[12px] font-medium">
-                {isSaving ? "Saving" : saveSuccess ? "Saved" : "Save"}
               </span>
             </button>
           </>
