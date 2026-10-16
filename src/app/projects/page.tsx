@@ -9,6 +9,8 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { OrbitLoader } from "@/components/brand/orbit-loader";
 import { WorkspaceProjects } from "@/components/dashboard/workspace-projects";
 import { Project } from "@/types/project";
+import { GlassSurface } from "@/components/ui/glass-surface";
+import Link from "next/link";
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -67,6 +69,32 @@ export default function ProjectsPage() {
         userId={user?.id}
         isOwner={user?.role === "OWNER"}
         onRefresh={loadProjects}
+        emptyState={
+          <GlassSurface
+            fallback="material-fog [--fog-base:var(--surface-sunken)]"
+            tint="surface-sunken"
+            className="mb-32 rounded-3xl border border-line/[0.06] p-8 shadow-raised ring-1 ring-line/5"
+            contentClassName="space-y-2"
+          >
+            <p className="text-[15px] font-medium text-ink">Your projects will be in here</p>
+            <p className="max-w-prose text-[13px] font-light leading-relaxed text-ink-muted">
+              {user?.role === "OWNER" ? (
+                <>
+                  Start your first one from the{" "}
+                  <Link
+                    href="/dashboard"
+                    className="rounded-sm text-ink underline underline-offset-4 hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                  >
+                    dashboard
+                  </Link>
+                  . Each project gets its own tasks, files, calendar and briefings.
+                </>
+              ) : (
+                "Projects show up here once an owner creates one and adds you to it."
+              )}
+            </p>
+          </GlassSurface>
+        }
       />
     </DashboardShell>
   );

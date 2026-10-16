@@ -14,12 +14,16 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/brand/logo";
 import { friendlyAuthError } from "@/lib/firebase/auth-errors";
 import { GlassSurface } from "@/components/ui/glass-surface";
+import { signOut } from "@/lib/firebase/auth";
 
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, firebaseUser, loading } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  // Invited signups land here when their invite didn't go through. Owners,
+  // and anyone who chooses to, get the setup form.
+  const [startOwn, setStartOwn] = useState(false);
 
   const {
     register,
@@ -53,6 +57,8 @@ export default function OnboardingPage() {
     router.push("/dashboard");
     return null;
   }
+
+  const awaitingInvite = user?.role === "MEMBER" && !startOwn;
 
   const onSubmit = async (data: OnboardingInput) => {
     setError(null);
@@ -97,6 +103,32 @@ export default function OnboardingPage() {
           <span className="font-semibold text-ink text-lg tracking-tight">OrbitOS</span>
         </div>
 
+        {awaitingInvite ? (
+          <div className="text-center">
+            <h1 className="text-2xl font-light text-ink tracking-tight">You&apos;re not in a workspace yet</h1>
+            <p className="text-[13px] text-ink-muted leading-relaxed mt-3 max-w-sm mx-auto">
+              You&apos;re signed in as <span className="text-ink">{firebaseUser.email}</span>. If a teammate
+              invited you, open the link in their email again. It works for 7 days; if it has expired, ask them
+              to send a new one.
+            </p>
+            <div className="mt-10 flex flex-col items-center gap-4">
+              <Button type="button" variant="secondary" onClick={() => setStartOwn(true)} id="onboarding-start-own">
+                Start my own workspace instead
+              </Button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await signOut();
+                  window.location.assign("/login");
+                }}
+                className="text-[13px] text-ink-muted underline-offset-4 hover:text-ink hover:underline transition-colors"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        ) : (
+        <>
         <div className="mb-10 text-center">
           <h1 className="text-2xl font-light text-ink tracking-tight">Set up your workspace</h1>
           <p className="text-[13px] text-ink-muted font-medium mt-2">
@@ -154,6 +186,8 @@ export default function OnboardingPage() {
             </Button>
           </form>
         </GlassSurface>
+        </>
+        )}
       </div>
     </div>
   );

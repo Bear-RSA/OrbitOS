@@ -36,6 +36,8 @@ interface WorkspaceProjectsProps {
   allowReorder?: boolean;
   /** The archive shelf belongs with the full listing, not a focus list. */
   showArchiveShelf?: boolean;
+  /** Shown when there are no projects at all. Without it, nothing renders. */
+  emptyState?: React.ReactNode;
 }
 
 export function WorkspaceProjects({
@@ -49,6 +51,7 @@ export function WorkspaceProjects({
   eyebrow = "Ecosystem Tracking",
   allowReorder = true,
   showArchiveShelf = true,
+  emptyState = null,
 }: WorkspaceProjectsProps) {
   const router = useRouter();
   const [reordering, setReordering] = useState(false);
@@ -162,7 +165,7 @@ export function WorkspaceProjects({
 
   // Previously an early return — which would have hidden the archive shelf in
   // exactly the case it matters most: every project archived.
-  if (displayProjects.length === 0 && archived.length === 0) return null;
+  if (displayProjects.length === 0 && archived.length === 0) return <>{emptyState}</>;
 
   return (
     <div className="w-full">

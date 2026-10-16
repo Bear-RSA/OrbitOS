@@ -9,6 +9,7 @@ import { signUpSchema, SignUpInput } from "@/lib/validations/auth";
 import { signUp } from "@/lib/firebase/auth";
 import { friendlyAuthError } from "@/lib/firebase/auth-errors";
 import { safeRedirect } from "@/lib/utils/safe-redirect";
+import { getInviteInfoAction } from "@/app/actions/invites";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase/client";
@@ -24,8 +25,19 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get("redirect");
-  const isInvite = !!rawRedirect;
   const redirectPath = safeRedirect(rawRedirect, "/onboarding");
+  // Only an invite link makes this an invited signup. Any redirect used to
+  // count, so someone sent here from a gated page via /login was made a
+  // MEMBER with no workspace and never shown workspace setup.
+  const isInvite = redirectPath.startsWith("/join?");
+  const inviteToken = isInvite
+    ? new URLSearchParams(redirectPath.slice(redirectPath.indexOf("?") + 1)).get("token")
+    : null;
+
+  /* The invite is bound to one address. Leaving the field free meant a
+     typo created an account that the invite then refused, so fill it in
+     from the invite and lock it. */
+  const [invite, setInvite] = useState<{ email: string; workspaceName: string } | null>(null);
 
   const { user, loading, sessionStatus } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -33,10 +45,24 @@ function SignupForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<SignUpInput>({
     resolver: zodResolver(signUpSchema),
   });
+
+  useEffect(() => {
+    if (!inviteToken) return;
+    let cancelled = false;
+    getInviteInfoAction(inviteToken).then((info) => {
+      if (cancelled || !info || info.status !== "pending" || info.isExpired) return;
+      setInvite({ email: info.email, workspaceName: info.workspaceName });
+      setValue("email", info.email, { shouldValidate: true });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [inviteToken, setValue]);
 
   // See the matching comment in the login page: redirecting an authenticated
   // visitor onward before the session cookie exists bounces them straight
@@ -81,7 +107,9 @@ function SignupForm() {
           {isInvite ? "Create your account" : "Create your workspace"}
         </h1>
         <p className="mt-3 text-[14px] text-ink-muted">
-          {isInvite ? "You'll join your team's workspace next." : "Free for teams of three. No card needed."}
+          {isInvite
+            ? `You'll join ${invite?.workspaceName ?? "your team's workspace"} next.`
+            : "Free for teams of three. No card needed."}
         </p>
       </div>
 
@@ -121,11 +149,17 @@ function SignupForm() {
               type="email"
               placeholder="you@studio.co.za"
               autoComplete="email"
+              readOnly={!!invite}
               aria-invalid={errors.email ? true : undefined}
-              aria-describedby={errors.email ? "signup-email-error" : undefined}
+              aria-describedby={errors.email ? "signup-email-error" : invite ? "signup-email-hint" : undefined}
               className="bg-surface-sunken border-line/[0.03] focus:border-line/20 transition-all duration-500 h-14"
               {...register("email")}
             />
+            {invite && !errors.email && (
+              <p id="signup-email-hint" className="text-[12px] text-ink-dim mt-2 ml-1">
+                Your invite was sent to this address.
+              </p>
+            )}
             {errors.email && (
               <p id="signup-email-error" role="alert" className="text-[13px] text-destructive mt-2 ml-1">{errors.email.message}</p>
             )}

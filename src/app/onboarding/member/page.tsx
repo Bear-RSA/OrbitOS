@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase/client";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { Loader } from "@/components/ui/loader";
 import { OrbitLoader } from "@/components/brand/orbit-loader";
-import { Users, ArrowRight, ChevronRight, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Logo } from "@/components/brand/logo";
 import type { User } from "@/types/auth";
-import { themeColor } from "@/lib/theme/colors";
 import { GlassSurface } from "@/components/ui/glass-surface";
 
 
@@ -25,6 +27,9 @@ export default function MemberOnboardingPage() {
   const [name, setName] = useState("");
   const [roleDescriptor, setRoleDescriptor] = useState("");
   const [bio, setBio] = useState("");
+  // Signup already asks for a name. Only ask again when none is on file.
+  const [nameOnFile, setNameOnFile] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,14 +52,21 @@ export default function MemberOnboardingPage() {
           return;
         }
 
-        // Guard: user hasn't accepted an invite yet (no org)
+        // Guard: user hasn't accepted an invite yet (no org). /onboarding
+        // explains what to do; /login would bounce a signed-in user away.
         if (!data.orgId) {
-          router.push("/login");
+          router.push("/onboarding");
           return;
         }
 
         setMemberProfile(data);
         setName(data.name || "");
+        setNameOnFile(!!data.name?.trim());
+
+        // The greeting only; if this read fails the page still works.
+        getDoc(doc(db, "organizations", data.orgId))
+          .then((org) => setWorkspaceName(org.data()?.name?.trim() || null))
+          .catch(() => {});
         setProfileLoading(false);
         return;
       }
@@ -66,7 +78,7 @@ export default function MemberOnboardingPage() {
       }
 
       // Exhausted retries
-      setProfileError("Unable to locate your profile. The invite may still be processing — please refresh.");
+      setProfileError("We couldn't find your profile yet. Reload the page in a few seconds.");
       setProfileLoading(false);
     } catch (err) {
       console.error("[MemberOnboarding] Profile fetch error:", err);
@@ -74,7 +86,7 @@ export default function MemberOnboardingPage() {
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
         return fetchProfile(uid, attempt + 1);
       }
-      setProfileError("Failed to load your profile. Please check your connection and try again.");
+      setProfileError("Couldn't load your profile. Check your connection, then try again.");
       setProfileLoading(false);
     }
   }, [router]);
@@ -97,7 +109,7 @@ export default function MemberOnboardingPage() {
         <OrbitLoader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
-            Preparing Workspace
+            Loading your profile…
           </span>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-line/[0.04] to-transparent"></div>
         </div>
@@ -110,20 +122,17 @@ export default function MemberOnboardingPage() {
     return (
       <div className="min-h-[100dvh] w-full bg-ground flex flex-col items-center justify-center gap-6 animate-in fade-in duration-1000 p-4">
         <div className="w-full max-w-sm text-center">
-          <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
+          <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="rounded-[40px] border border-outline-variant/10 shadow-overlay p-8 sm:p-12">
             <div className="mx-auto w-12 h-12 rounded-full bg-orbit-red/[0.1] flex items-center justify-center mb-6">
-              <AlertCircle className="w-5 h-5 text-orbit-red" />
+              <AlertCircle className="w-5 h-5 text-orbit-red" aria-hidden />
             </div>
             <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Couldn&apos;t load your profile</h1>
-            <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-6">
+            <p role="alert" className="text-[13px] text-ink-muted font-light leading-relaxed mb-6">
               {profileError || "Something went wrong loading your profile. Try again."}
             </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="text-[12px] font-medium text-ink bg-surface-control px-5 py-2.5 rounded-lg border border-line/[0.04] hover:bg-surface-raised transition-all inline-block tracking-wide"
-            >
-              Retry
-            </button>
+            <Button type="button" variant="secondary" onClick={() => window.location.reload()}>
+              Reload page
+            </Button>
           </GlassSurface>
         </div>
       </div>
@@ -145,8 +154,8 @@ export default function MemberOnboardingPage() {
         ...(bio.trim() && { bio: bio.trim() }),
       });
       router.push("/dashboard");
-    } catch (err) {
-      setError("Failed to save your profile. Please try again.");
+    } catch {
+      setError("Couldn't save your profile. Try again.");
       setIsSubmitting(false);
     }
   };
@@ -165,106 +174,86 @@ export default function MemberOnboardingPage() {
           <span className="font-semibold text-ink text-lg tracking-tight">OrbitOS</span>
         </div>
 
-        {/* Welcome Header */}
         <div className="mb-10 text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-line/[0.04] bg-surface-control shadow-card text-[12px] font-medium text-ink mb-4">
-            <Users className="w-3.5 h-3.5 text-ink-muted" />
-            <span>Member</span>
-          </div>
-          <h1 className="text-2xl font-light text-ink tracking-tight">
-            Welcome to the workspace
+          <h1 className="text-2xl font-light text-ink tracking-tight break-words">
+            {workspaceName ? `Welcome to ${workspaceName}` : "Welcome to the workspace"}
           </h1>
           <p className="text-[13px] text-ink-muted font-light leading-relaxed max-w-sm mx-auto">
-            Complete your profile so your team knows who you are. You can update these details anytime.
+            Tell your team who you are. You can change this later in your profile.
           </p>
         </div>
 
-        {/* Form Card */}
-        <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
+        <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="rounded-[40px] border border-outline-variant/10 shadow-overlay p-8 sm:p-12">
           <form onSubmit={handleSubmit} className="space-y-6">
 
-            {/* Full Name — required */}
-            <div className="space-y-3">
-              <label className="text-[12px] text-ink-dim block">
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-                required
-                className="w-full bg-surface-control border border-line/[0.04] rounded-xl h-12 px-5 text-[14px] font-light text-ink placeholder:text-ink-dim transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
-              />
-            </div>
+            {/* Name — required, and only asked when signup didn't collect it */}
+            {!nameOnFile && (
+              <div className="space-y-2.5">
+                <Label htmlFor="member-name">Your name</Label>
+                <Input
+                  id="member-name"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your full name"
+                  required
+                />
+              </div>
+            )}
 
-            {/* Role / Title — optional */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <label className="text-[12px] text-ink-dim block">
-                  Role / Title
-                </label>
+                <Label htmlFor="member-title">Job title</Label>
                 <span className="text-[12px] text-ink-dim">Optional</span>
               </div>
-              <input
-                type="text"
+              <Input
+                id="member-title"
+                autoComplete="organization-title"
                 value={roleDescriptor}
                 onChange={(e) => setRoleDescriptor(e.target.value)}
-                placeholder="e.g. Frontend Engineer, Designer..."
-                className="w-full bg-surface-control border border-line/[0.04] rounded-xl h-12 px-5 text-[14px] font-light text-ink placeholder:text-ink-dim transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
+                placeholder="e.g. Frontend engineer"
               />
             </div>
 
-            {/* Bio — optional */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <label className="text-[12px] text-ink-dim block">
-                  Short Bio
-                </label>
+                <Label htmlFor="member-bio">About you</Label>
                 <span className="text-[12px] text-ink-dim">Optional</span>
               </div>
-              <textarea
+              <Textarea
+                id="member-bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="What do you focus on?"
-                className="w-full bg-surface-control border border-line/[0.04] rounded-xl p-5 text-[14px] font-light text-ink min-h-[100px] resize-none placeholder:text-ink-dim transition-all focus:outline-none focus:border-line/[0.33] shadow-inner"
               />
             </div>
 
             {error && (
-              <div className="rounded-xl bg-orbit-red/[0.1] ring-1 ring-orbit-red/20 px-4 py-3">
+              <div role="alert" className="rounded-xl bg-orbit-red/[0.1] ring-1 ring-orbit-red/20 px-4 py-3">
                 <p className="text-[13px] text-orbit-red font-medium">{error}</p>
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
+              className="w-full mt-2"
+              isLoading={isSubmitting}
               disabled={isSubmitting || !name.trim()}
-              className="w-full h-12 rounded-xl bg-ink text-on-ink font-bold text-[13px] tracking-tight transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-ink-strong hover:-translate-y-[2px] disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:bg-ink disabled:cursor-not-allowed shadow-[0_2px_12px_rgb(var(--ink-strong)_/_0.06)] outline-none flex items-center justify-center gap-2"
+              id="member-onboarding-submit"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader size={14} stroke={2.5} color={themeColor.onInk} />
-                  <span>Setting up...</span>
-                </>
-              ) : (
-                <>
-                  <span>Enter Workspace</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+              {isSubmitting ? "Saving…" : "Continue to dashboard"}
+            </Button>
           </form>
         </GlassSurface>
 
-        {/* Skip */}
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           onClick={handleSkip}
-          className="w-full text-center text-[13px] text-ink-dim font-light mt-8 hover:text-ink-muted transition-colors flex items-center justify-center gap-2 outline-none"
+          className="mx-auto mt-6 flex"
         >
           Skip for now
-          <ChevronRight className="w-3 h-3" />
-        </button>
+        </Button>
       </div>
     </div>
   );

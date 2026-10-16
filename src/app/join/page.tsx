@@ -1,15 +1,15 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { redeemInviteAction, getInviteInfoAction } from "@/app/actions/invites";
 import { Logo } from "@/components/brand/logo";
 
-import type { MemberInvite } from "@/types/member";
 import { signOut as firebaseSignOut } from "@/lib/firebase/auth";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils/classnames";
 import { OrbitLoader } from "@/components/brand/orbit-loader";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, UserPlus } from "lucide-react";
@@ -19,6 +19,12 @@ function JoinForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  // Set on the links to signup and login below. Someone who just made an
+  // account or signed in from this screen already chose to accept, so we
+  // don't make them press the button a second time.
+  const autoAccept = searchParams.get("accept") === "1";
+  const autoAcceptTried = useRef(false);
+  const returnHere = encodeURIComponent(`/join?token=${token}&accept=1`);
   const { user, firebaseUser, loading } = useAuth();
   const [status, setStatus] = useState<"loading" | "ready" | "joining" | "error" | "done">("loading");
   const [errorMsg, setErrorMsg] = useState("");
@@ -27,25 +33,25 @@ function JoinForm() {
   useEffect(() => {
     if (!token) {
       setStatus("error");
-      setErrorMsg("Invalid integration token.");
+      setErrorMsg("This link is missing its invite code. Open the link from your invite email again.");
       return;
     }
 
     getInviteInfoAction(token).then((invite) => {
       if (!invite) {
         setStatus("error");
-        setErrorMsg("This link is invalid or authorization has expired.");
+        setErrorMsg("We couldn't find this invite. Check that you opened the whole link from the email, or ask for a new invite.");
         return;
       }
       if (invite.status === "accepted") {
         setStatus("error");
-        setErrorMsg("This integration link has already been verified.");
+        setErrorMsg("This invite has already been used. If you accepted it, sign in to open your workspace.");
         return;
       }
       
       if (invite.status === "expired" || invite.isExpired) {
         setStatus("error");
-        setErrorMsg("This integration link has expired. Request a new invite.");
+        setErrorMsg("This invite has expired. Ask whoever invited you to send a new one.");
         return;
       }
 
@@ -55,15 +61,13 @@ function JoinForm() {
   }, [token]);
 
   const handleJoin = async () => {
-    console.log("handleJoin started");
-    if (!firebaseUser || !inviteData) {
-      console.log("Guard clause failed. Missing dependencies:", { firebaseUser: !!firebaseUser, inviteData: !!inviteData });
-      const missing = [];
-      if (!firebaseUser) missing.push("authentication");
-      if (!inviteData) missing.push("invite data");
-      
+        if (!firebaseUser || !inviteData) {
       setStatus("error");
-      setErrorMsg(`Cannot join: Missing ${missing.join(", ")}.`);
+      setErrorMsg(
+        firebaseUser
+          ? "We couldn't load this invite. Reload the page and try again."
+          : "Sign in before you accept this invite."
+      );
       return;
     }
 
@@ -74,17 +78,14 @@ function JoinForm() {
       return;
     }
 
-    console.log("Guard clauses passed, setting joining status");
     setStatus("joining");
     try {
-      console.log("Sending redeem request...");
       const result = await redeemInviteAction({
         token: inviteData.token,
         uid: firebaseUser.uid,
         email: firebaseUser.email || ""
       });
       
-      console.log("Received response:", result);
       
       if (!result.success) {
         throw new Error(result.error);
@@ -92,10 +93,10 @@ function JoinForm() {
       
       setStatus("done");
       setTimeout(() => router.push("/onboarding/member"), 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Redeem error:", err);
       setStatus("error");
-      setErrorMsg(err?.message || "Couldn't reach OrbitOS. Check your connection and try again.");
+      setErrorMsg((err instanceof Error && err.message) || "Couldn't reach OrbitOS. Check your connection and try again.");
     }
   };
 
@@ -116,6 +117,14 @@ function JoinForm() {
   const [syncTimedOut, setSyncTimedOut] = useState(false);
 
   useEffect(() => {
+    if (!autoAccept || !canJoin || status !== "ready" || autoAcceptTried.current) return;
+    autoAcceptTried.current = true;
+    handleJoin();
+    // handleJoin is recreated every render; the ref makes this run once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAccept, canJoin, status]);
+
+  useEffect(() => {
     if (!isAuthenticated || hasProfile || status !== "ready") return;
     
     const timer = setTimeout(() => {
@@ -130,25 +139,25 @@ function JoinForm() {
   const renderContent = () => {
     if (status === "error") {
       return (
-        <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="w-full rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
+        <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="w-full rounded-[40px] border border-outline-variant/10 shadow-overlay p-8 sm:p-12">
           <div className="mx-auto w-12 h-12 rounded-full bg-orbit-red/[0.1] flex items-center justify-center mb-6">
-             <AlertCircle className="w-5 h-5 text-orbit-red" />
+             <AlertCircle className="w-5 h-5 text-orbit-red" aria-hidden />
           </div>
-          <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Integration Failed</h1>
-          <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-8">{errorMsg}</p>
-          <Link href="/" className="text-[12px] font-medium text-ink bg-surface-control px-5 py-2.5 rounded-lg border border-line/[0.04] hover:bg-surface-raised transition-all inline-block tracking-wide">Return to Core</Link>
+          <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Couldn&apos;t open this invite</h1>
+          <p role="alert" className="text-[13px] text-ink-muted font-light leading-relaxed mb-8">{errorMsg}</p>
+          <Link href="/" className={buttonVariants({ variant: "secondary" })}>Go to the OrbitOS homepage</Link>
         </GlassSurface>
       );
     }
 
     if (status === "done") {
       return (
-        <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="w-full rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
+        <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="w-full rounded-[40px] border border-outline-variant/10 shadow-overlay p-8 sm:p-12">
           <div className="mx-auto w-12 h-12 rounded-full bg-orbit-green/[0.1] flex items-center justify-center mb-6">
-             <CheckCircle2 className="w-5 h-5 text-orbit-green" />
+             <CheckCircle2 className="w-5 h-5 text-orbit-green" aria-hidden />
           </div>
-          <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">Integration Complete</h1>
-          <p className="text-[13px] text-ink-muted font-light leading-relaxed">Taking you to your dashboard…</p>
+          <h1 className="text-[17px] font-light tracking-tight text-ink mb-2">You&apos;re in</h1>
+          <p role="status" className="text-[13px] text-ink-muted font-light leading-relaxed">Next, tell your team a little about yourself…</p>
         </GlassSurface>
       );
     }
@@ -156,29 +165,28 @@ function JoinForm() {
     if (!isInviteReady) return null;
 
     return (
-      <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="w-full rounded-[40px] border border-outline-variant/10 shadow-overlay p-12">
+      <GlassSurface fallback="bg-surface-container/95 backdrop-blur-2xl" tint="surface-control" className="w-full rounded-[40px] border border-outline-variant/10 shadow-overlay p-8 sm:p-12">
         <div className="mx-auto w-12 h-12 rounded-full bg-surface-control border border-line/[0.04] flex items-center justify-center mb-6 shadow-card">
-          <UserPlus className="w-5 h-5 text-ink" />
+          <UserPlus className="w-5 h-5 text-ink" aria-hidden />
         </div>
-        <h1 className="text-[17px] font-light tracking-tight text-ink mb-1">Workspace Request</h1>
-        <p className="text-[12px] text-ink-dim mb-8">Access Token Verified</p>
+        <h1 className="text-[17px] font-light tracking-tight text-ink mb-1 break-words">
+          Join {inviteData?.workspaceName} on OrbitOS
+        </h1>
+        <p className="text-[12px] text-ink-dim mb-8 break-words">
+          {inviteData?.inviterName} invited <span className="break-all">{inviteData?.email}</span>
+        </p>
 
         {/* Priority 1: Authentication Required */}
         {needsAuth ? (
           <>
             <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-8">
-              You must authenticate with your own operational identity to accept this invite.
+              Create an account with this email to accept, or sign in if you already have one.
             </p>
-            <Link
-              href={`/signup?redirect=${encodeURIComponent(`/join?token=${token}`)}`}
-              className="block w-full"
-            >
-              <Button className="w-full" id="signup-to-join">
-                Establish clearance
-              </Button>
+            <Link href={`/signup?redirect=${returnHere}`} id="signup-to-join" className={cn(buttonVariants(), "w-full")}>
+              Create account
             </Link>
             <p className="text-[12px] text-ink-dim font-light leading-relaxed mt-6">
-              Already have clearance? <Link href={`/login?redirect=${encodeURIComponent(`/join?token=${token}`)}`} className="text-ink-muted hover:text-ink underline-offset-4 hover:underline transition-all">Sign in</Link>
+              Already have an account? <Link href={`/login?redirect=${returnHere}`} className="text-ink-muted hover:text-ink underline-offset-4 hover:underline transition-all rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base">Sign in</Link>
             </p>
           </>
         ) : 
@@ -186,7 +194,7 @@ function JoinForm() {
         isWrongEmail ? (
           <>
             <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-6">
-              Identity mismatch. This invite is bound to <span className="text-ink font-medium">{inviteData?.email}</span>, but you are logged in as <span className="text-orbit-red">{firebaseUser?.email}</span>.
+              This invite is for <span className="text-ink font-medium break-all">{inviteData?.email}</span>, but you&apos;re signed in as <span className="text-ink break-all">{firebaseUser?.email}</span>.
             </p>
             <Button 
               variant="outline" 
@@ -196,7 +204,7 @@ function JoinForm() {
                 window.location.reload();
               }}
             >
-              Sign Out and Switch Account
+              Sign out and use another account
             </Button>
           </>
         ) :
@@ -204,31 +212,29 @@ function JoinForm() {
         isAlreadyInOrg ? (
           <>
             <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-8">
-              You are already a member of this workspace. Your identity is active.
+              You&apos;re already in this workspace.
             </p>
-            <Link href="/dashboard" className="block w-full">
-              <Button className="w-full">Return to Dashboard</Button>
+            <Link href="/dashboard" className={cn(buttonVariants(), "w-full")}>
+              Go to my dashboard
             </Link>
           </>
         ) :
         /* Priority 4: Collision - Wrong Org */
         isInOtherOrg ? (
           <>
-            <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-6">
-              Identity conflict. You are currently assigned to another workspace (<span className="text-ink">{user?.email}</span>).
+            {/* Signing out used to be offered here, but signing back in with
+                the same account lands on this same screen. An account
+                belongs to one workspace; say so and say what to do. */}
+            <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-8">
+              {user?.role === "OWNER"
+                ? "You own another workspace, so this account can't join a second one."
+                : "You're already in another workspace. Ask its owner to remove you, then open this link again."}
             </p>
-            <Button 
-              variant="outline" 
-              className="w-full mb-4" 
-              onClick={async () => {
-                await firebaseSignOut();
-                window.location.reload();
-              }}
+            <Link
+              href="/dashboard"
+              className="flex h-10 w-full items-center justify-center rounded-lg bg-surface-control text-[13px] font-medium text-ink ring-1 ring-inset ring-line/[0.06] transition-colors hover:bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
-              Sign Out to Accept
-            </Button>
-            <Link href="/dashboard" className="text-[12px] text-ink-dim hover:text-ink-muted transition-colors inline-block tracking-wide">
-              Return to my dashboard
+              Go to my dashboard
             </Link>
           </>
         ) :
@@ -236,7 +242,7 @@ function JoinForm() {
         canJoin ? (
           <>
             <p className="text-[13px] text-ink-muted font-light leading-relaxed mb-8">
-              Your account (<span className="text-ink">{firebaseUser?.email}</span>) has been cleared to join this network. Proceed below.
+              You&apos;ll join as <span className="text-ink break-all">{firebaseUser?.email}</span>.
             </p>
             <Button
               onClick={handleJoin}
@@ -244,7 +250,7 @@ function JoinForm() {
               disabled={status === "joining"}
               id="accept-invite-btn"
             >
-              {status === "joining" ? "Integrating..." : "Acknowledge & Join Workspace"}
+              {status === "joining" ? "Joining…" : "Accept invite"}
             </Button>
           </>
         ) : (
@@ -258,9 +264,9 @@ function JoinForm() {
                {syncTimedOut && (
                  <button 
                    onClick={() => window.location.reload()}
-                   className="text-[11px] text-ink-muted underline underline-offset-4 hover:text-ink transition-colors"
+                   className="text-[12px] text-ink-muted underline underline-offset-4 hover:text-ink transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-base"
                  >
-                   Retry Connection
+                   Reload page
                  </button>
                )}
              </div>
@@ -276,7 +282,7 @@ function JoinForm() {
         <OrbitLoader />
         <div className="flex flex-col items-center gap-2">
           <span className="text-[12px] text-ink-dim">
-            Verifying Link
+            Checking your invite…
           </span>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-line/[0.04] to-transparent"></div>
         </div>

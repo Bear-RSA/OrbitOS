@@ -74,13 +74,16 @@ export default function DashboardPage() {
         }, 1500);
         return () => clearTimeout(timer);
       } else if (!user.orgId) {
-        // No org — route based on role
+        // No org. Owners go straight to setup. Anyone else waits a beat in
+        // case an invite was just accepted, then goes to the same screen,
+        // which explains what to do. This used to send them to /login,
+        // which sees a signed-in user and sends them straight back here:
+        // an endless loop for anyone whose invite didn't go through.
         if (user.role === "OWNER") {
           router.push("/onboarding");
         } else {
-          // If role is missing (syncing), wait a bit more
           const timer = setTimeout(() => {
-            if (!user.orgId) router.push("/login");
+            if (!user.orgId) router.push("/onboarding");
           }, 1500);
           return () => clearTimeout(timer);
         }

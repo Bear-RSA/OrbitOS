@@ -16,8 +16,36 @@ import { getServerSession } from "@/lib/auth/session";
 /*  and dispatches the invitation email in a single server round-trip. */
 /* ------------------------------------------------------------------ */
 
+/** How long an invite link works. The email and the invite dialog both quote it. */
+const INVITE_LIFETIME_DAYS = 7;
+
+function expiryFrom(now: Date): Date {
+  const expires = new Date(now);
+  expires.setDate(now.getDate() + INVITE_LIFETIME_DAYS);
+  return expires;
+}
+
+function joinLink(token: string): string {
+  return `${getAppUrl()}/join?token=${token}`;
+}
+
+/**
+ * The two names an invitee needs to trust a link: who sent it and which
+ * workspace it opens. Read on the server so a caller can't supply either.
+ */
+async function loadInviteNames(orgId: string, invitedBy: string) {
+  const [orgSnap, inviterSnap] = await Promise.all([
+    adminDb.collection("organizations").doc(orgId).get(),
+    adminDb.collection("users").doc(invitedBy).get(),
+  ]);
+  const workspaceName: string = orgSnap.data()?.name?.trim() || "their workspace";
+  const inviterName: string = inviterSnap.data()?.name?.trim() || "A teammate";
+  return { workspaceName, inviterName };
+}
+
 interface CreateInvitePayload {
   email: string;
+  /** @deprecated Ignored — the workspace name is read from the org. */
   projectName?: string;
   /** @deprecated Ignored — the workspace comes from the caller's session. */
   orgId?: string;
@@ -70,8 +98,7 @@ export async function createInviteAction(
     }
 
     const now = new Date();
-    const expires = new Date();
-    expires.setDate(now.getDate() + 7);
+    const expires = expiryFrom(now);
 
     // Atomic transaction: lookup → reuse/regenerate/create
     const txResult = await adminDb.runTransaction(async (tx) => {
@@ -125,18 +152,17 @@ export async function createInviteAction(
     });
 
     // Build link using env-aware base URL
-    const appUrl = getAppUrl();
-    const inviteLink = `${appUrl}/join?token=${txResult.token}`;
+    const inviteLink = joinLink(txResult.token);
 
-    const inviterSnap = await adminDb.collection("users").doc(invitedBy).get();
-    const inviterName = inviterSnap.exists ? inviterSnap.data()!.name || "Unnamed member" : "System";
+    const { workspaceName, inviterName } = await loadInviteNames(orgId, invitedBy);
 
     // Dispatch email — await result to surface success/failure
     const emailResult = await sendInviteEmail({
       email,
       inviteLink,
-      projectName: payload.projectName ?? "OrbitOS",
+      projectName: workspaceName,
       inviterName,
+      expiresInDays: INVITE_LIFETIME_DAYS,
     });
 
     const emailSent = emailResult.success;
@@ -162,12 +188,14 @@ export async function createInviteAction(
       regenerated: txResult.regenerated,
       inviteLink,
       email,
+      // No `error` when the email fails: the provider's own message
+      // ("Missing API key") means nothing to an owner. It is logged above,
+      // and the dialog already says what to do instead.
       emailSent,
-      error: emailSent ? undefined : emailResult.error,
     };
   } catch (error: any) {
     console.error("[Create Invite Error]:", error);
-    return { success: false, error: "Failed to generate integration link." };
+    return { success: false, error: "Couldn't create the invite. Try again." };
   }
 }
 
@@ -185,6 +213,7 @@ export async function getInviteInfoAction(token: string) {
     const data = inviteDoc.data() as MemberInvite;
     
     const isExpired = data.expiresAt && data.expiresAt.toDate() < new Date();
+    const { workspaceName, inviterName } = await loadInviteNames(data.orgId, data.invitedBy);
 
     return {
       id: inviteDoc.id,
@@ -192,7 +221,8 @@ export async function getInviteInfoAction(token: string) {
       email: data.email,
       orgId: data.orgId,
       status: data.status,
-      invitedBy: data.invitedBy,
+      workspaceName,
+      inviterName,
       role: data.role,
       createdAt: data.createdAt?.toDate().toISOString(),
       expiresAt: data.expiresAt?.toDate().toISOString(),
@@ -234,7 +264,7 @@ export async function redeemInviteAction(payload: RedeemPayload): Promise<{ succ
     const uid = session.uid;
     const email = (session.email ?? "").toLowerCase().trim();
     if (!email) {
-      return { success: false, error: "This account has no verified email address." };
+      return { success: false, error: "Your account has no email address. Sign in with the email the invite was sent to." };
     }
 
     const invitesRef = adminDb.collection("memberInvites");
@@ -242,7 +272,7 @@ export async function redeemInviteAction(payload: RedeemPayload): Promise<{ succ
     const snapshot = await invitesRef.where("token", "==", payload.token).limit(1).get();
 
     if (snapshot.empty) {
-      return { success: false, error: "This link is invalid or authorization has expired." };
+      return { success: false, error: "We couldn't find this invite. Check that you opened the whole link from the email, or ask for a new invite." };
     }
 
     const inviteDoc = snapshot.docs[0];
@@ -250,12 +280,12 @@ export async function redeemInviteAction(payload: RedeemPayload): Promise<{ succ
 
     // 1. Status Verification
     if (invite.status !== "pending") {
-      return { success: false, error: "This integration link has already been verified or expired." };
+      return { success: false, error: "This invite has already been used. If you accepted it, sign in to open your workspace." };
     }
 
     // 2. Expiration Verification
     if (invite.expiresAt && invite.expiresAt.toDate() < new Date()) {
-      return { success: false, error: "This integration link has expired. Request a new invite." };
+      return { success: false, error: "This invite has expired. Ask whoever invited you to send a new one." };
     }
 
     // 3. Identity Match Verification
@@ -265,12 +295,28 @@ export async function redeemInviteAction(payload: RedeemPayload): Promise<{ succ
 
     const userRef = adminDb.collection("users").doc(uid);
     const userSnap = await userRef.get();
+    const currentOrgId: string = userSnap.data()?.orgId ?? "";
 
-    // 4. Seat limit, checked again here. The check at invite time counts
+    // 4. One workspace per account. Accepting used to overwrite `orgId`
+    //    and `role` for anyone, so the owner of another workspace who
+    //    opened a link was demoted to MEMBER here and left their own
+    //    workspace with no owner. The join screen hid the button, but
+    //    nothing stopped the call.
+    if (currentOrgId && currentOrgId !== invite.orgId) {
+      return {
+        success: false,
+        error:
+          userSnap.data()?.role === "OWNER"
+            ? "You own another workspace, so this account can't join a second one."
+            : "You're already in another workspace. Ask its owner to remove you, then open this link again.",
+      };
+    }
+
+    // 5. Seat limit, checked again here. The check at invite time counts
     //    only people who have already joined, so an owner could send ten
     //    invites from a two-seat plan and every one of them would land.
     //    Someone already in this workspace takes no new seat.
-    if (userSnap.data()?.orgId !== invite.orgId) {
+    if (currentOrgId !== invite.orgId) {
       const quota = await validateTierQuota(invite.orgId, "members");
       if (!quota.allowed) {
         console.warn("[RedeemInvite] Seat limit reached:", { orgId: invite.orgId, ...quota });
@@ -281,10 +327,13 @@ export async function redeemInviteAction(payload: RedeemPayload): Promise<{ succ
       }
     }
 
-    // 5. Atomic Batch Update
+    // 6. Atomic Batch Update
     const batch = adminDb.batch();
 
-    if (userSnap.exists) {
+    if (currentOrgId === invite.orgId) {
+      // Already in this workspace (the owner's own address, or a second
+      // link to a member). Consume the invite; leave the role alone.
+    } else if (userSnap.exists) {
       // Existing user — only attach org membership
       batch.set(userRef, {
         orgId: invite.orgId,

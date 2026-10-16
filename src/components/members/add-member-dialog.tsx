@@ -60,10 +60,9 @@ export function AddMemberDialog({
 
         if (result.emailSent) {
           setSuccessEmail(result.email ?? data.email);
-        } else {
-          // Invite created, but email failed — show warning, still show the link
-          setErrorMsg(result.error ?? "The email didn't send. Copy the link and send it yourself.");
         }
+        // Invite created but the email failed: the heading and description
+        // already say so and show the link, so no second notice.
       } else {
         setErrorMsg(result.error ?? "An unexpected error occurred.");
       }
@@ -122,7 +121,6 @@ export function AddMemberDialog({
             />
 
             <div className="space-y-4">
-              {emailFailed && errorMsg && <DialogNotice tone="amber">{errorMsg}</DialogNotice>}
 
               <div className="space-y-2.5">
                 <Label htmlFor="invite-link-input" className="block text-[12px] text-ink-dim">

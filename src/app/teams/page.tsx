@@ -203,6 +203,8 @@ export default function TeamsPage() {
     [projects]
   );
 
+  const onlyViewer = workloads.length === 1 && workloads[0].member.id === user?.id;
+
   const roster = useMemo(
     () =>
       workloads
@@ -486,13 +488,32 @@ export default function TeamsPage() {
           className="mb-32 rounded-3xl border border-line/[0.06] p-8 shadow-raised ring-1 ring-line/5"
           contentClassName="space-y-2"
         >
-          <p className="text-[15px] font-medium text-ink">No one on the team yet.</p>
-          <p className="text-[13px] font-light leading-relaxed text-ink-muted">
-            Workload shows up here once people join and get tasks assigned.
+          <p className="text-[15px] font-medium text-ink">Your team will be in here</p>
+          <p className="max-w-prose text-[13px] font-light leading-relaxed text-ink-muted">
+            {isOwner
+              ? "Use Invite Member above. People show up here, with their workload, as soon as they join."
+              : "People show up here, with their workload, once they're invited."}
           </p>
         </GlassSurface>
       ) : (
         <>
+          {/* A new workspace is just the viewer. Their own card still shows
+              below; this says where everyone else will appear. */}
+          {onlyViewer && (
+        <GlassSurface
+          fallback="material-fog [--fog-base:var(--surface-sunken)]"
+          tint="surface-sunken"
+          className="mb-10 rounded-3xl border border-line/[0.06] p-8 shadow-raised ring-1 ring-line/5"
+          contentClassName="space-y-2"
+        >
+          <p className="text-[15px] font-medium text-ink">Your team will be in here</p>
+          <p className="max-w-prose text-[13px] font-light leading-relaxed text-ink-muted">
+            {isOwner
+              ? "Use Invite Member above. People show up here, with their workload, as soon as they join."
+              : "People show up here, with their workload, once they're invited."}
+          </p>
+        </GlassSurface>
+          )}
           {/* Tree: who answers to whom */}
           {view === "tree" && !(tree && structure) && (
             <p className="mb-32 text-[13px] font-light text-ink-muted">
