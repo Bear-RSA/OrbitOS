@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   PRESENCE_STALE_AFTER_MS,
+  presenceLine,
   presenceTone,
   resolvePresence,
 } from "@/lib/members/presence";
@@ -67,7 +68,16 @@ describe("the stored status colours a live pulse", () => {
   });
 
   it("honours a deliberate offline even while active", () => {
-    expect(resolvePresence({ ...live, operationalStatus: "offline" }, NOW)).toBe("offline");
+    expect(
+      resolvePresence({ ...live, operationalStatus: "offline", manualOverride: true }, NOW)
+    ).toBe("offline");
+  });
+
+  it("ignores a leftover offline the status engine wrote, once they are back", () => {
+    expect(resolvePresence({ ...live, operationalStatus: "offline" }, NOW)).toBe("available");
+    expect(
+      resolvePresence({ ...live, operationalStatus: "offline", manualOverride: false }, NOW)
+    ).toBe("available");
   });
 
   it("reads casing the way the rest of the app does", () => {
@@ -76,6 +86,34 @@ describe("the stored status colours a live pulse", () => {
 
   it("defaults a live pulse with no stated status to available", () => {
     expect(resolvePresence(live, NOW)).toBe("available");
+  });
+});
+
+describe("presenceLine", () => {
+  const at = (ms: number) => ({ toMillis: () => ms });
+
+  it("says Online while the pulse is fresh", () => {
+    expect(presenceLine({ lastActivity: at(NOW - MINUTE) }, NOW)).toBe("Online");
+    expect(
+      presenceLine({ lastActivity: at(NOW - MINUTE), operationalStatus: "focused" }, NOW)
+    ).toBe("Online, focused");
+  });
+
+  it("says when they were last here once it goes stale", () => {
+    expect(presenceLine({ lastActivity: at(NOW - 12 * MINUTE) }, NOW)).toBe("Last seen 12 min ago");
+    expect(presenceLine({ lastActivity: at(NOW - 3 * 60 * MINUTE) }, NOW)).toBe("Last seen 3 h ago");
+    expect(presenceLine({ lastActivity: at(NOW - 24 * 60 * MINUTE) }, NOW)).toBe("Last seen yesterday");
+    expect(presenceLine({ lastActivity: at(NOW - 4 * 24 * 60 * MINUTE) }, NOW)).toBe("Last seen 4 days ago");
+  });
+
+  it("gives no time for someone never seen or deliberately offline", () => {
+    expect(presenceLine({}, NOW)).toBe("Offline");
+    expect(
+      presenceLine(
+        { lastActivity: at(NOW - MINUTE), operationalStatus: "offline", manualOverride: true },
+        NOW
+      )
+    ).toBe("Offline");
   });
 });
 

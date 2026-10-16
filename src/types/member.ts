@@ -11,6 +11,8 @@ export interface Member {
   /** See `types/department`. Absent or null means unassigned. */
   departmentId?: string | null;
   operationalStatus?: "available" | "focused" | "offline";
+  /** Set when the person chose their status in Settings rather than "auto". */
+  manualOverride?: boolean;
   lastActivity?: Timestamp;
   photoURL?: string | null;
   photoPublicId?: string | null;

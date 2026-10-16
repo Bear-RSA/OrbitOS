@@ -8,7 +8,7 @@ import {
   conversationTitle,
   conversationUnread,
 } from "@/lib/messages/summary";
-import { presenceTone, resolvePresence } from "@/lib/members/presence";
+import { presenceLine, presenceOfMember, presenceTone } from "@/lib/members/presence";
 import { groupCallLive } from "@/lib/calls/access";
 import { useNow } from "@/hooks/use-now";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -92,17 +92,9 @@ export function ConversationList({
      re-render from somewhere else. */
   const now = useNow();
 
-  const toneFor = (member?: Member): string | null =>
+  const presenceFor = (member?: Member): RowPresence | null =>
     member
-      ? presenceTone(
-          resolvePresence(
-            {
-              operationalStatus: member.operationalStatus,
-              lastActivityMs: member.lastActivity?.toMillis?.() ?? null,
-            },
-            now
-          )
-        )
+      ? { tone: presenceTone(presenceOfMember(member, now)), label: presenceLine(member, now) }
       : null;
 
   const liveNames = useMemo(
@@ -264,7 +256,7 @@ export function ConversationList({
                       unread={conversationUnread(conversation, viewerUid)}
                       onClick={() => onSelect(conversation.id)}
                       avatar={{ name: title, photoURL: partner?.photoURL, rank: rankOf(partner) }}
-                      presence={toneFor(partner)}
+                      presence={presenceFor(partner)}
                       onAvatarClick={
                         partnerUid ? () => onOpenProfile(partnerUid) : undefined
                       }
@@ -316,7 +308,7 @@ export function ConversationList({
                   onClick={() => onOpenDm(member.id)}
                   onAvatarClick={() => onOpenProfile(member.id)}
                   avatar={{ name: member.name, photoURL: member.photoURL, rank: rankOf(member) }}
-                  presence={toneFor(member)}
+                  presence={presenceFor(member)}
                 />
               ))}
             </Section>
@@ -356,6 +348,12 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
+/** The dot's colour, and what it means in words for hover and screen readers. */
+interface RowPresence {
+  tone: string;
+  label: string;
+}
+
 interface ConversationRowProps {
   title: string;
   preview: string;
@@ -367,8 +365,8 @@ interface ConversationRowProps {
   /** Drawn in place of the icon tile, when the row has a picture of its own. */
   picture?: React.ReactNode;
   avatar?: { name: string; photoURL?: string | null; rank?: Rank };
-  /** Tailwind background class for the presence dot, or null for none. */
-  presence?: string | null;
+  /** The presence dot, or null for none. */
+  presence?: RowPresence | null;
   /** A call is running in this thread right now. */
   live?: boolean;
   /**
@@ -424,8 +422,11 @@ function ConversationRow({
         <span
           className={cn(
             "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-surface-sunken",
-            presence
+            presence.tone
           )}
+          title={presence.label}
+          role="img"
+          aria-label={presence.label}
         />
       )}
     </span>

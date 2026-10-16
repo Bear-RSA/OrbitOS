@@ -63,7 +63,7 @@ import {
 import { groupCallLive } from "@/lib/calls/access";
 import { TASK_STATUS_LABEL, isValidTaskRef } from "@/lib/messages/task-ref";
 import { clearedBeforeMs, conversationTitle } from "@/lib/messages/summary";
-import { presenceTone, resolvePresence } from "@/lib/members/presence";
+import { presenceLine, presenceOfMember, presenceTone } from "@/lib/members/presence";
 import { useNow } from "@/hooks/use-now";
 import { parseDateKey } from "@/lib/utils/dates";
 import { MAX_MESSAGE_LENGTH, MAX_PINNED_NOTICES } from "@/lib/validations/messages";
@@ -619,17 +619,14 @@ export function MessageThread({
   /* Derived from the heartbeat, not from the stored status — see
      `lib/members/presence`. The same call every other surface makes, so
      a person cannot read as available here and offline in the rail. */
-  const partnerPresence = partner
-    ? resolvePresence(
-        {
-          operationalStatus: partner.operationalStatus,
-          lastActivityMs: partner.lastActivity?.toMillis?.() ?? null,
-        },
-        now
-      )
-    : null;
+  const partnerPresence = partner ? presenceOfMember(partner, now) : null;
 
   const partnerTone = partnerPresence ? presenceTone(partnerPresence) : null;
+  // "Online" or "Last seen 12 min ago", ahead of their role in the header.
+  const partnerLine = partner ? presenceLine(partner, now) : null;
+  const headerSubtitle = partnerLine
+    ? [partnerLine, subtitle].filter(Boolean).join(" · ")
+    : subtitle;
 
   /* The dot informs; it does not decide. Presence here is a heartbeat
      heuristic — a tab that has not pulsed in five minutes, or somebody
@@ -727,6 +724,8 @@ export function MessageThread({
                     "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-surface-card",
                     partnerTone
                   )}
+                  title={partnerLine ?? undefined}
+                  aria-hidden
                 />
               )}
             </button>
@@ -741,7 +740,7 @@ export function MessageThread({
           <TownHallAvatar size="lg" photoURL={companyPhoto} name={companyName} className="shadow-card" />
         )}
 
-        <ThreadHeading title={title} subtitle={subtitle} />
+        <ThreadHeading title={title} subtitle={headerSubtitle} />
 
         {/* A room is two people, so this is offered in a dm and nowhere
             else. Never disabled — see `callReason`. */}

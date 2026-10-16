@@ -32,6 +32,8 @@ export interface PresenceFacts {
   operationalStatus?: string | null;
   /** `lastActivity` in millis, or null when the field is absent. */
   lastActivityMs?: number | null;
+  /** True when the person picked their status in Settings themselves. */
+  manualOverride?: boolean | null;
 }
 
 /**
@@ -53,11 +55,70 @@ export function resolvePresence(
 
   /* The heartbeat vouches for them being here; the stored status says
      how they want to be treated while they are. A deliberate "offline"
-     is honoured — someone heads-down may not want to look reachable. */
+     is honoured — someone heads-down may not want to look reachable.
+     Only a deliberate one, though: the status engine used to write
+     "offline" itself when a heartbeat went quiet, and that leftover must
+     not hide someone who has since come back. */
   const stated = facts.operationalStatus?.toLowerCase();
-  if (stated === "offline") return "offline";
+  if (stated === "offline") return facts.manualOverride ? "offline" : "available";
   if (stated === "focused") return "focused";
   return "available";
+}
+
+/** `resolvePresence` straight from a member document. */
+export function presenceOfMember(
+  member: {
+    operationalStatus?: string | null;
+    manualOverride?: boolean | null;
+    lastActivity?: { toMillis?: () => number } | null;
+  },
+  now: number = Date.now()
+): Presence {
+  return resolvePresence(
+    {
+      operationalStatus: member.operationalStatus,
+      manualOverride: member.manualOverride,
+      lastActivityMs: member.lastActivity?.toMillis?.() ?? null,
+    },
+    now
+  );
+}
+
+/** What the dot means, for its tooltip and screen readers. */
+export function presenceLabel(presence: Presence): string {
+  switch (presence) {
+    case "offline":
+      return "Offline";
+    case "focused":
+      return "Online, focused";
+    default:
+      return "Online";
+  }
+}
+
+/**
+ * The words beside a dot: "Online", or when they were last here.
+ *
+ * Someone who set themselves Offline gets "Offline" and no time — the
+ * point of choosing it is not to be watched.
+ */
+export function presenceLine(
+  member: Parameters<typeof presenceOfMember>[0],
+  now: number = Date.now()
+): string {
+  const presence = presenceOfMember(member, now);
+  if (presence !== "offline") return presenceLabel(presence);
+
+  const beat = member.lastActivity?.toMillis?.();
+  const chosen = member.manualOverride && member.operationalStatus === "offline";
+  if (!beat || chosen) return "Offline";
+
+  const minutes = Math.max(1, Math.round((now - beat) / 60_000));
+  if (minutes < 60) return `Last seen ${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `Last seen ${hours} h ago`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? "Last seen yesterday" : `Last seen ${days} days ago`;
 }
 
 /** The dot colour, so every surface showing presence shows one colour. */

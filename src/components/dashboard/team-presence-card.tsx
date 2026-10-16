@@ -61,6 +61,7 @@ export function TeamPresenceCard({ members, events, viewerId, clock24h }: TeamPr
         member,
         presence: resolvePresence({
           operationalStatus: member.operationalStatus,
+          manualOverride: member.manualOverride,
           lastActivityMs: member.lastActivity?.toMillis() ?? null,
         }),
         meeting: inMeeting[member.id],

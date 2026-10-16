@@ -24,16 +24,13 @@ import { ExecutionViewTabs, type ExecutionView } from "@/components/projects/exe
 import { SystemRoadmap } from "@/components/dashboard/system-roadmap";
 import { PersonnelHub } from "@/components/dashboard/personnel-hub";
 import { cn } from "@/lib/utils/classnames";
-import { useHeartbeat } from "@/hooks/use-heartbeat";
 import { ActionButton, CardEyebrow } from "@/components/dashboard/dashboard-card";
 
 export default function ProjectDashboardPage({ params }: { params: Promise<{ projectId: string }> }) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  
-  // Maintain real-time presence
-  useHeartbeat(user?.id);
-  
+
+
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<Member[]>([]);

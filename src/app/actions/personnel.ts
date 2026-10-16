@@ -2,7 +2,6 @@
 
 import { adminDb } from "@/lib/firebase/admin";
 import { logActivity } from "@/lib/telemetry";
-import { FieldValue } from "firebase-admin/firestore";
 import { requireCaller } from "@/lib/auth/caller";
 import { verifyProjectAccess } from "@/lib/auth/permissions";
 
@@ -71,30 +70,17 @@ export async function syncOperationalStatusAction(userId: string | null, _orgId?
 
     // 2. Resolve current status
     const currentStatus = userData.operationalStatus || "available";
-    let newStatus = currentStatus;
 
-    // Automated Logic: > 80% load signals FOCUSED state
-    if (loadPercentage >= 80 && currentStatus !== "focused") {
-      newStatus = "focused";
-    } else if (loadPercentage < 80 && currentStatus === "focused") {
-      newStatus = "available";
-    }
-
-    // Heartbeat check: If last activity is > 5 mins, transition to OFFLINE
-    if (userData.lastActivity) {
-      const last = userData.lastActivity.toDate().getTime();
-      const fiveMinsAgo = Date.now() - 5 * 60 * 1000;
-      if (last < fiveMinsAgo) {
-        newStatus = "offline";
-      }
-    }
+    // Automated Logic: > 80% load signals FOCUSED state. Whether they are
+    // online at all is the heartbeat's call (`lib/members/presence`), so
+    // this never writes "offline" and never touches `lastActivity` —
+    // assigning someone a task used to stamp it, showing them online for
+    // five minutes while they were away.
+    const newStatus = loadPercentage >= 80 ? "focused" : "available";
 
     // 3. Persist and Log if transition occurred
     if (newStatus !== currentStatus) {
-      await userRef.update({
-        operationalStatus: newStatus,
-        lastActivity: FieldValue.serverTimestamp()
-      });
+      await userRef.update({ operationalStatus: newStatus });
 
       await logActivity({
         eventType: "STATUS_TRANSITION",

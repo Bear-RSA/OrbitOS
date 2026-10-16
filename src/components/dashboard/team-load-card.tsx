@@ -64,6 +64,7 @@ export function TeamLoadCard({ members, tasks, events, viewerId, clock24h, max =
         workload: calculateMemberWorkload(member, tasks),
         presence: resolvePresence({
           operationalStatus: member.operationalStatus,
+          manualOverride: member.manualOverride,
           lastActivityMs: member.lastActivity?.toMillis() ?? null,
         }),
         meeting: inMeeting[member.id],

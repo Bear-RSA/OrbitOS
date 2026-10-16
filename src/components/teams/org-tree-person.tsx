@@ -5,11 +5,9 @@ import { Settings2 } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { memberDisplayName } from "@/lib/members/profile";
 import type { Rank } from "@/lib/members/rank";
+import { presenceLabel, presenceTone, type Presence } from "@/lib/members/presence";
 import { cn } from "@/lib/utils/classnames";
-import type { WorkloadStatus } from "@/types/dashboard";
 import type { Member } from "@/types/member";
-
-import { WORKLOAD_STATUS } from "./workload-status";
 
 /* ------------------------------------------------------------------ */
 /*  The pieces every node in the tree shares                           */
@@ -18,7 +16,8 @@ import { WORKLOAD_STATUS } from "./workload-status";
 /** What each card needs to know about the viewer and what it may do. */
 export interface TreeNodeContext {
   viewerId: string;
-  statusOf: (uid: string) => WorkloadStatus | undefined;
+  /** Whether they are online right now, from the heartbeat. */
+  presenceOf: (uid: string) => Presence | undefined;
   /** The rank whose halo this person's avatar wears. */
   rankOf: (member: Member) => Rank;
   onOpenProfile: (uid: string) => void;
@@ -37,7 +36,7 @@ const DOT = {
   member: "h-2.5 w-2.5 border-2",
 };
 
-/** Avatar with the workload dot over its bottom-right corner. */
+/** Avatar with the online/offline dot over its bottom-right corner. */
 export function TreeAvatar({
   member,
   tier,
@@ -46,7 +45,7 @@ export function TreeAvatar({
 }: {
   member: Member;
   tier: keyof typeof AVATAR;
-  status: WorkloadStatus | undefined;
+  status: Presence | undefined;
   rank?: Rank;
 }) {
   return (
@@ -63,10 +62,11 @@ export function TreeAvatar({
           className={cn(
             "absolute -bottom-0.5 -right-0.5 rounded-full border-base",
             DOT[tier],
-            WORKLOAD_STATUS[status].dot
+            presenceTone(status)
           )}
-          title={WORKLOAD_STATUS[status].label}
-          aria-hidden
+          title={presenceLabel(status)}
+          role="img"
+          aria-label={presenceLabel(status)}
         />
       )}
     </span>
@@ -135,7 +135,7 @@ export function PersonRow({
         <TreeAvatar
           member={member}
           tier={tier}
-          status={context.statusOf(member.id)}
+          status={context.presenceOf(member.id)}
           rank={context.rankOf(member)}
         />
         <span className="min-w-0">

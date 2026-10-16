@@ -12,8 +12,10 @@ import { AppHeader } from "@/components/nav/app-header";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { MemberProfile } from "@/components/members/member-profile";
 import { DestructiveActionModal } from "@/components/ui/destructive-action-modal";
-import { OrgTree } from "@/components/teams/org-tree";
-import { buildWiredTree } from "@/lib/members/wired-tree";
+import { OrgChartMirror } from "@/components/teams/org-chart-mirror";
+import { departmentShade } from "@/components/ui/department-glass";
+import { layOutChart } from "@/lib/members/chart-layout";
+import { tintOf, type DepartmentTint } from "@/lib/members/department-tint";
 import { getOrgChartAction, type OrgChart } from "@/app/actions/org-chart";
 import { WORKLOAD_STATUS } from "@/components/teams/workload-status";
 import { ManageMemberDialog } from "@/components/members/manage-member-dialog";
@@ -26,7 +28,9 @@ import { RANK_LABEL, rankLevel, rankOf } from "@/lib/members/rank";
 import type { Member } from "@/types/member";
 import { memberDisplayName } from "@/lib/members/profile";
 import { getOrCreateDmAction } from "@/app/actions/messages";
-import { getMembersByOrg } from "@/lib/queries/members";
+import { getMembersByOrg, subscribeToMembersByOrg } from "@/lib/queries/members";
+import { presenceLabel, presenceOfMember, presenceTone, type Presence } from "@/lib/members/presence";
+import { useNow } from "@/hooks/use-now";
 import { getTasksByOrg } from "@/lib/queries/tasks";
 import { getProjectsByOrg } from "@/lib/queries/projects";
 import { calculateMemberWorkload } from "@/lib/utils/dashboard-logic";
@@ -149,10 +153,9 @@ export default function TeamsPage() {
   // removeMemberAction re-checks on the server, so this is presentation,
   // not the security boundary.
   const isOwner = user?.role === "OWNER";
-  // Only ever about the viewer: the page is never told who else is in it.
+  // The viewer is in Internal Management. Only then is the page told who
+  // else is (`structure.internalManagementIds`).
   const isInternalManagement = structure?.viewerIsInternalManagement ?? false;
-  // Their own roster card says so, and only on their own screen.
-  const selfInInternalManagement = isInternalManagement ? (user?.id ?? null) : null;
   // Managers name leads and Executives give ranks, so they open the Manage
   // dialog too. It shows each viewer only what they can change, and every
   // action re-checks on the server.
@@ -229,6 +232,29 @@ export default function TeamsPage() {
 
   const onlyViewer = workloads.length === 1 && workloads[0].member.id === user?.id;
 
+  // Empty unless the viewer is in Internal Management themselves.
+  const internalManagementIds = useMemo(
+    () => new Set(structure?.internalManagementIds ?? []),
+    [structure]
+  );
+
+  /* Each person's department shade, the same one the chart gives them:
+     their card's tint where they're on it, otherwise the department
+     they're filed in. */
+  const tintByPerson = useMemo(() => {
+    const tints = new Map<string, DepartmentTint>();
+    if (!chart) return tints;
+    for (const card of layOutChart(chart)) {
+      if (card.kind !== "DEPARTMENT" && card.tint) tints.set(card.person.id, card.tint);
+    }
+    const departments = new Map(chart.departments.map((d) => [d.id, d]));
+    for (const person of chart.people) {
+      const filed = person.departmentId ? departments.get(person.departmentId) : undefined;
+      if (!tints.has(person.id) && filed) tints.set(person.id, tintOf(filed));
+    }
+    return tints;
+  }, [chart]);
+
   const roster = useMemo(
     () =>
       workloads
@@ -237,7 +263,12 @@ export default function TeamsPage() {
           focus: focusFor(workload.member.id, tasks, projectNames),
         }))
         .sort((a, b) => {
-          // Highest rank first, then whoever is carrying the most pressure.
+          // Internal Management first, for those allowed to know who that is.
+          const aIm = internalManagementIds.has(a.workload.member.id);
+          const bIm = internalManagementIds.has(b.workload.member.id);
+          if (aIm !== bIm) return aIm ? -1 : 1;
+
+          // Then highest rank, then whoever is carrying the most pressure.
           const byRank =
             rankLevel(rankOfMember(b.workload.member)) - rankLevel(rankOfMember(a.workload.member));
           if (byRank !== 0) return byRank;
@@ -248,7 +279,7 @@ export default function TeamsPage() {
 
           return (a.workload.member.name || "").localeCompare(b.workload.member.name || "");
         }),
-    [workloads, tasks, projectNames, rankOfMember]
+    [workloads, tasks, projectNames, rankOfMember, internalManagementIds]
   );
 
   const totals = useMemo(() => {
@@ -268,23 +299,28 @@ export default function TeamsPage() {
     };
   }, [workloads, tasks]);
 
-  const statusByUid = useMemo(
-    () => new Map(workloads.map((w) => [w.member.id, w.status])),
+  /* Presence is live: the roster above is read once, so its copy of
+     `lastActivity` would freeze at page load. This listener follows the
+     heartbeat as it lands, and the clock lets a pulse go stale on its
+     own when someone closes the laptop. */
+  const [liveMembers, setLiveMembers] = useState<Member[] | null>(null);
+  useEffect(() => {
+    if (!user?.orgId) return;
+    return subscribeToMembersByOrg(user.orgId, setLiveMembers);
+  }, [user?.orgId]);
+  const now = useNow();
+
+  const presenceByUid = useMemo(() => {
+    const source = liveMembers && liveMembers.length > 0 ? liveMembers : workloads.map((w) => w.member);
+    return new Map<string, Presence>(source.map((m) => [m.id, presenceOfMember(m, now)]));
+  }, [liveMembers, workloads, now]);
+
+  /* The roster by id: the chart carries names and ranks, the roster
+     carries descriptors and presence for the cards. */
+  const memberById = useMemo(
+    () => new Map(workloads.map((w) => [w.member.id, w.member])),
     [workloads]
   );
-
-  /* The tree mirrors the chart Internal Management wires in Admin Tools:
-     the same wires, drawn as the card tree. Before the chart loads, or if
-     it fails, everyone still shows in the department they are filed in. */
-  const tree = useMemo(() => {
-    if (!structure) return null;
-    return buildWiredTree(
-      workloads.map((w) => w.member),
-      structure.departments,
-      chart?.parents ?? {},
-      selfInInternalManagement
-    );
-  }, [workloads, structure, chart, selfInInternalManagement]);
 
   const removableCount = useMemo(
     () =>
@@ -556,19 +592,26 @@ export default function TeamsPage() {
                   )}
                 </div>
 
-                {tree && (
-                  <OrgTree
-                    tree={tree}
+                {/* The Admin Tools chart, card for card, where Internal
+                    Management placed it. */}
+                {chart ? (
+                  <OrgChartMirror
+                    chart={chart}
+                    memberById={memberById}
                     viewerId={user.id}
-                    statusOf={(uid) => statusByUid.get(uid)}
+                    presenceOf={(uid) => presenceByUid.get(uid)}
                     rankOf={rankOfMember}
-                    selfInInternalManagement={selfInInternalManagement}
-                    canManagePeople={canManagePeople}
-                    canManageOwners={isInternalManagement}
-                    departmentLimit={structure.departmentLimit}
+                    canManage={(member) =>
+                      member.id !== user.id &&
+                      (member.role === "OWNER" ? isInternalManagement : canManagePeople)
+                    }
                     onOpenProfile={setProfileUid}
                     onManage={setManageUid}
                   />
+                ) : (
+                  <p className="text-[13px] font-light text-ink-muted">
+                    Could not load the chart. The roster is unaffected. Try again in a moment.
+                  </p>
                 )}
               </section>
             </ScrollReveal>
@@ -581,13 +624,22 @@ export default function TeamsPage() {
                 {roster.map(({ workload, focus }, i) => {
                   const member = workload.member;
                   const config = statusConfig[workload.status];
+                  const presence = presenceByUid.get(member.id) ?? "offline";
                   const isSelf = member.id === user.id;
                   const removable =
                     revokeMode && !isSelf && (member.role !== "OWNER" || isInternalManagement);
                   const { activeTasks, overdueTasks, blockedTasks, completedThisWeek } = workload.metrics;
 
+                  const shade = departmentShade(tintByPerson.get(member.id) ?? null);
+
                   return (
                     <ScrollReveal key={member.id} delay={Math.min(i, 6) * 60}>
+                      {/* Their department's shade, as on the chart. The card
+                          takes no style, so it sits in a layer behind it. */}
+                      <div
+                        style={shade.style}
+                        className={cn("h-full rounded-[24px]", shade.className && cn("ring-1 ring-inset", shade.className))}
+                      >
                       <InteractiveCard
                         surface="fog"
                         className={cn(
@@ -614,9 +666,11 @@ export default function TeamsPage() {
                             <span
                               className={cn(
                                 "absolute -bottom-0.5 -right-0.5 z-10 h-3 w-3 rounded-full border-[2.5px] border-base",
-                                config.dot
+                                presenceTone(presence)
                               )}
-                              aria-hidden
+                              title={presenceLabel(presence)}
+                              role="img"
+                              aria-label={presenceLabel(presence)}
                             />
                           </button>
 
@@ -626,7 +680,7 @@ export default function TeamsPage() {
                             </h3>
                             <p className="mt-0.5 truncate text-[12px] text-ink-dim">
                               {member.roleDescriptor ||
-                                (member.id === selfInInternalManagement
+                                (internalManagementIds.has(member.id)
                                   ? "Internal Management"
                                   : RANK_LABEL[rankOfMember(member)])}
                               {isSelf && " · You"}
@@ -692,6 +746,7 @@ export default function TeamsPage() {
                           ))}
                         </div>
                       </InteractiveCard>
+                      </div>
                     </ScrollReveal>
                   );
                 })}
@@ -746,6 +801,8 @@ export default function TeamsPage() {
           onClose={() => setProfileUid(null)}
           viewer={{ id: user.id, orgId: user.orgId }}
           tasks={tasks}
+          chart={chart}
+          projectNames={projectNames}
           onMessage={openDm}
         />
       )}

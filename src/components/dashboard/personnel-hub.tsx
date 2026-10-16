@@ -7,7 +7,7 @@ import { Member } from "@/types/member";
 import { Task } from "@/types/task";
 import { OrbitEvent } from "@/types/event";
 import { engagementPresenceByMember } from "@/lib/calendar/presence";
-import { resolvePresence } from "@/lib/members/presence";
+import { presenceLabel, presenceTone, resolvePresence } from "@/lib/members/presence";
 import { Loader2, Phone } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
@@ -82,6 +82,7 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
     const status = resolvePresence(
       {
         operationalStatus: member.operationalStatus,
+        manualOverride: member.manualOverride,
         lastActivityMs: member.lastActivity?.toMillis?.() ?? null,
       },
       now
@@ -128,12 +129,8 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
          {telemetry.map((t) => {
            const isSelected = selectedAssignee === t.id;
            
-           // Status mapping
-           let statusColor = "bg-ink-faint";
-           if (t.operationalStatus === "available") statusColor = "bg-orbit-green";
-           if (t.operationalStatus === "focused") statusColor = "bg-ink";
-           if (t.operationalStatus === "offline") statusColor = "bg-orbit-red";
-           if (t.presence) statusColor = "bg-orbit-amber";
+           // Same colours as every other presence dot; a meeting reads as busy.
+           const statusColor = t.presence ? "bg-orbit-amber" : presenceTone(t.operationalStatus);
 
            const statusWord = t.presence ? "in meeting" : t.operationalStatus;
 
@@ -170,7 +167,10 @@ export function PersonnelHub({ projectId, orgId, members, tasks, events = [], se
                       className="relative rounded-lg transition-transform duration-300 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     >
                       <UserAvatar name={t.name} photoURL={t.photoURL} size="sm" />
-                      <span className={cn("absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-scrim/60", statusColor)} />
+                      <span
+                        className={cn("absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-scrim/60", statusColor)}
+                        title={t.presence ? "In a meeting" : presenceLabel(t.operationalStatus)}
+                      />
                     </button>
                     <div className="flex flex-col">
                        <span className="text-[13px] font-medium text-ink tracking-tight group-hover:text-ink-strong transition-colors">

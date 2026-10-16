@@ -82,7 +82,9 @@ export function GeneralSection({ user }: { user: User }) {
       await updateDoc(doc(db, "users", user.id), {
         preferences: { ...preferences, presence: next },
         manualOverride: next !== "auto",
-        ...(next === "auto" ? {} : { operationalStatus: next }),
+        // Back to auto clears a hand-picked "focused"; the status engine
+        // sets it again from workload if it applies.
+        operationalStatus: next === "auto" ? "available" : next,
       });
     } catch (err) {
       console.error("[Settings] Presence update failed", err);

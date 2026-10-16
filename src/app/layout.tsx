@@ -9,6 +9,7 @@ import { ThemeScript } from "@/components/theme-script";
 import { CallProvider } from "@/contexts/call-context";
 import { CallHost } from "@/components/calls/call-host";
 import { MessageNotifier } from "@/components/messages/message-notifier";
+import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { OrbitBackdrop } from "@/components/marketing/orbit-backdrop";
 import { SiteCredit } from "@/components/site-credit";
 
@@ -120,6 +121,8 @@ export default function RootLayout({
                 notification that only reaches the page you are already
                 looking at has not notified anyone. */}
             <MessageNotifier />
+            {/* Renders nothing; tells teammates you are here, on every page. */}
+            <PresenceHeartbeat />
           </AuthProvider>
         </InteractionProvider>
       </body>
