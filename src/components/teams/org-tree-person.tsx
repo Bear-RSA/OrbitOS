@@ -21,8 +21,6 @@ export interface TreeNodeContext {
   statusOf: (uid: string) => WorkloadStatus | undefined;
   /** The rank whose halo this person's avatar wears. */
   rankOf: (member: Member) => Rank;
-  /** Anyone in the workspace, for a department's Executive and Manager. */
-  personById: (uid: string) => Member | undefined;
   onOpenProfile: (uid: string) => void;
   onManage: (uid: string) => void;
 }

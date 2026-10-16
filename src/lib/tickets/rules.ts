@@ -1,5 +1,5 @@
-import { normaliseRole, rankLevel, rankOf, type StoredRole } from "@/lib/members/rank";
-import { departmentNodeId, parseNodeId } from "@/lib/members/org-chart";
+import { normaliseRole, rankLevel, type StoredRole } from "@/lib/members/rank";
+import { peopleAbove, personNodeId } from "@/lib/members/org-chart";
 
 /* ------------------------------------------------------------------ */
 /*  Tickets                                                            */
@@ -194,63 +194,39 @@ export function parseTicketInput(raw: unknown): Parsed {
 
 export interface TicketStructure {
   people: ReadonlyMap<string, { role: StoredRole; departmentId: string | null }>;
-  /** Each department's Team Lead, Manager and Executive slots, any of them empty. */
-  departments: ReadonlyMap<string, { leadId: string | null; managerId: string | null; executiveId: string | null }>;
-  /** Org chart department card → its Owner's card, already cleared of dead wires. */
+  /** Org chart child → boss, Members included, already cleared of dead wires. */
   parents: Readonly<Record<string, string>>;
 }
 
-/** Someone's rank as the ladder reads it: a department's named lead counts as a Team Lead. */
 function levelOf(uid: string, s: TicketStructure): number {
-  const role = s.people.get(uid)?.role;
-  const leads = [...s.departments.values()].some((d) => d.leadId === uid);
-  return rankLevel(rankOf(role, leads));
+  return rankLevel(normaliseRole(s.people.get(uid)?.role));
 }
 
-/** A department's Team Lead: the lead it names, or else someone of that rank filed in it. */
-function teamLeadOf(departmentId: string, s: TicketStructure): string | null {
-  const named = s.departments.get(departmentId)?.leadId;
-  if (named && s.people.has(named)) return named;
-  const filed = [...s.people.entries()]
-    .filter(([, p]) => p.departmentId === departmentId && p.role === "TEAM_LEAD")
-    .map(([id]) => id)
-    .sort();
-  return filed[0] ?? null;
-}
-
-/** The first Owner, the same one every time, for when the chart doesn't say. */
+/** The first Owner, the same one every time, for when the chart doesn't reach one. */
 function fallbackOwner(s: TicketStructure): string | null {
   const owners = [...s.people.entries()].filter(([, p]) => p.role === "OWNER").map(([id]) => id).sort();
   return owners[0] ?? null;
 }
 
 /**
- * Who an issue climbs through, bottom up, for someone in `departmentId`:
- * its Team Lead, Manager, Executive, then the Owner the department is
- * wired under (or the first Owner, when it isn't wired). Empty slots are
- * skipped, and so is anyone not above the person raising it. After the
- * last name comes Internal Management.
+ * Who an issue climbs through, bottom up: the people above the raiser on
+ * the org chart's wires (Team Lead, Manager, Executive, Owner; the
+ * department card is passed through), keeping only those who outrank the
+ * raiser. If the wires never reach an Owner, the first Owner closes the
+ * chain. After the last name comes Internal Management.
  */
-export function escalationChain(raiserUid: string, departmentId: string | null, s: TicketStructure): string[] {
+export function escalationChain(raiserUid: string, s: TicketStructure): string[] {
   if (s.people.get(raiserUid)?.role === "OWNER") return [];
-
-  const steps: (string | null)[] = [];
-  const department = departmentId ? s.departments.get(departmentId) : undefined;
-  if (departmentId && department) {
-    steps.push(teamLeadOf(departmentId, s), department.managerId, department.executiveId);
-    const wired = parseNodeId(s.parents[departmentNodeId(departmentId)] ?? "");
-    steps.push(wired?.kind === "person" ? wired.ref : null);
-  }
-  steps.push(fallbackOwner(s));
 
   const floor = levelOf(raiserUid, s);
   const chain: string[] = [];
-  for (const uid of steps) {
-    if (!uid || uid === raiserUid || chain.includes(uid) || !s.people.has(uid)) continue;
-    if (levelOf(uid, s) <= floor) continue;
-    // One Owner is enough: the wired one if there is one, the fallback otherwise.
-    if (s.people.get(uid)!.role === "OWNER" && chain.some((id) => s.people.get(id)!.role === "OWNER")) continue;
+  for (const uid of peopleAbove(personNodeId(raiserUid), s.parents)) {
+    if (!s.people.has(uid) || chain.includes(uid) || levelOf(uid, s) <= floor) continue;
     chain.push(uid);
+  }
+  if (!chain.some((uid) => s.people.get(uid)?.role === "OWNER")) {
+    const owner = fallbackOwner(s);
+    if (owner && owner !== raiserUid && !chain.includes(owner)) chain.push(owner);
   }
   return chain;
 }
@@ -262,14 +238,13 @@ export function escalationChain(raiserUid: string, departmentId: string | null, 
  */
 export function escalationTarget(params: {
   raiserUid: string;
-  departmentId: string | null;
   holderUid: string;
   heldBy: readonly string[];
   s: TicketStructure;
 }): string | null {
-  const { raiserUid, departmentId, holderUid, heldBy, s } = params;
+  const { raiserUid, holderUid, heldBy, s } = params;
   const above = levelOf(holderUid, s);
-  return escalationChain(raiserUid, departmentId, s).find((uid) => !heldBy.includes(uid) && levelOf(uid, s) > above) ?? null;
+  return escalationChain(raiserUid, s).find((uid) => !heldBy.includes(uid) && levelOf(uid, s) > above) ?? null;
 }
 
 /* ------------------------------------------------------------------ */

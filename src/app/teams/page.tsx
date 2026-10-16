@@ -13,7 +13,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { MemberProfile } from "@/components/members/member-profile";
 import { DestructiveActionModal } from "@/components/ui/destructive-action-modal";
 import { OrgTree } from "@/components/teams/org-tree";
-import { buildOrgTree } from "@/lib/members/hierarchy";
+import { buildWiredTree } from "@/lib/members/wired-tree";
 import { getOrgChartAction, type OrgChart } from "@/app/actions/org-chart";
 import { WORKLOAD_STATUS } from "@/components/teams/workload-status";
 import { ManageMemberDialog } from "@/components/members/manage-member-dialog";
@@ -268,45 +268,22 @@ export default function TeamsPage() {
     };
   }, [workloads, tasks]);
 
-  const memberById = useMemo(
-    () => new Map(workloads.map((w) => [w.member.id, w.member])),
-    [workloads]
-  );
-
   const statusByUid = useMemo(
     () => new Map(workloads.map((w) => [w.member.id, w.status])),
     [workloads]
   );
 
-  /* The Owner each department is wired under on the Admin Tools chart. */
-  const ownerOf = useCallback(
-    (departmentId: string) => {
-      const parent = chart?.parents[`d:${departmentId}`];
-      return parent?.startsWith("p:") ? parent.slice(2) : null;
-    },
-    [chart]
-  );
-
-  /* The old tree, fed by the chart: departments carry the Executive and
-     Manager Internal Management named, already checked against their
-     current rank, and anyone named over a department isn't listed again
-     as "not in a department". */
+  /* The tree mirrors the chart Internal Management wires in Admin Tools:
+     the same wires, drawn as the card tree. Before the chart loads, or if
+     it fails, everyone still shows in the department they are filed in. */
   const tree = useMemo(() => {
     if (!structure) return null;
-    const slots = new Map(chart?.departments.map((d) => [d.id, d]) ?? []);
-    const departments = structure.departments.map((d) => ({
-      ...d,
-      executiveId: slots.get(d.id)?.executiveId ?? null,
-      managerId: slots.get(d.id)?.managerId ?? null,
-    }));
-    const named = new Set(departments.flatMap((d) => [d.executiveId, d.managerId].filter(Boolean)));
-
-    const built = buildOrgTree(
+    return buildWiredTree(
       workloads.map((w) => w.member),
-      departments,
+      structure.departments,
+      chart?.parents ?? {},
       selfInInternalManagement
     );
-    return { ...built, unassigned: built.unassigned.filter((m) => !named.has(m.id)) };
   }, [workloads, structure, chart, selfInInternalManagement]);
 
   const removableCount = useMemo(
@@ -585,11 +562,9 @@ export default function TeamsPage() {
                     viewerId={user.id}
                     statusOf={(uid) => statusByUid.get(uid)}
                     rankOf={rankOfMember}
-                    personById={(uid) => memberById.get(uid)}
                     selfInInternalManagement={selfInInternalManagement}
                     canManagePeople={canManagePeople}
                     canManageOwners={isInternalManagement}
-                    ownerOf={ownerOf}
                     departmentLimit={structure.departmentLimit}
                     onOpenProfile={setProfileUid}
                     onManage={setManageUid}

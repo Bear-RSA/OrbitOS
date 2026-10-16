@@ -128,7 +128,7 @@ function toView(
   const can = permissionsFor({ viewerId, status: ticket.status, raisedBy: ticket.raisedBy, holderId: ticket.holderId });
   const target =
     can.escalate && ticket.holderId
-      ? escalationTarget({ raiserUid: ticket.raisedBy, departmentId: ticket.departmentId ?? null, holderUid: ticket.holderId, heldBy: ticket.heldBy, s })
+      ? escalationTarget({ raiserUid: ticket.raisedBy, holderUid: ticket.holderId, heldBy: ticket.heldBy, s })
       : null;
 
   return {
@@ -262,7 +262,7 @@ export async function raiseTicketAction(input: unknown): Promise<Result<{ id: st
     }
     const departmentId =
       fields.type === "ONBOARDING" ? fields.departmentId : fields.type === "INTERNAL_MOVE" && fields.departmentId !== "KEEP" ? fields.departmentId : null;
-    if (departmentId && !s.departments.has(departmentId)) {
+    if (departmentId && !s.departmentNames.has(departmentId)) {
       return { success: false, error: "That department no longer exists." };
     }
     if (fields.type === "ONBOARDING" && memberWithEmail(s, fields.email)) {
@@ -270,7 +270,7 @@ export async function raiseTicketAction(input: unknown): Promise<Result<{ id: st
     }
 
     const departmentOfRaiser = s.people.get(caller.uid)?.departmentId ?? null;
-    const holderId = startsWithInternalManagement(fields.type) ? null : escalationChain(caller.uid, departmentOfRaiser, s)[0] ?? null;
+    const holderId = startsWithInternalManagement(fields.type) ? null : escalationChain(caller.uid, s)[0] ?? null;
     const holderName = holderId ? s.names.get(holderId) ?? null : null;
     const at = now();
     const ticket: StoredTicket = {
@@ -349,7 +349,6 @@ export async function ticketStepAction(input: { ticketId: string; step: TicketSt
           if (!can.escalate || !ticket.holderId) return { ok: false as const, error: "Only the person holding it can escalate it." };
           const next = escalationTarget({
             raiserUid: ticket.raisedBy,
-            departmentId: ticket.departmentId ?? null,
             holderUid: ticket.holderId,
             heldBy: ticket.heldBy,
             s: s!,

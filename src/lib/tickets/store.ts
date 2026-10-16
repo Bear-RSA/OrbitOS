@@ -1,11 +1,10 @@
 import { adminDb } from "@/lib/firebase/admin";
 import {
   departmentNodeId,
+  kindOfRole,
   liveParents,
   personNodeId,
-  personTier,
-  TIER_OF_DEPARTMENT,
-  type ChartTier,
+  type ChartNodeKind,
 } from "@/lib/members/org-chart";
 import { memberDisplayName } from "@/lib/members/profile";
 import { normaliseRole, RANK_LABEL } from "@/lib/members/rank";
@@ -56,7 +55,7 @@ export interface StoredTicket {
   heldBy: string[];
   /** Who may read it from the Tickets page: the raiser and everyone who held it. */
   viewers: string[];
-  /** The raiser's department when they raised it. An issue climbs its slots. */
+  /** The raiser's department when they raised it. Kept for the record; issues climb the wires. */
   departmentId: string | null;
   /** The person a move or offboarding is about, kept by name once they've left. */
   subjectName: string | null;
@@ -82,10 +81,6 @@ export function memberWithEmail(s: LoadedStructure, email: string): string | nul
   return null;
 }
 
-function str(value: unknown): string | null {
-  return typeof value === "string" && value ? value : null;
-}
-
 /** People, departments and the org chart's wires, for routing and for names. */
 export async function loadTicketStructure(orgId: string): Promise<LoadedStructure> {
   const [usersSnap, departmentsSnap, chartSnap] = await Promise.all([
@@ -109,20 +104,14 @@ export async function loadTicketStructure(orgId: string): Promise<LoadedStructur
   const names = new Map(usersSnap.docs.map((doc) => [doc.id, memberDisplayName({ name: doc.data().name as string | undefined })]));
   const emails = new Map(usersSnap.docs.map((doc) => [doc.id, ((doc.data().email as string) || "").toLowerCase()]));
 
-  const departments = new Map(
-    departmentsSnap.docs.map((doc) => [doc.id, { leadId: str(doc.data().leadId), managerId: str(doc.data().managerId), executiveId: str(doc.data().executiveId) }])
-  );
   const departmentNames = new Map(departmentsSnap.docs.map((doc) => [doc.id, (doc.data().name as string) || "Untitled"]));
 
-  const tiers = new Map<string, { kind: "person" | "department"; tier: ChartTier }>();
-  for (const [id, person] of people) {
-    const tier = personTier(person.role);
-    if (tier) tiers.set(personNodeId(id), { kind: "person", tier });
-  }
-  for (const id of departments.keys()) tiers.set(departmentNodeId(id), { kind: "department", tier: TIER_OF_DEPARTMENT });
+  const kinds = new Map<string, ChartNodeKind>();
+  for (const [id, person] of people) kinds.set(personNodeId(id), kindOfRole(person.role));
+  for (const id of departmentNames.keys()) kinds.set(departmentNodeId(id), "DEPARTMENT");
 
-  const parents = liveParents(((chartSnap.data() ?? {}).parents ?? {}) as Record<string, unknown>, tiers);
-  return { people, departments, parents, names, emails, departmentNames };
+  const parents = liveParents(((chartSnap.data() ?? {}).parents ?? {}) as Record<string, unknown>, kinds);
+  return { people, parents, names, emails, departmentNames };
 }
 
 /* ------------------------------------------------------------------ */

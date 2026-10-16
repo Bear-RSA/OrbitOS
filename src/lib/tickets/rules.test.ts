@@ -12,65 +12,70 @@ import {
 } from "./rules";
 
 /*
- *   owner ── d:design  (exec, manager, lead: lena; filed: lena, mo)
- *   owner2    d:ops     (no slots, no wire; filed: olu, tia the TEAM_LEAD rank)
- *   drifter: in no department
+ *   owner ── exec ── d:design ── manager ── lena (Team Lead) ── mo
+ *   owner2 ── d:ops ── mgr2 ── olu (member straight under the Manager)
+ *   drifter: wired to nobody
  */
 function structure(): TicketStructure {
   const people = new Map<string, { role: StoredRole; departmentId: string | null }>([
     ["owner", { role: "OWNER", departmentId: null }],
     ["owner2", { role: "OWNER", departmentId: null }],
     ["exec", { role: "EXECUTIVE", departmentId: null }],
-    ["manager", { role: "MANAGER", departmentId: null }],
-    ["lena", { role: "MEMBER", departmentId: "design" }],
+    ["manager", { role: "MANAGER", departmentId: "design" }],
+    ["lena", { role: "TEAM_LEAD", departmentId: "design" }],
     ["mo", { role: "MEMBER", departmentId: "design" }],
+    ["mgr2", { role: "MANAGER", departmentId: "ops" }],
     ["olu", { role: "MEMBER", departmentId: "ops" }],
-    ["tia", { role: "TEAM_LEAD", departmentId: "ops" }],
     ["drifter", { role: "MEMBER", departmentId: null }],
   ]);
   return {
     people,
-    departments: new Map([
-      ["design", { leadId: "lena", managerId: "manager", executiveId: "exec" }],
-      ["ops", { leadId: null, managerId: null, executiveId: null }],
-    ]),
-    parents: { "d:design": "p:owner2" },
+    parents: {
+      "p:exec": "p:owner",
+      "d:design": "p:exec",
+      "p:manager": "d:design",
+      "p:lena": "p:manager",
+      "p:mo": "p:lena",
+      "d:ops": "p:owner2",
+      "p:mgr2": "d:ops",
+      "p:olu": "p:mgr2",
+    },
   };
 }
 
 describe("escalationChain", () => {
   const s = structure();
 
-  it("climbs a member's department slot by slot to its wired Owner", () => {
-    expect(escalationChain("mo", "design", s)).toEqual(["lena", "manager", "exec", "owner2"]);
+  it("climbs the wires from a member to the Owner, passing through the department", () => {
+    expect(escalationChain("mo", s)).toEqual(["lena", "manager", "exec", "owner"]);
   });
 
-  it("starts above the raiser", () => {
-    expect(escalationChain("lena", "design", s)).toEqual(["manager", "exec", "owner2"]);
+  it("starts above the raiser, and skips a missing Team Lead or Executive", () => {
+    expect(escalationChain("lena", s)).toEqual(["manager", "exec", "owner"]);
+    expect(escalationChain("olu", s)).toEqual(["mgr2", "owner2"]);
   });
 
-  it("finds a Team Lead by rank when the department names none, and falls back to the first Owner", () => {
-    expect(escalationChain("olu", "ops", s)).toEqual(["tia", "owner"]);
-    expect(escalationChain("drifter", null, s)).toEqual(["owner"]);
+  it("falls back to the first Owner when the wires reach none", () => {
+    expect(escalationChain("drifter", s)).toEqual(["owner"]);
   });
 
   it("hands an Owner's issue straight to Internal Management", () => {
-    expect(escalationChain("owner", null, s)).toEqual([]);
+    expect(escalationChain("owner", s)).toEqual([]);
   });
 });
 
 describe("escalationTarget", () => {
   const s = structure();
-  const base = { raiserUid: "mo", departmentId: "design", s };
+  const base = { raiserUid: "mo", s };
 
   it("moves one step up from whoever holds it", () => {
     expect(escalationTarget({ ...base, holderUid: "lena", heldBy: ["lena"] })).toBe("manager");
-    expect(escalationTarget({ ...base, holderUid: "exec", heldBy: ["lena", "manager", "exec"] })).toBe("owner2");
+    expect(escalationTarget({ ...base, holderUid: "exec", heldBy: ["lena", "manager", "exec"] })).toBe("owner");
   });
 
   it("goes to Internal Management after the Owner, and never back to someone who held it", () => {
-    expect(escalationTarget({ ...base, holderUid: "owner2", heldBy: ["lena", "owner2"] })).toBeNull();
-    expect(escalationTarget({ ...base, holderUid: "lena", heldBy: ["manager", "exec", "owner2", "lena"] })).toBeNull();
+    expect(escalationTarget({ ...base, holderUid: "owner", heldBy: ["lena", "owner"] })).toBeNull();
+    expect(escalationTarget({ ...base, holderUid: "lena", heldBy: ["manager", "exec", "owner", "lena"] })).toBeNull();
   });
 });
 describe("typesRaisableBy", () => {

@@ -1,94 +1,94 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  canFillSlot,
   checkConnection,
+  departmentAbove,
+  descendantsOf,
   liveParents,
   parseNodeId,
-  personTier,
+  peopleAbove,
   readPosition,
-  type ChartTier,
+  wouldLoop,
+  type ChartNodeKind,
 } from "./org-chart";
 
-const owner = { kind: "person" as const, tier: 1 as ChartTier };
-const dept = { kind: "department" as const, tier: 2 as ChartTier };
-
-describe("personTier", () => {
-  it("gives Owners a card", () => {
-    expect(personTier("OWNER")).toBe(1);
-  });
-
-  it("leaves every other rank to the department slots", () => {
-    expect(personTier("EXECUTIVE")).toBeNull();
-    expect(personTier("MANAGER")).toBeNull();
-    expect(personTier("MEMBER")).toBeNull();
-  });
-});
-
-describe("canFillSlot", () => {
-  it("takes only the slot's own rank", () => {
-    expect(canFillSlot("executive", "EXECUTIVE")).toBe(true);
-    expect(canFillSlot("manager", "MANAGER")).toBe(true);
-    expect(canFillSlot("manager", "EXECUTIVE")).toBe(false);
-    expect(canFillSlot("executive", "MEMBER")).toBe(false);
-  });
-});
+/*
+ *   p:owner ── p:exec ── d:eng ── p:mgr ── p:lead ── p:mo
+ *                                       └─ p:solo (member straight under the Manager)
+ *   p:owner ── d:ops   (no Executive)
+ */
+const parents = {
+  "p:exec": "p:owner",
+  "d:eng": "p:exec",
+  "p:mgr": "d:eng",
+  "p:lead": "p:mgr",
+  "p:mo": "p:lead",
+  "p:solo": "p:mgr",
+  "d:ops": "p:owner",
+};
 
 describe("checkConnection", () => {
-  it("wires an Owner down to a department", () => {
-    expect(checkConnection(owner, dept).ok).toBe(true);
+  const ok = (parent: ChartNodeKind, child: ChartNodeKind) => checkConnection(parent, child).ok;
+
+  it("follows the ladder, skipping a missing Executive or Team Lead", () => {
+    expect(ok("OWNER", "EXECUTIVE")).toBe(true);
+    expect(ok("EXECUTIVE", "DEPARTMENT")).toBe(true);
+    expect(ok("OWNER", "DEPARTMENT")).toBe(true);
+    expect(ok("DEPARTMENT", "MANAGER")).toBe(true);
+    expect(ok("MANAGER", "TEAM_LEAD")).toBe(true);
+    expect(ok("TEAM_LEAD", "MEMBER")).toBe(true);
+    expect(ok("MANAGER", "MEMBER")).toBe(true);
   });
 
-  it("refuses sideways and upward wires", () => {
-    expect(checkConnection(owner, owner).ok).toBe(false);
-    expect(checkConnection(dept, owner).ok).toBe(false);
+  it("refuses wires that skip a department or run upward", () => {
+    expect(ok("EXECUTIVE", "MANAGER")).toBe(false);
+    expect(ok("DEPARTMENT", "MEMBER")).toBe(false);
+    expect(ok("MEMBER", "TEAM_LEAD")).toBe(false);
+    expect(ok("EXECUTIVE", "OWNER")).toBe(false);
   });
 
-  it("never puts anything under a department", () => {
-    expect(checkConnection(dept, dept).ok).toBe(false);
+  it("says where a card belongs", () => {
+    expect(checkConnection("EXECUTIVE", "MANAGER")).toEqual({ ok: false, error: "A Manager goes under a department." });
   });
 });
 
 describe("liveParents", () => {
-  const tiers = new Map<string, { kind: "person" | "department"; tier: ChartTier }>([
-    ["p:o", owner],
-    ["d:x", dept],
-  ]);
-
-  it("keeps wires that still hold", () => {
-    expect(liveParents({ "d:x": "p:o" }, tiers)).toEqual({ "d:x": "p:o" });
-  });
-
-  it("drops wires to cards that left the chart", () => {
-    expect(liveParents({ "d:x": "p:gone" }, tiers)).toEqual({});
-  });
-
-  it("drops wires from cards that no longer have one, like an old Manager card", () => {
-    expect(liveParents({ "d:x": "p:manager" }, tiers)).toEqual({});
+  it("drops wires a rank change turned the wrong way", () => {
+    const kinds = new Map<string, ChartNodeKind>([
+      ["p:owner", "OWNER"],
+      ["d:eng", "DEPARTMENT"],
+      ["p:mgr", "MEMBER"],
+    ]);
+    expect(liveParents({ "d:eng": "p:owner", "p:mgr": "d:eng", "p:gone": "p:owner" }, kinds)).toEqual({ "d:eng": "p:owner" });
   });
 });
 
-describe("parseNodeId", () => {
-  it("reads both kinds", () => {
+describe("walking the wires", () => {
+  it("finds the department above anyone in it", () => {
+    expect(departmentAbove("p:mo", parents)).toBe("eng");
+    expect(departmentAbove("p:solo", parents)).toBe("eng");
+    expect(departmentAbove("p:exec", parents)).toBeNull();
+  });
+
+  it("lists everyone under a card", () => {
+    expect(descendantsOf("p:mgr", parents).sort()).toEqual(["p:lead", "p:mo", "p:solo"]);
+  });
+
+  it("lists the people above, passing through the department", () => {
+    expect(peopleAbove("p:mo", parents)).toEqual(["lead", "mgr", "exec", "owner"]);
+  });
+
+  it("spots a loop", () => {
+    expect(wouldLoop("p:mgr", "p:mo", parents)).toBe(true);
+    expect(wouldLoop("p:mo", "p:solo", parents)).toBe(false);
+  });
+});
+
+describe("parseNodeId and readPosition", () => {
+  it("reads only well-formed ids and sane positions", () => {
     expect(parseNodeId("p:abc")).toEqual({ kind: "person", ref: "abc" });
-    expect(parseNodeId("d:abc")).toEqual({ kind: "department", ref: "abc" });
-  });
-
-  it("refuses anything else", () => {
     expect(parseNodeId("x:abc")).toBeNull();
-    expect(parseNodeId("p:")).toBeNull();
-    expect(parseNodeId("p:a/b")).toBeNull();
-  });
-});
-
-describe("readPosition", () => {
-  it("keeps finite numbers", () => {
-    expect(readPosition({ x: 10.4, y: -3 })).toEqual({ x: 10, y: -3 });
-  });
-
-  it("refuses junk", () => {
-    expect(readPosition({ x: "1", y: 2 })).toBeNull();
-    expect(readPosition({ x: Infinity, y: 2 })).toBeNull();
-    expect(readPosition({ x: 1e9, y: 2 })).toBeNull();
+    expect(readPosition({ x: 1.4, y: 2.6 })).toEqual({ x: 1, y: 3 });
+    expect(readPosition({ x: Infinity, y: 0 })).toBeNull();
   });
 });

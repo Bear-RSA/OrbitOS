@@ -1,50 +1,52 @@
 "use client";
 
-import type { OrgTree as OrgTreeData } from "@/lib/members/hierarchy";
+import type { WiredTree } from "@/lib/members/wired-tree";
+import type { Department } from "@/types/department";
 import type { Member } from "@/types/member";
 
 import { OrgTreeConnectors, type Branch } from "./org-tree-connectors";
 import { OrgTreeDepartmentCard, OrgTreeUnassignedBucket } from "./org-tree-department-card";
-import { OrgTreeOwnerCard, OWNER_CARD_WIDTH } from "./org-tree-owner-card";
+import { EXECUTIVE_CARD_WIDTH, OrgTreeOwnerCard, OWNER_CARD_WIDTH } from "./org-tree-owner-card";
 import type { TreeNodeContext } from "./org-tree-person";
 
 /* ------------------------------------------------------------------ */
 /*  Org tree: the Tree view on /teams                                  */
 /*                                                                     */
-/*    owner        owner        owner      one row of equals           */
-/*      ●            ●                     a node under each owner     */
-/*    ╭─┴──╮         │                                                 */
-/*    dept dept     dept                   each under its own owner    */
+/*    owner          owner          owner      one row of equals       */
+/*      ●              │                                               */
+/*    exec             │                       Executives under owners */
+/*      ●              ●                                               */
+/*    ╭─┴──╮           │                                               */
+/*    dept dept       dept                     each under its card     */
 /*                                                                     */
-/*  Which Owner a department hangs from is wired by Internal           */
-/*  Management on the chart in Admin Tools; this view only draws it.   */
-/*  Columns are ordered by owner, so each owner's departments sit      */
-/*  beneath them. Unwired departments and the "not in a department"    */
-/*  bucket come last, hanging from one shared node.                    */
+/*  It mirrors the chart Internal Management wires in Admin Tools,     */
+/*  through `buildWiredTree`; nothing here decides structure. A        */
+/*  department wired straight to an Owner while Executives exist gets  */
+/*  a line down through the Executive row, so it still reads as        */
+/*  hanging from that Owner. Unwired departments and the "not in a     */
+/*  department" bucket hang from one shared node, like the old tree.   */
 /*                                                                     */
 /*  Desktop: a fixed-width diagram (260px columns, 48px gutters)       */
 /*  centred on the page, scrolling sideways rather than squeezing the  */
-/*  cards. Fixed widths are what let the connectors be drawn by        */
-/*  arithmetic. Phones get one stacked column instead.                 */
-/*                                                                     */
-/*  Presentational. The page owns the data and every action.           */
+/*  cards; fixed widths let every line be drawn by arithmetic. Phones  */
+/*  get one stacked column.                                            */
 /* ------------------------------------------------------------------ */
 
 const COLUMN = 260;
 const GUTTER = 48;
 const OWNER_GAP = 24;
 const BAND_HEIGHT = 112;
+/** The Executive row's height: a card, top-aligned, with room under it. */
+const EXECUTIVE_ROW_HEIGHT = 108;
 
 interface OrgTreeProps extends TreeNodeContext {
-  tree: OrgTreeData<Member>;
+  tree: WiredTree<Member, Department>;
   /** The viewer's own id when they are in Internal Management, otherwise null. */
   selfInInternalManagement: string | null;
   /** The viewer can open the Manage dialog on people in departments. */
   canManagePeople: boolean;
-  /** The viewer is in Internal Management: owners open the Manage dialog too. */
+  /** The viewer is in Internal Management: Owners open the Manage dialog too. */
   canManageOwners: boolean;
-  /** The Owner a department is wired under in Admin Tools, or null. */
-  ownerOf: (departmentId: string) => string | null;
   /** 0 when the plan does not include departments. */
   departmentLimit: number;
 }
@@ -62,61 +64,78 @@ function NoDepartments({ available }: { available: boolean }) {
   );
 }
 
+/** Centres of `count` items of `size`, `gap` apart, centred in `width`. */
+function centres(count: number, size: number, gap: number, width: number): number[] {
+  const total = count * size + Math.max(0, count - 1) * gap;
+  const start = (width - total) / 2;
+  return Array.from({ length: count }, (_, i) => start + i * (size + gap) + size / 2);
+}
+
 export function OrgTree({
   tree,
   selfInInternalManagement,
   canManagePeople,
   canManageOwners,
-  ownerOf,
   departmentLimit,
   ...context
 }: OrgTreeProps) {
-  const ownerIndex = new Map(tree.owners.map((o, i) => [o.id, i]));
-
-  // Each owner's departments together, in owner order; unwired ones last.
-  const departments = [...tree.departments].sort((a, b) => {
-    const ia = ownerIndex.get(ownerOf(a.department.id) ?? "") ?? Infinity;
-    const ib = ownerIndex.get(ownerOf(b.department.id) ?? "") ?? Infinity;
-    return ia - ib || a.department.name.localeCompare(b.department.name);
-  });
-
+  const { owners, executives, departments, unassigned } = tree;
   const hasDepartments = departments.length > 0;
-  const hasUnassigned = tree.unassigned.length > 0;
+  const hasUnassigned = unassigned.length > 0;
+  const hasExecutives = executives.length > 0;
 
-  // One column per department, or the empty state, then the bucket.
   const columnCount = (hasDepartments ? departments.length : 1) + (hasUnassigned ? 1 : 0);
-  const columnsWidth = columnCount * COLUMN + (columnCount - 1) * GUTTER;
-  const ownersWidth =
-    tree.owners.length * OWNER_CARD_WIDTH + Math.max(0, tree.owners.length - 1) * OWNER_GAP;
-  const width = Math.max(columnsWidth, ownersWidth);
+  const width = Math.max(
+    columnCount * COLUMN + (columnCount - 1) * GUTTER,
+    owners.length * OWNER_CARD_WIDTH + Math.max(0, owners.length - 1) * OWNER_GAP,
+    executives.length * EXECUTIVE_CARD_WIDTH + Math.max(0, executives.length - 1) * OWNER_GAP
+  );
 
-  const columnsStart = (width - columnsWidth) / 2;
-  const columnCenter = (i: number) => columnsStart + i * (COLUMN + GUTTER) + COLUMN / 2;
-  const ownersStart = (width - ownersWidth) / 2;
-  const ownerCenter = (i: number) => ownersStart + i * (OWNER_CARD_WIDTH + OWNER_GAP) + OWNER_CARD_WIDTH / 2;
+  const ownerX = new Map(
+    centres(owners.length, OWNER_CARD_WIDTH, OWNER_GAP, width).map((x, i) => [owners[i].id, x])
+  );
+  const executiveXs = centres(executives.length, EXECUTIVE_CARD_WIDTH, OWNER_GAP, width);
+  const executiveX = new Map(executives.map((e, i) => [e.person.id, executiveXs[i]]));
+  const columnXs = centres(columnCount, COLUMN, GUTTER, width);
 
-  // Who each column hangs from: its owner's card, or the shared node.
-  const branches: Branch[] = [];
-  const byOwner = new Map<number, number[]>();
+  // Owners → their Executives.
+  const executiveBranches: Branch[] = [];
+  for (const owner of owners) {
+    const toX = executives.filter((e) => e.ownerId === owner.id).map((e) => executiveX.get(e.person.id)!);
+    if (toX.length > 0) executiveBranches.push({ fromX: ownerX.get(owner.id)!, toX });
+  }
+
+  // Executives or Owners → their departments; the rest from a shared node.
+  const fromCard = new Map<number, number[]>();
   const shared: { x: number; dashed: boolean }[] = [];
-
   if (hasDepartments) {
-    departments.forEach((branch, i) => {
-      const owner = ownerIndex.get(ownerOf(branch.department.id) ?? "");
-      if (owner === undefined) shared.push({ x: columnCenter(i), dashed: false });
-      else byOwner.set(owner, [...(byOwner.get(owner) ?? []), columnCenter(i)]);
+    departments.forEach((column, i) => {
+      const from = column.bossId ? (executiveX.get(column.bossId) ?? ownerX.get(column.bossId)) : undefined;
+      if (from === undefined) shared.push({ x: columnXs[i], dashed: false });
+      else fromCard.set(from, [...(fromCard.get(from) ?? []), columnXs[i]]);
     });
   } else {
-    shared.push({ x: columnCenter(0), dashed: false });
+    shared.push({ x: columnXs[0], dashed: false });
   }
-  if (hasUnassigned) shared.push({ x: columnCenter(columnCount - 1), dashed: true });
+  if (hasUnassigned) shared.push({ x: columnXs[columnCount - 1], dashed: true });
 
-  for (const [owner, toX] of byOwner) branches.push({ fromX: ownerCenter(owner), toX });
+  const departmentBranches: Branch[] = [...fromCard].map(([fromX, toX]) => ({ fromX, toX }));
   if (shared.length > 0) {
-    branches.push({ fromX: width / 2, toX: shared.map((s) => s.x), dashed: shared.map((s) => s.dashed) });
+    departmentBranches.push({ fromX: width / 2, toX: shared.map((s) => s.x), dashed: shared.map((s) => s.dashed) });
   }
 
-  const owners = tree.owners.map((owner) => (
+  // Owners whose departments hang straight from them, past the Executive row.
+  const passThrough = hasExecutives
+    ? owners.filter((o) => fromCard.has(ownerX.get(o.id)!)).map((o) => ownerX.get(o.id)!)
+    : [];
+  // ...which starts in the band above that row, straight down.
+  for (const x of passThrough) {
+    const branch = executiveBranches.find((b) => b.fromX === x);
+    if (branch) branch.toX.push(x);
+    else executiveBranches.push({ fromX: x, toX: [x] });
+  }
+
+  const ownerCards = owners.map((owner) => (
     <OrgTreeOwnerCard
       key={owner.id}
       member={owner}
@@ -126,13 +145,24 @@ export function OrgTree({
     />
   ));
 
+  const executiveCard = (person: Member) => (
+    <OrgTreeOwnerCard
+      key={person.id}
+      member={person}
+      rank="EXECUTIVE"
+      inInternalManagement={person.id === selfInInternalManagement}
+      context={context}
+      manageable={canManagePeople && person.id !== context.viewerId}
+    />
+  );
+
   const columns = (
     <>
       {hasDepartments ? (
-        departments.map((branch) => (
+        departments.map((column) => (
           <OrgTreeDepartmentCard
-            key={branch.department.id}
-            branch={branch}
+            key={column.department.id}
+            column={column}
             context={context}
             canManagePeople={canManagePeople}
           />
@@ -143,7 +173,7 @@ export function OrgTree({
 
       {hasUnassigned && (
         <OrgTreeUnassignedBucket
-          members={tree.unassigned}
+          members={unassigned}
           title={hasDepartments ? "Not in a department" : "Members"}
           context={context}
           canManage={canManagePeople}
@@ -154,32 +184,67 @@ export function OrgTree({
 
   return (
     <>
-      {/* Phones: one full-width column, owners over their departments. */}
+      {/* Phones: one full-width column, top down. */}
       <div className="flex flex-col pb-6 sm:hidden">
-        <div className="flex flex-col gap-3">{owners}</div>
-        <div aria-hidden className="mx-auto my-2 flex flex-col items-center">
-          <span className="h-8 w-[1.5px] bg-line/[0.16]" />
-          <span className="h-1.5 w-1.5 rounded-full bg-orbit-gold" />
-          <span className="h-8 w-[1.5px] bg-line/[0.16]" />
-        </div>
+        <div className="flex flex-col gap-3">{ownerCards}</div>
+        {hasExecutives && (
+          <>
+            <Stem />
+            <div className="flex flex-col gap-3">{executives.map((e) => executiveCard(e.person))}</div>
+          </>
+        )}
+        <Stem />
         <div className="flex flex-col gap-4">{columns}</div>
       </div>
 
       <div className="hidden overflow-x-auto pb-6 sm:block">
         <div className="mx-auto px-12" style={{ width: width + GUTTER * 2 }}>
-          {/* Owner tier: one row of equals */}
           <div className="flex justify-center" style={{ gap: OWNER_GAP }}>
-            {owners}
+            {ownerCards}
           </div>
 
-          <OrgTreeConnectors width={width} height={BAND_HEIGHT} branches={branches} />
+          {hasExecutives && (
+            <>
+              <OrgTreeConnectors width={width} height={BAND_HEIGHT} branches={executiveBranches} />
+              <div className="relative" style={{ width, height: EXECUTIVE_ROW_HEIGHT }}>
+                {passThrough.map((x) => (
+                  <span
+                    key={x}
+                    aria-hidden
+                    className="absolute top-0 h-full w-[1.5px] bg-line/[0.16]"
+                    style={{ left: x - 0.75 }}
+                  />
+                ))}
+                {executives.map((e) => (
+                  <div
+                    key={e.person.id}
+                    className="absolute top-0"
+                    style={{ left: executiveX.get(e.person.id)! - EXECUTIVE_CARD_WIDTH / 2 }}
+                  >
+                    {executiveCard(e.person)}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
-          {/* Columns */}
+          <OrgTreeConnectors width={width} height={BAND_HEIGHT} branches={departmentBranches} />
+
           <div className="flex items-start justify-center" style={{ gap: GUTTER }}>
             {columns}
           </div>
         </div>
       </div>
     </>
+  );
+}
+
+function Stem() {
+  return (
+    <div aria-hidden className="mx-auto my-2 flex flex-col items-center">
+      <span className="h-8 w-[1.5px] bg-line/[0.16]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-orbit-gold" />
+      <span className="h-8 w-[1.5px] bg-line/[0.16]" />
+    </div>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { InteractiveCard } from "@/components/ui/interactive-card";
-import type { DepartmentBranch } from "@/lib/members/hierarchy";
+import type { DepartmentColumn } from "@/lib/members/wired-tree";
+import type { Department } from "@/types/department";
 import type { Member } from "@/types/member";
 
 import { CountPill, Eyebrow, PersonRow, type TreeNodeContext } from "./org-tree-person";
@@ -9,30 +10,28 @@ import { CountPill, Eyebrow, PersonRow, type TreeNodeContext } from "./org-tree-
 /* ------------------------------------------------------------------ */
 /*  Department card and the unassigned bucket                          */
 /*                                                                     */
-/*  Top down: the Executive and Manager over the department when       */
-/*  Internal Management has named them, then the lead, then members.   */
-/*  The lead row keeps its height when there is no lead, so cards      */
-/*  standing side by side line their member lists up. Departments are  */
-/*  created and changed in Admin Tools, so there are no edit buttons.  */
+/*  A department card shows what Internal Management wired under it on */
+/*  the chart: each Manager, the Team Leads under them, and the people */
+/*  under those. People filed here before the chart was wired are      */
+/*  listed at the bottom. Departments are created and changed in Admin */
+/*  Tools, so there are no edit buttons here.                          */
 /* ------------------------------------------------------------------ */
 
 export function OrgTreeDepartmentCard({
-  branch,
+  column,
   context,
   canManagePeople,
 }: {
-  branch: DepartmentBranch<Member>;
+  column: DepartmentColumn<Member, Department>;
   context: TreeNodeContext;
   /** Open the Manage dialog on the people in it. */
   canManagePeople: boolean;
 }) {
-  const { department, lead } = branch;
-  const executive = department.executiveId ? context.personById(department.executiveId) : undefined;
-  const manager = department.managerId ? context.personById(department.managerId) : undefined;
-  // Someone named over the department shows there, not again in the list.
-  const members = branch.members.filter((m) => m.id !== executive?.id && m.id !== manager?.id);
-  const count = members.length + (lead ? 1 : 0);
+  const { department, managers, filed, count } = column;
   const manageable = (member: Member) => canManagePeople && member.id !== context.viewerId;
+  const row = (member: Member, tier: "lead" | "member" = "member") => (
+    <PersonRow key={member.id} member={member} tier={tier} context={context} manageable={manageable(member)} />
+  );
 
   return (
     <InteractiveCard surface="fog" className="w-full rounded-3xl p-6 sm:w-[260px]">
@@ -45,52 +44,39 @@ export function OrgTreeDepartmentCard({
           <CountPill value={count} label={`${count} ${count === 1 ? "person" : "people"}`} />
         </div>
 
-        {/* Over the department, when Internal Management has named them. */}
-        {(executive || manager) && (
-          <div className="space-y-2">
-            {executive && (
-              <div className="space-y-1">
-                <Eyebrow className="text-orbit-violet">Executive</Eyebrow>
-                <PersonRow member={executive} tier="member" context={context} manageable={manageable(executive)} />
-              </div>
-            )}
-            {manager && (
-              <div className="space-y-1">
-                <Eyebrow className="text-orbit-blue">Manager</Eyebrow>
-                <PersonRow member={manager} tier="member" context={context} manageable={manageable(manager)} />
-              </div>
-            )}
-          </div>
+        {managers.length === 0 && filed.length === 0 && (
+          <p className="text-[12px] text-ink-dim">No one wired in yet</p>
         )}
 
-        <div className="space-y-2">
-          <Eyebrow className="text-orbit-teal">{department.leadTitle}</Eyebrow>
-          {lead ? (
-            <PersonRow member={lead} tier="lead" context={context} manageable={manageable(lead)} />
-          ) : (
-            <div className="flex items-center gap-3 p-1">
-              <span className="h-10 w-10 shrink-0 rounded-full border border-dashed border-line/[0.2]" aria-hidden />
-              <span className="truncate text-[13px] italic text-ink-faint">
-                No {department.leadTitle.toLowerCase()} assigned
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Each Manager, the Team Leads under them, and the people under those. */}
+        {managers.map(({ manager, leads, members }) => (
+          <div key={manager.id} className="space-y-2">
+            <Eyebrow className="text-orbit-blue">Manager</Eyebrow>
+            {row(manager, "lead")}
 
-        {members.length > 0 ? (
-          <div className="space-y-1 border-t border-line/[0.06] pt-4">
-            {members.map((member) => (
-              <PersonRow
-                key={member.id}
-                member={member}
-                tier="member"
-                context={context}
-                manageable={manageable(member)}
-              />
-            ))}
+            {(leads.length > 0 || members.length > 0) && (
+              <div className="ml-4 space-y-3 border-l border-line/[0.08] pl-3">
+                {leads.map(({ lead, members: team }) => (
+                  <div key={lead.id} className="space-y-1">
+                    <Eyebrow className="text-orbit-teal">{department.leadTitle}</Eyebrow>
+                    {row(lead)}
+                    {team.length > 0 && (
+                      <div className="ml-3 space-y-0.5 border-l border-line/[0.06] pl-2.5">{team.map((m) => row(m))}</div>
+                    )}
+                  </div>
+                ))}
+                {members.length > 0 && <div className="space-y-0.5">{members.map((m) => row(m))}</div>}
+              </div>
+            )}
           </div>
-        ) : (
-          !lead && <p className="text-[12px] text-ink-dim">No members yet</p>
+        ))}
+
+        {/* Filed here before the chart was wired. */}
+        {filed.length > 0 && (
+          <div className={managers.length > 0 ? "space-y-1 border-t border-line/[0.06] pt-4" : "space-y-1"}>
+            <Eyebrow>Members</Eyebrow>
+            {filed.map((m) => row(m))}
+          </div>
         )}
       </div>
     </InteractiveCard>
