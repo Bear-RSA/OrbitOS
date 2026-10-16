@@ -262,7 +262,9 @@ export function MemberProfile({
     <>
       <Dialog open onOpenChange={(next) => !next && onClose()}>
         <DialogContent
-          className="max-h-[88vh] gap-0 overflow-y-auto rounded-[28px] p-6 sm:max-w-lg"
+          /* Near-solid rather than the dialogs' usual fog: this card is
+             read closely, and the tree behind it showed through as blur. */
+          className="max-h-[88vh] gap-0 overflow-y-auto rounded-[28px] p-6 [&.material-fog-modal]:[--fog-alpha:0.97] sm:max-w-lg"
           /* The banner bleeds to the edges by exactly this padding, so the
              desktop layer has to use it too rather than the default 48px. */
           contentClassName="sm:p-6"
@@ -430,7 +432,29 @@ export function MemberProfile({
                   ))}
                 </ol>
 
-                <p className="mt-3 text-[11px] text-ink-dim">
+                {/* Who they answer to: the nearest person above them on the
+                    wires. When nobody sits between them and their
+                    department, that is the department's Head. */}
+                {member.role !== "OWNER" && (
+                  <p className="mt-3 text-[12px] text-ink-muted">
+                    {standing.reportsTo[0] ? (
+                      <>
+                        Reports to <span className="font-medium text-ink">{standing.reportsTo[0].name}</span>
+                        {standing.line.at(-1)?.kind === "department" && standing.department && (
+                          <span className="text-ink-dim"> · Head of {standing.department.department.name}</span>
+                        )}
+                      </>
+                    ) : standing.department ? (
+                      <span className="text-ink-dim">
+                        In {standing.department.department.name}, which has no Head yet, so they report to no one
+                      </span>
+                    ) : (
+                      <span className="text-ink-dim">Doesn&apos;t report to anyone yet</span>
+                    )}
+                  </p>
+                )}
+
+                <p className="mt-1.5 text-[11px] text-ink-dim">
                   {standing.directReports.length === 0
                     ? "No one reports to them."
                     : `${standing.directReports.length} report${standing.directReports.length === 1 ? "s" : ""} to them directly`}
@@ -499,7 +523,9 @@ export function MemberProfile({
                 <p className="text-[12px] text-ink-dim">No messages yet</p>
               )}
 
-              {shared.length > 0 ? (
+              {/* Meetings you shared, when there are any. Nothing is said
+                  when there aren't: an absence isn't worth a line. */}
+              {shared.length > 0 && (
                 <ul className="mt-3 space-y-1.5">
                   {shared.map((event) => (
                     <li key={event.id} className="flex items-center gap-2.5 text-[12px]">
@@ -518,10 +544,6 @@ export function MemberProfile({
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <p className="mt-3 text-[12px] text-ink-dim">
-                  No engagements together in the last {HISTORY_DAYS} days
-                </p>
               )}
             </Section>
           )}
