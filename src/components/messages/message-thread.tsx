@@ -73,6 +73,8 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { useMemberRank } from "@/hooks/use-member-rank";
 import { receiptFor } from "@/lib/messages/receipts";
 import { cn } from "@/lib/utils/classnames";
+import { tintStyle } from "@/components/ui/department-glass";
+import type { DepartmentTint } from "@/lib/members/department-tint";
 import type { Member } from "@/types/member";
 import {
   TOWN_HALL_NAME,
@@ -125,6 +127,8 @@ interface MessageThreadProps {
   conversation: Conversation | null;
   viewer: Viewer;
   members: Member[];
+  /** Each person's department shade, by uid. A dm's header wears the other person's. */
+  shades?: ReadonlyMap<string, DepartmentTint>;
   /** Shown while the conversation is still materializing. */
   fallbackTitle?: string;
   subtitle?: string;
@@ -159,6 +163,7 @@ export function MessageThread({
   conversation,
   viewer,
   members,
+  shades,
   fallbackTitle = "Conversation",
   subtitle,
   onOpenProfile,
@@ -627,6 +632,8 @@ export function MessageThread({
   const partnerTone = partnerPresence ? presenceTone(partnerPresence) : null;
   // "Online" or "Last seen 12 min ago", ahead of their role in the header.
   const partnerLine = partner ? presenceLine(partner, now) : null;
+  const headerBanner = conversation?.type === "dm" ? (partner?.bannerURL ?? null) : null;
+  const headerShade = conversation?.type === "dm" && partnerUid ? (shades?.get(partnerUid) ?? null) : null;
   const headerSubtitle = partnerLine
     ? [partnerLine, subtitle].filter(Boolean).join(" · ")
     : subtitle;
@@ -716,7 +723,32 @@ export function MessageThread({
       className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-line/[0.06] shadow-raised ring-1 ring-line/5"
     >
       {/* ── Header ─────────────────────────────────────────────── */}
-      <header className="flex shrink-0 items-center gap-3.5 border-b border-line/[0.05] px-5 py-4 max-sm:gap-2.5 max-sm:pl-2.5">
+      {/* In a dm it wears the other person: their banner when they've set
+          one, their department's colour when they haven't, the same as
+          their profile card. */}
+      <header
+        style={headerShade && !headerBanner ? tintStyle(headerShade) : undefined}
+        className={cn(
+          "relative isolate flex shrink-0 items-center gap-3.5 overflow-hidden border-b px-5 py-4 max-sm:gap-2.5 max-sm:pl-2.5",
+          headerBanner
+            ? "border-line/[0.07]"
+            : headerShade
+              ? "border-[rgb(var(--tint)/0.18)] bg-[linear-gradient(180deg,rgb(var(--tint)/0.16)_0%,rgb(var(--tint)/0.06)_100%)]"
+              : "border-line/[0.05]"
+        )}
+      >
+        {headerBanner && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element -- already sized and compressed by Cloudinary */}
+            <img src={headerBanner} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover object-center" />
+            {/* Heavier behind the name, lighter towards the buttons, so the
+                text reads over any photo and the photo still shows. */}
+            <span
+              aria-hidden
+              className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(var(--base)/0.88)_0%,rgb(var(--base)/0.6)_45%,rgb(var(--base)/0.35)_100%)]"
+            />
+          </>
+        )}
         {onBack && (
           <button
             type="button"

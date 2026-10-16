@@ -330,6 +330,7 @@ function MessagesScreen() {
                 photoURL: user.photoURL,
               }}
               members={members}
+              shades={shades}
               /* Only for the beat before the document arrives. Naming
                  Town Hall unconditionally here would put its title over
                  a dm that is still loading. */
