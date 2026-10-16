@@ -30,36 +30,38 @@ const parents = {
 describe("checkConnection", () => {
   const ok = (parent: ChartNodeKind, child: ChartNodeKind) => checkConnection(parent, child).ok;
 
-  it("follows the ladder, skipping a missing Executive or Team Lead", () => {
-    expect(ok("OWNER", "EXECUTIVE")).toBe(true);
-    expect(ok("EXECUTIVE", "DEPARTMENT")).toBe(true);
-    expect(ok("OWNER", "DEPARTMENT")).toBe(true);
-    expect(ok("DEPARTMENT", "MANAGER")).toBe(true);
-    expect(ok("MANAGER", "TEAM_LEAD")).toBe(true);
-    expect(ok("TEAM_LEAD", "MEMBER")).toBe(true);
+  it("lets a department connect to anyone, both ways", () => {
+    for (const kind of ["EXECUTIVE", "MANAGER", "TEAM_LEAD", "MEMBER", "DEPARTMENT"] as const) {
+      expect(ok("DEPARTMENT", kind)).toBe(true);
+    }
+    for (const kind of ["OWNER", "EXECUTIVE", "MANAGER", "TEAM_LEAD", "MEMBER"] as const) {
+      expect(ok(kind, "DEPARTMENT")).toBe(true);
+    }
+  });
+
+  it("lets people report to anyone above them, skipping ranks", () => {
+    expect(ok("OWNER", "MEMBER")).toBe(true);
+    expect(ok("EXECUTIVE", "MANAGER")).toBe(true);
     expect(ok("MANAGER", "MEMBER")).toBe(true);
   });
 
-  it("refuses wires that skip a department or run upward", () => {
-    expect(ok("EXECUTIVE", "MANAGER")).toBe(false);
-    expect(ok("DEPARTMENT", "MEMBER")).toBe(false);
+  it("refuses reporting sideways or down, and anything above an Owner", () => {
     expect(ok("MEMBER", "TEAM_LEAD")).toBe(false);
-    expect(ok("EXECUTIVE", "OWNER")).toBe(false);
-  });
-
-  it("says where a card belongs", () => {
-    expect(checkConnection("EXECUTIVE", "MANAGER")).toEqual({ ok: false, error: "A Manager goes under a department." });
+    expect(ok("MANAGER", "MANAGER")).toBe(false);
+    expect(ok("DEPARTMENT", "OWNER")).toBe(false);
+    expect(checkConnection("MEMBER", "MANAGER")).toEqual({ ok: false, error: "People report to someone of a higher rank." });
   });
 });
-
 describe("liveParents", () => {
   it("drops wires a rank change turned the wrong way", () => {
     const kinds = new Map<string, ChartNodeKind>([
       ["p:owner", "OWNER"],
       ["d:eng", "DEPARTMENT"],
       ["p:mgr", "MEMBER"],
+      ["p:lead", "TEAM_LEAD"],
     ]);
-    expect(liveParents({ "d:eng": "p:owner", "p:mgr": "d:eng", "p:gone": "p:owner" }, kinds)).toEqual({ "d:eng": "p:owner" });
+    // The Manager above the Team Lead was moved down to Member.
+    expect(liveParents({ "d:eng": "p:owner", "p:lead": "p:mgr", "p:gone": "p:owner" }, kinds)).toEqual({ "d:eng": "p:owner" });
   });
 });
 

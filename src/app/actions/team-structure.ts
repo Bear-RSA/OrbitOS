@@ -9,13 +9,20 @@ import {
   resolveOrgTier,
   resolveRankLimits,
 } from "@/lib/auth/permissions";
-import { isInternalManagement, loadAdminUnlockedUntil, requireAdminTools } from "@/lib/internal-management/store";
+import {
+  isInternalManagement,
+  loadAdminUnlockedUntil,
+  loadInternalManagementIds,
+  requireAdminTools,
+} from "@/lib/internal-management/store";
 import {
   DEFAULT_LEAD_TITLE,
   effectiveDepartmentLimit,
   normaliseDepartmentName,
   normaliseLeadTitle,
 } from "@/lib/members/hierarchy";
+import { isIconName, normaliseDepartmentDescription } from "@/lib/members/department-details";
+import { isDepartmentTint } from "@/lib/members/department-tint";
 import { memberDisplayName } from "@/lib/members/profile";
 import {
   assignableRanksFor,
@@ -56,6 +63,12 @@ export interface TeamStructure {
    * else is in it is never sent here, so every other owner looks equal.
    */
   viewerIsInternalManagement: boolean;
+  /**
+   * Everyone in Internal Management, sent ONLY to someone who is in it,
+   * so Teams can keep them at the top of the roster. Empty for everyone
+   * else: who is in Internal Management is kept from people outside it.
+   */
+  internalManagementIds: string[];
   departments: Department[];
   /** Owners now, and the plan's allowance (-1 = no limit on this plan). */
   ownerSeats: { current: number; limit: number };
@@ -79,6 +92,9 @@ function toDepartment(id: string, data: FirebaseFirestore.DocumentData): Departm
       typeof data.leadTitle === "string" && data.leadTitle ? data.leadTitle : DEFAULT_LEAD_TITLE,
     executiveId: typeof data.executiveId === "string" ? data.executiveId : null,
     managerId: typeof data.managerId === "string" ? data.managerId : null,
+    tint: isDepartmentTint(data.tint) ? data.tint : null,
+    description: normaliseDepartmentDescription(data.description),
+    icon: isIconName(data.icon) ? data.icon : null,
     createdAt: data.createdAt?.toMillis?.() ?? 0,
   };
 }
@@ -153,6 +169,7 @@ export async function getTeamStructureAction(): Promise<
       success: true,
       structure: {
         viewerIsInternalManagement,
+        internalManagementIds: viewerIsInternalManagement ? await loadInternalManagementIds(caller.orgId) : [],
         departments,
         ownerSeats: { current: ownerCount, limit: TIER_DEFINITIONS[tier].limits.maxOwners },
         limitsEnforced: billingGuardrailsEnabled(),
@@ -263,6 +280,9 @@ function nameTaken(departments: Department[], name: string, exceptId?: string) {
 export async function createDepartmentAction(input: {
   name: string;
   leadTitle?: string;
+  tint?: string;
+  description?: string;
+  icon?: string;
 }): Promise<Result> {
   const caller = await requireAdminTools();
   if (!caller.ok) return { success: false, error: caller.error };
@@ -296,6 +316,9 @@ export async function createDepartmentAction(input: {
       executiveId: null,
       managerId: null,
       leadTitle: title.title,
+      tint: isDepartmentTint(input.tint) ? input.tint : null,
+      description: normaliseDepartmentDescription(input.description),
+      icon: isIconName(input.icon) ? input.icon : null,
       createdAt: new Date(),
       createdBy: caller.uid,
     });
@@ -312,6 +335,9 @@ export async function renameDepartmentAction(input: {
   departmentId: string;
   name: string;
   leadTitle?: string;
+  tint?: string;
+  description?: string;
+  icon?: string;
 }): Promise<Result> {
   const caller = await requireAdminTools();
   if (!caller.ok) return { success: false, error: caller.error };
@@ -330,7 +356,13 @@ export async function renameDepartmentAction(input: {
       return { success: false, error: "There's already a department with that name." };
     }
 
-    await found.ref.update({ name: parsed.name, leadTitle: title.title });
+    await found.ref.update({
+      name: parsed.name,
+      leadTitle: title.title,
+      ...(isDepartmentTint(input.tint) ? { tint: input.tint } : {}),
+      ...(input.description !== undefined ? { description: normaliseDepartmentDescription(input.description) } : {}),
+      ...(input.icon !== undefined ? { icon: isIconName(input.icon) ? input.icon : null } : {}),
+    });
     return { success: true };
   } catch (err) {
     console.error("[TeamStructure] Rename department failed:", err);

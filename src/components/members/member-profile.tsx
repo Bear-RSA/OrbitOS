@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
-import { CalendarClock, MessageSquare, Phone } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+import { CalendarClock, MessageSquare, Network, Phone } from "lucide-react";
+import { getOrgChartAction, type ChartPerson, type OrgChart } from "@/app/actions/org-chart";
+import { RANK_TEXT } from "@/components/ui/rank-styles";
+import { tintStyle } from "@/components/ui/department-glass";
+import { tintOf } from "@/lib/members/department-tint";
+import { WORKLOAD_STATUS } from "@/components/teams/workload-status";
+import { standingOf } from "@/lib/members/standing";
+import { calculateMemberWorkload } from "@/lib/utils/dashboard-logic";
 import { useCall } from "@/contexts/call-context";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { getTasksByOrg } from "@/lib/queries/tasks";
+import { findDirectThread } from "@/lib/queries/messages";
 import { getEventsInRange } from "@/lib/queries/events";
 import { sharedEngagements, workloadFor } from "@/lib/members/profile";
 import { presenceTone, resolvePresence } from "@/lib/members/presence";
@@ -16,7 +24,7 @@ import type { Member } from "@/types/member";
 import type { OrbitEvent } from "@/types/event";
 import type { Task } from "@/types/task";
 import type { Conversation } from "@/types/message";
-import { roleLabel } from "@/lib/members/rank";
+import { RANK_LABEL, roleLabel, rankOf } from "@/lib/members/rank";
 
 /* ------------------------------------------------------------------ */
 /*  Member profile                                                     */
@@ -64,6 +72,14 @@ interface MemberProfileProps {
    * case and would bury real errors.
    */
   dm?: Conversation | null;
+  /**
+   * The org chart, when the caller already has it (Teams). Otherwise the
+   * card reads it on open: any member may, and it is what the reporting
+   * line and departments come from.
+   */
+  chart?: OrgChart | null;
+  /** Project names by id, for the Work section. Teams has them in hand. */
+  projectNames?: ReadonlyMap<string, string>;
 }
 
 export function MemberProfile({
@@ -73,11 +89,16 @@ export function MemberProfile({
   onMessage,
   tasks: providedTasks,
   events: providedEvents,
-  dm = null,
+  dm: providedDm,
+  chart: providedChart,
+  projectNames,
 }: MemberProfileProps) {
   const [tasks, setTasks] = useState<Task[]>(providedTasks ?? []);
   const [events, setEvents] = useState<OrbitEvent[]>(providedEvents ?? []);
   const { callPerson } = useCall();
+  const [fetchedChart, setFetchedChart] = useState<OrgChart | null>(null);
+  const [fetchedDm, setFetchedDm] = useState<Conversation | null>(null);
+  const chart = providedChart ?? fetchedChart;
 
   const memberId = member?.id ?? null;
   const isSelf = memberId === viewer.id;
@@ -117,6 +138,38 @@ export function MemberProfile({
     };
   }, [memberId, providedEvents, viewer.orgId]);
 
+  /* The thread between the two of you, when the caller didn't pass it:
+     looked up among threads the viewer is already in, so "No messages
+     yet" is only ever said when it's true. */
+  useEffect(() => {
+    setFetchedDm(null);
+    if (!memberId || isSelf || providedDm !== undefined) return;
+    let cancelled = false;
+    findDirectThread(viewer.id, viewer.orgId, memberId)
+      .then((thread) => !cancelled && setFetchedDm(thread))
+      .catch((err) => console.error("[MemberProfile] Messages unavailable:", err));
+    return () => {
+      cancelled = true;
+    };
+  }, [memberId, isSelf, providedDm, viewer.id, viewer.orgId]);
+  const dm = providedDm ?? fetchedDm;
+
+  useEffect(() => {
+    if (!memberId || providedChart) return;
+    let cancelled = false;
+    getOrgChartAction()
+      .then((result) => !cancelled && result.success && setFetchedChart(result.chart))
+      .catch((err) => console.error("[MemberProfile] Org chart unavailable:", err));
+    return () => {
+      cancelled = true;
+    };
+  }, [memberId, providedChart]);
+
+  const standing = useMemo(
+    () => (memberId && chart ? standingOf<ChartPerson, OrgChart["departments"][number]>(memberId, chart) : null),
+    [memberId, chart]
+  );
+
   const workload = useMemo(
     () => (memberId ? workloadFor(tasks, memberId) : { open: 0, loadPercent: 0 }),
     [tasks, memberId]
@@ -140,10 +193,43 @@ export function MemberProfile({
 
   if (!member) return null;
 
+  /* Health as an individual: the same reading the Teams roster uses. */
+  const health = (() => {
+    const reading = calculateMemberWorkload(member, tasks);
+    return { metrics: reading.metrics, look: WORKLOAD_STATUS[reading.status] };
+  })();
+
+  const lastActiveAt = member.lastActivity?.toDate?.();
+  const lastActive = lastActiveAt ? formatDistanceToNow(lastActiveAt, { addSuffix: true }) : null;
+
+  // Their next three deadlines, soonest first, overdue included.
+  const deadlines = tasks
+    .filter((t) => t.status !== "done" && t.assignedTo?.includes(member.id) && t.dueDate?.toDate)
+    .sort((a, b) => a.dueDate!.toMillis() - b.dueDate!.toMillis())
+    .slice(0, 3);
+
+  // The projects their open work sits in, busiest first.
+  const projects = (() => {
+    if (!projectNames) return [];
+    const open = new Map<string, number>();
+    for (const t of tasks) {
+      if (t.status === "done" || !t.assignedTo?.includes(member.id)) continue;
+      open.set(t.projectId, (open.get(t.projectId) ?? 0) + 1);
+    }
+    return [...open]
+      .map(([id, count]) => ({ name: projectNames.get(id) ?? "", open: count }))
+      .filter((p) => p.name)
+      .sort((a, b) => b.open - a.open)
+      .slice(0, 3);
+  })();
+
+  const rank = rankOf(member.role, false);
+
   /* From the heartbeat, not the stored status — see `lib/members/
      presence`. A live engagement still outranks both. */
   const heartbeat = resolvePresence({
     operationalStatus: member.operationalStatus,
+    manualOverride: member.manualOverride,
     lastActivityMs: member.lastActivity?.toMillis?.() ?? null,
   });
 
@@ -176,7 +262,7 @@ export function MemberProfile({
     <>
       <Dialog open onOpenChange={(next) => !next && onClose()}>
         <DialogContent
-          className="gap-0 overflow-hidden rounded-[28px] p-6 sm:max-w-md"
+          className="max-h-[88vh] gap-0 overflow-y-auto rounded-[28px] p-6 sm:max-w-lg"
           /* The banner bleeds to the edges by exactly this padding, so the
              desktop layer has to use it too rather than the default 48px. */
           contentClassName="sm:p-6"
@@ -185,13 +271,16 @@ export function MemberProfile({
           {/* ── Banner ─────────────────────────────────────────── */}
           <div className="-mx-6 -mt-6 mb-5 border-b border-line/[0.07] bg-surface-hover/60 px-6 pb-5 pt-6">
             <div className="flex items-start gap-4">
-              <UserAvatar size="xl" name={member.name} photoURL={member.photoURL} uid={member.id} />
+              <UserAvatar size="xl" name={member.name} photoURL={member.photoURL} uid={member.id} rank={rank} />
 
               <div className="min-w-0 flex-1 pr-10 pt-1">
-                <DialogTitle className="truncate text-[18px] font-medium tracking-tight text-ink-strong">
+                <DialogTitle className="break-words text-[18px] font-medium tracking-tight text-ink-strong">
                   {member.name}
                 </DialogTitle>
-                <p className="mt-0.5 truncate text-[12px] text-ink-dim">
+                <p className={cn("mt-0.5 text-[11px] uppercase tracking-wide", rank === "MEMBER" ? "text-ink-dim" : RANK_TEXT[rank])}>
+                  {RANK_LABEL[rank]}
+                </p>
+                <p className="mt-0.5 break-words text-[12px] text-ink-dim">
                   {descriptor}
                 </p>
                 <p className="mt-2 flex items-center gap-2 text-[11px] text-ink-muted">
@@ -244,9 +333,29 @@ export function MemberProfile({
             </p>
           )}
 
-          {/* ── Workload ───────────────────────────────────────── */}
-          <Section label="Current load">
-            <div className="flex items-center gap-3">
+          {/* ── Health ─────────────────────────────────────────── */}
+          <Section label="Health">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full bg-surface-control px-2.5 py-1 text-[11px] ring-1 ring-inset ring-line/[0.08]",
+                  health.look.text
+                )}
+              >
+                <span className={cn("h-1.5 w-1.5 rounded-full", health.look.dot)} />
+                {health.look.label}
+              </span>
+              {lastActive && <span className="text-[11px] text-ink-dim">Last active {lastActive}</span>}
+            </div>
+
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              <Metric label="Active" value={health.metrics.activeTasks} />
+              <Metric label="Overdue" value={health.metrics.overdueTasks} tone={health.metrics.overdueTasks > 0 ? "red" : undefined} />
+              <Metric label="Blocked" value={health.metrics.blockedTasks} tone={health.metrics.blockedTasks > 0 ? "amber" : undefined} />
+              <Metric label="Done this week" value={health.metrics.completedThisWeek} tone={health.metrics.completedThisWeek > 0 ? "green" : undefined} />
+            </div>
+
+            <div className="mt-3 flex items-center gap-3">
               <div className="h-1 flex-1 overflow-hidden rounded-full bg-line/[0.09]">
                 <div
                   className={cn(
@@ -257,19 +366,135 @@ export function MemberProfile({
                 />
               </div>
               <span className="shrink-0 font-mono text-[11px] tabular-nums text-ink-muted">
-                {workload.open} open
+                {workload.loadPercent}% load
               </span>
             </div>
           </Section>
+
+          {/* ── Place in the company ───────────────────────────── */}
+          <Section label="Place in the company">
+            {!standing ? (
+              <p className="text-[12px] text-ink-dim">Loading the org chart…</p>
+            ) : !standing.onChart ? (
+              <p className="text-[12px] text-ink-dim">
+                Not on the org chart yet. Internal Management places people in Admin Tools.
+              </p>
+            ) : (
+              <>
+                {/* One connected line, the way the chart is wired: everyone
+                    and every department above them, then them, then who
+                    reports to them. */}
+                <ol className="relative space-y-1.5 pl-4 before:absolute before:bottom-3 before:left-[5px] before:top-3 before:w-px before:bg-line/[0.14]">
+                  {standing.line.map((step) => (
+                    <TreeStep key={step.kind === "person" ? step.person.id : `d:${step.department.id}`}>
+                      {step.kind === "person" ? (
+                        <PersonChip person={step.person} />
+                      ) : (
+                        <DepartmentChip department={step.department} />
+                      )}
+                    </TreeStep>
+                  ))}
+
+                  <TreeStep here>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-ink/[0.08] py-0.5 pl-0.5 pr-2 ring-1 ring-inset ring-line/[0.14]">
+                      <UserAvatar
+                        size="sm"
+                        name={member.name}
+                        photoURL={member.photoURL}
+                        rank={rank}
+                        className="h-5 w-5 rounded-full [&>div]:rounded-full"
+                      />
+                      <span className="text-[11px] font-medium text-ink-strong">{member.name}</span>
+                    </span>
+                  </TreeStep>
+
+                  {standing.reports.map((group) => (
+                    <li key={group.department?.id ?? "direct"} className="relative ml-4 space-y-1.5 pl-4 before:absolute before:bottom-3 before:left-[5px] before:top-0 before:w-px before:bg-line/[0.1]">
+                      {group.department && (
+                        <TreeStep as="div">
+                          <DepartmentChip department={group.department} />
+                        </TreeStep>
+                      )}
+                      {group.people.length === 0 ? (
+                        <p className="pl-1 text-[11px] text-ink-dim">No one in it yet</p>
+                      ) : (
+                        <div className={cn("space-y-1.5", group.department && "ml-4")}>
+                          {group.people.map((p) => (
+                            <TreeStep key={p.id} as="div">
+                              <PersonChip person={p} />
+                            </TreeStep>
+                          ))}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+
+                <p className="mt-3 text-[11px] text-ink-dim">
+                  {standing.directReports.length === 0
+                    ? "No one reports to them."
+                    : `${standing.directReports.length} report${standing.directReports.length === 1 ? "s" : ""} to them directly`}
+                  {standing.teamSize > standing.directReports.length && ` · ${standing.teamSize} under them in all`}
+                </p>
+              </>
+            )}
+          </Section>
+
+          {/* ── Work ───────────────────────────────────────────── */}
+          {(deadlines.length > 0 || projects.length > 0) && (
+            <Section label="Work">
+              {deadlines.length > 0 && (
+                <ul className="space-y-1.5">
+                  {deadlines.map((task) => {
+                    const due = task.dueDate!.toDate();
+                    const late = due.getTime() < Date.now();
+                    return (
+                      <li key={task.id} className="flex items-start gap-2.5 text-[12px]">
+                        <CalendarClock className="mt-0.5 h-3 w-3 shrink-0 text-ink-faint" aria-hidden />
+                        <span className="min-w-0 flex-1 break-words text-ink-muted">
+                          {task.title}
+                          {projectNames?.get(task.projectId) && (
+                            <span className="text-ink-dim"> · {projectNames.get(task.projectId)}</span>
+                          )}
+                        </span>
+                        <span className={cn("shrink-0 text-[11px]", late ? "text-orbit-red" : "text-ink-dim")}>
+                          {late ? "Overdue · " : ""}
+                          {format(due, "d MMM")}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              {projects.length > 0 && (
+                <p className={cn("text-[12px] text-ink-muted", deadlines.length > 0 && "mt-3")}>
+                  <span className="text-ink-dim">Working across </span>
+                  {projects.map((p) => `${p.name} (${p.open})`).join(", ")}
+                </p>
+              )}
+            </Section>
+          )}
 
           {/* ── Shared history ─────────────────────────────────── */}
           {!isSelf && (
             <Section label="Between you">
               {dm?.lastMessagePreview ? (
-                <p className="truncate text-[12px] text-ink-muted">
-                  <span className="text-ink-dim">Last message · </span>
-                  {dm.lastMessagePreview}
-                </p>
+                <div className="space-y-0.5 text-[12px]">
+                  <p className="break-words text-ink-muted">
+                    <span className="text-ink-dim">
+                      {dm.lastMessageBy === viewer.id ? "You" : member.name}:{" "}
+                    </span>
+                    {dm.lastMessagePreview}
+                  </p>
+                  {dm.lastMessageAt?.toDate && (
+                    <p className="text-[11px] text-ink-dim">
+                      Last message {formatDistanceToNow(dm.lastMessageAt.toDate(), { addSuffix: true })}
+                    </p>
+                  )}
+                </div>
+              ) : dm ? (
+                <p className="text-[12px] text-ink-dim">You have a thread together, but nothing has been sent yet</p>
               ) : (
                 <p className="text-[12px] text-ink-dim">No messages yet</p>
               )}
@@ -317,5 +542,71 @@ function Section({ label, children }: { label: string; children: React.ReactNode
       </h3>
       {children}
     </section>
+  );
+}
+
+function Metric({ label, value, tone }: { label: string; value: number; tone?: "red" | "amber" | "green" }) {
+  return (
+    <div className="rounded-xl bg-surface-control/60 px-2.5 py-2 ring-1 ring-inset ring-line/[0.06]">
+      <p
+        className={cn(
+          "font-mono text-[16px] tabular-nums",
+          tone === "red" ? "text-orbit-red" : tone === "amber" ? "text-orbit-amber" : tone === "green" ? "text-orbit-green" : "text-ink"
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 text-[10px] leading-tight text-ink-dim">{label}</p>
+    </div>
+  );
+}
+
+/** A name with their rank's halo, as it reads on the chart. */
+function PersonChip({ person }: { person: ChartPerson }) {
+  const rank = rankOf(person.role, false);
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-control py-0.5 pl-0.5 pr-2 ring-1 ring-inset ring-line/[0.06]">
+      <UserAvatar size="sm" name={person.name} photoURL={person.photoURL} rank={rank} className="h-5 w-5 rounded-full [&>div]:rounded-full" />
+      <span className="text-[11px] text-ink">{person.name}</span>
+      {rank !== "MEMBER" && <span className={cn("text-[10px]", RANK_TEXT[rank])}>{RANK_LABEL[rank]}</span>}
+    </span>
+  );
+}
+
+/** One stop on the line: a dot on the rail, then whatever stands there. */
+function TreeStep({
+  children,
+  here = false,
+  as: Tag = "li",
+}: {
+  children: React.ReactNode;
+  /** The person this card is about. */
+  here?: boolean;
+  as?: "li" | "div";
+}) {
+  return (
+    <Tag className="relative flex items-center">
+      <span
+        aria-hidden
+        className={cn(
+          "absolute -left-4 top-1/2 h-[7px] w-[7px] -translate-y-1/2 rounded-full ring-2 ring-surface-card",
+          here ? "bg-ink-strong" : "bg-ink-faint"
+        )}
+      />
+      {children}
+    </Tag>
+  );
+}
+
+/** A department on the line, in its own colour. */
+function DepartmentChip({ department }: { department: OrgChart["departments"][number] }) {
+  return (
+    <span
+      style={tintStyle(tintOf(department))}
+      className="inline-flex items-center gap-1.5 rounded-full bg-[rgb(var(--tint)/0.12)] py-0.5 pl-1.5 pr-2 ring-1 ring-inset ring-[rgb(var(--tint)/0.28)]"
+    >
+      <Network className="h-3 w-3 text-[rgb(var(--tint))]" aria-hidden />
+      <span className="text-[11px] text-ink">{department.name}</span>
+    </span>
   );
 }

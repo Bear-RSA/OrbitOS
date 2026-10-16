@@ -10,7 +10,6 @@ import {
   departmentAbove,
   departmentNodeId,
   descendantsOf,
-  hasCard,
   kindOfRole,
   liveParents,
   parseNodeId,
@@ -20,6 +19,8 @@ import {
   type ChartNodeKind,
   type ChartPosition,
 } from "@/lib/members/org-chart";
+import { isIconName, normaliseDepartmentDescription } from "@/lib/members/department-details";
+import { tintOf, type DepartmentTint } from "@/lib/members/department-tint";
 import { memberDisplayName } from "@/lib/members/profile";
 import { normaliseRole, type StoredRole } from "@/lib/members/rank";
 
@@ -58,6 +59,11 @@ export interface ChartDepartment {
   id: string;
   name: string;
   leadTitle: string;
+  /** Always set: the saved tint, or the one `tintOf` picks for an older department. */
+  tint: DepartmentTint;
+  description: string | null;
+  /** A Lucide icon name, or null for the default mark. */
+  icon: string | null;
 }
 
 export interface OrgChart {
@@ -97,6 +103,9 @@ async function loadChart(orgId: string): Promise<Loaded> {
         id: doc.id,
         name: (data.name as string) || "Untitled",
         leadTitle: typeof data.leadTitle === "string" ? data.leadTitle : "",
+        tint: tintOf({ id: doc.id, tint: data.tint }),
+        description: normaliseDepartmentDescription(data.description),
+        icon: isIconName(data.icon) ? data.icon : null,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -109,8 +118,7 @@ async function loadChart(orgId: string): Promise<Loaded> {
   const positions: Record<string, ChartPosition> = {};
   for (const [id, value] of Object.entries((data.positions ?? {}) as Record<string, unknown>)) {
     const position = readPosition(value);
-    const kind = kinds.get(id);
-    if (position && kind && hasCard(kind)) positions[id] = position;
+    if (position && kinds.has(id)) positions[id] = position;
   }
 
   return {
@@ -219,5 +227,43 @@ export async function saveOrgChartPositionsAction(input: Record<string, unknown>
   } catch (err) {
     console.error("[OrgChart] Could not save positions:", err);
     return { success: false, error: "Could not save the layout." };
+  }
+}
+
+/**
+ * Takes a member off the canvas and back to the Members list: their card's
+ * position and their wire go, and they leave whatever department they were in.
+ * Anything wired under them is unplugged too, so nothing hangs from a card
+ * that is gone.
+ */
+export async function removeFromCanvasAction(input: { child: string }): Promise<Result> {
+  const caller = await requireAdminTools();
+  if (!caller.ok) return { success: false, error: caller.error };
+  const parsed = parseNodeId(input?.child);
+  if (parsed?.kind !== "person") return { success: false, error: "Only people can be taken off the canvas." };
+
+  try {
+    const chart = await loadChart(caller.orgId);
+    if (chart.kinds.get(input.child) !== "MEMBER") {
+      return { success: false, error: "Only members come off the canvas. Everyone else always has a card." };
+    }
+
+    const under = Object.entries(chart.parents).filter(([, parent]) => parent === input.child).map(([child]) => child);
+    const parents: Record<string, FieldValue> = { [input.child]: FieldValue.delete() };
+    for (const child of under) parents[child] = FieldValue.delete();
+    await chartDoc(caller.orgId).set(
+      { parents, positions: { [input.child]: FieldValue.delete() }, updatedAt: new Date() },
+      { merge: true }
+    );
+
+    const next = { ...chart.parents };
+    delete next[input.child];
+    for (const child of under) delete next[child];
+    await refileUnder(input.child, chart, next);
+    for (const child of under) await refileUnder(child, chart, next);
+    return { success: true };
+  } catch (err) {
+    console.error("[OrgChart] Could not take someone off the canvas:", err);
+    return { success: false, error: "Could not take them off the chart. Try again." };
   }
 }

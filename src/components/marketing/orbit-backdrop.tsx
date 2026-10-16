@@ -70,9 +70,12 @@ const APP_STOPS: [prefix: string, stop: Stop][] = [
   ["/messages", { lon: 428, sun: -4, sat: 30, horizon: "86vh", roll: -1 }],
   ["/calendar", { lon: 440, sun: -8, sat: -26, horizon: "84vh", roll: 0 }],
   ["/teams", { lon: 452, sun: -12, sat: -28, horizon: "84vh", roll: -1 }],
+  ["/tickets", { lon: 464, sun: -16, sat: 26, horizon: "84vh", roll: 0.5 }],
   ["/vault", { lon: 476, sun: -20, sat: 28, horizon: "84vh", roll: 1 }],
   ["/profile", { lon: 500, sun: 12, sat: -28, horizon: "84vh", roll: 0 }],
   ["/settings", { lon: 524, sun: 4, sat: 28, horizon: "84vh", roll: 0 }],
+  // Admin Tools, past Settings: the same quiet planet, its own patch of it.
+  ["/admin", { lon: 548, sun: -10, sat: -26, horizon: "84vh", roll: -0.5 }],
 ];
 
 type Mode = "marketing" | "app";

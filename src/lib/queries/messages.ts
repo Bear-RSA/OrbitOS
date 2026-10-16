@@ -111,6 +111,36 @@ export function subscribeToConversations(
 }
 
 /**
+ * The direct thread between the viewer and one other person, if there
+ * is one.
+ *
+ * The same query the left rail runs, read once, rather than a get of
+ * the dm's derived id: a thread that doesn't exist yet can't be read by
+ * id at all (the rule dereferences its orgId, so the get is denied), and
+ * that would put a permission error in the console for every colleague
+ * the viewer has never messaged. A query over threads the viewer is in
+ * simply comes back without it.
+ */
+export async function findDirectThread(
+  viewerUid: string,
+  orgId: string,
+  otherUid: string
+): Promise<Conversation | null> {
+  const q = query(
+    collection(db, CONVERSATIONS_COLLECTION),
+    where("orgId", "==", orgId),
+    where("participantIds", "array-contains", viewerUid),
+    orderBy("lastMessageAt", "desc"),
+    limitTo(CONVERSATION_PAGE_SIZE)
+  );
+  const snapshot = await getDocs(q);
+  const match = snapshot.docs
+    .map((d) => ({ id: d.id, ...d.data() }) as Conversation)
+    .find((c) => c.type === "dm" && c.participantIds?.includes(otherUid));
+  return match ?? null;
+}
+
+/**
  * One conversation, live.
  *
  * A direct document listener rather than a query, which is what lets

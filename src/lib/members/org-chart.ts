@@ -1,25 +1,26 @@
-import { normaliseRole, type StoredRole } from "./rank";
+import { normaliseRole, rankLevel, type StoredRole } from "./rank";
 
 /* ------------------------------------------------------------------ */
 /*  Org chart                                                          */
 /*                                                                     */
 /*  The structure Internal Management wires up in Admin Tools, and     */
-/*  Teams draws read-only. Top down, each card wired to one boss:      */
+/*  Teams draws read-only. Each card is wired to one boss:             */
 /*                                                                     */
-/*    Owner                                                            */
-/*      Executive         under an Owner                               */
-/*        Department      under an Executive, or an Owner if none      */
-/*          Manager       under a Department                           */
-/*            Team Lead   under a Manager                              */
-/*              Member    under a Team Lead, or a Manager if none      */
+/*    - A person reports to anyone of a higher rank. Ranks may be      */
+/*      skipped: a Member can report straight to an Owner.             */
+/*    - A department connects to anyone, both ways. The person wired   */
+/*      directly above it is its Head of Department; anyone wired      */
+/*      under it is in it.                                             */
+/*    - Owners sit at the top, and a wire never makes a loop.          */
 /*                                                                     */
-/*  Members are not cards: they stack on their boss's card, so a big   */
-/*  team stays readable. A Department card only names the department  */
-/*  and counts who is under it.                                        */
+/*  Every rank has a card. Members wait in the Members list until      */
+/*  Internal Management drops them onto the canvas, then are wired     */
+/*  like anyone else (see `lib/members/chart-layout`).                 */
 /*                                                                     */
-/*  Someone's department follows the wires: whatever department sits   */
-/*  above them. The actions write it to `users/{uid}.departmentId` so  */
-/*  everything that reads it keeps working.                            */
+/*  Someone's department follows the wires: the nearest department     */
+/*  above them, or none. The actions write it to                       */
+/*  `users/{uid}.departmentId` so everything that reads it keeps       */
+/*  working.                                                           */
 /*                                                                     */
 /*  Saved at `org_chart/{orgId}` as card positions and a child → boss  */
 /*  map. Pure functions here, so the actions, the canvas and the       */
@@ -43,42 +44,15 @@ export function parseNodeId(id: unknown): { kind: "person" | "department"; ref: 
 /** What sits at a node: a department, or a person of some rank. */
 export type ChartNodeKind = "DEPARTMENT" | StoredRole;
 
-/** Row on the chart, top down. Members have no card, so no row. */
-export const ROW: Record<Exclude<ChartNodeKind, "MEMBER">, number> = {
+/** Starting row for a card nobody has moved yet, top down. */
+export const ROW: Record<ChartNodeKind, number> = {
   OWNER: 0,
   EXECUTIVE: 1,
   DEPARTMENT: 2,
   MANAGER: 3,
   TEAM_LEAD: 4,
+  MEMBER: 5,
 };
-
-/** Who each kind may be wired under, nearest first. */
-const BOSSES: Record<ChartNodeKind, readonly ChartNodeKind[]> = {
-  OWNER: [],
-  EXECUTIVE: ["OWNER"],
-  DEPARTMENT: ["EXECUTIVE", "OWNER"],
-  MANAGER: ["DEPARTMENT"],
-  TEAM_LEAD: ["MANAGER"],
-  MEMBER: ["TEAM_LEAD", "MANAGER"],
-};
-
-const KIND_LABEL: Record<ChartNodeKind, string> = {
-  OWNER: "an Owner",
-  EXECUTIVE: "an Executive",
-  DEPARTMENT: "a department",
-  MANAGER: "a Manager",
-  TEAM_LEAD: "a Team Lead",
-  MEMBER: "a member",
-};
-
-export function bossKindsOf(kind: ChartNodeKind): readonly ChartNodeKind[] {
-  return BOSSES[kind];
-}
-
-/** Everyone but Members gets a card. */
-export function hasCard(kind: ChartNodeKind): boolean {
-  return kind !== "MEMBER";
-}
 
 export function kindOfRole(role: unknown): ChartNodeKind {
   return normaliseRole(role);
@@ -86,20 +60,16 @@ export function kindOfRole(role: unknown): ChartNodeKind {
 
 export type Verdict = { ok: true } | { ok: false; error: string };
 
-/** Whether `child` may be wired under `parent`. */
+/**
+ * Whether `child` may be wired under `parent`. Loops are checked
+ * separately, with the whole map, by `wouldLoop`.
+ */
 export function checkConnection(parent: ChartNodeKind | null, child: ChartNodeKind | null): Verdict {
   if (!parent || !child) return { ok: false, error: "One of those is no longer on the chart." };
-  const allowed = BOSSES[child];
-  if (allowed.includes(parent)) return { ok: true };
-  if (allowed.length === 0) return { ok: false, error: "Owners sit at the top. Nothing goes above them." };
-  return {
-    ok: false,
-    error: `${capitalise(KIND_LABEL[child])} goes under ${allowed.map((k) => KIND_LABEL[k]).join(" or ")}.`,
-  };
-}
-
-function capitalise(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  if (child === "OWNER") return { ok: false, error: "Owners sit at the top. Nothing goes above them." };
+  if (parent === "DEPARTMENT" || child === "DEPARTMENT") return { ok: true };
+  if (rankLevel(parent) > rankLevel(child)) return { ok: true };
+  return { ok: false, error: "People report to someone of a higher rank." };
 }
 
 /**

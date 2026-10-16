@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, memo, useContext, useState, type DragEvent } from "react";
+import { createContext, memo, useContext } from "react";
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -11,12 +11,12 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { ChevronDown, Network, Pencil, Settings2, Trash2, X } from "lucide-react";
+import { Pencil, Settings2, Trash2, X } from "lucide-react";
 
 import type { ChartDepartment, ChartPerson } from "@/app/actions/org-chart";
-import { RANK_TEXT } from "@/components/ui/rank-styles";
+import { departmentShade, DepartmentGlass, DepartmentIcon } from "@/components/ui/department-glass";
+import type { DepartmentTint } from "@/lib/members/department-tint";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { personNodeId } from "@/lib/members/org-chart";
 import { RANK_LABEL, rankOf } from "@/lib/members/rank";
 import { cn } from "@/lib/utils/classnames";
 
@@ -24,14 +24,13 @@ import { cn } from "@/lib/utils/classnames";
 /*  The cards and wires on the org chart                               */
 /*                                                                     */
 /*  Every card has a plug on top (its boss) and one underneath (who    */
-/*  is under it); an Owner has only the one underneath. Members are    */
-/*  not cards: they stack on their Team Lead's or Manager's card,      */
-/*  folded to a count until opened. Everything a card can do goes      */
-/*  through `ChartActions`, so the cards stay the same objects on      */
-/*  reload.                                                            */
+/*  is under it); an Owner has only the one underneath. A Member's     */
+/*  card has an × that sends them back to the Members list.            */
+/*  Everything a card can do goes through `ChartActions`, so the cards */
+/*  stay the same objects on reload.                                   */
 /* ------------------------------------------------------------------ */
 
-/** Dragged from the People list, dropped on a Team Lead or Manager. */
+/** Dragged from the Members list, dropped anywhere on the canvas. */
 export const PERSON_DRAG_TYPE = "application/x-orbit-person";
 
 export interface ChartActions {
@@ -41,11 +40,11 @@ export interface ChartActions {
   canManage: (person: ChartPerson) => boolean;
   onOpenProfile: (uid: string) => void;
   onManage?: (uid: string) => void;
-  /** Puts a member under a Team Lead or Manager. */
-  onPlaceMember: (memberUid: string, bossUid: string) => void;
+  /** Sends a member's card back to the Members list. */
+  onRemoveFromCanvas: (uid: string) => void;
   onRenameDepartment: (department: ChartDepartment) => void;
   onDeleteDepartment: (department: ChartDepartment) => void;
-  /** Takes a card or member off its boss, by node id. */
+  /** Takes a card off its boss, by node id. */
   onDisconnect: (childId: string) => void;
 }
 
@@ -57,15 +56,18 @@ function useActions(): ChartActions {
   return actions;
 }
 
-export type PersonNode = Node<{ person: ChartPerson; members: ChartPerson[] }, "person">;
+/** `reportsTo` comes ready to show from `layOutChart`; null for Owners. */
+export type PersonNode = Node<{ person: ChartPerson; reportsTo: string | null; tint: DepartmentTint | null }, "person">;
 
 export interface DepartmentCounts {
   managers: number;
   teamLeads: number;
   members: number;
+  /** Everyone under it, at any rank. */
+  total: number;
 }
 
-export type DepartmentNode = Node<{ department: ChartDepartment; counts: DepartmentCounts }, "department">;
+export type DepartmentNode = Node<{ department: ChartDepartment; counts: DepartmentCounts; head: ChartPerson | null }, "department">;
 
 const PLUG = "!h-3 !w-3";
 
@@ -73,38 +75,15 @@ const PLUG = "!h-3 !w-3";
 
 export const PersonCard = memo(function PersonCard({ data }: NodeProps<PersonNode>) {
   const actions = useActions();
-  const { person, members } = data;
+  const { person, reportsTo, tint } = data;
   const rank = rankOf(person.role, false);
-  const takesMembers = person.role === "TEAM_LEAD" || person.role === "MANAGER";
-  const [open, setOpen] = useState(false);
-  const [dropping, setDropping] = useState(false);
-
-  const acceptDrag = (e: DragEvent) => {
-    if (!actions.editable || !takesMembers || !e.dataTransfer.types.includes(PERSON_DRAG_TYPE)) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDropping(true);
-  };
-
-  const drop = (e: DragEvent) => {
-    setDropping(false);
-    const uid = e.dataTransfer.getData(PERSON_DRAG_TYPE);
-    if (!actions.editable || !takesMembers || !uid) return;
-    e.preventDefault();
-    actions.onPlaceMember(uid, person.id);
-    setOpen(true);
-  };
+  // Everyone in a department wears a lighter shade of its colour.
+  const shade = departmentShade(tint);
 
   return (
     <div
-      onDragOver={acceptDrag}
-      onDragEnter={acceptDrag}
-      onDragLeave={() => setDropping(false)}
-      onDrop={drop}
-      className={cn(
-        "w-[200px] rounded-[20px] bg-surface-control p-3 ring-1 ring-inset transition-[box-shadow,transform] duration-quick ease-spring",
-        dropping ? "scale-[1.03] ring-2 ring-focus" : "ring-line/[0.08]"
-      )}
+      style={shade.style}
+      className={cn("w-[200px] rounded-[20px] bg-surface-control p-3 ring-1 ring-inset ring-line/[0.08]", shade.className)}
     >
       {person.role !== "OWNER" && <Handle type="target" position={Position.Top} className={PLUG} isConnectable={actions.editable} />}
 
@@ -121,9 +100,15 @@ export const PersonCard = memo(function PersonCard({ data }: NodeProps<PersonNod
               {person.name}
               {person.id === actions.viewerId && <span className="text-ink-dim"> · You</span>}
             </span>
-            <span className={cn("block text-[11px]", RANK_TEXT[rank])}>{RANK_LABEL[rank]}</span>
+            {/* The halo carries the rank; the word stays for screen readers. Matches Teams. */}
+            <span className="sr-only">{RANK_LABEL[rank]}</span>
           </span>
         </button>
+        {actions.editable && person.role === "MEMBER" && (
+          <IconButton label={`Take ${person.name} off the chart`} onClick={() => actions.onRemoveFromCanvas(person.id)}>
+            <X className="h-3 w-3" />
+          </IconButton>
+        )}
         {!actions.editable && actions.onManage && actions.canManage(person) && (
           <IconButton label={`Manage ${person.name}`} onClick={() => actions.onManage?.(person.id)}>
             <Settings2 className="h-3 w-3" />
@@ -131,112 +116,52 @@ export const PersonCard = memo(function PersonCard({ data }: NodeProps<PersonNod
         )}
       </div>
 
-      {takesMembers && (
-        <div className="mt-2.5 border-t border-line/[0.06] pt-2">
-          {members.length === 0 ? (
-            <p className="px-1 text-[11px] text-ink-faint">
-              {actions.editable ? "Drag members here from People" : "No members"}
-            </p>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => setOpen((o) => !o)}
-                aria-expanded={open}
-                className="nodrag flex w-full items-center gap-2 rounded-md px-1 py-0.5 text-left text-[12px] text-ink-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-              >
-                <span className="flex -space-x-2">
-                  {members.slice(0, 3).map((m) => (
-                    <UserAvatar key={m.id} photoURL={m.photoURL} name={m.name} size="sm" className="ring-2 ring-surface-control" />
-                  ))}
-                </span>
-                <span className="flex-1">
-                  {members.length} member{members.length === 1 ? "" : "s"}
-                </span>
-                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-quick", open && "rotate-180")} aria-hidden />
-              </button>
-              {open && (
-                <ul className="nowheel mt-1.5 flex max-h-[240px] flex-col gap-0.5 overflow-y-auto">
-                  {members.map((member) => (
-                    <li key={member.id}>
-                      <MemberRow person={member} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
-        </div>
+      {reportsTo && (
+        <p className="mt-2 truncate border-t border-line/[0.06] pt-2 text-[11px] text-ink-dim" title={reportsTo}>
+          {reportsTo}
+        </p>
       )}
 
-      {/* A Team Lead's members stack on the card, so nothing wires below it. */}
-      {person.role !== "TEAM_LEAD" && (
-        <Handle type="source" position={Position.Bottom} className={PLUG} isConnectable={actions.editable} />
-      )}
+      <Handle type="source" position={Position.Bottom} className={PLUG} isConnectable={actions.editable} />
     </div>
   );
 });
-
-function MemberRow({ person }: { person: ChartPerson }) {
-  const actions = useActions();
-
-  return (
-    <div className="nodrag nopan group/row flex items-center gap-2 rounded-lg px-1 py-1">
-      <button
-        type="button"
-        onClick={() => actions.onOpenProfile(person.id)}
-        className="flex min-w-0 flex-1 items-center gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-      >
-        <UserAvatar photoURL={person.photoURL} name={person.name} size="sm" uid={person.id} />
-        <span className="min-w-0 flex-1 truncate text-[12px] text-ink">
-          {person.name}
-          {person.id === actions.viewerId && <span className="text-ink-dim"> · You</span>}
-        </span>
-      </button>
-
-      {actions.editable ? (
-        <span className="flex shrink-0 opacity-60 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100">
-          <IconButton label={`Take ${person.name} off this card`} onClick={() => actions.onDisconnect(personNodeId(person.id))}>
-            <X className="h-3 w-3" />
-          </IconButton>
-        </span>
-      ) : (
-        actions.onManage &&
-        actions.canManage(person) && (
-          <IconButton label={`Manage ${person.name}`} onClick={() => actions.onManage?.(person.id)}>
-            <Settings2 className="h-3 w-3" />
-          </IconButton>
-        )
-      )}
-    </div>
-  );
-}
 
 /* ---- Department card ---------------------------------------------- */
 
 export const DepartmentCard = memo(function DepartmentCard({ data }: NodeProps<DepartmentNode>) {
   const actions = useActions();
-  const { department, counts } = data;
-  const total = counts.managers + counts.teamLeads + counts.members;
+  const { department, counts, head } = data;
 
+  // Only counts above zero: no "0 Managers" chips. Matches Teams.
   const stats: { label: string; value: number }[] = [
     { label: counts.managers === 1 ? "Manager" : "Managers", value: counts.managers },
     { label: counts.teamLeads === 1 ? "Team Lead" : "Team Leads", value: counts.teamLeads },
     { label: counts.members === 1 ? "Member" : "Members", value: counts.members },
-  ];
+  ].filter((s) => s.value > 0);
 
   return (
-    <div className="w-[240px] rounded-[22px] bg-surface-raised p-4 ring-1 ring-inset ring-line/[0.1]">
+    <div className="relative w-[240px]">
+      {/* Plugs sit outside the glass, which clips whatever overflows it. */}
       <Handle type="target" position={Position.Top} className={PLUG} isConnectable={actions.editable} />
+      <DepartmentGlass tint={department.tint} className="p-4">
 
-      <div className="flex items-center gap-2.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-sunken ring-1 ring-line/[0.06]">
-          <Network className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
-        </span>
-        <h3 className="min-w-0 flex-1 truncate text-[14px] text-ink">{department.name}</h3>
+      <div className="flex items-start gap-3">
+        <DepartmentIcon icon={department.icon} />
+        <div className="min-w-0 flex-1 pt-0.5">
+          <h3 className="line-clamp-2 text-[15px] font-medium leading-snug tracking-tight text-ink-strong">{department.name}</h3>
+          {department.description && (
+            <p className="mt-0.5 line-clamp-2 text-[11.5px] leading-snug text-ink-muted" title={department.description}>
+              {department.description}
+            </p>
+          )}
+          <p className="mt-0.5 text-[11px] text-ink-dim">
+            {counts.total === 0 ? "Nobody in it yet" : `${counts.total} ${counts.total === 1 ? "person" : "people"}`}
+          </p>
+        </div>
         {actions.editable && (
-          <span className="nodrag -mr-1.5 flex">
-            <IconButton label={`Rename ${department.name}`} onClick={() => actions.onRenameDepartment(department)}>
+          <span className="nodrag -mr-1.5 -mt-1 flex">
+            <IconButton label={`Edit ${department.name}`} onClick={() => actions.onRenameDepartment(department)}>
               <Pencil className="h-3 w-3" />
             </IconButton>
             <IconButton label={`Delete ${department.name}`} danger onClick={() => actions.onDeleteDepartment(department)}>
@@ -246,23 +171,45 @@ export const DepartmentCard = memo(function DepartmentCard({ data }: NodeProps<D
         )}
       </div>
 
-      <dl className="mt-3 grid grid-cols-3 gap-1.5 border-t border-line/[0.06] pt-3 text-center">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-lg bg-surface-sunken/60 px-1 py-1.5">
-            <dd className="font-mono text-[15px] tabular-nums text-ink">{s.value}</dd>
-            <dt className="truncate text-[10px] text-ink-dim">{s.label}</dt>
-          </div>
-        ))}
-      </dl>
-      <p className="mt-2 text-center text-[11px] text-ink-dim">
-        {total === 0 ? (actions.editable ? "Wire a Manager under it" : "Nobody in it yet") : `${total} ${total === 1 ? "person" : "people"}`}
-      </p>
+      <div className="mt-3.5 flex items-center gap-2.5 rounded-[14px] bg-base/30 px-2.5 py-2 ring-1 ring-inset ring-[rgb(var(--tint)/0.18)]">
+        {head ? (
+          <button
+            type="button"
+            onClick={() => actions.onOpenProfile(head.id)}
+            className="nodrag flex min-w-0 flex-1 items-center gap-2.5 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            <UserAvatar photoURL={head.photoURL} name={head.name} size="sm" rank={rankOf(head.role, false)} uid={head.id} />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[10px] uppercase tracking-[0.08em] text-ink-dim">Head of department</span>
+              <span className="block truncate text-[13px] text-ink">{head.name}</span>
+            </span>
+          </button>
+        ) : (
+          <span className="py-1 text-[12px] text-ink-dim">
+            {actions.editable ? "No head yet: wire someone above it" : "No head yet"}
+          </span>
+        )}
+      </div>
 
+      {stats.length > 0 && (
+        <dl className="mt-2.5 flex gap-1.5 text-center">
+          {stats.map((s) => (
+            <div
+              key={s.label}
+              className="min-w-0 flex-1 rounded-[12px] bg-[rgb(var(--tint)/0.10)] px-1 py-1.5 ring-1 ring-inset ring-[rgb(var(--tint)/0.16)]"
+            >
+              <dd className="font-mono text-[15px] tabular-nums text-ink-strong">{s.value}</dd>
+              <dt className="truncate text-[10px] text-ink-dim">{s.label}</dt>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      </DepartmentGlass>
       <Handle type="source" position={Position.Bottom} className={PLUG} isConnectable={actions.editable} />
     </div>
   );
 });
-
 function IconButton({
   label,
   onClick,

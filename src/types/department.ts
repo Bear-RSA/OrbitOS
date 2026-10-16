@@ -18,6 +18,12 @@ export interface Department {
   leadId: string | null;
   /** What this department calls its lead: "Team lead", "Head of Design". */
   leadTitle: string;
+  /** The colour its card is tinted with. Older departments have none; see `tintOf`. */
+  tint?: string | null;
+  /** One line on what the department does, shown on its card. */
+  description?: string | null;
+  /** A Lucide icon name for its card ("rocket"). Null draws the default mark. */
+  icon?: string | null;
   /**
    * The Executive and Manager over this department, chosen on the org
    * chart in Admin Tools. Either may be absent. One person can hold the
