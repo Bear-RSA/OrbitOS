@@ -287,6 +287,21 @@ service cloud.firestore {
             .hasOnly([request.auth.uid]);
       }
 
+      /* Delivery receipts, the same own-key rule as read receipts. The
+         map is absent on threads from before receipts existed, and `diff`
+         cannot read a field that isn't there, so a first receipt is
+         checked on the incoming map, which a dotted write leaves holding
+         exactly one key. */
+      function touchesOnlyOwnDeliveryReceipt() {
+        return !editedKeys().hasAny(['lastDeliveredAt']) ||
+          ('lastDeliveredAt' in resource.data
+            ? request.resource.data.lastDeliveredAt
+                .diff(resource.data.lastDeliveredAt)
+                .affectedKeys()
+                .hasOnly([request.auth.uid])
+            : request.resource.data.lastDeliveredAt.keys().hasOnly([request.auth.uid]));
+      }
+
       /* Clearing is per-person, and this is what keeps it that way: a
          member may set their OWN entry and nobody else's. Without it,
          "clear my chat" would be one dotted write away from clearing
@@ -343,7 +358,7 @@ service cloud.firestore {
       allow update: if isSignedIn()
         && editedKeys().hasOnly([
              'lastMessageAt', 'lastMessagePreview', 'lastMessageBy',
-             'lastMessageAsCompany', 'lastReadAt', 'clearedAt'
+             'lastMessageAsCompany', 'lastReadAt', 'lastDeliveredAt', 'clearedAt'
            ])
         /* Only Town Hall speaks as the company, so only there may the rail
            be told the last line was the company's. */
@@ -351,6 +366,7 @@ service cloud.firestore {
             request.resource.data.lastMessageAsCompany == false ||
             resource.data.type == 'townhall')
         && touchesOnlyOwnReadReceipt()
+        && touchesOnlyOwnDeliveryReceipt()
         && touchesOnlyOwnClearedAt()
         && (!editedKeys().hasAny(['lastMessageBy']) ||
             request.resource.data.lastMessageBy == request.auth.uid)

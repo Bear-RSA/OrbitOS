@@ -334,6 +334,20 @@ export async function clearConversation(
   });
 }
 
+/**
+ * Records that this person's OrbitOS has received the thread's newest
+ * message: the "Delivered" receipt. One key of `lastDeliveredAt`, the
+ * same dotted write as the read receipt, under the same own-key rule.
+ */
+export async function markConversationDelivered(
+  conversationId: string,
+  uid: string
+): Promise<void> {
+  await updateDoc(doc(db, CONVERSATIONS_COLLECTION, conversationId), {
+    [`lastDeliveredAt.${uid}`]: serverTimestamp(),
+  });
+}
+
 export async function markConversationRead(
   conversationId: string,
   uid: string

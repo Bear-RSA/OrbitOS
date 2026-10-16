@@ -23,6 +23,8 @@ import {
   Users,
   Video,
   X,
+  Check,
+  CheckCheck,
 } from "lucide-react";
 import { MediaPicker } from "@/components/messages/media-picker";
 import { emojiOnlyCount } from "@/lib/messages/emoji";
@@ -69,6 +71,7 @@ import { parseDateKey } from "@/lib/utils/dates";
 import { MAX_MESSAGE_LENGTH, MAX_PINNED_NOTICES } from "@/lib/validations/messages";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useMemberRank } from "@/hooks/use-member-rank";
+import { receiptFor } from "@/lib/messages/receipts";
 import { cn } from "@/lib/utils/classnames";
 import type { Member } from "@/types/member";
 import {
@@ -686,6 +689,24 @@ export function MessageThread({
 
   const shown = folded?.messages ?? messages;
 
+  /* Delivered and Read, under the last message you sent. Only there:
+     a receipt on every line is noise, and the newest one answers the
+     question for everything before it. */
+  const lastMine = [...shown].reverse().find((m) => m.senderId === viewer.id && !folded?.removed.get(m.id));
+  const toMillisMap = (map: Record<string, { toMillis?: () => number }> | undefined) =>
+    Object.fromEntries(Object.entries(map ?? {}).map(([uid, at]) => [uid, at?.toMillis?.() ?? null]));
+  const receipt =
+    conversation && lastMine
+      ? receiptFor({
+          type: conversation.type,
+          senderId: viewer.id,
+          sentAtMs: lastMine.createdAt?.toMillis?.() ?? null,
+          participantIds: conversation.participantIds ?? [],
+          lastReadAt: toMillisMap(conversation.lastReadAt),
+          lastDeliveredAt: toMillisMap(conversation.lastDeliveredAt),
+        })
+      : null;
+
   return (
     /* The thread is the primary surface and now says so: it sits a rung
        above the rail on the ladder, with a real shadow rather than the
@@ -1216,6 +1237,22 @@ export function MessageThread({
                             }
                             align={mine ? "end" : "start"}
                           />
+                        )}
+
+                        {receipt && message.id === lastMine?.id && (
+                          <p
+                            className={cn(
+                              "mt-1 flex items-center gap-1 px-1 text-[11px]",
+                              receipt.state === "read" ? "text-orbit-blue" : "text-ink-dim"
+                            )}
+                          >
+                            {receipt.state === "sent" || receipt.state === "sending" ? (
+                              <Check className="h-3 w-3" aria-hidden />
+                            ) : (
+                              <CheckCheck className="h-3 w-3" aria-hidden />
+                            )}
+                            {receipt.label}
+                          </p>
                         )}
                       </div>
                     </div>

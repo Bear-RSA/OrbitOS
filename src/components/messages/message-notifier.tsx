@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { playMessageChime, primeMessageChime } from "@/lib/messages/chime";
+import { markConversationDelivered } from "@/lib/queries/messages";
 
 /* ------------------------------------------------------------------ */
 /*  Message notifier                                                   */
@@ -58,6 +59,27 @@ export function MessageNotifier() {
       window.removeEventListener("keydown", prime);
     };
   }, []);
+
+  /* "Delivered": any thread with a message this person hasn't received
+     yet gets their receipt. This listener runs on every page, so a
+     message counts as delivered the moment any OrbitOS tab of theirs
+     sees it, not only once they open Messages. Each message is tried
+     once per session, so a refused write isn't retried in a loop. */
+  const deliveredTried = useRef(new Set<string>());
+  useEffect(() => {
+    if (!user?.id) return;
+    for (const c of unread) {
+      if (c.type === "townhall") continue;
+      const lastMessageMs = c.lastMessageAt?.toMillis?.() ?? 0;
+      const deliveredMs = c.lastDeliveredAt?.[user.id]?.toMillis?.() ?? 0;
+      const key = `${c.id}:${lastMessageMs}`;
+      if (lastMessageMs === 0 || deliveredMs >= lastMessageMs || deliveredTried.current.has(key)) continue;
+      deliveredTried.current.add(key);
+      void markConversationDelivered(c.id, user.id).catch((err) =>
+        console.error("[MessageNotifier] Could not record delivery:", err)
+      );
+    }
+  }, [unread, user?.id]);
 
   /* Reset when the account changes, so signing in as somebody else does
      not inherit the previous person's baseline. */

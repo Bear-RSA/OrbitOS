@@ -138,6 +138,15 @@ export interface Conversation {
   lastReadAt: Record<string, Timestamp>;
 
   /**
+   * When each participant's OrbitOS last received the thread's newest
+   * message, keyed by uid: an open tab on any of their devices saw it.
+   * The "Delivered" half of a receipt; `lastReadAt` is the "Read" half.
+   * Absent on threads from before receipts, and on anyone who hasn't
+   * received anything since. Same own-key-only rule as `lastReadAt`.
+   */
+  lastDeliveredAt?: Record<string, Timestamp>;
+
+  /**
    * When each person last cleared this thread from their own rail,
    * keyed by uid.
    *
