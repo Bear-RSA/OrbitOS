@@ -285,12 +285,27 @@ export function MemberProfile({
           {/* ── Banner ─────────────────────────────────────────── */}
           <div
             className={cn(
-              "-mx-6 -mt-6 mb-5 border-b px-6 pb-5 pt-6",
-              shade
-                ? "border-[rgb(var(--tint)/0.18)] bg-[linear-gradient(180deg,rgb(var(--tint)/0.16)_0%,rgb(var(--tint)/0.06)_100%)]"
-                : "border-line/[0.07] bg-surface-hover/60"
+              "relative isolate -mx-6 -mt-6 mb-5 overflow-hidden border-b px-6 pb-5 pt-6",
+              member.bannerURL
+                ? "border-line/[0.07] pt-24"
+                : shade
+                  ? "border-[rgb(var(--tint)/0.18)] bg-[linear-gradient(180deg,rgb(var(--tint)/0.16)_0%,rgb(var(--tint)/0.06)_100%)]"
+                  : "border-line/[0.07] bg-surface-hover/60"
             )}
           >
+            {/* Their banner when they've set one; their department's colour
+                when they haven't. The scrim keeps the name readable over
+                any photo. */}
+            {member.bannerURL && (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element -- already sized and compressed by Cloudinary */}
+                <img src={member.bannerURL} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" />
+                <span
+                  aria-hidden
+                  className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgb(var(--base)/0.05)_0%,rgb(var(--base)/0.55)_55%,rgb(var(--base)/0.92)_100%)]"
+                />
+              </>
+            )}
             <div className="flex items-start gap-4">
               <UserAvatar size="xl" name={member.name} photoURL={member.photoURL} uid={member.id} rank={rank} />
 

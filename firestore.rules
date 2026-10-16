@@ -562,6 +562,8 @@ service cloud.firestore {
           'bio',
           'photoURL',
           'photoPublicId',
+          'bannerURL',
+          'bannerPublicId',
           'lastActivity',
           'operationalStatus',
           'manualOverride',

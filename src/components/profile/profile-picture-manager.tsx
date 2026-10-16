@@ -8,6 +8,7 @@ import { User } from "@/types/auth";
 import { db } from "@/lib/firebase/client";
 import { doc, updateDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils/classnames";
+import { deleteProfileImage, imageFileProblem, uploadProfileImage } from "@/lib/uploads/profile-image";
 
 interface ProfilePictureManagerProps {
   user: User;
@@ -22,73 +23,26 @@ export function ProfilePictureManager({ user }: ProfilePictureManagerProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. Basic validation
-    if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image size should be less than 5MB.");
+    const problem = imageFileProblem(file);
+    if (problem) {
+      alert(problem);
       return;
     }
 
     setIsUploading(true);
     try {
-      // 2. Get signed upload parameters from our API
-      const auth = await import("@/lib/firebase/auth");
-      const idToken = await auth.getIdToken();
-      
-      const sigResponse = await fetch("/api/upload/signature", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${idToken}`,
-        },
-      });
+      const uploaded = await uploadProfileImage(file);
 
-      if (!sigResponse.ok) throw new Error("Failed to get upload signature");
-      
-      const { timestamp, signature, apiKey, cloudName, folder } = await sigResponse.json();
-
-      // 3. Upload directly to Cloudinary
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("api_key", apiKey);
-      formData.append("timestamp", timestamp.toString());
-      formData.append("signature", signature);
-      formData.append("folder", folder);
-
-      const uploadResponse = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (!uploadResponse.ok) {
-        const errorBody = await uploadResponse.json();
-        console.error("Cloudinary error details:", errorBody);
-        throw new Error(`Cloudinary upload failed: ${errorBody.error?.message || "Unknown error"}`);
-      }
-      
-      const uploadData = await uploadResponse.json();
-
-      // 4. Delete previous image if it exists
+      // The old picture goes once the new one is safely up.
       if (user.photoPublicId) {
-        await fetch("/api/upload/delete", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${idToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ publicId: user.photoPublicId }),
-        });
+        await deleteProfileImage(user.photoPublicId).catch((err) =>
+          console.error("Could not delete the old picture:", err)
+        );
       }
 
-      // 5. Update Firestore
       await updateDoc(doc(db, "users", user.id), {
-        photoURL: uploadData.secure_url,
-        photoPublicId: uploadData.public_id,
+        photoURL: uploaded.url,
+        photoPublicId: uploaded.publicId,
       });
 
     } catch (error) {
@@ -105,21 +59,8 @@ export function ProfilePictureManager({ user }: ProfilePictureManagerProps) {
 
     setIsDeleting(true);
     try {
-      const auth = await import("@/lib/firebase/auth");
-      const idToken = await auth.getIdToken();
+      await deleteProfileImage(user.photoPublicId);
 
-      const response = await fetch("/api/upload/delete", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${idToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ publicId: user.photoPublicId }),
-      });
-
-      if (!response.ok) throw new Error("Failed to delete image");
-
-      // Update Firestore
       await updateDoc(doc(db, "users", user.id), {
         photoURL: null,
         photoPublicId: null,

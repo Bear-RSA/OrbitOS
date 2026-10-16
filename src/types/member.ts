@@ -16,6 +16,9 @@ export interface Member {
   lastActivity?: Timestamp;
   photoURL?: string | null;
   photoPublicId?: string | null;
+  /** The wide image across the top of their profile card. None shows their department's colour. */
+  bannerURL?: string | null;
+  bannerPublicId?: string | null;
   createdAt: Timestamp;
 }
 

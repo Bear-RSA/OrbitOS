@@ -46,6 +46,7 @@ import {
 import { AppHeader } from "@/components/nav/app-header";
 import { cn } from "@/lib/utils/classnames";
 import { ProfilePictureManager } from "@/components/profile/profile-picture-manager";
+import { ProfileBannerManager } from "@/components/profile/profile-banner-manager";
 import { themeColor } from "@/lib/theme/colors";
 
 /**
@@ -401,11 +402,18 @@ export default function ProfilePage() {
               />
             }
           >
+            {/* Bleeds to the card's edges, cancelling its padding. */}
+            <div className="relative -mx-8 -mt-8 sm:-mx-10 sm:-mt-10">
+              <ProfileBannerManager user={user} />
+            </div>
 
-            <div className="relative flex flex-col gap-8 sm:flex-row sm:items-center sm:gap-10">
-              <ProfilePictureManager user={user} />
+            <div className="relative flex flex-col gap-8 sm:flex-row sm:items-start sm:gap-10">
+              {/* The picture overlaps the banner's bottom edge. */}
+              <div className="-mt-14 shrink-0 sm:-mt-16">
+                <ProfilePictureManager user={user} />
+              </div>
 
-              <div className="min-w-0 flex-1 space-y-5">
+              <div className="min-w-0 flex-1 space-y-5 sm:pt-7">
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-3">
                     <StatusChip label={user.role} icon={RoleIcon} tone="neutral" />
@@ -445,63 +453,8 @@ export default function ProfilePage() {
           </DashboardCard>
         </ScrollReveal>
 
-        {/* ══ Operational Overview ═══════════════════════════════════════ */}
-        <ScrollReveal delay={80}>
-          <DashboardCard interactive={false}>
-            <CardHeader
-              title={isOwner ? "Workspace Overview" : "Your overview"}
-              icon={Activity}
-              meta={
-                <StatusChip
-                  label={`${workloadCfg.label} Load`}
-                  icon={Activity}
-                  tone={workloadCfg.tone}
-                />
-              }
-            />
-
-            <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
-              <StatBlock
-                size="md"
-                label="Active Tasks"
-                value={String(activeTasks.length).padStart(2, "0")}
-                tone={activeTasks.length === 0 ? "idle" : "default"}
-              />
-              <StatBlock
-                size="md"
-                label="Overdue"
-                value={String(overdueTasks.length).padStart(2, "0")}
-                tone={overdueTasks.length > 0 ? "critical" : "idle"}
-              />
-              <StatBlock
-                size="md"
-                label="Done This Week"
-                value={String(completedThisWeek.length).padStart(2, "0")}
-                tone={completedThisWeek.length > 0 ? "positive" : "idle"}
-              />
-              <StatBlock
-                size="md"
-                label={isOwner ? "Org Projects" : "My Projects"}
-                value={String(involvedProjects.length).padStart(2, "0")}
-                tone={involvedProjects.length === 0 ? "idle" : "default"}
-              />
-            </div>
-
-            {/* Pressure */}
-            <div className="mt-8 border-t border-line/[0.05] pt-6">
-              <div className="mb-3 flex items-center justify-between gap-4">
-                <CardEyebrow>Pressure</CardEyebrow>
-                <span className="text-[12px] font-light text-ink-muted">
-                  {workloadCfg.note}
-                </span>
-              </div>
-              <MeterBar value={workloadCfg.fill} color={workloadCfg.bar} />
-            </div>
-          </DashboardCard>
-        </ScrollReveal>
-
         {/* ══ Account & Capabilities ═════════════════════════════════════ */}
-        <ScrollReveal delay={140}>
+        <ScrollReveal delay={80}>
           <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
             {/* Account Information */}
             <DashboardCard interactive={false} className="h-full">
@@ -638,6 +591,61 @@ export default function ProfilePage() {
               </div>
             </DashboardCard>
           </div>
+        </ScrollReveal>
+
+        {/* ══ Operational Overview ═══════════════════════════════════════ */}
+        <ScrollReveal delay={140}>
+          <DashboardCard interactive={false}>
+            <CardHeader
+              title={isOwner ? "Workspace Overview" : "Your overview"}
+              icon={Activity}
+              meta={
+                <StatusChip
+                  label={`${workloadCfg.label} Load`}
+                  icon={Activity}
+                  tone={workloadCfg.tone}
+                />
+              }
+            />
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
+              <StatBlock
+                size="md"
+                label="Active Tasks"
+                value={String(activeTasks.length).padStart(2, "0")}
+                tone={activeTasks.length === 0 ? "idle" : "default"}
+              />
+              <StatBlock
+                size="md"
+                label="Overdue"
+                value={String(overdueTasks.length).padStart(2, "0")}
+                tone={overdueTasks.length > 0 ? "critical" : "idle"}
+              />
+              <StatBlock
+                size="md"
+                label="Done This Week"
+                value={String(completedThisWeek.length).padStart(2, "0")}
+                tone={completedThisWeek.length > 0 ? "positive" : "idle"}
+              />
+              <StatBlock
+                size="md"
+                label={isOwner ? "Org Projects" : "My Projects"}
+                value={String(involvedProjects.length).padStart(2, "0")}
+                tone={involvedProjects.length === 0 ? "idle" : "default"}
+              />
+            </div>
+
+            {/* Pressure */}
+            <div className="mt-8 border-t border-line/[0.05] pt-6">
+              <div className="mb-3 flex items-center justify-between gap-4">
+                <CardEyebrow>Pressure</CardEyebrow>
+                <span className="text-[12px] font-light text-ink-muted">
+                  {workloadCfg.note}
+                </span>
+              </div>
+              <MeterBar value={workloadCfg.fill} color={workloadCfg.bar} />
+            </div>
+          </DashboardCard>
         </ScrollReveal>
 
         {/* ══ Projects ═══════════════════════════════════════════════════ */}

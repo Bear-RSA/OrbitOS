@@ -10,6 +10,9 @@ export interface User {
   role: StoredRole;
   photoURL?: string | null;
   photoPublicId?: string | null;
+  /** See `Member.bannerURL`. */
+  bannerURL?: string | null;
+  bannerPublicId?: string | null;
   /** Partial on purpose — read it through `resolvePreferences`. */
   preferences?: Partial<UserPreferences>;
   createdAt: Timestamp;
