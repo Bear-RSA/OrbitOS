@@ -21,6 +21,36 @@ export default function ChangelogPage() {
   }[] = [
     {
       month: "October 2026",
+      version: "v5.9",
+      entries: [
+        {
+          title: "Ranks",
+          desc: "People now hold a rank: Owner, Executive, Manager, Team Lead or Member. Each rank above Member wears its own halo on the avatar. Executives can do what owners do, and Managers can bring in outside guests and appoint Team Leads."
+        },
+        {
+          title: "Org Chart",
+          desc: "Drag people onto a chart and wire each one to the person they report to. Wiring someone under a department files them into it, so the roster, tickets and member dialogs all agree. The Teams page has a Tree view that mirrors the chart."
+        },
+        {
+          title: "Internal Management and Admin Tools",
+          desc: "Internal Management is the small group who run the workspace itself, and it can include people of any rank. They work from Admin Tools, which sits behind its own passcode, to set ranks, add or remove owners, create departments and wire the org chart."
+        },
+        {
+          title: "Tickets",
+          desc: "Raise an issue, an access request, an onboarding, an internal move or an offboarding from /tickets. Escalated issues climb the org chart one step at a time until someone resolves them, and the rest go straight to Internal Management. Every ticket keeps its history."
+        },
+        {
+          title: "Vault Clearance",
+          desc: "Vault documents are now Internal, visible to the workspace, or Restricted, visible only to owners and the person who uploaded them. Restricted files never reach anyone else's browser. The Vault locks again every time the page loads."
+        },
+        {
+          title: "Call Transcripts",
+          desc: "A call can be transcribed if more than half the people in it agree, so in a two-person call both must say yes. Speech is turned into text in each person's own browser, and a finished transcript can be filed in the Vault."
+        }
+      ]
+    },
+    {
+      month: "October 2026",
       version: "v5.8",
       entries: [
         {

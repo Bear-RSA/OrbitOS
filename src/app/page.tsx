@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AlertCircle, EyeOff, ArrowRight, Lock, ShieldCheck, Server, MapPin } from 'lucide-react';
+import { AlertCircle, ArrowRight, Lock, ShieldCheck, Server, MapPin } from 'lucide-react';
 import type { Metadata } from 'next';
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { HeroProductFrame } from "@/components/marketing/hero-product-frame";
@@ -26,7 +26,7 @@ export default function LandingPage() {
             href="/changelog"
             className="group mb-8 inline-flex items-center gap-2.5 rounded-lg transition-transform duration-quick ease-spring active:scale-[0.97] active:duration-press active:ease-press"
           >
-            <span className="font-mono text-[11px] text-ink">v5.7</span>
+            <span className="font-mono text-[11px] text-ink">v5.9</span>
             <span className="h-3 w-px bg-white/[0.12]" />
             <span className="text-[12px] text-ink-muted group-hover:text-ink transition-colors">
               See what shipped
@@ -114,17 +114,8 @@ export default function LandingPage() {
               <p className="text-[14px] text-ink-muted font-light px-2">Real-time aggregate status of all active workstreams.</p>
             </div>
             
-            {/* Silent Task Detection */}
-            <div className="md:col-span-4 bg-base rounded-[24px] p-10 border border-white/[0.04]">
-              <EyeOff className="w-8 h-8 text-ink-dim mb-6" />
-              <h3 className="mb-4 text-title-sm font-light text-ink">Silent Task Detection</h3>
-              <p className="text-[15px] text-ink-muted leading-relaxed font-light">
-                Identifying the &apos;ghost work&apos; that consumes your team&apos;s time but never makes it to the roadmap.
-              </p>
-            </div>
-            
             {/* Data Stream */}
-            <div className="md:col-span-8 bg-surface-control rounded-[24px] p-10 flex flex-col justify-end overflow-hidden relative shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-white/[0.02]">
+            <div className="md:col-span-12bg-surface-control rounded-[24px] p-10 flex flex-col justify-end overflow-hidden relative shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-white/[0.02]">
               <div className="absolute inset-0 opacity-[0.03] flex flex-col justify-between py-6">
                 {[...Array(16)].map((_, i) => (
                    <div key={i} className="w-full h-px bg-gradient-to-r from-transparent via-ink to-transparent"></div>
