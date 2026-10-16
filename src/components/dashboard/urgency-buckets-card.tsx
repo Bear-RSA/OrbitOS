@@ -5,7 +5,7 @@ import { Project } from "@/types/project";
 import { Task } from "@/types/task";
 import { cn } from "@/lib/utils/classnames";
 import { Clock, Calendar, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
-import { format } from "date-fns";
+import { differenceInCalendarDays, format } from "date-fns";
 import { DashboardCard, CardHeader, CardEyebrow } from "./dashboard-card";
 
 interface UrgencyBucketsCardProps {
@@ -191,9 +191,9 @@ function EmptyWeek({
   const nextProject = next ? projects.find((p) => p.id === next.projectId)?.name : undefined;
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-3">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orbit-green/10 ring-1 ring-inset ring-orbit-green/20">
+    <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+      <div className="flex min-w-0 items-center gap-3.5">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orbit-green/10 ring-1 ring-inset ring-orbit-green/20">
           <CheckCircle2 className="h-4 w-4 text-orbit-green" aria-hidden />
         </span>
         <div className="min-w-0">
@@ -207,7 +207,9 @@ function EmptyWeek({
       </div>
 
       {next && (
-        <NextUpRow task={next} projectName={nextProject} onTaskClick={onTaskClick} />
+        <div className="min-w-0 border-t border-line/[0.06] pt-4 sm:w-[min(360px,45%)] sm:shrink-0 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
+          <NextUpRow task={next} projectName={nextProject} onTaskClick={onTaskClick} />
+        </div>
       )}
     </div>
   );
@@ -222,26 +224,39 @@ function NextUpRow({
   projectName?: string;
   onTaskClick?: (task: Task) => void;
 }) {
+  const due = task.dueDate!.toDate();
+  const daysAway = differenceInCalendarDays(due, new Date());
+  const countdown = daysAway <= 1 ? "tomorrow" : `in ${daysAway} days`;
+
+  // Stacked like the status on the left (title over detail), so the two
+  // halves read as a pair instead of a sentence and a form field.
   const body = (
     <>
-      <span className="shrink-0 text-[11px] uppercase tracking-wider text-ink-faint">Next</span>
-      <span className="min-w-0 truncate text-[13px] text-ink-muted transition-colors duration-300 group-hover/next:text-ink-strong">
-        {task.title}
-      </span>
-      {projectName && (
-        <span className="hidden shrink-0 truncate text-[12px] text-ink-dim md:inline">{projectName}</span>
-      )}
-      <span className="shrink-0 font-mono text-[12px] tabular-nums text-ink-dim">
-        {format(task.dueDate!.toDate(), "MMM d")}
-      </span>
-      {onTaskClick && (
-        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-ink-faint transition-transform duration-300 group-hover/next:translate-x-0.5" aria-hidden />
-      )}
+      <p className="text-[11px] uppercase tracking-wider text-ink-faint">
+        Next up <span aria-hidden>·</span> <span className="normal-case tracking-normal">{countdown}</span>
+      </p>
+      <div className="mt-1 flex min-w-0 items-center gap-2">
+        <span className="min-w-0 truncate text-[14px] font-medium text-ink-muted transition-colors duration-300 group-hover/next:text-ink-strong">
+          {task.title}
+        </span>
+        {onTaskClick && (
+          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-ink-faint transition-transform duration-300 group-hover/next:translate-x-0.5 group-hover/next:text-ink-muted" aria-hidden />
+        )}
+      </div>
+      <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] text-ink-dim">
+        {projectName && (
+          <>
+            <span className="truncate">{projectName}</span>
+            <span aria-hidden>·</span>
+          </>
+        )}
+        <span className="shrink-0 font-mono tabular-nums">{format(due, "MMM d")}</span>
+      </p>
     </>
   );
 
   const className =
-    "group/next flex min-w-0 items-center gap-3 rounded-lg px-3 py-2 ring-1 ring-inset ring-line/[0.06] sm:max-w-[55%]";
+    "group/next -mx-3 -my-2 block w-[calc(100%+1.5rem)] min-w-0 rounded-lg px-3 py-2";
 
   return onTaskClick ? (
     <button
