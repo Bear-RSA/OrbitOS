@@ -9,7 +9,7 @@ import { currentEngagement } from "@/lib/calendar/presence";
 import { isOrbitCall } from "@/lib/calls/scheduled";
 import { useCall } from "@/contexts/call-context";
 import { cn } from "@/lib/utils/classnames";
-import { DashboardCard, CardHeader, CardEyebrow, StatusChip } from "./dashboard-card";
+import { DashboardCard, CardHeader, CardEyebrow, CardEmpty, StatusChip } from "./dashboard-card";
 
 /* ------------------------------------------------------------------ */
 /*  Today                                                              */
@@ -86,9 +86,7 @@ export function TodayScheduleCard({
             <CardEyebrow>
               {visible.length} {visible.length === 1 ? "event" : "events"}
             </CardEyebrow>
-          ) : (
-            <CardEyebrow>Clear</CardEyebrow>
-          )
+          ) : undefined
         }
       />
 
@@ -104,12 +102,11 @@ export function TodayScheduleCard({
           </p>
         </div>
       ) : visible.length === 0 ? (
-        <div className="flex flex-1 flex-col justify-end space-y-2">
-          <p className="text-[14px] font-medium text-ink">Nothing scheduled today.</p>
-          <p className="text-[13px] font-light leading-relaxed text-ink-muted">
-            Engagements booked from a project calendar appear here on the day they run.
-          </p>
-        </div>
+        <CardEmpty
+          icon={CalendarClock}
+          title="Nothing scheduled today"
+          hint="Engagements booked from a project calendar show here on the day they run."
+        />
       ) : (
         <ul className="flex flex-col gap-1">
           {visible.map((event) => {

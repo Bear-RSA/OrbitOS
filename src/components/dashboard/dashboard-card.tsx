@@ -261,6 +261,47 @@ export function StatusChip({
 }
 
 /**
+ * The one empty state for a dashboard panel: centred in whatever height the
+ * row gives the card, the panel's icon sitting on a small tilted orbit.
+ * Panels used to each place their own empty copy, one at the top and its
+ * neighbour at the bottom, so a row of quiet cards looked misaligned.
+ */
+export function CardEmpty({
+  icon: Icon,
+  title,
+  hint,
+}: {
+  icon: LucideIcon;
+  title: string;
+  hint: string;
+}) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center py-6 text-center">
+      <div className="relative mb-5 flex h-14 w-14 items-center justify-center">
+        <svg viewBox="0 0 56 56" className="absolute inset-0 overflow-visible" aria-hidden>
+          <ellipse
+            cx="28"
+            cy="28"
+            rx="30"
+            ry="9"
+            transform="rotate(-20 28 28)"
+            fill="none"
+            stroke="rgb(var(--line) / 0.16)"
+            strokeWidth="1"
+          />
+          <circle cx="56" cy="17.5" r="2" fill="rgb(var(--orbit-amber))" opacity="0.8" />
+        </svg>
+        <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-surface-control ring-1 ring-inset ring-line/[0.08]">
+          <Icon className="h-4 w-4 text-ink-dim" aria-hidden />
+        </span>
+      </div>
+      <p className="text-[14px] font-medium text-ink">{title}</p>
+      <p className="mt-1.5 max-w-[16rem] text-[12px] leading-relaxed text-ink-dim">{hint}</p>
+    </div>
+  );
+}
+
+/**
  * Progress track. The old bars were `h-[1px]`/`h-[2px]` with a `bg-surface-sunken`
  * track on a near-identical surface, so neither track nor fill was visible.
  */

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Ban } from "lucide-react";
 import { BlockedWorkItem } from "@/types/dashboard";
-import { DashboardCard, CardHeader, CardEyebrow, StatusChip } from "./dashboard-card";
+import { DashboardCard, CardHeader, CardEyebrow, CardEmpty, StatusChip } from "./dashboard-card";
 
 /* ------------------------------------------------------------------ */
 /*  Blocked Work                                                       */
@@ -36,7 +36,7 @@ export function BlockedWorkCard({ items, max = 5 }: BlockedWorkCardProps) {
   const visible = items.slice(0, max);
 
   return (
-    <DashboardCard tone="quiet" interactive={false}>
+    <DashboardCard className="h-full" tone="quiet" interactive={false}>
       <CardHeader
         title="Blocked"
         icon={Ban}
@@ -45,19 +45,16 @@ export function BlockedWorkCard({ items, max = 5 }: BlockedWorkCardProps) {
             <CardEyebrow className="text-orbit-red">
               {items.length} stalled
             </CardEyebrow>
-          ) : (
-            <CardEyebrow>Nothing stalled</CardEyebrow>
-          )
+          ) : undefined
         }
       />
 
       {visible.length === 0 ? (
-        <div className="space-y-2">
-          <p className="text-[14px] font-medium text-ink">Nothing is blocked.</p>
-          <p className="text-[13px] font-light leading-relaxed text-ink-muted">
-            Work flagged as blocked from a project board is listed here with its reason.
-          </p>
-        </div>
+        <CardEmpty
+          icon={Ban}
+          title="Nothing is blocked"
+          hint="Tasks flagged as blocked on a project board show here with their reason."
+        />
       ) : (
         <ul className="flex flex-col gap-1">
           {visible.map(({ task, projectName, assigneeNames, blockedForDays }) => (

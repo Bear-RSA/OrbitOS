@@ -4,7 +4,7 @@ import { UrgencyBuckets } from "@/types/dashboard";
 import { Project } from "@/types/project";
 import { Task } from "@/types/task";
 import { cn } from "@/lib/utils/classnames";
-import { Clock, Calendar, AlertCircle, Inbox } from "lucide-react";
+import { Clock, Calendar, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { DashboardCard, CardHeader, CardEyebrow } from "./dashboard-card";
 
@@ -30,6 +30,24 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
   ];
 
   const totalUrgent = buckets.overdue.length + buckets.dueToday.length;
+  const weekIsEmpty = categories.every((cat) => cat.tasks.length === 0);
+
+  // An empty week used to draw four dashed boxes with an inbox icon in each.
+  // One line says the same thing, and the space goes to the next task that
+  // does have a date, so the card still points somewhere.
+  const nextUpcoming = weekIsEmpty
+    ? [...buckets.upcoming].sort(
+        (a, b) => a.dueDate!.toDate().getTime() - b.dueDate!.toDate().getTime()
+      )[0]
+    : undefined;
+
+  // The empty-week body already says "all clear", so the header stays quiet.
+  const eyebrow =
+    totalUrgent > 0 ? (
+      <CardEyebrow className="text-orbit-amber">{totalUrgent} requiring attention</CardEyebrow>
+    ) : weekIsEmpty ? null : (
+      <CardEyebrow>All clear</CardEyebrow>
+    );
 
   return (
     <DashboardCard interactive={false} tone="quiet">
@@ -39,28 +57,22 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
         action={
           action ? (
             <div className="flex shrink-0 items-center gap-3">
-              {totalUrgent > 0 ? (
-                <CardEyebrow className="hidden text-orbit-amber sm:inline">
-                  {totalUrgent} requiring attention
-                </CardEyebrow>
-              ) : (
-                <CardEyebrow className="hidden sm:inline">All clear</CardEyebrow>
-              )}
+              {eyebrow && <span className="hidden sm:inline">{eyebrow}</span>}
               {action}
             </div>
           ) : undefined
         }
-        meta={
-          totalUrgent > 0 ? (
-            <CardEyebrow className="text-orbit-amber">
-              {totalUrgent} requiring attention
-            </CardEyebrow>
-          ) : (
-            <CardEyebrow>All clear</CardEyebrow>
-          )
-        }
+        meta={eyebrow ?? undefined}
       />
 
+      {weekIsEmpty ? (
+        <EmptyWeek
+          next={nextUpcoming}
+          projects={projects}
+          undatedCount={buckets.noDueDate.length}
+          onTaskClick={onTaskClick}
+        />
+      ) : (
       <div className="grid grid-cols-1 gap-x-0 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
         {categories.map((cat, idx) => {
           const CatIcon = cat.icon;
@@ -98,12 +110,9 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
               </div>
 
               {/* Task Items */}
-              <div className="min-h-[80px] space-y-1">
+              <div className="space-y-1">
                 {cat.tasks.length === 0 ? (
-                  <div className="flex h-[80px] items-center justify-center rounded-lg border border-dashed border-line/[0.06]">
-                    <Inbox className="h-4 w-4 text-ink-faint" aria-hidden />
-                    <span className="sr-only">No tasks in {cat.label}</span>
-                  </div>
+                  <p className="py-2 text-[12px] text-ink-faint">Nothing {cat.label.toLowerCase()}</p>
                 ) : (
                   cat.tasks.slice(0, 3).map((task) => {
                     const projectName = projects.find(p => p.id === task.projectId)?.name || "Unknown Project";
@@ -163,6 +172,89 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
           );
         })}
       </div>
+      )}
     </DashboardCard>
+  );
+}
+
+function EmptyWeek({
+  next,
+  projects,
+  undatedCount,
+  onTaskClick,
+}: {
+  next?: Task;
+  projects: Project[];
+  undatedCount: number;
+  onTaskClick?: (task: Task) => void;
+}) {
+  const nextProject = next ? projects.find((p) => p.id === next.projectId)?.name : undefined;
+
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-3">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orbit-green/10 ring-1 ring-inset ring-orbit-green/20">
+          <CheckCircle2 className="h-4 w-4 text-orbit-green" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[14px] font-medium text-ink">Nothing due this week</p>
+          <p className="mt-0.5 text-[12px] text-ink-dim">
+            {undatedCount > 0
+              ? `${undatedCount} open task${undatedCount === 1 ? " has" : "s have"} no due date`
+              : "No overdue work either"}
+          </p>
+        </div>
+      </div>
+
+      {next && (
+        <NextUpRow task={next} projectName={nextProject} onTaskClick={onTaskClick} />
+      )}
+    </div>
+  );
+}
+
+function NextUpRow({
+  task,
+  projectName,
+  onTaskClick,
+}: {
+  task: Task;
+  projectName?: string;
+  onTaskClick?: (task: Task) => void;
+}) {
+  const body = (
+    <>
+      <span className="shrink-0 text-[11px] uppercase tracking-wider text-ink-faint">Next</span>
+      <span className="min-w-0 truncate text-[13px] text-ink-muted transition-colors duration-300 group-hover/next:text-ink-strong">
+        {task.title}
+      </span>
+      {projectName && (
+        <span className="hidden shrink-0 truncate text-[12px] text-ink-dim md:inline">{projectName}</span>
+      )}
+      <span className="shrink-0 font-mono text-[12px] tabular-nums text-ink-dim">
+        {format(task.dueDate!.toDate(), "MMM d")}
+      </span>
+      {onTaskClick && (
+        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-ink-faint transition-transform duration-300 group-hover/next:translate-x-0.5" aria-hidden />
+      )}
+    </>
+  );
+
+  const className =
+    "group/next flex min-w-0 items-center gap-3 rounded-lg px-3 py-2 ring-1 ring-inset ring-line/[0.06] sm:max-w-[55%]";
+
+  return onTaskClick ? (
+    <button
+      type="button"
+      onClick={() => onTaskClick(task)}
+      className={cn(
+        className,
+        "text-left transition-colors duration-300 hover:bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+      )}
+    >
+      {body}
+    </button>
+  ) : (
+    <div className={className}>{body}</div>
   );
 }
