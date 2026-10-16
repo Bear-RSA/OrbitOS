@@ -66,7 +66,8 @@ export function DepartmentDialog({
       setDescription(department?.description ?? "");
       setIcon(department?.icon && isKnownIcon(department.icon) ? department.icon : DEFAULT_DEPARTMENT_ICON);
       setQuery("");
-      setTint(department ? tintOf(department) : TINT_KEYS[Math.floor(Math.random() * (TINT_KEYS.length - 1))]);
+      // A new department starts on a random colour, never one of the two greys at the end.
+      setTint(department ? tintOf(department) : TINT_KEYS[Math.floor(Math.random() * (TINT_KEYS.length - 2))]);
       setError(null);
     }
   }, [open, department]);
