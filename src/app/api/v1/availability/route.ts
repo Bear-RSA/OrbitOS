@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-import { apiError, authenticateApi, readJson } from "@/lib/api/request";
+import { apiError, apiRoute } from "@/lib/api/request";
 import { getAvailability } from "@/lib/calendar/free-busy";
 
 /* ------------------------------------------------------------------ */
@@ -20,11 +20,7 @@ function optionalNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-export async function POST(req: NextRequest) {
-  const auth = await authenticateApi(req.headers, "read");
-  if (!auth.ok) return auth.response;
-
-  const body = await readJson(req);
+export const POST = apiRoute({ scope: "read", kind: "read" }, async ({ caller, body }) => {
   if (!body) return apiError(400, "Send a JSON object.");
 
   const attendees = body.attendees ?? [];
@@ -41,7 +37,7 @@ export async function POST(req: NextRequest) {
   const durationMins = optionalNumber(body.durationMins);
   if (durationMins === undefined) return apiError(400, '"durationMins" is required.');
 
-  const result = await getAvailability(auth.caller.uid, {
+  const result = await getAvailability(caller.uid, {
     attendees: attendees as string[],
     from: body.from,
     to: body.to,
@@ -53,4 +49,4 @@ export async function POST(req: NextRequest) {
   });
   if (!result.success) return apiError(400, result.error);
   return NextResponse.json(result.data);
-}
+});

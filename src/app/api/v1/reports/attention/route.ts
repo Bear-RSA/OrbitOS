@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-import { authenticateApi } from "@/lib/api/request";
+import { apiRoute } from "@/lib/api/request";
 import { loadAttention } from "@/lib/reports/brief-loader";
 
 /* ------------------------------------------------------------------ */
@@ -14,10 +14,7 @@ import { loadAttention } from "@/lib/reports/brief-loader";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  const auth = await authenticateApi(req.headers, "read");
-  if (!auth.ok) return auth.response;
-
+export const GET = apiRoute({ scope: "read", kind: "read" }, async ({ req, caller }) => {
   const projectId = req.nextUrl.searchParams.get("projectId") || undefined;
-  return NextResponse.json(await loadAttention(auth.caller, projectId));
-}
+  return NextResponse.json(await loadAttention(caller, projectId));
+});

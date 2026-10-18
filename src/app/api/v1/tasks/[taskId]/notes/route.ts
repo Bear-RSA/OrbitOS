@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-import { apiError, authenticateApi, readJson } from "@/lib/api/request";
+import { apiError, apiRoute } from "@/lib/api/request";
 import { addTaskNote } from "@/lib/tasks/core";
 
 /* ------------------------------------------------------------------ */
@@ -13,19 +13,14 @@ import { addTaskNote } from "@/lib/tasks/core";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ taskId: string }> }
-) {
-  const auth = await authenticateApi(req.headers, "write");
-  if (!auth.ok) return auth.response;
+export const POST = apiRoute<{ taskId: string }>(
+  { scope: "write", kind: "write" },
+  async ({ caller, params, body }) => {
+    const content = body?.content;
+    if (typeof content !== "string") return apiError(400, '"content" must be a string.');
 
-  const { taskId } = await params;
-  const body = await readJson(req);
-  const content = body?.content;
-  if (typeof content !== "string") return apiError(400, '"content" must be a string.');
-
-  const result = await addTaskNote(auth.caller, taskId, content);
-  if (!result.success) return apiError(400, result.error);
-  return NextResponse.json({ noteId: result.noteId }, { status: 201 });
-}
+    const result = await addTaskNote(caller, params.taskId, content);
+    if (!result.success) return apiError(400, result.error);
+    return NextResponse.json({ noteId: result.noteId }, { status: 201 });
+  }
+);

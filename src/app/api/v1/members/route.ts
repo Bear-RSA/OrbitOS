@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import { adminDb } from "@/lib/firebase/admin";
-import { authenticateApi } from "@/lib/api/request";
+import { apiRoute } from "@/lib/api/request";
 
 /* ------------------------------------------------------------------ */
 /*  GET /api/v1/members — people in the workspace                      */
@@ -13,11 +13,8 @@ import { authenticateApi } from "@/lib/api/request";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  const auth = await authenticateApi(req.headers, "read");
-  if (!auth.ok) return auth.response;
-
-  const snap = await adminDb.collection("users").where("orgId", "==", auth.caller.orgId).get();
+export const GET = apiRoute({ scope: "read", kind: "read" }, async ({ caller }) => {
+  const snap = await adminDb.collection("users").where("orgId", "==", caller.orgId).get();
   const members = snap.docs
     .map((doc) => {
       const data = doc.data();
@@ -31,4 +28,4 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return NextResponse.json({ members });
-}
+});

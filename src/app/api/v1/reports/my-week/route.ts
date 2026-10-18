@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-import { authenticateApi } from "@/lib/api/request";
+import { apiRoute } from "@/lib/api/request";
 import { loadMyWeek } from "@/lib/reports/brief-loader";
 
 /* ------------------------------------------------------------------ */
@@ -13,8 +13,6 @@ import { loadMyWeek } from "@/lib/reports/brief-loader";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  const auth = await authenticateApi(req.headers, "read");
-  if (!auth.ok) return auth.response;
-  return NextResponse.json(await loadMyWeek(auth.caller));
-}
+export const GET = apiRoute({ scope: "read", kind: "read" }, async ({ caller }) =>
+  NextResponse.json(await loadMyWeek(caller))
+);

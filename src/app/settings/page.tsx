@@ -230,7 +230,7 @@ function SettingsView() {
             {activeTab === "general" && <GeneralSection user={user} />}
             {activeTab === "notifications" && <NotificationsSection user={user} />}
             {activeTab === "calendar" && <CalendarSection user={user} />}
-            {activeTab === "ai" && <AiAccessSection />}
+            {activeTab === "ai" && <AiAccessSection isOwner={isOwner} />}
             {activeTab === "security" && <SecuritySection />}
             {activeTab === "workspace" && isOwner && <WorkspaceSection user={user} />}
             {activeTab === "admin" && isInternalManagement && <AdminToolsDoor />}

@@ -52,13 +52,23 @@ Connects a local AI assistant to OrbitOS. It runs on your machine and gives the 
 
 Nothing here can delete. A read-only token gets a clear error on any change. Only the organiser (or an owner) can edit or cancel a meeting, the same as in the app. Times default to this machine's timezone.
 
-## Limits
+## Security
 
-These come from the OrbitOS server and apply to every token:
+Enforced by the OrbitOS server on every request, whatever the assistant does:
 
-- 60 requests a minute
-- 500 changes a day
-- Paid plans only
+- **Tokens expire** after 30, 90 or 365 days, chosen at creation. They are stored hashed.
+- **Read-only, read & write, or read & write & outside email.** Inviting people outside the workspace is its own permission, off by default.
+- **Limits per token:** 60 requests a minute, 500 changes a day, 30 meeting changes a day (they send email).
+- **Owners** see every token in the workspace, can revoke any of them, and can switch AI access off for everyone.
+- **Audit log:** every change made with a token is listed under Settings → AI access.
+- **No delete**, a 32 KB request cap, and repeated failed logins from one address are refused.
+- **Paid plans only.**
+
+The MCP server also tells the assistant that text inside tasks and meetings is data, never instructions, and to confirm before anything that sends email.
+
+For an assistant that calls the API directly (not through MCP), put the same two rules in its system prompt, and enforce the confirmation in code before calling `POST /events`, `PATCH /events/:id` or `/cancel`.
+
+Optional: in the Firebase console, add a TTL policy on the `api_audit` collection, field `expireAt`, so audit entries are deleted after 90 days.
 
 ## Without MCP
 

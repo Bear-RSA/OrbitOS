@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-import { apiError, authenticateApi, readJson } from "@/lib/api/request";
+import { apiError, apiRoute } from "@/lib/api/request";
 import { capListLimit } from "@/lib/api/ceiling";
 import {
   FieldError,
@@ -18,11 +18,7 @@ import { createTask, isTaskStatus, listTasks } from "@/lib/tasks/core";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  const auth = await authenticateApi(req.headers, "read");
-  if (!auth.ok) return auth.response;
-  const { caller } = auth;
-
+export const GET = apiRoute({ scope: "read", kind: "read" }, async ({ req, caller }) => {
   const params = req.nextUrl.searchParams;
   const status = params.get("status") ?? undefined;
   if (status !== undefined && !isTaskStatus(status)) {
@@ -38,17 +34,13 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ tasks });
-}
+});
 
-export async function POST(req: NextRequest) {
-  const auth = await authenticateApi(req.headers, "write");
-  if (!auth.ok) return auth.response;
-
-  const body = await readJson(req);
+export const POST = apiRoute({ scope: "write", kind: "write" }, async ({ caller, body }) => {
   if (!body) return apiError(400, "Send a JSON object.");
 
   try {
-    const result = await createTask(auth.caller, {
+    const result = await createTask(caller, {
       projectId: optionalString(body, "projectId", 100) ?? "",
       title: optionalString(body, "title", 200) ?? "",
       description: optionalString(body, "description"),
@@ -62,4 +54,4 @@ export async function POST(req: NextRequest) {
     if (err instanceof FieldError) return apiError(400, err.message);
     throw err;
   }
-}
+});

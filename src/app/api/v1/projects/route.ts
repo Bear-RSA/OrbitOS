@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import { adminDb } from "@/lib/firebase/admin";
-import { authenticateApi } from "@/lib/api/request";
+import { apiRoute } from "@/lib/api/request";
 
 /* ------------------------------------------------------------------ */
 /*  GET /api/v1/projects — the workspace's projects                    */
@@ -13,12 +13,9 @@ import { authenticateApi } from "@/lib/api/request";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  const auth = await authenticateApi(req.headers, "read");
-  if (!auth.ok) return auth.response;
-
+export const GET = apiRoute({ scope: "read", kind: "read" }, async ({ req, caller }) => {
   const includeArchived = req.nextUrl.searchParams.get("includeArchived") === "true";
-  const snap = await adminDb.collection("projects").where("orgId", "==", auth.caller.orgId).get();
+  const snap = await adminDb.collection("projects").where("orgId", "==", caller.orgId).get();
 
   const projects = snap.docs
     .map((doc) => {
@@ -34,4 +31,4 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return NextResponse.json({ projects });
-}
+});

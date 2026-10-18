@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-import { apiError, authenticateApi } from "@/lib/api/request";
+import { apiError, apiRoute } from "@/lib/api/request";
 import { cancelEvent } from "@/lib/events/core";
 
 /* ------------------------------------------------------------------ */
@@ -14,15 +14,11 @@ import { cancelEvent } from "@/lib/events/core";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ eventId: string }> }
-) {
-  const auth = await authenticateApi(req.headers, "write");
-  if (!auth.ok) return auth.response;
-
-  const { eventId } = await params;
-  const result = await cancelEvent(auth.caller, eventId);
-  if (!result.success) return apiError(400, result.error);
-  return NextResponse.json({ cancelled: true });
-}
+export const POST = apiRoute<{ eventId: string }>(
+  { scope: "write", kind: "mail" },
+  async ({ caller, params }) => {
+    const result = await cancelEvent(caller, params.eventId);
+    if (!result.success) return apiError(400, result.error);
+    return NextResponse.json({ cancelled: true });
+  }
+);

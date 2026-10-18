@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-import { apiError, authenticateApi } from "@/lib/api/request";
+import { apiError, apiRoute } from "@/lib/api/request";
 import { loadMonthReport } from "@/lib/reports/brief-loader";
 
 /* ------------------------------------------------------------------ */
@@ -15,11 +15,8 @@ import { loadMonthReport } from "@/lib/reports/brief-loader";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  const auth = await authenticateApi(req.headers, "read");
-  if (!auth.ok) return auth.response;
-
-  if (auth.caller.role !== "OWNER") {
+export const GET = apiRoute({ scope: "read", kind: "read" }, async ({ req, caller }) => {
+  if (caller.role !== "OWNER") {
     return apiError(403, "The monthly report is for workspace owners.");
   }
 
@@ -28,5 +25,5 @@ export async function GET(req: NextRequest) {
     return apiError(400, '"month" must look like 2026-10.');
   }
 
-  return NextResponse.json(await loadMonthReport(auth.caller, month));
-}
+  return NextResponse.json(await loadMonthReport(caller, month));
+});
