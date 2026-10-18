@@ -68,7 +68,7 @@ function millisOf(value: unknown): number | null {
   return null;
 }
 
-function toReportTask(task: FirebaseFirestore.DocumentData): ReportTask {
+export function toReportTask(task: FirebaseFirestore.DocumentData): ReportTask {
   return {
     projectId: typeof task.projectId === "string" ? task.projectId : "",
     status: task.status === "done" || task.status === "doing" ? task.status : "todo",

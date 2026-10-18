@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Bell,
+  Bot,
   Building2,
   CalendarClock,
   Shield,
@@ -21,6 +22,7 @@ import { GeneralSection } from "@/components/settings/general-section";
 import { NotificationsSection } from "@/components/settings/notifications-section";
 import { CalendarSection } from "@/components/settings/calendar-section";
 import { SecuritySection } from "@/components/settings/security-section";
+import { AiAccessSection } from "@/components/settings/ai-access-section";
 import { WorkspaceSection } from "@/components/settings/workspace-section";
 import { AppHeader } from "@/components/nav/app-header";
 import { cn } from "@/lib/utils/classnames";
@@ -35,7 +37,7 @@ import { cn } from "@/lib/utils/classnames";
 /*  Management.                                                        */
 /* ------------------------------------------------------------------ */
 
-type TabId = "general" | "notifications" | "calendar" | "security" | "workspace" | "admin";
+type TabId = "general" | "notifications" | "calendar" | "ai" | "security" | "workspace" | "admin";
 
 const TABS: {
   id: TabId;
@@ -63,6 +65,12 @@ const TABS: {
     label: "Calendar",
     icon: CalendarClock,
     blurb: "Subscribe to your schedule from Google, Outlook, or Apple.",
+  },
+  {
+    id: "ai",
+    label: "AI access",
+    icon: Bot,
+    blurb: "Let your own AI assistant manage your tasks and calendar.",
   },
   {
     id: "security",
@@ -222,6 +230,7 @@ function SettingsView() {
             {activeTab === "general" && <GeneralSection user={user} />}
             {activeTab === "notifications" && <NotificationsSection user={user} />}
             {activeTab === "calendar" && <CalendarSection user={user} />}
+            {activeTab === "ai" && <AiAccessSection />}
             {activeTab === "security" && <SecuritySection />}
             {activeTab === "workspace" && isOwner && <WorkspaceSection user={user} />}
             {activeTab === "admin" && isInternalManagement && <AdminToolsDoor />}
