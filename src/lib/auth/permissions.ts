@@ -335,6 +335,19 @@ export async function resolveRankLimits(orgId: string): Promise<RankLimits> {
   return { maxManagers, maxExecutives, maxTeamLeads: maxDepartments === 0 ? 0 : -1 };
 }
 
+/**
+ * Personal access tokens one person may hold. Same contract as the
+ * resolvers above: -1 means "the tier does not narrow it", and the
+ * ceiling in `lib/api/ceiling` governs regardless. 0 is the paid-plan gate.
+ */
+export async function resolveApiTokenLimit(orgId: string): Promise<number> {
+  if (!GUARDRAILS_ENABLED) return -1;
+  if (!orgId) return -1;
+
+  const tier = await resolveOrgTier(orgId);
+  return TIER_DEFINITIONS[tier].limits.maxApiTokens;
+}
+
 /** Whether tier limits are enforced yet. For display only; checks use the resolvers. */
 export function billingGuardrailsEnabled(): boolean {
   return GUARDRAILS_ENABLED;
