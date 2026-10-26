@@ -9,6 +9,7 @@ import { db } from "@/lib/firebase/client";
 import { doc, updateDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils/classnames";
 import { deleteProfileImage, imageFileProblem, uploadProfileImage } from "@/lib/uploads/profile-image";
+import { ImageCropDialog } from "@/components/profile/image-crop-dialog";
 
 interface ProfilePictureManagerProps {
   user: User;
@@ -17,10 +18,13 @@ interface ProfilePictureManagerProps {
 export function ProfilePictureManager({ user }: ProfilePictureManagerProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [cropping, setCropping] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Picking a file opens the cropper; the upload starts from its Save.
+  const handlePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = "";
     if (!file) return;
 
     const problem = imageFileProblem(file);
@@ -28,7 +32,11 @@ export function ProfilePictureManager({ user }: ProfilePictureManagerProps) {
       alert(problem);
       return;
     }
+    setCropping(file);
+  };
 
+  const handleUpload = async (file: File) => {
+    setCropping(null);
     setIsUploading(true);
     try {
       const uploaded = await uploadProfileImage(file);
@@ -50,7 +58,6 @@ export function ProfilePictureManager({ user }: ProfilePictureManagerProps) {
       alert("Failed to upload profile picture.");
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -126,9 +133,19 @@ export function ProfilePictureManager({ user }: ProfilePictureManagerProps) {
       <input
         type="file"
         ref={fileInputRef}
-        onChange={handleUpload}
+        onChange={handlePick}
         className="hidden"
         accept="image/*"
+      />
+
+      <ImageCropDialog
+        file={cropping}
+        aspect={1}
+        outputWidth={640}
+        title="Profile picture"
+        frameClassName="rounded-[44px]"
+        onCancel={() => setCropping(null)}
+        onConfirm={handleUpload}
       />
 
       <button
