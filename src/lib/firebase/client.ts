@@ -7,7 +7,13 @@ import {
   initializeAuth,
   type Auth,
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  type Firestore,
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "dummy",
@@ -44,6 +50,29 @@ function createAuth(): Auth {
   }
 }
 
+/**
+ * Firestore with its cache in IndexedDB rather than memory.
+ *
+ * A message written while the connection is down sits in the cache's
+ * queue until the server takes it. In memory, a refresh threw that
+ * queue away and the message with it — typed, shown, and never sent.
+ * On disk it outlives the tab and goes out when the connection is back.
+ * Multi-tab, because OrbitOS is often open in more than one.
+ *
+ * Same double-call guard as `createAuth`: a second `initializeFirestore`
+ * throws, and the instance that already exists is the right answer.
+ */
+function createDb(): Firestore {
+  if (typeof window === "undefined") return getFirestore(app);
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    });
+  } catch {
+    return getFirestore(app);
+  }
+}
+
 export const auth = createAuth();
-export const db = getFirestore(app);
+export const db = createDb();
 export default app;

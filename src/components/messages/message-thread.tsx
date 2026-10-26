@@ -17,6 +17,7 @@ import {
   Phone,
   Pin,
   PinOff,
+  Reply,
   SendHorizonal,
   Smile,
   Trash2,
@@ -39,7 +40,7 @@ import {
   MESSAGE_PAGE_SIZE,
   loadOlderMessages,
   markConversationRead,
-  sendMessage,
+  queueMessage,
   subscribeToMessage,
   subscribeToMessages,
 } from "@/lib/queries/messages";
@@ -152,6 +153,22 @@ interface MessageThreadProps {
   onBack?: () => void;
 }
 
+/** What a quoted message said, flattened to one line. */
+function quoteSnippet(message: Message): string {
+  if (message.deletedAt) return "Message withdrawn";
+  const text = message.text.replace(/\s+/g, " ").trim();
+  if (text) return text;
+  if (isValidTaskRef(message.taskRef)) return message.taskRef.title;
+  switch (message.attachment?.kind) {
+    case "image":
+      return "Picture";
+    case "sticker":
+      return "Sticker";
+    default:
+      return "GIF";
+  }
+}
+
 /** "Today" and "Yesterday" beat a date somebody has to decode. */
 function dayLabel(date: Date): string {
   if (isToday(date)) return "Today";
@@ -187,6 +204,10 @@ export function MessageThread({
   const [savingEdit, setSavingEdit] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Message | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  /* The message the next send answers. Held whole, so the bar above the
+     composer can quote it; only its id is written. */
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
 
   /* Internal Management's view of edits and deletes. Asked of the server
      once, because who holds the account is not something the client is
@@ -280,10 +301,12 @@ export function MessageThread({
     };
   }, [viewer.id]);
 
-  /* A half-written edit belongs to the thread it was started in. */
+  /* A half-written edit belongs to the thread it was started in, and so
+     does a reply. */
   useEffect(() => {
     setEditingId(null);
     setOpenTrail(null);
+    setReplyingTo(null);
   }, [conversationId]);
 
   /* Re-read whenever the transcript changes, since an edit or a delete
@@ -367,6 +390,34 @@ export function MessageThread({
       ),
     [older, live, clearedBefore]
   );
+
+  /* Quotes are drawn from the message being answered. Usually it is on
+     screen; when it sits above the loaded page it is watched on its own,
+     the way a pinned notice is, so an edit or a withdrawal still shows. */
+  const loadedById = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages]);
+  const farQuoteKey = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          messages
+            .map((m) => m.replyToId)
+            .filter((id): id is string => Boolean(id) && !loadedById.has(id as string))
+        )
+      )
+        .sort()
+        .join(","),
+    [messages, loadedById]
+  );
+  const [farQuotes, setFarQuotes] = useState<Record<string, Message | null>>({});
+  useEffect(() => {
+    if (!conversationId || !farQuoteKey) return;
+    const stops = farQuoteKey.split(",").map((id) =>
+      subscribeToMessage(conversationId, id, (message) =>
+        setFarQuotes((prev) => ({ ...prev, [id]: message }))
+      )
+    );
+    return () => stops.forEach((stop) => stop());
+  }, [conversationId, farQuoteKey]);
 
   /* Follow the transcript down as it grows. */
   useEffect(() => {
@@ -577,25 +628,48 @@ export function MessageThread({
       const image = attachment ? null : pendingImage;
       if (!text && !attachment && !image) return;
 
-      setSending(true);
+      const replyTo = replyingTo;
       setError(null);
-      try {
-        if (image) {
-          await sendImageMessage(conversationId, image, text, postAsCompany);
-          clearImage();
-        } else {
-          const messageId = await sendMessage(
+
+      /* Words and GIFs never hold the composer. The line lands in the
+         thread at once, marked Sending, and goes when the connection
+         lets it — waiting on the server's acknowledgement here is what
+         used to leave a greyed-out box that never cleared. Only a
+         refusal brings the words back. */
+      if (!image) {
+        try {
+          const { messageId, committed } = queueMessage(
             conversationId,
             viewer.id,
             text,
             attachment,
-            postAsCompany
+            postAsCompany,
+            replyTo?.id ?? null
           );
-          /* Not awaited: the line is already in the thread, and a push
-             to everybody else's phone is no reason to hold the composer. */
-          void notifyMessageAction({ conversationId, messageId });
+          setDraft("");
+          setReplyingTo(null);
+          committed.then(
+            /* A push to everybody else's phone, once the line is real. */
+            () => void notifyMessageAction({ conversationId, messageId }),
+            (err) => {
+              console.error("[MessageThread] Send refused:", err);
+              setError("That message did not send. Try again.");
+              setDraft((current) => current || text);
+              setReplyingTo((current) => current ?? replyTo);
+            }
+          );
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "That message did not send. Try again.");
         }
+        return;
+      }
+
+      setSending(true);
+      try {
+        await sendImageMessage(conversationId, image, text, postAsCompany, replyTo?.id ?? null);
+        clearImage();
         setDraft("");
+        setReplyingTo(null);
       } catch (err) {
         console.error("[MessageThread] Send failed:", err);
         setError(
@@ -605,12 +679,35 @@ export function MessageThread({
         setSending(false);
       }
     },
-    [conversationId, draft, sending, mayPost, viewer.id, pendingImage, clearImage, postAsCompany]
+    [
+      conversationId,
+      draft,
+      sending,
+      mayPost,
+      viewer.id,
+      pendingImage,
+      clearImage,
+      postAsCompany,
+      replyingTo,
+    ]
   );
 
   const title = conversation
     ? conversationTitle(conversation, viewer.id, liveNames)
     : fallbackTitle;
+
+  const quotedName = (message: Message) =>
+    message.asCompany
+      ? companyName
+      : message.senderId === viewer.id
+        ? "You"
+        : liveNames[message.senderId] || "Someone";
+
+  const startReply = useCallback((message: Message) => {
+    setReplyingTo(message);
+    setEditingId(null);
+    composerRef.current?.focus();
+  }, []);
 
   /* A dm is headed by the person on the other end, so it gets their
      face rather than an icon — the same thing the rail and the
@@ -707,7 +804,7 @@ export function MessageThread({
       ? receiptFor({
           type: conversation.type,
           senderId: viewer.id,
-          sentAtMs: lastMine.createdAt?.toMillis?.() ?? null,
+          sentAtMs: lastMine.pending ? null : (lastMine.createdAt?.toMillis?.() ?? null),
           participantIds: conversation.participantIds ?? [],
           lastReadAt: toMillisMap(conversation.lastReadAt),
           lastDeliveredAt: toMillisMap(conversation.lastDeliveredAt),
@@ -1052,6 +1149,11 @@ export function MessageThread({
                     : null;
                 const mayEdit = facts ? canEditMessage(facts).allowed : false;
                 const mayDelete = facts ? canDeleteMessage(facts).allowed : false;
+                const mayReply = mayPost && !removed && !message.deletedAt;
+                const quoteId = message.deletedAt ? null : (message.replyToId ?? null);
+                const quoted = quoteId
+                  ? (loadedById.get(quoteId) ?? farQuotes[quoteId])
+                  : undefined;
 
                 /* A new day, or a new voice, starts a block. Consecutive
                    lines from one person are one block — a name and a
@@ -1155,6 +1257,20 @@ export function MessageThread({
                           </div>
                         )}
 
+                        {quoteId && (
+                          <QuotedMessage
+                            name={quoted ? quotedName(quoted) : null}
+                            snippet={
+                              quoted === undefined
+                                ? "Loading…"
+                                : quoted === null
+                                  ? "Original message unavailable"
+                                  : quoteSnippet(quoted)
+                            }
+                            onJump={() => jumpTo(quoteId)}
+                          />
+                        )}
+
                         <div
                           className={cn(
                             "group/msg flex max-w-full items-center gap-1",
@@ -1239,8 +1355,10 @@ export function MessageThread({
                             )}
                           </div>
 
-                          {(mayEdit || mayDelete || (manageTownHall && !removed)) && !editing && (
+                          {(mayReply || mayEdit || mayDelete || (manageTownHall && !removed)) &&
+                            !editing && (
                             <MessageActions
+                              onReply={mayReply ? () => startReply(message) : undefined}
                               onEdit={mayEdit ? () => startEdit(message) : undefined}
                               onDelete={mayDelete ? () => setPendingDelete(message) : undefined}
                               pinned={isPinned}
@@ -1397,6 +1515,28 @@ export function MessageThread({
               </div>
             )}
 
+            {replyingTo && (
+              <div className="mb-1.5 flex items-center gap-2.5 rounded-lg bg-surface-card/70 py-1.5 pl-3 pr-1.5 ring-1 ring-line/[0.06]">
+                <Reply className="h-3.5 w-3.5 shrink-0 text-orbit-blue" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12px] font-medium text-ink">
+                    Replying to{" "}
+                    {quotedName(replyingTo) === "You" ? "yourself" : quotedName(replyingTo)}
+                  </p>
+                  <p className="truncate text-[12px] text-ink-dim">{quoteSnippet(replyingTo)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReplyingTo(null)}
+                  aria-label="Cancel reply"
+                  title="Cancel reply"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-hover hover:text-ink"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              </div>
+            )}
+
             <div className="flex items-end gap-2">
               <button
                 type="button"
@@ -1447,6 +1587,9 @@ export function MessageThread({
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     void send();
+                  } else if (e.key === "Escape" && replyingTo) {
+                    e.preventDefault();
+                    setReplyingTo(null);
                   }
                 }}
                 /* A picture on the clipboard is staged; anything else
@@ -1534,11 +1677,13 @@ export function MessageThread({
 /* Shown on hover where there is a pointer, and always — quietly — on a
    touch screen, which has no hover to reveal it with. */
 function MessageActions({
+  onReply,
   onEdit,
   onDelete,
   onPin,
   pinned = false,
 }: {
+  onReply?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   /** Town Hall owners only. */
@@ -1550,6 +1695,17 @@ function MessageActions({
 
   return (
     <div className="flex shrink-0 items-center opacity-70 transition-opacity focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/msg:opacity-100">
+      {onReply && (
+        <button
+          type="button"
+          onClick={onReply}
+          aria-label="Reply to message"
+          title="Reply"
+          className={cn(button, "hover:text-ink")}
+        >
+          <Reply className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      )}
       {onPin && (
         <button
           type="button"
@@ -1588,6 +1744,32 @@ function MessageActions({
         </button>
       )}
     </div>
+  );
+}
+
+/** The line a reply answers, above the reply. Click to go to it. */
+function QuotedMessage({
+  name,
+  snippet,
+  onJump,
+}: {
+  name: string | null;
+  snippet: string;
+  onJump: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onJump}
+      title="Go to the original message"
+      className="mb-1 flex max-w-full items-stretch gap-2 rounded-xl bg-surface-control/60 py-1.5 pl-2 pr-3 text-left ring-1 ring-line/[0.05] transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+    >
+      <span className="w-0.5 shrink-0 rounded-full bg-orbit-blue/70" aria-hidden />
+      <span className="min-w-0">
+        {name && <span className="block text-[11px] font-medium text-ink-muted">{name}</span>}
+        <span className="block truncate text-[12px] text-ink-dim">{snippet}</span>
+      </span>
+    </button>
   );
 }
 

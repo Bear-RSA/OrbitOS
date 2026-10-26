@@ -515,7 +515,8 @@ export async function sendImageMessageAction(input: unknown): Promise<Conversati
         error: parsed.error.issues[0]?.message ?? "Invalid picture.",
       };
     }
-    const { conversationId, publicId, width, height, bytes, text, asCompany } = parsed.data;
+    const { conversationId, publicId, width, height, bytes, text, asCompany, replyToId } =
+      parsed.data;
 
     const caller = await requireCaller();
     if (!caller.ok) return { success: false, error: caller.error };
@@ -604,6 +605,7 @@ export async function sendImageMessageAction(input: unknown): Promise<Conversati
         attachment,
         createdAt: AdminTimestamp.now(),
         asCompany,
+        replyToId,
         editedAt: null,
         deletedAt: null,
       });

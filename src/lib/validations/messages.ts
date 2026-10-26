@@ -44,6 +44,9 @@ const uid = z.string().trim().min(1, "Required").max(128, "Not a valid user.");
 
 export const conversationIdSchema = z.string().trim().min(1).max(1_500);
 
+/** A Firestore auto id, the only kind a message is ever given. */
+export const messageIdSchema = z.string().regex(/^[A-Za-z0-9]{20}$/);
+
 export const messageTextSchema = z
   .string()
   .trim()
@@ -124,6 +127,8 @@ export const sendImageMessageSchema = z.object({
   text: z.string().trim().max(MAX_MESSAGE_LENGTH, "That message is too long.").optional().default(""),
   /** Town Hall only, owners only — checked in the action. */
   asCompany: z.boolean().optional().default(false),
+  /** The message this picture answers, if any. */
+  replyToId: messageIdSchema.nullable().optional().default(null),
 });
 
 export type OpenDmInput = z.infer<typeof openDmSchema>;
@@ -143,7 +148,7 @@ export function messagePreview(text: string): string {
 /** One message, named by its thread and its Firestore auto id. */
 export const messageRefSchema = z.object({
   conversationId: conversationIdSchema,
-  messageId: z.string().regex(/^[A-Za-z0-9]{20}$/),
+  messageId: messageIdSchema,
 });
 
 export const editMessageSchema = messageRefSchema.extend({

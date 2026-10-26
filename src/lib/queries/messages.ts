@@ -11,6 +11,7 @@ import {
   updateDoc,
   where,
   writeBatch,
+  type DocumentSnapshot,
   type Timestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
@@ -57,8 +58,22 @@ function messagesRef(conversationId: string) {
   return collection(db, CONVERSATIONS_COLLECTION, conversationId, MESSAGES_SUBCOLLECTION);
 }
 
-function toMessage(d: { id: string; data: () => any }): Message {
-  return { id: d.id, ...d.data() } as Message;
+/**
+ * A message as the thread draws it.
+ *
+ * `estimate` rather than the default null for a server timestamp that
+ * has not come back yet: a line you just sent is on this device before
+ * the server has stamped it, and with a null `createdAt` it would sort
+ * wrongly and fall foul of the cleared-before filter — the sender would
+ * see nothing at all until the write was acknowledged. `pending` is the
+ * same fact said plainly, for the "Sending…" receipt.
+ */
+function toMessage(d: DocumentSnapshot): Message {
+  return {
+    id: d.id,
+    ...d.data({ serverTimestamps: "estimate" }),
+    pending: d.metadata.hasPendingWrites,
+  } as Message;
 }
 
 /* ------------------------------------------------------------------ */
@@ -201,8 +216,12 @@ export function subscribeToMessages(
     limitTo(pageSize)
   );
 
+  /* Metadata changes too, so a line flips from Sending to Sent when the
+     server acknowledges it — otherwise nothing about the data changes
+     and the snapshot never fires. */
   return onSnapshot(
     q,
+    { includeMetadataChanges: true },
     (snapshot) => callback(snapshot.docs.map(toMessage).reverse()),
     (err) => {
       console.error("[Messages Subscription Error]:", err);
@@ -254,14 +273,16 @@ export async function loadOlderMessages(
  * No `senderName` is written — see the note in `types/message`. The
  * thread resolves it from the member list it already holds.
  */
-export async function sendMessage(
+export function queueMessage(
   conversationId: string,
   senderId: string,
   rawText: string,
   attachment: MessageAttachment | null = null,
   /** Town Hall only: post under the company's name. The rules hold it there. */
-  asCompany = false
-): Promise<string> {
+  asCompany = false,
+  /** The message in this thread being answered, if any. */
+  replyToId: string | null = null
+): { messageId: string; committed: Promise<void> } {
   const text = rawText.trim();
 
   /* A picture may travel with no words, and words with no picture, but
@@ -288,6 +309,9 @@ export async function sendMessage(
     attachment,
     createdAt: serverTimestamp(),
     asCompany,
+    /* Only on a reply. An ordinary line carries no such key, so it still
+       passes a ruleset deployed before replies existed. */
+    ...(replyToId ? { replyToId } : {}),
     editedAt: null,
     deletedAt: null,
   });
@@ -303,8 +327,11 @@ export async function sendMessage(
     lastMessageAsCompany: asCompany,
   });
 
-  await batch.commit();
-  return messageRef.id;
+  /* Not awaited here. The write is in the local cache the moment it is
+     made — the thread shows it — but the promise only settles when the
+     server acknowledges it, which on a dropped connection is whenever
+     the connection comes back. The composer must not wait on that. */
+  return { messageId: messageRef.id, committed: batch.commit() };
 }
 
 /**

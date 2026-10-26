@@ -368,6 +368,20 @@ export interface Message {
    */
   asCompany?: boolean;
 
+  /**
+   * The message in this thread that this one answers. Only the id is
+   * stored, never a copy of what it said: the quote is drawn from the
+   * message itself, so it cannot be put in somebody's mouth, and an
+   * edit or a withdrawal shows in every reply to it.
+   */
+  replyToId?: string | null;
+
+  /**
+   * Client-side only, never stored: written on this device and not yet
+   * acknowledged by the server. Drives the "Sending…" receipt.
+   */
+  pending?: boolean;
+
   editedAt: Timestamp | null;
 
   /**

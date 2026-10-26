@@ -481,8 +481,17 @@ service cloud.firestore {
         allow create: if isSignedIn()
           && request.resource.data.keys().hasOnly([
                'senderId', 'createdAt', 'text', 'editedAt', 'deletedAt', 'attachment',
-               'asCompany'
+               'asCompany', 'replyToId'
              ])
+          /* A reply names the message it answers by id and nothing more.
+             The path keeps it inside this thread, and the quote is drawn
+             from that message, so there is no text here to forge. Not
+             checked for existence: the line being answered may itself
+             still be on its way to the server. */
+          && (!('replyToId' in request.resource.data) ||
+              request.resource.data.replyToId == null ||
+              (request.resource.data.replyToId is string &&
+               request.resource.data.replyToId.matches('^[A-Za-z0-9]{20}$')))
           /* Posting as the company is Town Hall's alone; the branch below
              already holds Town Hall to owners. */
           && (!('asCompany' in request.resource.data) ||

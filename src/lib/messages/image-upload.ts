@@ -57,7 +57,8 @@ export async function sendImageMessage(
   conversationId: string,
   file: File,
   text: string,
-  asCompany = false
+  asCompany = false,
+  replyToId: string | null = null
 ): Promise<void> {
   /* ── 1. A signature for this conversation ── */
   const signResponse = await fetch("/api/messages/sign-image", {
@@ -101,6 +102,7 @@ export async function sendImageMessage(
     bytes: Number(uploaded.bytes) || file.size,
     text,
     asCompany,
+    replyToId,
   });
   if (!result.success) throw new ImageSendError(result.error);
 }
