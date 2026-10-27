@@ -29,6 +29,10 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
     { id: 'dueThisWeek', label: 'Due This Week', tasks: buckets.dueThisWeek, icon: Calendar, accent: 'text-ink-muted', dueAccent: 'text-ink-dim', isUrgent: false },
   ];
 
+  const shown = categories.map((cat) => cat.tasks.length > 0);
+  const firstShown = shown.indexOf(true);
+  const lastShown = shown.lastIndexOf(true);
+
   const totalUrgent = buckets.overdue.length + buckets.dueToday.length;
   const weekIsEmpty = categories.every((cat) => cat.tasks.length === 0);
 
@@ -73,20 +77,32 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
           onTaskClick={onTaskClick}
         />
       ) : (
-      <div className="grid grid-cols-1 gap-x-0 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+      // Empty buckets fold away instead of saying "Nothing overdue". On wide
+      // screens the columns are a flex row and an empty one animates its grow
+      // to 0 while the others widen into the space; narrower layouts just
+      // drop it from the grid.
+      <div className="grid grid-cols-1 gap-x-0 gap-y-8 sm:grid-cols-2 lg:flex lg:gap-0">
         {categories.map((cat, idx) => {
           const CatIcon = cat.icon;
+          const empty = cat.tasks.length === 0;
           return (
             <div
               key={cat.id}
+              aria-hidden={empty || undefined}
+              style={{ flexGrow: empty ? 0 : 1 }}
               className={cn(
-                "flex flex-col gap-5 rounded-xl py-1 transition-colors duration-500",
-                "lg:px-6",
-                idx !== 0 && "lg:border-l lg:border-line/[0.06]",
-                idx === 0 && "lg:pl-0",
-                idx === categories.length - 1 && "lg:pr-0"
+                "flex min-w-0 flex-col rounded-xl py-1",
+                "lg:basis-0 lg:overflow-hidden lg:border-l lg:px-6",
+                "lg:transition-[flex-grow,padding,opacity,border-color] lg:duration-500 lg:ease-[cubic-bezier(0.32,0.72,0,1)]",
+                "motion-reduce:transition-none",
+                idx > firstShown ? "lg:border-line/[0.06]" : "lg:border-transparent",
+                idx <= firstShown && "lg:pl-0",
+                idx >= lastShown && "lg:pr-0",
+                empty && "max-lg:hidden lg:pointer-events-none lg:border-l-0 lg:px-0 lg:opacity-0"
               )}
             >
+              {/* Fixed min width so a collapsing column clips instead of reflowing. */}
+              <div className="flex flex-col gap-5 lg:min-w-[200px]">
               {/* Bucket Header */}
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
@@ -111,10 +127,7 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
 
               {/* Task Items */}
               <div className="space-y-1">
-                {cat.tasks.length === 0 ? (
-                  <p className="py-2 text-[12px] text-ink-faint">Nothing {cat.label.toLowerCase()}</p>
-                ) : (
-                  cat.tasks.slice(0, 3).map((task) => {
+                {cat.tasks.slice(0, 3).map((task) => {
                     const projectName = projects.find(p => p.id === task.projectId)?.name || "Unknown Project";
                     let dueStatusStr = "No signal";
                     if (task.dueDate) {
@@ -160,13 +173,13 @@ export function UrgencyBucketsCard({ buckets, projects = [], onTaskClick, action
                         </p>
                       </Row>
                     );
-                  })
-                )}
+                  })}
                 {cat.tasks.length > 3 && (
                   <p className="px-0 pt-2 text-[12px] text-ink-dim">
                     +{cat.tasks.length - 3} more
                   </p>
                 )}
+              </div>
               </div>
             </div>
           );
